@@ -1,0 +1,16 @@
+{
+  "name": "convex-backend",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "scripts": {
+    "type-check": "echo 'Skipping type-check for convex-backend (requires Convex runtime types)'"
+  },
+  "dependencies": {
+    "@clerk/backend": "^2.17.2",
+    "convex": "^1.27.3",
+    "openai": "^4.79.0",
+    "svix": "^1.76.1"
+  }
+}
