@@ -23,8 +23,10 @@
       "bundleIdentifier": "com.eveoky.diaryvibes",
       "infoPlist": {
         "UIBackgroundModes": [
+          "audio",
           "audio"
-        ]
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -40,6 +42,12 @@
     "web": {
       "bundler": "metro",
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "f5517f61-7cab-4fe6-ba29-bff37fab518f"
+      }
+    },
+    "owner": "supersam331"
   }
 }

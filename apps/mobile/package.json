@@ -17,13 +17,13 @@
   "dependencies": {
     "@clerk/backend": "^2.17.2",
     "@clerk/clerk-expo": "^2.15.3",
+    "@diary-vibes/backend": "workspace:*",
     "@expo/vector-icons": "^14.0.0",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-navigation/bottom-tabs": "^6.6.1",
     "@react-navigation/native": "^6.1.18",
     "@react-navigation/native-stack": "^6.11.0",
     "convex": "^1.27.3",
-    "@diary-vibes/backend": "workspace:*",
     "date-fns": "^4.1.0",
     "expo": "54.0.12",
     "expo-auth-session": "~7.0.8",
@@ -53,6 +53,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@expo/config-plugins": "^54.0.2",
     "@types/react": "^19.1.0",
     "babel-preset-expo": "^54.0.3",
     "eslint": "^9.0.0",
