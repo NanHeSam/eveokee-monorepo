@@ -6,7 +6,7 @@ This monorepo contains the Diary Vibes mobile app, web app, and shared Convex ba
 
 - `apps/mobile` - React Native mobile app (Expo)
 - `apps/web` - Vite web app
-- `packages/convex-backend` - Shared Convex backend
+- `packages/backend/convex/` - Shared Convex backend
 
 ## Prerequisites
 

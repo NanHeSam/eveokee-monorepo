@@ -2,9 +2,11 @@
   "name": "convex-backend",
   "version": "1.0.0",
   "private": true,
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "main": "./convex/_generated/api.js",
+  "types": "./convex/_generated/api.d.ts",
   "scripts": {
+    "dev": "npx convex dev",
+    "deploy": "npx convex deploy",
     "type-check": "echo 'Skipping type-check for convex-backend (requires Convex runtime types)'"
   },
   "dependencies": {

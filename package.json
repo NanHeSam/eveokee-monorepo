@@ -3,17 +3,26 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "dev": "concurrently --kill-others --prefix-colors \"cyan,magenta,yellow\" --prefix \"[convex],[web],[mobile]\" \"pnpm run dev:convex\" \"pnpm run dev:web\" \"pnpm run dev:mobile\"",
+    "dev:convex": "cd packages/backend && npx convex dev",
     "dev:web": "turbo run dev --filter=web",
     "dev:mobile": "turbo run dev --filter=mobile",
+    "dev:backend": "cd packages/backend && npx convex dev",
     "build": "turbo run build",
     "build:web": "turbo run build --filter=web",
     "build:mobile": "turbo run build --filter=mobile",
+    "build:ios": "cd apps/mobile && eas build --platform ios",
+    "build:ios:dev": "cd apps/mobile && eas build --platform ios --profile development",
+    "build:android": "cd apps/mobile && eas build --platform android",
+    "run:ios": "cd apps/mobile && expo run:ios",
+    "run:android": "cd apps/mobile && expo run:android",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {
-    "turbo": "^2.0.0"
+    "turbo": "^2.0.0",
+    "concurrently": "^8.2.2"
   },
   "engines": {
     "node": ">=20",
