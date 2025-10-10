@@ -200,6 +200,51 @@ GitHub Actions with smart change detection:
 - Mobile builds via EAS
 - Convex automatic deployment on backend changes
 
+### Current Mobile Build Configuration
+
+**iOS only** - Android builds are currently disabled in CI/CD.
+
+**Preview builds** (PRs): iOS simulator builds
+**Production builds** (main branch): iOS production builds
+
+### Re-enabling Android Builds
+
+To add Android builds back to CI/CD:
+
+1. **Generate Android credentials** (one-time setup):
+   ```bash
+   cd apps/mobile
+   eas credentials
+   ```
+   Follow prompts to generate and upload Android keystore to EAS.
+
+2. **Update eas.json** ([apps/mobile/eas.json](apps/mobile/eas.json)):
+   ```json
+   {
+     "build": {
+       "preview": {
+         "distribution": "internal",
+         "android": {
+           "buildType": "apk"
+         },
+         "ios": {
+           "simulator": true
+         }
+       }
+     }
+   }
+   ```
+
+3. **Uncomment Android build in CI** ([.github/workflows/ci.yml](.github/workflows/ci.yml)):
+   - Preview builds (line ~105): Add Android build step
+   - Production builds (line ~126-128): Uncomment the Android build step
+
+4. **Test locally** before pushing:
+   ```bash
+   cd apps/mobile
+   eas build --platform android --profile preview --non-interactive --no-wait
+   ```
+
 ## Troubleshooting
 
 ### Type Check Issues

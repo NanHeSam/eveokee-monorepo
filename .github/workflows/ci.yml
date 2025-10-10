@@ -100,9 +100,9 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
       - run: pnpm install
-      - name: Build preview
+      - name: Build iOS preview
         working-directory: apps/mobile
-        run: eas build --platform android --profile preview --non-interactive --no-wait
+        run: eas build --platform ios --profile preview --non-interactive --no-wait
 
   build-mobile-production:
     needs: [detect-changes, lint-and-type-check]
@@ -122,9 +122,10 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
       - run: pnpm install
-      - name: Build Android
-        working-directory: apps/mobile
-        run: eas build --platform android --profile production --non-interactive --no-wait
+      # Android build commented out - add back later when Android credentials are configured
+      # - name: Build Android
+      #   working-directory: apps/mobile
+      #   run: eas build --platform android --profile production --non-interactive --no-wait
       - name: Build iOS
         working-directory: apps/mobile
         run: eas build --platform ios --profile production --non-interactive --no-wait
