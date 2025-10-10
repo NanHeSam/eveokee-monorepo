@@ -75,6 +75,9 @@ export const SignInScreen = () => {
 
       await applySession?.({ session: sessionId });
 
+      // Wait for Clerk JWT token to propagate to Convex
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       await ensureConvexUser();
 
       return true;
