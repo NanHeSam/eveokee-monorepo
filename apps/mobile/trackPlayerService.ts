@@ -6,7 +6,11 @@ const PlaybackService = async () => {
       const queue = await TrackPlayer.getQueue();
       const activeIndex = await TrackPlayer.getActiveTrackIndex();
 
-      if (queue.length > 0 && activeIndex !== null && activeIndex !== undefined) {
+      if (queue.length > 0) {
+        if (activeIndex === null || activeIndex === undefined) {
+          // Fresh queue with no active track - activate first track
+          await TrackPlayer.skip(0);
+        }
         await TrackPlayer.play();
       }
     } catch (error) {
