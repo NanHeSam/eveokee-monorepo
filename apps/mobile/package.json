@@ -15,7 +15,6 @@
     "build:ios": "eas build --platform ios"
   },
   "dependencies": {
-    "@clerk/backend": "^2.17.2",
     "@clerk/clerk-expo": "^2.15.3",
     "@diary-vibes/backend": "workspace:*",
     "@expo/vector-icons": "^14.0.0",

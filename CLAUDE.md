@@ -110,9 +110,8 @@ The package (`@diary-vibes/backend`) exports the generated API from `convex/_gen
 
 **Important:** Both mobile and web apps must use `@diary-vibes/backend` for imports. After `pnpm install`, the workspace package is symlinked in `node_modules/@diary-vibes/backend`.
 
-**Deploy:**
+**Deploy** (run from repo root or `packages/backend`):
 ```bash
-cd packages/backend
 npx convex deploy
 ```
 
@@ -175,7 +174,7 @@ Turbo is used for build orchestration. Key pipeline tasks:
 
 ## Git Workflow
 
-- Main branch: `devin/1759989405-monorepo-initial-setup`
+- Main branch: `main`
 - Current branch: `project-setup/all-3p-run`
 - Prefer rebase over merge for clean history (per user preferences)
 

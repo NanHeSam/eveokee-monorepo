@@ -5,7 +5,6 @@ import TrackPlayer, {
   Capability,
   Event,
   State,
-  usePlaybackState,
   useProgress,
 } from 'react-native-track-player';
 
