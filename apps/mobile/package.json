@@ -23,7 +23,7 @@
     "@react-navigation/native": "^6.1.18",
     "@react-navigation/native-stack": "^6.11.0",
     "convex": "^1.27.3",
-    "convex-backend": "workspace:*",
+    "@diary-vibes/backend": "workspace:*",
     "date-fns": "^4.1.0",
     "expo": "54.0.12",
     "expo-auth-session": "~7.0.8",

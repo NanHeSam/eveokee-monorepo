@@ -18,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useMutation } from 'convex/react';
-import { api } from 'convex-backend';
+import { api } from '@diary-vibes/backend';
 
 import { palette } from '../theme/colors';
 

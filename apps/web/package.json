@@ -11,7 +11,7 @@
     "type-check": "tsc -b --noEmit"
   },
   "dependencies": {
-    "convex-backend": "workspace:*",
+    "@diary-vibes/backend": "workspace:*",
     "@clerk/clerk-react": "^5.50.0",
     "@sentry/react": "^10.17.0",
     "clsx": "^2.1.1",

@@ -61,7 +61,7 @@ pnpm add -w <package>
 # Add to specific app
 pnpm add --filter mobile <package>
 pnpm add --filter web <package>
-pnpm add --filter convex-backend <package>
+pnpm add --filter @diary-vibes/backend <package>
 ```
 
 ## Architecture
@@ -83,7 +83,7 @@ pnpm add --filter convex-backend <package>
 
 - **packages/backend/convex/** - Shared Convex backend
   - Real-time database and serverless functions
-  - Shared between mobile and web via `convex-backend` workspace package
+  - Shared between mobile and web via `@diary-vibes/backend` workspace package
   - Clerk authentication integration
   - OpenAI integration for music generation
 
@@ -103,10 +103,12 @@ The Convex backend is located at `packages/backend/convex/`. It's configured in 
 
 **Importing from apps:**
 ```typescript
-import { api } from 'convex-backend';
+import { api } from '@diary-vibes/backend';
 ```
 
-The package exports the generated API from `convex/_generated/api.js`.
+The package (`@diary-vibes/backend`) exports the generated API from `convex/_generated/api.js`.
+
+**Important:** Both mobile and web apps must use `@diary-vibes/backend` for imports. After `pnpm install`, the workspace package is symlinked in `node_modules/@diary-vibes/backend`.
 
 **Deploy:**
 ```bash
@@ -177,6 +179,18 @@ Turbo is used for build orchestration. Key pipeline tasks:
 - Current branch: `project-setup/all-3p-run`
 - Prefer rebase over merge for clean history (per user preferences)
 
+## Mobile App Audio Playback
+
+The mobile app uses `react-native-track-player` v5.0.0-alpha0 for audio playback with the following key features:
+
+- **PlaybackService** (`apps/mobile/trackPlayerService.ts`): Handles remote playback controls (play/pause/next/previous)
+- **Track activation**: Automatically activates the first track when queue is fresh (no active track)
+- **Queue management**: Clears queue on app reopen to prevent stale state
+- **Known fixes**:
+  - Fixed infinite loop in useEffect by proper dependency management
+  - Added delay to reduce race conditions during track loading
+  - Refactored track activation logic for fresh queues
+
 ## CI/CD
 
 GitHub Actions with smart change detection:
@@ -185,3 +199,21 @@ GitHub Actions with smart change detection:
 - Backend changes trigger validation for both apps
 - Mobile builds via EAS
 - Convex automatic deployment on backend changes
+
+## Troubleshooting
+
+### Type Check Issues
+
+If `pnpm type-check` fails with module not found errors:
+
+1. **Missing workspace symlinks**: Run `pnpm install` to create `node_modules/@diary-vibes/backend` symlinks
+2. **Wrong import paths**: All imports must use `@diary-vibes/backend` (the workspace package name)
+3. **Cache issues**: Clear Turbo cache with `pnpm clean` and reinstall
+
+### Import Best Practices
+
+```typescript
+// ✅ Correct - import from workspace package
+import { api } from '@diary-vibes/backend';
+import { Id } from '@diary-vibes/backend/convex/_generated/dataModel';
+```

@@ -20,12 +20,12 @@ jobs:
           filters: |
             web:
               - 'apps/web/**'
-              - 'packages/convex-backend/**'
+              - 'packages/backend/convex/**'
             mobile:
               - 'apps/mobile/**'
-              - 'packages/convex-backend/**'
+              - 'packages/backend/convex/**'
             convex:
-              - 'packages/convex-backend/**'
+              - 'packages/backend/convex/**'
 
   lint-and-type-check:
     runs-on: ubuntu-latest

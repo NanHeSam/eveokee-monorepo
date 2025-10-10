@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import { useMutation } from 'convex/react';
-import { api } from 'convex-backend';
+import { api } from '@diary-vibes/backend';
 import { isValidEmail } from '@/lib/utils';
 import { ArrowRight, CheckCircle } from 'lucide-react';
 

@@ -23,6 +23,9 @@ importers:
       '@clerk/clerk-expo':
         specifier: ^2.15.3
         version: 2.16.1(@types/react@19.2.2)(expo-auth-session@7.0.8)(expo-secure-store@15.0.7)(expo-web-browser@15.0.8)(react-dom@19.1.0)(react-native@0.81.4)(react@19.1.0)(typescript@5.9.3)(zod@3.25.76)
+      '@diary-vibes/backend':
+        specifier: workspace:*
+        version: link:../../packages/backend
       '@expo/vector-icons':
         specifier: ^14.0.0
         version: 14.1.0(expo-font@14.0.8)(react-native@0.81.4)(react@19.1.0)
@@ -41,9 +44,6 @@ importers:
       convex:
         specifier: ^1.27.3
         version: 1.27.5(@clerk/clerk-react@5.51.0)(react@19.1.0)
-      convex-backend:
-        specifier: workspace:*
-        version: link:../../packages/backend
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
@@ -150,6 +150,9 @@ importers:
       '@clerk/clerk-react':
         specifier: ^5.50.0
         version: 5.51.0(react-dom@19.1.0)(react@19.1.0)
+      '@diary-vibes/backend':
+        specifier: workspace:*
+        version: link:../../packages/backend
       '@sentry/react':
         specifier: ^10.17.0
         version: 10.19.0(react@19.1.0)
@@ -159,9 +162,6 @@ importers:
       convex:
         specifier: ^1.27.3
         version: 1.27.5(@clerk/clerk-react@5.51.0)(react@19.1.0)
-      convex-backend:
-        specifier: workspace:*
-        version: link:../../packages/backend
       gray-matter:
         specifier: ^4.0.3
         version: 4.0.3

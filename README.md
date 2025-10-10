@@ -107,15 +107,15 @@ pnpm add -w <package>
 pnpm add --filter mobile <package>
 pnpm add --filter web <package>
 
-# Add to shared backend
-pnpm add --filter convex-backend <package>
+# Add to backend
+pnpm add --filter @diary-vibes/backend <package>
 ```
 
 ### Working with Convex
 
 The Convex backend is shared between mobile and web apps. Import like:
 ```typescript
-import { api } from 'convex-backend';
+import { api } from '@diary-vibes/backend';
 ```
 
 To deploy Convex functions:

@@ -7,6 +7,6 @@
   },
   "exclude": [
     "node_modules",
-    "../../packages/convex-backend"
+    "../../packages/backend/convex"
   ]
 }
