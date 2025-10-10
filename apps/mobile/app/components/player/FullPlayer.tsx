@@ -27,13 +27,21 @@ export const FullPlayer = () => {
   const [progressBarWidth, setProgressBarWidth] = useState(0);
 
   const togglePlayback = useCallback(async () => {
-    const state = await TrackPlayer.getPlaybackState();
-    if (state.state === State.Playing) {
-      await TrackPlayer.pause();
-    } else {
-      await TrackPlayer.play();
+    try {
+      const state = await TrackPlayer.getPlaybackState();
+      if (state.state === State.Playing) {
+        await TrackPlayer.pause();
+      } else {
+        await TrackPlayer.play();
+      }
+    } catch (error) {
+      console.error('Failed to toggle playback', error);
+      // If track index is out of bounds, hide the player
+      if (error instanceof Error && error.message.includes('out of bounds')) {
+        hideFullPlayer();
+      }
     }
-  }, []);
+  }, [hideFullPlayer]);
 
   const skipToPrevious = useCallback(async () => {
     try {

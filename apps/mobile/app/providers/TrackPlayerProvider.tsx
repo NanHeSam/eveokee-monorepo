@@ -27,7 +27,6 @@ const TRACK_PLAYER_OPTIONS = {
 export const TrackPlayerProvider = ({ children }: PropsWithChildren) => {
   const initializingRef = useRef(false);
   const { isSignedIn } = useAuth();
-  const playbackState = usePlaybackState();
   const progress = useProgress();
   const setPlaying = useTrackPlayerStore((state) => state.setPlaying);
   const setProgress = useTrackPlayerStore((state) => state.setProgress);
@@ -41,15 +40,38 @@ export const TrackPlayerProvider = ({ children }: PropsWithChildren) => {
 
     initializingRef.current = true;
 
-    TrackPlayer.setupPlayer({
-      autoHandleInterruptions: true,
-    })
-      .then(async () => {
+    const setupTrackPlayer = async () => {
+      try {
+        await TrackPlayer.setupPlayer({
+          autoHandleInterruptions: true,
+        });
         await TrackPlayer.updateOptions(TRACK_PLAYER_OPTIONS);
-      })
-      .catch((error) => {
-        console.error('TrackPlayer setup failed', error);
-      });
+
+        // Clear any persisted queue from iOS audio session
+        // This prevents auto-resume of tracks when the app reopens
+        const queue = await TrackPlayer.getQueue();
+        if (queue.length > 0) {
+          await TrackPlayer.reset();
+        }
+      } catch (error) {
+        // Ignore "already initialized" error, log others
+        if (error instanceof Error && error.message.includes('already been initialized')) {
+          // Still try to clear the queue on reload
+          try {
+            const queue = await TrackPlayer.getQueue();
+            if (queue.length > 0) {
+              await TrackPlayer.reset();
+            }
+          } catch (resetError) {
+            // Ignore reset errors on reload
+          }
+        } else {
+          console.error('TrackPlayer setup failed', error);
+        }
+      }
+    };
+
+    setupTrackPlayer();
 
     const playbackSubscription = TrackPlayer.addEventListener(Event.PlaybackState, async ({ state }) => {
       setPlaying(state === State.Playing);
@@ -72,13 +94,6 @@ export const TrackPlayerProvider = ({ children }: PropsWithChildren) => {
     };
   }, [setPlaying, setCurrentTrack]);
 
-  useEffect(() => {
-    if (playbackState && 'state' in playbackState && playbackState.state === State.Stopped) {
-      TrackPlayer.reset().catch(() => {
-        // Ignore reset errors
-      });
-    }
-  }, [playbackState]);
 
   useEffect(() => {
     setProgress(progress.position, progress.duration);

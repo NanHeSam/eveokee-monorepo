@@ -22,13 +22,21 @@ export const MiniPlayer = () => {
   const showFullPlayer = useTrackPlayerStore((state) => state.showFullPlayer);
 
   const togglePlayback = useCallback(async () => {
-    const state = await TrackPlayer.getPlaybackState();
-    if (state.state === State.Playing) {
-      await TrackPlayer.pause();
-    } else {
-      await TrackPlayer.play();
+    try {
+      const state = await TrackPlayer.getPlaybackState();
+      if (state.state === State.Playing) {
+        await TrackPlayer.pause();
+      } else {
+        await TrackPlayer.play();
+      }
+    } catch (error) {
+      console.error('Failed to toggle playback', error);
+      // If track index is out of bounds, hide the player
+      if (error instanceof Error && error.message.includes('out of bounds')) {
+        hidePlayer();
+      }
     }
-  }, []);
+  }, [hidePlayer]);
 
   if (!currentTrack || !isVisible) {
     return null;

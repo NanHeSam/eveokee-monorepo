@@ -24,7 +24,7 @@ import { palette } from '../theme/colors';
 
 WebBrowser.maybeCompleteAuthSession();
 
-const redirectUrl = AuthSession.makeRedirectUri({ scheme: 'musicdiary' });
+const redirectUrl = AuthSession.makeRedirectUri({ scheme: 'diaryvibes' });
 
 type RootStackParamList = {
   SignIn: undefined;

@@ -89,6 +89,9 @@ importers:
       react-native-calendars:
         specifier: ^1.1313.0
         version: 1.1313.0(react-native@0.81.4)(react@19.1.0)
+      react-native-css-interop:
+        specifier: ^0.2.1
+        version: 0.2.1(react-native-reanimated@4.1.2)(react-native-safe-area-context@5.6.1)(react-native@0.81.4)(react@19.1.0)(tailwindcss@3.4.18)
       react-native-gesture-handler:
         specifier: ~2.28.0
         version: 2.28.0(react-native@0.81.4)(react@19.1.0)

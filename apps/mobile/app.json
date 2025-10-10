@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "music-diary-rn",
-    "slug": "music-diary-rn",
+    "name": "diary-vibes",
+    "slug": "diary-vibes",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -20,7 +20,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.musicdiary.app",
+      "bundleIdentifier": "com.eveoky.diaryvibes",
       "infoPlist": {
         "UIBackgroundModes": [
           "audio"
@@ -34,9 +34,9 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.musicdiary.app"
+      "package": "com.eveoky.diaryvibes"
     },
-    "scheme": "musicdiary",
+    "scheme": "diaryvibes",
     "web": {
       "bundler": "metro",
       "favicon": "./assets/favicon.png"
