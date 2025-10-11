@@ -9,10 +9,16 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SENTRY_DSN": "https://1938d83f8546435c1484f0e34bdd0d8a@o4509569243873280.ingest.us.sentry.io/4510167673077760"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_SENTRY_DSN": "https://1938d83f8546435c1484f0e34bdd0d8a@o4509569243873280.ingest.us.sentry.io/4510167673077760"
+      }
     }
   },
   "submit": {

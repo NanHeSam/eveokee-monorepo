@@ -11,7 +11,15 @@
       "./plugins/with-folly-no-coroutines",
       "expo-dev-client",
       "expo-system-ui",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "diary-vibes-mobile",
+          "organization": "eveoky"
+        }
+      ]
     ],
     "splash": {
       "image": "./assets/splash-icon.png",

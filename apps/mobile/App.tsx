@@ -23,6 +23,34 @@ import { DiaryStackParamList } from './app/navigation/types';
 import { MiniPlayer } from './app/components/player/MiniPlayer';
 import { FullPlayer } from './app/components/player/FullPlayer';
 import { TrackPlayerProvider } from './app/providers/TrackPlayerProvider';
+import * as Sentry from '@sentry/react-native';
+
+// Only initialize Sentry in production/preview builds (not local development)
+const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
+
+if (sentryDsn) {
+  Sentry.init({
+    dsn: sentryDsn,
+
+    // Adds more context data to events (IP address, cookies, user, etc.)
+    // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+    sendDefaultPii: true,
+
+    // Enable Logs
+    enableLogs: true,
+
+    // Configure Session Replay
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1,
+    integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
+
+    // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+    // spotlight: __DEV__,
+  });
+  console.log('Sentry initialized for production/preview build');
+} else {
+  console.log('Sentry disabled (no DSN provided - local development)');
+}
 
 type RootStackParamList = {
   SignIn: undefined;
@@ -110,7 +138,7 @@ if (!publishableKey) {
   throw new Error('Missing EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY environment variable.');
 }
 
-export default function App() {
+function App() {
   const colors = useThemeColors();
   const theme: Theme = colors.scheme === 'dark'
     ? {
@@ -156,3 +184,6 @@ export default function App() {
     </GestureHandlerRootView>
   );
 }
+
+// Only wrap with Sentry if it was initialized
+export default sentryDsn ? Sentry.wrap(App) : App;
