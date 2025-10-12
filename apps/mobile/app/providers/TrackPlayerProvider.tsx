@@ -39,55 +39,77 @@ export const TrackPlayerProvider = ({ children }: PropsWithChildren) => {
 
     initializingRef.current = true;
 
-    const setupTrackPlayer = async () => {
-      try {
-        await TrackPlayer.setupPlayer({
-          autoHandleInterruptions: true,
-        });
-        await TrackPlayer.updateOptions(TRACK_PLAYER_OPTIONS);
+    // Declare cleanup subscriptions variable before the IIFE
+    let cleanupSubscriptions: { 
+      playbackSubscription: ReturnType<typeof TrackPlayer.addEventListener>;
+      trackChangedSubscription: ReturnType<typeof TrackPlayer.addEventListener>;
+    } | null = null;
 
-        // Clear any persisted queue from iOS audio session
-        // This prevents auto-resume of tracks when the app reopens
-        const queue = await TrackPlayer.getQueue();
-        if (queue.length > 0) {
-          await TrackPlayer.reset();
-        }
-      } catch (error) {
-        // Ignore "already initialized" error, log others
-        if (error instanceof Error && error.message.includes('already been initialized')) {
-          // Still try to clear the queue on reload
-          try {
-            const queue = await TrackPlayer.getQueue();
-            if (queue.length > 0) {
-              await TrackPlayer.reset();
-            }
-          } catch (_resetError) {
-            // Ignore reset errors on reload
+    // Use async IIFE to properly await setup before attaching subscriptions
+    (async () => {
+      const setupTrackPlayer = async () => {
+        try {
+          await TrackPlayer.setupPlayer({
+            autoHandleInterruptions: true,
+          });
+          await TrackPlayer.updateOptions(TRACK_PLAYER_OPTIONS);
+
+          // Clear any persisted queue from iOS audio session
+          // This prevents auto-resume of tracks when the app reopens
+          const queue = await TrackPlayer.getQueue();
+          if (queue.length > 0) {
+            await TrackPlayer.reset();
           }
-        } else {
-          console.error('TrackPlayer setup failed', error);
+        } catch (error) {
+          // Ignore "already initialized" error, log others
+          if (error instanceof Error && error.message.includes('already been initialized')) {
+            // Still try to clear the queue on reload
+            try {
+              const queue = await TrackPlayer.getQueue();
+              if (queue.length > 0) {
+                await TrackPlayer.reset();
+              }
+            } catch (_resetError) {
+              // Ignore reset errors on reload
+            }
+          } else {
+            console.error('TrackPlayer setup failed', error);
+          }
         }
-      }
-    };
+      };
 
-    setupTrackPlayer();
+      // Await setup completion before attaching event listeners
+      await setupTrackPlayer();
 
-    const playbackSubscription = TrackPlayer.addEventListener(Event.PlaybackState, async ({ state }) => {
-      setPlaying(state === State.Playing);
-    });
+      const playbackSubscription = TrackPlayer.addEventListener(Event.PlaybackState, async ({ state }) => {
+        setPlaying(state === State.Playing);
+      });
 
-    const trackChangedSubscription = TrackPlayer.addEventListener(Event.PlaybackActiveTrackChanged, async (data) => {
-      if (data.index !== undefined && data.index !== null) {
-        const playlist = useTrackPlayerStore.getState().playlist;
-        if (playlist[data.index]) {
-          setCurrentTrack(playlist[data.index]);
+      const trackChangedSubscription = TrackPlayer.addEventListener(Event.PlaybackActiveTrackChanged, async (data) => {
+        if (data.index !== undefined && data.index !== null) {
+          const playlist = useTrackPlayerStore.getState().playlist;
+          if (playlist[data.index]) {
+            setCurrentTrack(playlist[data.index]);
+          }
         }
+      });
+
+      // Store subscriptions in a way that cleanup can access them
+      return { playbackSubscription, trackChangedSubscription };
+    })().then((subscriptions) => {
+      // Store subscriptions for cleanup
+      if (subscriptions) {
+        cleanupSubscriptions = subscriptions;
       }
+    }).catch((error) => {
+      console.error('Failed to initialize TrackPlayer and subscriptions', error);
     });
 
     return () => {
-      playbackSubscription.remove();
-      trackChangedSubscription.remove();
+      if (cleanupSubscriptions) {
+        cleanupSubscriptions.playbackSubscription.remove();
+        cleanupSubscriptions.trackChangedSubscription.remove();
+      }
       // Note: TrackPlayer.destroy() is not available in all versions
       // The player will be cleaned up when the app unmounts
     };
