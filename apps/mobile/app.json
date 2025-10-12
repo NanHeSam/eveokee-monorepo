@@ -31,7 +31,6 @@
       "bundleIdentifier": "com.eveoky.diaryvibes",
       "infoPlist": {
         "UIBackgroundModes": [
-          "audio",
           "audio"
         ],
         "ITSAppUsesNonExemptEncryption": false
