@@ -9,16 +9,10 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal",
-      "env": {
-        "EXPO_PUBLIC_SENTRY_DSN": "@secret:EXPO_PUBLIC_SENTRY_DSN"
-      }
+      "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true,
-      "env": {
-        "EXPO_PUBLIC_SENTRY_DSN": "@secret:EXPO_PUBLIC_SENTRY_DSN"
-      }
+      "autoIncrement": true
     }
   },
   "submit": {

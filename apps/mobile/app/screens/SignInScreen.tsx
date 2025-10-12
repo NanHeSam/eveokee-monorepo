@@ -24,8 +24,11 @@ import { palette } from '../theme/colors';
 
 WebBrowser.maybeCompleteAuthSession();
 
-const redirectUrl = AuthSession.makeRedirectUri({ scheme: 'diaryvibes' });
 
+const redirectUrl = AuthSession.makeRedirectUri({
+  scheme: "diaryvibes",
+  path: "oauth-native-callback",
+});
 type RootStackParamList = {
   SignIn: undefined;
   SignUp: undefined;
