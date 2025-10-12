@@ -4,11 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Music Diary is a React Native application built with Expo that allows users to create diary entries with associated AI-generated music. The app uses:
+This is the **mobile app** in the Diary Vibes monorepo. It's a React Native application built with Expo that allows users to create diary entries with associated AI-generated music.
+
 - **Frontend**: React Native with Expo (uses dev builds, **New Architecture enabled**)
-- **Backend**: Convex for real-time database and backend functions
+- **Backend**: Shared Convex backend from `packages/backend/convex/`
 - **Authentication**: Clerk for user authentication
 - **State Management**: React Native AsyncStorage and Expo SecureStore
+
+**Note**: This app is part of a monorepo. See the root [CLAUDE.md](../../CLAUDE.md) for full monorepo documentation.
 
 ## Tech Stack
 
@@ -27,11 +30,19 @@ Music Diary is a React Native application built with Expo that allows users to c
 ## Commands
 
 ### Development
+
+**From monorepo root:**
+```bash
+pnpm dev:mobile       # Start mobile app with Expo
+pnpm run:ios          # Run on iOS simulator/device
+pnpm run:android      # Run on Android emulator/device
+```
+
+**From mobile app directory:**
 ```bash
 npm start              # Start Expo dev server
 npm run android        # Start on Android device/emulator (uses dev build)
 npm run ios           # Start on iOS device/simulator (uses dev build)
-npm run web           # Start web version
 ```
 
 **Note**: This project uses **Expo dev builds** (not Expo Go) due to native modules like React Native Track Player. After making native changes, run:
@@ -42,8 +53,12 @@ npx expo run:android         # Rebuild for Android
 ```
 
 ### Convex Backend
+
+The backend is shared across mobile and web apps. See root [CLAUDE.md](../../CLAUDE.md) for backend details.
+
+**Deploy backend from root:**
 ```bash
-npx convex dev        # Run Convex backend in development mode
+cd packages/backend && npx convex deploy
 ```
 
 ## Architecture
@@ -51,50 +66,27 @@ npx convex dev        # Run Convex backend in development mode
 ### Project Structure
 - `App.tsx` - Root application component
 - `index.ts` - Entry point that registers the root component
-- `src/` - Main source directory with subdirectories:
+- `trackPlayerService.ts` - React Native Track Player service for audio playback
+- `app/` - Main application directory:
   - `components/` - Reusable UI components
   - `screens/` - Screen-level components
   - `hooks/` - Custom React hooks
-  - `types/` - TypeScript type definitions
-  - `utils/` - Utility functions
-- `convex/` - Convex backend code
-  - `schema.ts` - Database schema definitions
-  - `_generated/` - Auto-generated Convex files (do not edit)
+  - `navigation/` - React Navigation configuration and types
+  - `store/` - Zustand state management stores
+  - `theme/` - Theme and styling utilities
+  - `providers/` - React context providers
 
-### Database Schema (Convex)
+### Backend Integration
 
-The app uses a Convex backend with the following tables:
+**Import the shared backend:**
+```typescript
+import { api } from '@diary-vibes/backend';
+import { Id } from '@diary-vibes/backend/convex/_generated/dataModel';
+```
 
-1. **userAuth**: Stores Clerk authentication data
-   - Primary key: `id` (Clerk ID)
-   - Indexed by `id`
+**Important**: Always use `@diary-vibes/backend` as the import path - this is the workspace package name.
 
-2. **users**: User profile data (separate from auth)
-   - Primary key: `id` (same Clerk ID as userAuth)
-   - Links to userAuth via `id`
-   - Contains name, subscription tier, timestamps
-
-3. **diaries**: User diary entries
-   - Primary key: `id` (UUID string)
-   - Each entry has a date, content, optional title
-   - Links to primary music track via `primaryMusicId`
-   - Indexed by user, creation date, and diary date
-
-4. **music**: AI-generated music tracks
-   - Primary key: `id` (UUID string)
-   - Links to diary entries via `diaryId`
-   - Contains audio/image URLs, lyrics (plain and timestamped)
-   - Supports async generation with `taskId` and `musicIndex`
-   - Status field tracks generation state: "pending", "ready", "failed"
-   - Stores Suno API metadata in `metadata` field
-   - Soft delete support via `deletedAt`
-
-### Key Relationships
-- User authentication (Clerk) → userAuth → users (via `id`)
-- Users → diaries (one-to-many via `userId`)
-- diaries → music (one-to-many via `diaryId`)
-- diaries can have a primary music track (`primaryMusicId`)
-- Music tracks can be grouped by generation tasks (`taskId`)
+The Convex backend is shared between mobile and web apps. See root [CLAUDE.md](../../CLAUDE.md#convex-backend) for full database schema and backend documentation.
 
 ### Configuration Notes
 

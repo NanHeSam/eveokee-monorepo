@@ -9,7 +9,7 @@ import { useThemeColors } from '../theme/useThemeColors';
 import { useSubscription, useSubscriptionUIStore } from '../store/useSubscriptionStore';
 import { SubscriptionStatus } from '../components/billing/SubscriptionStatus';
 import { PaywallModal } from '../components/billing/PaywallModal';
-import { api } from 'convex-backend';
+import { api } from '@diary-vibes/backend';
 
 export const SettingsScreen = () => {
   const { user } = useUser();

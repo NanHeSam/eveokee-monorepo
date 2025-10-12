@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 
 import { useThemeColors } from '../theme/useThemeColors';
 import { DiaryEditNavigationProp, DiaryEditRouteProp } from '../navigation/types';
-import { api } from 'convex-backend';
+import { api } from '@diary-vibes/backend';
 import { useTrackPlayerStore } from '../store/useTrackPlayerStore';
 import { useMusicGeneration } from '../hooks/useMusicGeneration';
 import { PaywallModal } from '../components/billing/PaywallModal';
@@ -138,14 +138,24 @@ export const DiaryEditScreen = () => {
         lyrics: primaryMusic.lyric,
       };
 
+      // Reset queue and add track
       await TrackPlayer.reset();
       await TrackPlayer.add(track);
-      await TrackPlayer.play();
 
-      const loadPlaylist = useTrackPlayerStore.getState().loadPlaylist;
-      loadPlaylist([track], 0);
+      // Verify the track was added before playing
+      const queue = await TrackPlayer.getQueue();
+      if (queue.length > 0) {
+        await TrackPlayer.skip(0);
+        await TrackPlayer.play();
+
+        const loadPlaylist = useTrackPlayerStore.getState().loadPlaylist;
+        loadPlaylist([track], 0);
+      } else {
+        console.error('Failed to add track to queue');
+      }
     } catch (error) {
       console.error('Failed to start playback', error);
+      Alert.alert('Playback Error', 'Unable to play this track. Please try again.');
     }
   };
 

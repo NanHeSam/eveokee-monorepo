@@ -6,7 +6,7 @@ import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useEffect } from 'react';
 import { useMutation } from 'convex/react';
 
-import { api } from 'convex-backend';
+import { api } from '@diary-vibes/backend';
 import { SubscriptionStatus } from '../components/billing/SubscriptionStatus';
 import { PaywallModal } from '../components/billing/PaywallModal';
 import { useSubscriptionUIStore } from '../store/useSubscriptionStore';

@@ -7,7 +7,8 @@ import { Swipeable } from 'react-native-gesture-handler';
 import Reanimated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 import { useThemeColors } from '../theme/useThemeColors';
-import { api, Id } from 'convex-backend';
+import { api } from '@diary-vibes/backend';
+import { Id } from '@diary-vibes/backend/convex/_generated/dataModel';
 import { format } from 'date-fns';
 import TrackPlayer from 'react-native-track-player';
 import { useTrackPlayerStore } from '../store/useTrackPlayerStore';

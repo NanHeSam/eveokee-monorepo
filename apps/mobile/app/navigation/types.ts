@@ -1,6 +1,6 @@
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
-import { Id } from 'convex-backend';
+import { Id } from '@diary-vibes/backend/convex/_generated/dataModel';
 
 export type DiaryStackParamList = {
   DiaryHome: undefined;

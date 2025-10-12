@@ -18,14 +18,17 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useMutation } from 'convex/react';
-import { api } from 'convex-backend';
+import { api } from '@diary-vibes/backend';
 
 import { palette } from '../theme/colors';
 
 WebBrowser.maybeCompleteAuthSession();
 
-const redirectUrl = AuthSession.makeRedirectUri({ scheme: 'musicdiary' });
 
+const redirectUrl = AuthSession.makeRedirectUri({
+  scheme: "diaryvibes",
+  path: "oauth-native-callback",
+});
 type RootStackParamList = {
   SignIn: undefined;
   SignUp: undefined;
@@ -74,6 +77,9 @@ export const SignInScreen = () => {
       }
 
       await applySession?.({ session: sessionId });
+
+      // Wait for Clerk JWT token to propagate to Convex
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       await ensureConvexUser();
 
