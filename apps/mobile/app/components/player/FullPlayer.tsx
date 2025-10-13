@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { View, Text, Image, Pressable, ScrollView, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import TrackPlayer, { State, usePlaybackState } from 'react-native-track-player';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -85,8 +85,8 @@ export const FullPlayer = () => {
 
   return (
     <Animated.View
-      entering={SlideInDown.springify().damping(20)}
-      exiting={SlideOutDown.springify().damping(20)}
+      entering={SlideInDown.duration(240).easing(Easing.out(Easing.cubic))}
+      exiting={SlideOutDown.duration(240).easing(Easing.in(Easing.cubic))}
       style={[
         styles.container,
         { backgroundColor: colors.background, paddingTop: insets.top }
