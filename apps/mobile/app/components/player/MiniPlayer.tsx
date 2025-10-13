@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { SlideInUp, SlideOutDown } from 'react-native-reanimated';
+import Animated, { Easing, SlideInUp, SlideOutDown } from 'react-native-reanimated';
 import TrackPlayer, { State, usePlaybackState } from 'react-native-track-player';
 
 import { useTrackPlayerStore } from '../../store/useTrackPlayerStore';
@@ -46,8 +46,8 @@ export const MiniPlayer = () => {
 
   return (
     <Animated.View
-      entering={SlideInUp.springify()}
-      exiting={SlideOutDown.springify()}
+      entering={SlideInUp.duration(220).easing(Easing.out(Easing.quad))}
+      exiting={SlideOutDown.duration(220).easing(Easing.in(Easing.quad))}
       style={[
         styles.container,
         { backgroundColor: colors.surface, shadowColor: colors.accentMint }
