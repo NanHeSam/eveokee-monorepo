@@ -57,7 +57,7 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install
       - name: Deploy to Convex
-        run: npx convex deploy --cmd 'pnpm convex'
+        run: npx convex deploy
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
 
