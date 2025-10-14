@@ -25,7 +25,7 @@ describe("useAudioManager", () => {
   beforeEach(() => {
     audioInstances = [];
 
-    global.Audio = class MockAudio {
+    const MockAudioClass = class MockAudio {
       src: string = "";
       currentTime: number = 0;
       duration: number = 0;
@@ -36,8 +36,9 @@ describe("useAudioManager", () => {
 
       constructor(src?: string) {
         if (src) this.src = src;
-        audioInstances.push(this);
-        mockAudio = this;
+        const instance = this as unknown as MockAudioInstance;
+        audioInstances.push(instance);
+        mockAudio = instance;
       }
 
       addEventListener(event: string, handler: EventHandler) {
@@ -62,12 +63,14 @@ describe("useAudioManager", () => {
         this.paused = true;
       }
 
-      trigger(event: string, data?: any) {
+      trigger(event: string, data?: unknown) {
         if (this.listeners[event]) {
           this.listeners[event].forEach(handler => handler(data));
         }
       }
-    } as any;
+    };
+    
+    global.Audio = MockAudioClass as unknown as typeof Audio;
   });
 
   afterEach(() => {
@@ -301,7 +304,7 @@ describe("useAudioManager", () => {
   });
 
   it("should set error when play fails", async () => {
-    global.Audio = class MockAudioFail {
+    const MockAudioFailClass = class MockAudioFail {
       src: string = "";
       currentTime: number = 0;
       duration: number = 0;
@@ -310,8 +313,9 @@ describe("useAudioManager", () => {
 
       constructor(src?: string) {
         if (src) this.src = src;
-        audioInstances.push(this);
-        mockAudio = this;
+        const instance = this as unknown as MockAudioInstance;
+        audioInstances.push(instance);
+        mockAudio = instance;
       }
 
       addEventListener(event: string, handler: EventHandler) {
@@ -330,7 +334,9 @@ describe("useAudioManager", () => {
       pause() {
         this.paused = true;
       }
-    } as unknown as typeof Audio;
+    };
+    
+    global.Audio = MockAudioFailClass as unknown as typeof Audio;
 
     const { result } = renderHook(() => useAudioManager());
 
