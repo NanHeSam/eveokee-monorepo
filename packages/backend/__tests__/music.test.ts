@@ -146,6 +146,108 @@ describe("Music Generation Flow", () => {
       expect(result.success).toBe(true);
       expect(result.remainingQuota).toBe(4); // 25 - 21 = 4
     });
+
+    it("should detect pending music for a diary", async () => {
+      const t = createTestEnvironment();
+      const { userId } = await createTestUser(t);
+
+      // Create a diary
+      const diaryId = await createTestDiary(t, userId, "Test diary content");
+
+      // Create pending music records for this diary
+      await t.mutation(internal.music.createPendingMusicRecords, {
+        diaryId,
+        userId,
+        taskId: "existing-pending-task",
+        prompt: "test",
+        model: "test",
+        trackCount: 2,
+      });
+
+      // Check that pending music exists for this diary
+      const pendingMusic = await t.run(async (ctx) => {
+        // @ts-expect-error - Convex index types are runtime-validated
+        return await ctx.db
+          .query("music")
+          .withIndex("by_diaryId", (q) => q.eq("diaryId", diaryId))
+          .filter((q) => q.eq(q.field("status"), "pending"))
+          .first();
+      });
+
+      expect(pendingMusic).toBeDefined();
+      expect(pendingMusic?.status).toBe("pending");
+      expect(pendingMusic?.diaryId).toBe(diaryId);
+    });
+
+    it("should not find pending music when all music is completed", async () => {
+      const t = createTestEnvironment();
+      const { userId } = await createTestUser(t);
+
+      // Create a diary
+      const diaryId = await createTestDiary(t, userId, "Test diary content");
+
+      // Create completed music records
+      await t.run(async (ctx) => {
+        const now = Date.now();
+        await ctx.db.insert("music", {
+          userId,
+          diaryId,
+          taskId: "completed-task",
+          musicIndex: 0,
+          status: "ready",
+          audioId: "completed-audio-1",
+          title: "Completed Track",
+          createdAt: now,
+          updatedAt: now,
+        });
+      });
+
+      // Check that no pending music exists
+      const pendingMusic = await t.run(async (ctx) => {
+        // @ts-expect-error - Convex index types are runtime-validated
+        return await ctx.db
+          .query("music")
+          .withIndex("by_diaryId", (q) => q.eq("diaryId", diaryId))
+          .filter((q) => q.eq(q.field("status"), "pending"))
+          .first();
+      });
+
+      expect(pendingMusic).toBeNull();
+    });
+
+    it("should not find pending music when music generation failed", async () => {
+      const t = createTestEnvironment();
+      const { userId } = await createTestUser(t);
+
+      // Create a diary
+      const diaryId = await createTestDiary(t, userId, "Test diary content");
+
+      // Create failed music records
+      await t.run(async (ctx) => {
+        const now = Date.now();
+        await ctx.db.insert("music", {
+          userId,
+          diaryId,
+          taskId: "failed-task",
+          musicIndex: 0,
+          status: "failed",
+          createdAt: now,
+          updatedAt: now,
+        });
+      });
+
+      // Check that no pending music exists
+      const pendingMusic = await t.run(async (ctx) => {
+        // @ts-expect-error - Convex index types are runtime-validated
+        return await ctx.db
+          .query("music")
+          .withIndex("by_diaryId", (q) => q.eq("diaryId", diaryId))
+          .filter((q) => q.eq(q.field("status"), "pending"))
+          .first();
+      });
+
+      expect(pendingMusic).toBeNull();
+    });
   });
 
   describe("createPendingMusicRecords", () => {

@@ -55,6 +55,22 @@ export const startDiaryMusicGeneration = mutation({
       diaryId = _id;
     }
 
+    // Check if there's already a pending music generation for this diary
+    const pendingMusic = await ctx.db
+      .query("music")
+      .withIndex("by_diaryId", (q) => q.eq("diaryId", diaryId))
+      .filter((q) => q.eq(q.field("status"), "pending"))
+      .first();
+
+    if (pendingMusic) {
+      return {
+        diaryId,
+        success: false,
+        reason: "Music generation already in progress for this diary",
+        remainingQuota: undefined,
+      };
+    }
+
     // Check usage limit and increment counter for music generation
     const usageResult = await ctx.runMutation(
       internal.usage.recordMusicGeneration,
