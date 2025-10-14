@@ -14,8 +14,8 @@
 - Type checking defers to Convex runtime types; no dedicated `tsc` step is provided.
 
 ## Testing Guidance
-- Use the shared `createMockCtx` helper from `convex/__tests__/testUtils.ts` to stub mutation/query contexts.
-- Keep tests colocated under `convex/__tests__`; follow the naming convention `<module>.test.ts`.
+- Use the shared `createMockCtx` helper from `__tests__/testUtils.ts` to stub mutation/query contexts.
+- Keep tests under `__tests__/` at the package root (not inside `convex/` to avoid deployment); follow the naming convention `<module>.test.ts`.
 - Mock third-party APIs (OpenAI, Clerk, Svix) and timers—do not hit external services during tests.
 - When covering actions with side effects (`emailNotify`, `musicActions`), assert on mocked clients rather than Convex logs.
 

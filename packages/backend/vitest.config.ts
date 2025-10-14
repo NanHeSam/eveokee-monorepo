@@ -6,7 +6,7 @@ export default defineConfig({
     globals: true,
     include: [
       "convex/**/*.test.{ts,tsx}",
-      "convex/**/__tests__/**/*.{test,spec}.{ts,tsx}",
+      "__tests__/**/*.{test,spec}.{ts,tsx}",
     ],
     exclude: ["convex/_generated/**", "node_modules/**"],
     coverage: {
