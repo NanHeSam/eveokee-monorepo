@@ -7,12 +7,17 @@
   "scripts": {
     "dev": "npx convex dev",
     "deploy": "npx convex deploy",
-    "type-check": "echo 'Skipping type-check for backend (requires Convex runtime types)'"
+    "type-check": "echo 'Skipping type-check for backend (requires Convex runtime types)'",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@clerk/backend": "^2.17.2",
     "convex": "^1.27.3",
     "openai": "^4.79.0",
     "svix": "^1.76.1"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.4"
   }
 }

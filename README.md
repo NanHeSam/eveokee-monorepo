@@ -45,7 +45,27 @@ This monorepo contains the Diary Vibes mobile app, web app, and shared Convex ba
 - `pnpm build:mobile` - Build mobile app (via EAS)
 - `pnpm lint` - Lint all packages
 - `pnpm type-check` - Type check all packages
+- `pnpm test` - Run all package test suites via Turbo
+- `pnpm test:backend` - Run backend tests only
+- `pnpm test:web` - Run web tests only
+- `pnpm test:mobile` - Run the Expo Jest suite only
 - `pnpm clean` - Clean all build artifacts and node_modules
+
+## Testing
+
+Vitest is configured for both the Convex backend and the Vite web app, and
+Jest powers the React Native test harness.
+
+- Run `pnpm test` to execute every configured suite across the workspace. Turbo
+  handles caching and parallelism.
+- Use `pnpm test:backend` to run Convex unit tests in isolation.
+- Use `pnpm test:web` to run the web app's Vitest + Testing Library suite.
+- Use `pnpm test:mobile` to execute the mobile app's Jest + Testing Library
+  suite.
+
+The first run may need to install dev dependencies. If your environment blocks
+scoped npm packages, mirror the dependencies into a registry you can access or
+install them locally before running the tests.
 
 ## Deployment
 
