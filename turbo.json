@@ -12,6 +12,10 @@
     "type-check": {
       "dependsOn": ["^build"]
     },
+    "test": {
+      "dependsOn": ["^test"],
+      "outputs": ["coverage/**", "test-results/**"]
+    },
     "dev": {
       "cache": false,
       "persistent": true
