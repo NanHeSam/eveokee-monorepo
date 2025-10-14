@@ -2,9 +2,25 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { useAudioManager } from "../useAudioManager";
 
+type EventHandler = (data?: unknown) => void;
+
+interface MockAudioInstance {
+  src: string;
+  currentTime: number;
+  duration: number;
+  paused: boolean;
+  ended: boolean;
+  volume: number;
+  addEventListener: (event: string, handler: EventHandler) => void;
+  removeEventListener: (event: string, handler: EventHandler) => void;
+  play: () => Promise<void>;
+  pause: () => void;
+  trigger: (event: string, data?: unknown) => void;
+}
+
 describe("useAudioManager", () => {
-  let mockAudio: any;
-  let audioInstances: any[] = [];
+  let mockAudio: MockAudioInstance | null;
+  let audioInstances: MockAudioInstance[] = [];
 
   beforeEach(() => {
     audioInstances = [];
@@ -16,7 +32,7 @@ describe("useAudioManager", () => {
       paused: boolean = true;
       ended: boolean = false;
       volume: number = 1;
-      private listeners: { [key: string]: Function[] } = {};
+      private listeners: { [key: string]: EventHandler[] } = {};
 
       constructor(src?: string) {
         if (src) this.src = src;
@@ -24,14 +40,14 @@ describe("useAudioManager", () => {
         mockAudio = this;
       }
 
-      addEventListener(event: string, handler: Function) {
+      addEventListener(event: string, handler: EventHandler) {
         if (!this.listeners[event]) {
           this.listeners[event] = [];
         }
         this.listeners[event].push(handler);
       }
 
-      removeEventListener(event: string, handler: Function) {
+      removeEventListener(event: string, handler: EventHandler) {
         if (this.listeners[event]) {
           this.listeners[event] = this.listeners[event].filter(h => h !== handler);
         }
@@ -290,7 +306,7 @@ describe("useAudioManager", () => {
       currentTime: number = 0;
       duration: number = 0;
       paused: boolean = true;
-      private listeners: { [key: string]: Function[] } = {};
+      private listeners: { [key: string]: EventHandler[] } = {};
 
       constructor(src?: string) {
         if (src) this.src = src;
@@ -298,7 +314,7 @@ describe("useAudioManager", () => {
         mockAudio = this;
       }
 
-      addEventListener(event: string, handler: Function) {
+      addEventListener(event: string, handler: EventHandler) {
         if (!this.listeners[event]) {
           this.listeners[event] = [];
         }
@@ -314,7 +330,7 @@ describe("useAudioManager", () => {
       pause() {
         this.paused = true;
       }
-    } as any;
+    } as unknown as typeof Audio;
 
     const { result } = renderHook(() => useAudioManager());
 

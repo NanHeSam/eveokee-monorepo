@@ -5,8 +5,22 @@ import { useAudioManager } from "../../hooks/useAudioManager";
 
 vi.mock("../../hooks/useAudioManager");
 
+interface MockAudioManager {
+  currentAudioId: string | null;
+  isPlaying: boolean;
+  isLoading: boolean;
+  error: string | null;
+  currentTime: number;
+  duration: number;
+  playAudio: ReturnType<typeof vi.fn>;
+  pauseAudio: ReturnType<typeof vi.fn>;
+  toggleAudio: ReturnType<typeof vi.fn>;
+  seekTo: ReturnType<typeof vi.fn>;
+  isCurrentAudio: ReturnType<typeof vi.fn>;
+}
+
 describe("MusicPlayer", () => {
-  let mockAudioManager: any;
+  let mockAudioManager: MockAudioManager;
 
   beforeEach(() => {
     mockAudioManager = {
@@ -23,7 +37,7 @@ describe("MusicPlayer", () => {
       isCurrentAudio: vi.fn((id: string) => id === mockAudioManager.currentAudioId),
     };
 
-    (useAudioManager as any).mockReturnValue(mockAudioManager);
+    (useAudioManager as ReturnType<typeof vi.fn>).mockReturnValue(mockAudioManager);
   });
 
   it("should render play button when not playing", () => {
