@@ -399,12 +399,14 @@ describe("MusicPlayer", () => {
     });
 
     fireEvent.mouseDown(progressBar, { clientX: 0 });
-    fireEvent.mouseUp(progressBar, { clientX: 250 });
+    // Trigger global mousemove event to update drag progress beyond bounds
+    fireEvent.mouseMove(document, { clientX: 250 });
+    // Trigger global mouseup event to complete the drag
+    fireEvent.mouseUp(document);
 
     const calls = mockAudioManager.seekTo.mock.calls;
-    if (calls.length > 0) {
-      const lastCall = calls[calls.length - 1][0];
-      expect(lastCall).toBeLessThanOrEqual(100);
-    }
+    expect(calls.length).toBeGreaterThan(0);
+    const lastCall = calls[calls.length - 1][0];
+    expect(lastCall).toBe(100);
   });
 });
