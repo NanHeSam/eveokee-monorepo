@@ -27,7 +27,8 @@
   },
   "devDependencies": {
     "turbo": "^2.0.0",
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "convex": "^1.27.3"
   },
   "engines": {
     "node": ">=20",

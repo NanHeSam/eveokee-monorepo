@@ -11,6 +11,9 @@ importers:
       concurrently:
         specifier: ^8.2.2
         version: 8.2.2
+      convex:
+        specifier: ^1.27.3
+        version: 1.27.5(@clerk/clerk-react@5.51.0)(react@19.1.0)
       turbo:
         specifier: ^2.0.0
         version: 2.5.8
