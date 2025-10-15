@@ -13,6 +13,10 @@ build/
 .expo/
 .next/
 
+# Expo prebuild native projects
+apps/mobile/android/*
+apps/mobile/ios/*
+
 # OS
 .DS_Store
 Thumbs.db

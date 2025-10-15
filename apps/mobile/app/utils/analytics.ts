@@ -1,4 +1,26 @@
+import { Platform } from 'react-native';
+import type PostHog from 'posthog-react-native';
 import { posthogClient } from '../providers/PostHogProvider';
+
+type CapturePayload = Record<string, unknown>;
+type PostHogCaptureProperties = NonNullable<Parameters<PostHog['capture']>[1]>;
+
+export const captureEvent = <T extends CapturePayload>(
+  eventName: string,
+  params?: T
+) => {
+  if (!posthogClient) {
+    return;
+  }
+
+  const payload = {
+    ...(params ?? {}),
+    client: 'mobile',
+    client_platform: Platform.OS,
+  } as PostHogCaptureProperties;
+
+  posthogClient.capture(eventName, payload);
+};
 
 /**
  * Analytics utility for tracking user events and behaviors
@@ -10,19 +32,19 @@ import { posthogClient } from '../providers/PostHogProvider';
 // ============================================================================
 
 export const trackAppOpen = () => {
-  posthogClient?.capture('app_opened', {
+  captureEvent('app_opened', {
     timestamp: new Date().toISOString(),
   });
 };
 
 export const trackAppBackground = () => {
-  posthogClient?.capture('app_backgrounded', {
+  captureEvent('app_backgrounded', {
     timestamp: new Date().toISOString(),
   });
 };
 
 export const trackAppCrash = (error: Error) => {
-  posthogClient?.capture('app_crashed', {
+  captureEvent('app_crashed', {
     error_message: error.message,
     error_stack: error.stack,
   });
@@ -37,7 +59,7 @@ export const trackDiaryCreated = (params: {
   contentLength: number;
   hasTitle: boolean;
 }) => {
-  posthogClient?.capture('diary_created', params);
+  captureEvent('diary_created', params);
 };
 
 export const trackDiaryUpdated = (params: {
@@ -45,18 +67,18 @@ export const trackDiaryUpdated = (params: {
   contentLength: number;
   hasTitle: boolean;
 }) => {
-  posthogClient?.capture('diary_updated', params);
+  captureEvent('diary_updated', params);
 };
 
 export const trackDiaryDeleted = (params: { diaryId: string }) => {
-  posthogClient?.capture('diary_deleted', params);
+  captureEvent('diary_deleted', params);
 };
 
 export const trackDiaryViewed = (params: {
   diaryId: string;
   source: 'calendar' | 'list' | 'search';
 }) => {
-  posthogClient?.capture('diary_viewed', params);
+  captureEvent('diary_viewed', params);
 };
 
 // ============================================================================
@@ -67,7 +89,7 @@ export const trackMusicGenerationStarted = (params: {
   diaryId: string;
   contentLength: number;
 }) => {
-  posthogClient?.capture('music_generation_started', params);
+  captureEvent('music_generation_started', params);
 };
 
 export const trackMusicGenerationCompleted = (params: {
@@ -75,14 +97,14 @@ export const trackMusicGenerationCompleted = (params: {
   musicId: string;
   durationMs: number;
 }) => {
-  posthogClient?.capture('music_generation_completed', params);
+  captureEvent('music_generation_completed', params);
 };
 
 export const trackMusicGenerationFailed = (params: {
   diaryId: string;
   error: string;
 }) => {
-  posthogClient?.capture('music_generation_failed', params);
+  captureEvent('music_generation_failed', params);
 };
 
 // ============================================================================
@@ -94,7 +116,7 @@ export const trackMusicPlayed = (params: {
   diaryId?: string;
   source: 'diary' | 'playlist' | 'mini_player' | 'full_player';
 }) => {
-  posthogClient?.capture('music_played', params);
+  captureEvent('music_played', params);
 };
 
 export const trackMusicPaused = (params: {
@@ -102,14 +124,14 @@ export const trackMusicPaused = (params: {
   playbackPositionMs: number;
   totalDurationMs: number;
 }) => {
-  posthogClient?.capture('music_paused', params);
+  captureEvent('music_paused', params);
 };
 
 export const trackMusicCompleted = (params: {
   musicId: string;
   totalDurationMs: number;
 }) => {
-  posthogClient?.capture('music_completed', params);
+  captureEvent('music_completed', params);
 };
 
 export const trackMusicSkipped = (params: {
@@ -118,7 +140,7 @@ export const trackMusicSkipped = (params: {
   totalDurationMs: number;
   direction: 'next' | 'previous';
 }) => {
-  posthogClient?.capture('music_skipped', params);
+  captureEvent('music_skipped', params);
 };
 
 // ============================================================================
@@ -129,7 +151,7 @@ export const trackPaywallViewed = (params: {
   source: 'music_generation' | 'settings' | 'onboarding';
   reason?: string;
 }) => {
-  posthogClient?.capture('paywall_viewed', params);
+  captureEvent('paywall_viewed', params);
 };
 
 export const trackSubscriptionStarted = (params: {
@@ -137,14 +159,14 @@ export const trackSubscriptionStarted = (params: {
   platform: 'apple' | 'google' | 'web';
   price?: number;
 }) => {
-  posthogClient?.capture('subscription_started', params);
+  captureEvent('subscription_started', params);
 };
 
 export const trackSubscriptionCancelled = (params: {
   tier: string;
   platform: 'apple' | 'google' | 'web';
 }) => {
-  posthogClient?.capture('subscription_cancelled', params);
+  captureEvent('subscription_cancelled', params);
 };
 
 export const trackUsageLimitReached = (params: {
@@ -152,7 +174,7 @@ export const trackUsageLimitReached = (params: {
   currentUsage: number;
   limit: number;
 }) => {
-  posthogClient?.capture('usage_limit_reached', params);
+  captureEvent('usage_limit_reached', params);
 };
 
 // ============================================================================
@@ -163,22 +185,22 @@ export const trackCalendarDateSelected = (params: {
   date: string;
   hasDiary: boolean;
 }) => {
-  posthogClient?.capture('calendar_date_selected', params);
+  captureEvent('calendar_date_selected', params);
 };
 
 export const trackPlayerExpanded = () => {
-  posthogClient?.capture('player_expanded');
+  captureEvent('player_expanded');
 };
 
 export const trackPlayerCollapsed = () => {
-  posthogClient?.capture('player_collapsed');
+  captureEvent('player_collapsed');
 };
 
 export const trackSettingsChanged = (params: {
   setting: string;
   value: any;
 }) => {
-  posthogClient?.capture('settings_changed', params);
+  captureEvent('settings_changed', params);
 };
 
 // ============================================================================
@@ -186,23 +208,23 @@ export const trackSettingsChanged = (params: {
 // ============================================================================
 
 export const trackSignUpStarted = (params: { method: 'email' | 'oauth' }) => {
-  posthogClient?.capture('signup_started', params);
+  captureEvent('signup_started', params);
 };
 
 export const trackSignUpCompleted = (params: { method: 'email' | 'oauth' }) => {
-  posthogClient?.capture('signup_completed', params);
+  captureEvent('signup_completed', params);
 };
 
 export const trackSignInStarted = (params: { method: 'email' | 'oauth' }) => {
-  posthogClient?.capture('signin_started', params);
+  captureEvent('signin_started', params);
 };
 
 export const trackSignInCompleted = (params: { method: 'email' | 'oauth' }) => {
-  posthogClient?.capture('signin_completed', params);
+  captureEvent('signin_completed', params);
 };
 
 export const trackSignOut = () => {
-  posthogClient?.capture('signout');
+  captureEvent('signout');
 };
 
 // ============================================================================
@@ -215,7 +237,7 @@ export const trackError = (params: {
   error_stack?: string;
   context?: Record<string, any>;
 }) => {
-  posthogClient?.capture('error', params);
+  captureEvent('error', params);
 };
 
 // ============================================================================
@@ -226,7 +248,7 @@ export const trackFeatureUsed = (params: {
   feature_name: string;
   context?: Record<string, any>;
 }) => {
-  posthogClient?.capture('feature_used', params);
+  captureEvent('feature_used', params);
 };
 
 // ============================================================================

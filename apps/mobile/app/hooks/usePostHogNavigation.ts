@@ -1,6 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { NavigationContainerRef } from '@react-navigation/native';
+import { Platform } from 'react-native';
 import { posthogClient } from '../providers/PostHogProvider';
+import { captureEvent } from '../utils/analytics';
+
+const SCREEN_PROPERTIES = {
+  client: 'mobile',
+  client_platform: Platform.OS,
+};
 
 /**
  * Hook to track screen views and navigation time with PostHog
@@ -36,14 +43,14 @@ export const usePostHogNavigation = (
       if (previousRouteName !== currentRouteName && currentRouteName) {
         if (previousRouteName && screenStartTimeRef.current) {
           const timeSpent = Date.now() - screenStartTimeRef.current;
-          posthogClient.capture('screen_time', {
+          captureEvent('screen_time', {
             screen_name: previousRouteName,
             time_spent_ms: timeSpent,
             time_spent_seconds: Math.round(timeSpent / 1000),
           });
         }
 
-        posthogClient.screen(currentRouteName);
+        posthogClient.screen(currentRouteName, SCREEN_PROPERTIES);
 
         routeNameRef.current = currentRouteName;
         screenStartTimeRef.current = Date.now();
@@ -57,7 +64,7 @@ export const usePostHogNavigation = (
       if (initialRoute?.name) {
         routeNameRef.current = initialRoute.name;
         screenStartTimeRef.current = Date.now();
-        posthogClient.screen(initialRoute.name);
+        posthogClient.screen(initialRoute.name, SCREEN_PROPERTIES);
       }
 
       unsubscribe = navigation.addListener('state', trackScreenTransition);
@@ -81,7 +88,7 @@ export const usePostHogNavigation = (
 
       if (routeNameRef.current && screenStartTimeRef.current) {
         const timeSpent = Date.now() - screenStartTimeRef.current;
-        posthogClient.capture('screen_time', {
+        captureEvent('screen_time', {
           screen_name: routeNameRef.current,
           time_spent_ms: timeSpent,
           time_spent_seconds: Math.round(timeSpent / 1000),

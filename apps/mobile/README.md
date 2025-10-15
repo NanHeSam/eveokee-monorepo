@@ -6,7 +6,7 @@ This project uses a custom development client in order to support native modules
 
 1. Install dependencies
    ```bash
-   npm install
+   pnpm install
    ```
 
 2. Build and install a development client (required once per platform or after native changes)
@@ -18,7 +18,7 @@ This project uses a custom development client in order to support native modules
 
 3. Start the Metro bundler
    ```bash
-   npm run start
+   pnpm run start
    ```
 
 4. Open the app through the development client on your device or simulator.
