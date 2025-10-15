@@ -12,12 +12,14 @@ import { Id } from '@diary-vibes/backend/convex/_generated/dataModel';
 import { format } from 'date-fns';
 import TrackPlayer from 'react-native-track-player';
 import { useTrackPlayerStore } from '../store/useTrackPlayerStore';
+import { useShareMusic } from '../hooks/useShareMusic';
 
 export const PlaylistScreen = () => {
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
   const musicDocs = useQuery(api.music.listPlaylistMusic);
   const softDeleteMusic = useMutation(api.music.softDeleteMusic);
+  const { shareMusic } = useShareMusic();
 
   const items = useMemo(() => (musicDocs ? mapMusicDocsToItems(musicDocs) : []), [musicDocs]);
 
@@ -114,6 +116,7 @@ export const PlaylistScreen = () => {
                   }
                 }}
                 onDelete={() => handleDeleteMusic(item.id, item.title)}
+                onShare={() => shareMusic(item.id, item.title)}
               />
             )}
           />
@@ -147,14 +150,29 @@ const PlaylistRow = ({
   colors,
   onPress,
   onDelete,
+  onShare,
 }: {
   item: PlaylistItem;
   colors: ReturnType<typeof useThemeColors>;
   onPress: () => void;
   onDelete: () => void;
+  onShare: () => void;
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const hasContent = !!item.diaryContent;
+
+  const handleLongPress = () => {
+    if (item.canPlay) {
+      Alert.alert(
+        'Share Music',
+        `Share "${item.title}" with others?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Share', onPress: onShare },
+        ]
+      );
+    }
+  };
 
   const renderRightActions = (progress: Animated.AnimatedAddition<number>, dragX: Animated.AnimatedAddition<number>) => {
     const opacity = dragX.interpolate({
@@ -185,6 +203,7 @@ const PlaylistRow = ({
           onPress();
         }
       }}
+      onLongPress={handleLongPress}
       disabled={!item.canPlay}
     >
       {item.imageUrl ? (

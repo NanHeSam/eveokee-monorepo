@@ -6,6 +6,7 @@ import SignUp from "@/pages/SignUp";
 import TermsAndConditions from "@/pages/TermsAndConditions";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Blog from "./pages/Blog";
+import Share from "./pages/Share";
 
 export default function App() {
   // Initialize theme globally
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<Blog />} />
+          <Route path="/share/:shareId" element={<Share />} />
           <Route path="/other" element={<div className="text-center text-xl">Other Page - Coming Soon</div>} />
         </Routes>
       </Router>
