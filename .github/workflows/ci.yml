@@ -83,8 +83,7 @@ jobs:
           path: apps/web/dist
 
   build-mobile-preview:
-    needs: [detect-changes, lint-and-type-check]
-    if: needs.detect-changes.outputs.mobile == 'true' && github.event_name == 'pull_request'
+    if: false  # Disabled - trigger manually via workflow_dispatch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -105,8 +104,7 @@ jobs:
         run: eas build --platform ios --profile preview --non-interactive --no-wait
 
   build-mobile-production:
-    needs: [detect-changes, lint-and-type-check]
-    if: needs.detect-changes.outputs.mobile == 'true' && github.ref == 'refs/heads/main'
+    if: false  # Disabled - trigger manually via workflow_dispatch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
