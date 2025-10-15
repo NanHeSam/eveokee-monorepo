@@ -113,4 +113,19 @@ export default defineSchema({
     email: v.string(),
   })
     .index("by_email", ["email"]),
+
+  sharedMusic: defineTable({
+    musicId: v.id("music"),
+    userId: v.id("users"),
+    shareId: v.string(),
+    viewCount: v.number(),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_shareId", ["shareId"])
+    .index("by_musicId", ["musicId"])
+    .index("by_userId", ["userId"])
+    .index("by_isActive", ["isActive"])
+    .index("by_userId_and_isActive", ["userId", "isActive"]),
 });

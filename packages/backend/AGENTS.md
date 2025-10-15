@@ -27,5 +27,7 @@
 - HTTP endpoints (`http.ts`) should validate payloads defensively; mirror changes in clients and tests.
 
 ## Environment & Secrets
-- Local dev uses `.env.local` picked up by Convex CLI; ensure required secrets (Clerk, OpenAI, Svix) are available before calling dependent functions.
+- Local dev uses `.env.local` picked up by Convex CLI; ensure required secrets (Clerk, OpenAI, Suno, SHARE_BASE_URL) are available before calling dependent functions.
 - Production deploys require the `CONVEX_DEPLOY_KEY`; coordinate with ops before rotating keys or adding new secrets.
+- See [`ENV_VARS.md`](docs/ENV_VARS.md) for a complete list of required environment variables and setup instructions.
+- **Critical:** Always set `SHARE_BASE_URL` to your production domain in the Convex dashboard. The code has a fallback to `https://diaryvibes.com`, but this should never be used in production as it will generate incorrect share links.

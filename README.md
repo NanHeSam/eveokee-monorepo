@@ -80,10 +80,40 @@ install them locally before running the tests.
 - Requires `EXPO_TOKEN` GitHub secret
 
 ### Convex Backend
-- Automatic deployment on backend changes
+- Automatic deployment on backend changes via GitHub Actions
 - Requires `CONVEX_DEPLOY_KEY` GitHub secret
+- **Important:** Set all environment variables in the [Convex dashboard](https://dashboard.convex.dev) under Settings → Environment Variables before deploying
+  - `SHARE_BASE_URL` - Your production domain (e.g., `https://yourdomain.com`) for generating share links
+  - `CLERK_WEBHOOK_SIGNING_SECRET` - From Clerk dashboard
+  - `CLERK_FRONTEND_API_URL` - Your Clerk domain
+  - `OPENAI_API_KEY`, `SUNO_API_KEY`, `SUNO_CALLBACK_URL` - For AI music generation
+- See [`packages/backend/ENV_VARS.md`](packages/backend/docs/ENV_VARS.md) for detailed documentation
 
 ## Environment Variables
+
+### Convex Backend (`packages/backend/.env.local`)
+
+The Convex backend requires several environment variables for third-party integrations. See [`packages/backend/ENV_VARS.md`](packages/backend/docs/ENV_VARS.md) for a complete reference.
+
+**Critical Variables:**
+```bash
+# Base URL for generating shareable music links
+# Set this to your production domain in the Convex dashboard
+SHARE_BASE_URL=https://yourdomain.com
+
+# Authentication
+CLERK_WEBHOOK_SIGNING_SECRET=
+CLERK_FRONTEND_API_URL=
+
+# AI & Music Generation
+OPENAI_API_KEY=
+SUNO_API_KEY=
+SUNO_CALLBACK_URL=
+```
+
+**For local development:** Create `.env.local` in the repo root with the above variables. The Convex CLI will automatically load it.
+
+**For production:** Set all variables in the [Convex dashboard](https://dashboard.convex.dev) under Settings → Environment Variables. **Do not rely on hardcoded defaults.**
 
 ### Web App (`apps/web/.env.local`)
 ```

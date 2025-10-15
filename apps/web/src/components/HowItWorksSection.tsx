@@ -596,7 +596,7 @@ export default function HowItWorksSection() {
         </SignedIn>
 
         {/* Testimonials Carousel (shown for both authenticated and non-authenticated users) */}
-        <div className="relative">
+        <div className="relative mt-24">
           <div className="overflow-hidden rounded-2xl">
             <div
               className="flex transition-transform duration-500 ease-out"

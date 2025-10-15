@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Calendar, Clock, User, Search } from 'lucide-react';
-import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import BlogPost from '@/components/BlogPost';
 import { BlogService, BlogPost as BlogPostType } from '@/lib/blog-service';
@@ -43,8 +42,7 @@ export default function Blog() {
   if (slug) {
     if (loading) {
       return (
-        <div className="min-h-screen">
-          <Navigation />
+        <>
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
             <div className="animate-pulse">
               <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mx-auto mb-4"></div>
@@ -52,14 +50,13 @@ export default function Blog() {
             </div>
           </div>
           <Footer />
-        </div>
+        </>
       );
     }
     
     if (!currentPost) {
       return (
-        <div className="min-h-screen">
-          <Navigation />
+        <>
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Post Not Found</h1>
             <p className="text-gray-600 dark:text-gray-300 mb-8">The blog post you're looking for doesn't exist.</p>
@@ -71,16 +68,15 @@ export default function Blog() {
             </Link>
           </div>
           <Footer />
-        </div>
+        </>
       );
     }
 
     return (
-      <div className="min-h-screen">
-        <Navigation />
+      <>
         <BlogPost post={currentPost} onBack={handleBackToBlog} />
         <Footer />
-      </div>
+      </>
     );
   }
 
@@ -101,8 +97,7 @@ export default function Blog() {
 
   if (loading) {
     return (
-      <div className="min-h-screen">
-        <Navigation />
+      <>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="animate-pulse space-y-8">
             <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mx-auto"></div>
@@ -120,14 +115,12 @@ export default function Blog() {
           </div>
         </div>
         <Footer />
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen">
-      <Navigation />
-      
+    <>
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-accent-mint/10 to-accent-coral/10 dark:from-accent-mint/5 dark:to-accent-coral/5 py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -228,6 +221,6 @@ export default function Blog() {
       </section>
 
       <Footer />
-    </div>
+    </>
   );
 }

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, Text, Image, Pressable, ScrollView, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, Dimensions, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { Easing, FadeIn, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import TrackPlayer, { State, usePlaybackState } from 'react-native-track-player';
@@ -7,6 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTrackPlayerStore } from '../../store/useTrackPlayerStore';
 import { useThemeColors } from '../../theme/useThemeColors';
+import { useShareMusic } from '../../hooks/useShareMusic';
+import { Id } from '@diary-vibes/backend/convex/_generated/dataModel';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -25,6 +27,7 @@ export const FullPlayer = () => {
   const hideFullPlayer = useTrackPlayerStore((state) => state.hideFullPlayer);
   const setCurrentTrack = useTrackPlayerStore((state) => state.setCurrentTrack);
   const [progressBarWidth, setProgressBarWidth] = useState(0);
+  const { shareMusic } = useShareMusic();
 
   const togglePlayback = useCallback(async () => {
     try {
@@ -100,7 +103,25 @@ export const FullPlayer = () => {
         <Text className="text-sm font-medium" style={{ color: colors.textSecondary }}>
           Now Playing
         </Text>
-        <View className="w-10" />
+        <Pressable 
+          onPress={() => {
+            if (!currentTrack) return;
+            Alert.alert(
+              'Share Music',
+              'Choose how to share this music',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Share Link', onPress: () => { void shareMusic(currentTrack.id as Id<"music">, currentTrack.title) } },
+                { text: 'Share Artwork Card', onPress: () => {
+                  Alert.alert('Coming Soon', 'Artwork card sharing will be available soon!');
+                }},
+              ]
+            );
+          }}
+          className="h-10 w-10 items-center justify-center"
+        >
+          <Ionicons name="share-social-outline" size={24} color={colors.textPrimary} />
+        </Pressable>
       </View>
 
       {/* Artwork */}
