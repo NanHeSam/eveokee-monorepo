@@ -1,4 +1,3 @@
-import Navigation from '../components/Navigation';
 import HeroSection from '../components/HeroSection';
 import DemoPreviewSection from '../components/DemoPreviewSection';
 import HowItWorksSection from '../components/HowItWorksSection';
@@ -8,8 +7,7 @@ import Footer from '../components/Footer';
 
 export default function Home() {
   return (
-    <div className="min-h-screen">
-      <Navigation />
+    <>
       <HeroSection />
       {/* <EmotionalHookSection /> */}
       <DemoPreviewSection />
@@ -17,6 +15,6 @@ export default function Home() {
       <FAQSection />
       <FinalCTASection />
       <Footer />
-    </div>
+    </>
   );
 }

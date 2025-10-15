@@ -1,7 +1,19 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { nanoid } from "nanoid";
 import ensureCurrentUser from "./users";
+
+const SHARE_ID_ALPHABET =
+  "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+const SHARE_ID_LENGTH = 10;
+
+const generateShareId = () => {
+  let id = "";
+  for (let i = 0; i < SHARE_ID_LENGTH; i += 1) {
+    const index = Math.floor(Math.random() * SHARE_ID_ALPHABET.length);
+    id += SHARE_ID_ALPHABET[index];
+  }
+  return id;
+};
 
 export const createShareLink = mutation({
   args: {
@@ -45,7 +57,7 @@ export const createShareLink = mutation({
       };
     }
 
-    const shareId = nanoid(10);
+    const shareId = generateShareId();
     const now = Date.now();
 
     await ctx.db.insert("sharedMusic", {
@@ -102,11 +114,6 @@ export const getSharedMusic = query({
       return { found: false as const };
     }
 
-    await ctx.db.patch(shared._id, {
-      viewCount: shared.viewCount + 1,
-      updatedAt: Date.now(),
-    });
-
     const user = await ctx.db.get(shared.userId);
 
     const imageUrl = music.imageUrl ?? music.metadata?.source_image_url;
@@ -128,7 +135,7 @@ export const getSharedMusic = query({
       audioUrl: audioUrl ?? undefined,
       lyric: music.lyric ?? undefined,
       duration: music.duration ?? undefined,
-      createdAt: music.createdAt,
+      createdAt: shared.createdAt,
       userName: user?.name ?? undefined,
       diaryDate,
     };
@@ -164,6 +171,35 @@ export const deactivateShareLink = mutation({
         updatedAt: Date.now(),
       });
     }
+
+    return null;
+  },
+});
+
+export const recordShareView = mutation({
+  args: {
+    shareId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const shared = await ctx.db
+      .query("sharedMusic")
+      .withIndex("by_shareId", (q) => q.eq("shareId", args.shareId))
+      .first();
+
+    if (!shared || !shared.isActive) {
+      return null;
+    }
+
+    const music = await ctx.db.get(shared.musicId);
+    if (!music || music.deletedAt || music.status !== "ready") {
+      return null;
+    }
+
+    await ctx.db.patch(shared._id, {
+      viewCount: shared.viewCount + 1,
+      updatedAt: Date.now(),
+    });
 
     return null;
   },

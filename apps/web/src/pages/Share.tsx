@@ -1,5 +1,6 @@
+import { useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@diary-vibes/backend";
 import MusicPlayer from "@/components/MusicPlayer";
 import { formatDistanceToNow } from "date-fns";
@@ -7,6 +8,25 @@ import { formatDistanceToNow } from "date-fns";
 export default function Share() {
   const { shareId } = useParams<{ shareId: string }>();
   const sharedMusic = useQuery(api.sharing.getSharedMusic, shareId ? { shareId } : "skip");
+  const recordShareView = useMutation(api.sharing.recordShareView);
+  const hasRecordedViewRef = useRef(false);
+
+  useEffect(() => {
+    hasRecordedViewRef.current = false;
+  }, [shareId]);
+
+  useEffect(() => {
+    if (!shareId || !sharedMusic?.found || hasRecordedViewRef.current) {
+      return;
+    }
+
+    hasRecordedViewRef.current = true;
+
+    recordShareView({ shareId }).catch((error) => {
+      console.error("Error recording share view:", error);
+      hasRecordedViewRef.current = false;
+    });
+  }, [shareId, sharedMusic?.found, recordShareView]);
 
   if (!shareId) {
     return (
@@ -87,25 +107,29 @@ export default function Share() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <div className="text-center mb-8">
-          <a href="/" className="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
-            <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            DiaryVibes
-          </a>
-        </div>
+    <div className="max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
 
         <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden">
           {sharedMusic.imageUrl && (
-            <div className="aspect-square w-full max-w-2xl mx-auto">
+            <div className="relative w-full h-96 overflow-hidden">
               <img
                 src={sharedMusic.imageUrl}
                 alt={sharedMusic.title}
                 className="w-full h-full object-cover"
               />
+              {/* Tainted glass overlay */}
+              <div className="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
+              
+              {/* Lyrics overlay */}
+              {sharedMusic.lyric && (
+                <div className="absolute inset-0 flex items-center justify-center p-8">
+                  <div className="text-center max-h-full overflow-y-auto scrollbar-thin scrollbar-thumb-white/30 scrollbar-track-transparent">
+                    <p className="text-white text-lg sm:text-xl font-medium leading-relaxed whitespace-pre-line drop-shadow-lg">
+                      {sharedMusic.lyric}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -135,7 +159,8 @@ export default function Share() {
               </div>
             )}
 
-            {sharedMusic.lyric && (
+            {/* Show lyrics below if no image, or as a separate section if image exists */}
+            {sharedMusic.lyric && !sharedMusic.imageUrl && (
               <div className="mb-8">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3">
                   Lyrics
@@ -200,6 +225,5 @@ export default function Share() {
           <p>© {new Date().getFullYear()} DiaryVibes. All rights reserved.</p>
         </div>
       </div>
-    </div>
   );
 }
