@@ -11,6 +11,16 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Toast styles for light mode */
+  --toast-bg: #fff;
+  --toast-color: #363636;
+}
+
+.dark {
+  /* Toast styles for dark mode */
+  --toast-bg: #1f2937; /* Tailwind gray-800 */
+  --toast-color: #f3f4f6; /* Tailwind gray-100 */
 }
 
 /* Ensure the entire page uses correct background in both themes and avoids white bars */

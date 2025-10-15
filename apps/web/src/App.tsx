@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 import { useTheme } from "@/hooks/useTheme";
 import LayoutRoute from "@/components/LayoutRoute";
 import Home from "@/pages/Home";
@@ -15,6 +16,22 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: "var(--toast-bg, #fff)",
+            color: "var(--toast-color, #363636)",
+          },
+          success: {
+            iconTheme: {
+              primary: "#10b981",
+              secondary: "#fff",
+            },
+          },
+        }}
+      />
       <Router>
         <Routes>
           {/* Routes with navigation layout */}

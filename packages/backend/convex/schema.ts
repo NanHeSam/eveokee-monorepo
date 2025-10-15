@@ -126,5 +126,6 @@ export default defineSchema({
     .index("by_shareId", ["shareId"])
     .index("by_musicId", ["musicId"])
     .index("by_userId", ["userId"])
-    .index("by_isActive", ["isActive"]),
+    .index("by_isActive", ["isActive"])
+    .index("by_userId_and_isActive", ["userId", "isActive"]),
 });

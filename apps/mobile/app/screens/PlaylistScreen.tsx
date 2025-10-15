@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
 import Reanimated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 
 import { useThemeColors } from '../theme/useThemeColors';
 import { api } from '@diary-vibes/backend';
@@ -116,7 +117,7 @@ export const PlaylistScreen = () => {
                   }
                 }}
                 onDelete={() => handleDeleteMusic(item.id, item.title)}
-                onShare={() => shareMusic(item.id, item.title)}
+                onShare={() => { void shareMusic(item.id, item.title) }}
               />
             )}
           />
@@ -163,6 +164,7 @@ const PlaylistRow = ({
 
   const handleLongPress = () => {
     if (item.canPlay) {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       Alert.alert(
         'Share Music',
         `Share "${item.title}" with others?`,

@@ -4,6 +4,14 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@diary-vibes/backend";
 import MusicPlayer from "@/components/MusicPlayer";
 import { formatDistanceToNow } from "date-fns";
+import toast from "react-hot-toast";
+
+const formatDuration = (seconds?: number): string => {
+  if (!seconds) return "0:00";
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+};
 
 export default function Share() {
   const { shareId } = useParams<{ shareId: string }>();
@@ -76,14 +84,9 @@ export default function Share() {
     );
   }
 
-  const formatDuration = (seconds?: number): string => {
-    if (!seconds) return "0:00";
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  const shareUrl = typeof window !== "undefined" 
+    ? `${window.location.protocol}//${window.location.host}${window.location.pathname}`
+    : "";
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -94,14 +97,19 @@ export default function Share() {
           url: shareUrl,
         });
       } catch (error) {
-        console.error("Error sharing:", error);
+        // User cancelled the share dialog - this is normal behavior
+        if (error instanceof Error && error.name !== "AbortError") {
+          console.error("Error sharing:", error);
+          toast.error("Failed to share");
+        }
       }
     } else {
       try {
         await navigator.clipboard.writeText(shareUrl);
-        alert("Link copied to clipboard!");
+        toast.success("Link copied to clipboard!");
       } catch (error) {
         console.error("Error copying to clipboard:", error);
+        toast.error("Failed to copy link");
       }
     }
   };
@@ -146,7 +154,13 @@ export default function Share() {
               )}
 
               <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">
-                Shared {formatDistanceToNow(new Date(sharedMusic.createdAt), { addSuffix: true })}
+                Shared {(() => {
+                  try {
+                    return formatDistanceToNow(new Date(sharedMusic.createdAt), { addSuffix: true });
+                  } catch {
+                    return 'recently';
+                  }
+                })()}
               </p>
 
               {sharedMusic.audioUrl && (

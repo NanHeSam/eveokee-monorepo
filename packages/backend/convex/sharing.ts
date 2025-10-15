@@ -1,18 +1,38 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import type { MutationCtx } from "./_generated/server";
 import ensureCurrentUser from "./users";
 
 const SHARE_ID_ALPHABET =
   "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 const SHARE_ID_LENGTH = 10;
+const MAX_COLLISION_ATTEMPTS = 5;
 
-const generateShareId = () => {
-  let id = "";
-  for (let i = 0; i < SHARE_ID_LENGTH; i += 1) {
-    const index = Math.floor(Math.random() * SHARE_ID_ALPHABET.length);
-    id += SHARE_ID_ALPHABET[index];
+/**
+ * Generates a unique share ID with collision detection.
+ * Attempts up to MAX_COLLISION_ATTEMPTS times to find an unused ID.
+ * 
+ * @throws {Error} If unable to generate a unique ID after max attempts
+ */
+const generateShareId = async (ctx: MutationCtx): Promise<string> => {
+  for (let attempts = 0; attempts < MAX_COLLISION_ATTEMPTS; attempts += 1) {
+    let id = "";
+    for (let i = 0; i < SHARE_ID_LENGTH; i += 1) {
+      const index = Math.floor(Math.random() * SHARE_ID_ALPHABET.length);
+      id += SHARE_ID_ALPHABET[index];
+    }
+    
+    const existing = await ctx.db
+      .query("sharedMusic")
+      .withIndex("by_shareId", (q) => q.eq("shareId", id))
+      .first();
+    
+    if (!existing) {
+      return id;
+    }
   }
-  return id;
+  
+  throw new Error("Failed to generate unique share ID after multiple attempts");
 };
 
 export const createShareLink = mutation({
@@ -57,7 +77,7 @@ export const createShareLink = mutation({
       };
     }
 
-    const shareId = generateShareId();
+    const shareId = await generateShareId(ctx);
     const now = Date.now();
 
     await ctx.db.insert("sharedMusic", {
@@ -176,6 +196,18 @@ export const deactivateShareLink = mutation({
   },
 });
 
+/**
+ * Records a view for a shared music track.
+ * 
+ * Note: This is a public, unauthenticated mutation that increments view counts.
+ * View counts are approximate and can be inflated through repeated calls.
+ * This prioritizes simplicity for basic engagement metrics.
+ * 
+ * Future improvements could include:
+ * - Rate limiting by IP/session
+ * - Unique visitor tracking via separate table
+ * - Integration with dedicated analytics service (Google Analytics, Mixpanel, etc.)
+ */
 export const recordShareView = mutation({
   args: {
     shareId: v.string(),

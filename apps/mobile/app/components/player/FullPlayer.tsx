@@ -111,7 +111,7 @@ export const FullPlayer = () => {
               'Choose how to share this music',
               [
                 { text: 'Cancel', style: 'cancel' },
-                { text: 'Share Link', onPress: () => shareMusic(currentTrack.id as Id<"music">, currentTrack.title) },
+                { text: 'Share Link', onPress: () => { void shareMusic(currentTrack.id as Id<"music">, currentTrack.title) } },
                 { text: 'Share Artwork Card', onPress: () => {
                   Alert.alert('Coming Soon', 'Artwork card sharing will be available soon!');
                 }},

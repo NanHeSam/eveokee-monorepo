@@ -1,6 +1,9 @@
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet, Dimensions } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { useThemeColors } from '../../theme/useThemeColors';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = Math.min(SCREEN_WIDTH - 32, 400);
 
 interface ArtworkCardProps {
   title: string;
@@ -45,7 +48,7 @@ export const ArtworkCard = ({ title, imageUrl, lyric, shareUrl }: ArtworkCardPro
           </Text>
         </View>
         
-        <View style={styles.footer}>
+        <View style={[styles.footer, { borderTopColor: colors.border }]}>
           <Text style={[styles.branding, { color: colors.textMuted }]}>
             DiaryVibes
           </Text>
@@ -57,7 +60,7 @@ export const ArtworkCard = ({ title, imageUrl, lyric, shareUrl }: ArtworkCardPro
 
 const styles = StyleSheet.create({
   container: {
-    width: 400,
+    width: CARD_WIDTH,
     borderRadius: 24,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -101,7 +104,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(128, 128, 128, 0.2)',
   },
   branding: {
     fontSize: 14,
