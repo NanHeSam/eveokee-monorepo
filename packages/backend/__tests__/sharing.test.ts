@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { api } from "../convex/_generated/api";
-import { Id } from "../convex/_generated/dataModel";
 import {
   createTestEnvironment,
   createTestUser,
@@ -541,6 +540,9 @@ describe("Sharing System", () => {
   });
 
   describe("recordShareView", () => {
+    // Note: The client-side Share page implements session storage to prevent
+    // duplicate view recording within the same browser session, which mitigates
+    // the abuse potential of this public, unauthenticated mutation.
     it("should increment view count for valid share", async () => {
       const t = createTestEnvironment();
       const { clerkId, email, name } = await createTestUser(t);

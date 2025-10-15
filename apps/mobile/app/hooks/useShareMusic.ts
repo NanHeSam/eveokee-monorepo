@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
-import { Share, Alert, Clipboard } from 'react-native';
+import { Share, Alert } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { useMutation } from 'convex/react';
 import { api } from '@diary-vibes/backend';
 import { Id } from '@diary-vibes/backend/convex/_generated/dataModel';
@@ -31,11 +32,11 @@ export const useShareMusic = () => {
   const copyShareLink = useCallback(async (musicId: Id<"music">) => {
     try {
       const result = await createShareLink({ musicId });
-      Clipboard.setString(result.shareUrl);
+      await Clipboard.setStringAsync(result.shareUrl);
       Alert.alert('Copied!', 'Share link copied to clipboard');
     } catch (error) {
-      console.error('Failed to create share link:', error);
-      Alert.alert('Error', 'Failed to create share link. Please try again.');
+      console.error('Failed to copy share link:', error);
+      Alert.alert('Error', 'Failed to copy share link. Please try again.');
     }
   }, [createShareLink]);
 

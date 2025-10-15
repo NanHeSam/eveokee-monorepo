@@ -70,6 +70,9 @@ export const createShareLink = mutation({
       .first();
 
     if (existing) {
+      // SHARE_BASE_URL should be set in Convex dashboard (Settings → Environment Variables)
+      // Fallback to diaryvibes.com is for development only
+      // See packages/backend/ENV_VARS.md for setup instructions
       const baseUrl = process.env.SHARE_BASE_URL || "https://diaryvibes.com";
       return {
         shareId: existing.shareId,
@@ -90,6 +93,9 @@ export const createShareLink = mutation({
       updatedAt: now,
     });
 
+    // SHARE_BASE_URL should be set in Convex dashboard (Settings → Environment Variables)
+    // Fallback to diaryvibes.com is for development only
+    // See packages/backend/ENV_VARS.md for setup instructions
     const baseUrl = process.env.SHARE_BASE_URL || "https://diaryvibes.com";
 
     return {
@@ -203,8 +209,12 @@ export const deactivateShareLink = mutation({
  * View counts are approximate and can be inflated through repeated calls.
  * This prioritizes simplicity for basic engagement metrics.
  * 
+ * Mitigation: The client-side Share page implements session storage to prevent
+ * duplicate view recording within the same browser session, which significantly
+ * reduces abuse potential from page refreshes and basic scripting.
+ * 
  * Future improvements could include:
- * - Rate limiting by IP/session
+ * - Server-side rate limiting by IP/session
  * - Unique visitor tracking via separate table
  * - Integration with dedicated analytics service (Google Analytics, Mixpanel, etc.)
  */
@@ -259,6 +269,9 @@ export const getMySharedMusic = query({
       .filter((q) => q.eq(q.field("isActive"), true))
       .collect();
 
+    // SHARE_BASE_URL should be set in Convex dashboard (Settings → Environment Variables)
+    // Fallback to diaryvibes.com is for development only
+    // See packages/backend/ENV_VARS.md for setup instructions
     const baseUrl = process.env.SHARE_BASE_URL || "https://diaryvibes.com";
 
     const results = await Promise.all(

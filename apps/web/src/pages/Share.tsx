@@ -19,6 +19,31 @@ export default function Share() {
   const recordShareView = useMutation(api.sharing.recordShareView);
   const hasRecordedViewRef = useRef(false);
 
+  // Check if view has already been recorded in this session
+  const hasRecordedViewInSession = (shareId: string): boolean => {
+    if (typeof window === "undefined") return false;
+    try {
+      const recordedViews = JSON.parse(sessionStorage.getItem("recordedShareViews") || "[]");
+      return recordedViews.includes(shareId);
+    } catch {
+      return false;
+    }
+  };
+
+  // Mark view as recorded in this session
+  const markViewAsRecorded = (shareId: string): void => {
+    if (typeof window === "undefined") return;
+    try {
+      const recordedViews = JSON.parse(sessionStorage.getItem("recordedShareViews") || "[]");
+      if (!recordedViews.includes(shareId)) {
+        recordedViews.push(shareId);
+        sessionStorage.setItem("recordedShareViews", JSON.stringify(recordedViews));
+      }
+    } catch (error) {
+      console.warn("Failed to mark view as recorded in session storage:", error);
+    }
+  };
+
   useEffect(() => {
     hasRecordedViewRef.current = false;
   }, [shareId]);
@@ -28,9 +53,17 @@ export default function Share() {
       return;
     }
 
+    // Check if we've already recorded a view for this shareId in this session
+    if (hasRecordedViewInSession(shareId)) {
+      return;
+    }
+
     hasRecordedViewRef.current = true;
 
-    recordShareView({ shareId }).catch((error) => {
+    recordShareView({ shareId }).then(() => {
+      // Mark as recorded in session storage only after successful recording
+      markViewAsRecorded(shareId);
+    }).catch((error) => {
       console.error("Error recording share view:", error);
       hasRecordedViewRef.current = false;
     });

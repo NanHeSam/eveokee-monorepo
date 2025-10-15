@@ -59,6 +59,9 @@ importers:
       expo-build-properties:
         specifier: ~1.0.9
         version: 1.0.9(expo@54.0.13)
+      expo-clipboard:
+        specifier: ^8.0.7
+        version: 8.0.7(expo@54.0.13)(react-native@0.81.4)(react@19.1.0)
       expo-constants:
         specifier: ~18.0.9
         version: 18.0.9(expo@54.0.13)(react-native@0.81.4)
@@ -301,6 +304,9 @@ importers:
       postcss:
         specifier: ^8.5.3
         version: 8.5.6
+      tailwind-scrollbar:
+        specifier: ^3.0.0
+        version: 3.1.0(tailwindcss@3.4.18)
       tailwindcss:
         specifier: ^3.4.17
         version: 3.4.18
@@ -7244,6 +7250,18 @@ packages:
       semver: 7.7.3
     dev: false
 
+  /expo-clipboard@8.0.7(expo@54.0.13)(react-native@0.81.4)(react@19.1.0):
+    resolution: {integrity: sha512-zvlfFV+wB2QQrQnHWlo0EKHAkdi2tycLtE+EXFUWTPZYkgu1XcH+aiKfd4ul7Z0SDF+1IuwoiW9AA9eO35aj3Q==}
+    peerDependencies:
+      expo: '*'
+      react: '*'
+      react-native: '*'
+    dependencies:
+      expo: 54.0.13(@babel/core@7.28.4)(react-native@0.81.4)(react@19.1.0)
+      react: 19.1.0
+      react-native: 0.81.4(@babel/core@7.28.4)(@types/react@19.1.17)(react@19.1.0)
+    dev: false
+
   /expo-constants@18.0.9(expo@54.0.13)(react-native@0.81.4):
     resolution: {integrity: sha512-sqoXHAOGDcr+M9NlXzj1tGoZyd3zxYDy215W6E0Z0n8fgBaqce9FAYQE2bu5X4G629AYig5go7U6sQz7Pjcm8A==}
     peerDependencies:
@@ -12808,6 +12826,15 @@ packages:
   /tailwind-merge@3.3.1:
     resolution: {integrity: sha512-gBXpgUm/3rp1lMZZrM/w7D8GKqshif0zAymAhbCyIt8KMe+0v9DQ7cdYLR4FHH/cKpdTXb+A/tKKU3eolfsI+g==}
     dev: false
+
+  /tailwind-scrollbar@3.1.0(tailwindcss@3.4.18):
+    resolution: {integrity: sha512-pmrtDIZeHyu2idTejfV59SbaJyvp1VRjYxAjZBH0jnyrPRo6HL1kD5Glz8VPagasqr6oAx6M05+Tuw429Z8jxg==}
+    engines: {node: '>=12.13.0'}
+    peerDependencies:
+      tailwindcss: 3.x
+    dependencies:
+      tailwindcss: 3.4.18
+    dev: true
 
   /tailwindcss@3.4.18:
     resolution: {integrity: sha512-6A2rnmW5xZMdw11LYjhcI5846rt9pbLSabY5XPxo+XWdxwZaFEn47Go4NzFiHu9sNNmr/kXivP1vStfvMaK1GQ==}
