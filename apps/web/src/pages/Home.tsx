@@ -3,7 +3,6 @@ import DemoPreviewSection from '../components/DemoPreviewSection';
 import HowItWorksSection from '../components/HowItWorksSection';
 import FAQSection from '../components/FAQSection';
 import FinalCTASection from '../components/FinalCTASection';
-import Footer from '../components/Footer';
 
 export default function Home() {
   return (
@@ -14,7 +13,6 @@ export default function Home() {
       <HowItWorksSection />
       <FAQSection />
       <FinalCTASection />
-      <Footer />
     </>
   );
 }

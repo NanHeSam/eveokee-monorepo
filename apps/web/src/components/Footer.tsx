@@ -48,7 +48,7 @@ export default function Footer() {
           </div>
           
           {/* Quick Links */}
-          <div className="text-right">
+          <div className="md:text-right">
             <h4 className="font-semibold mb-4">Product</h4>
             <ul className="space-y-2 text-gray-400 dark:text-gray-500">
               <li>
@@ -74,16 +74,19 @@ export default function Footer() {
         
         {/* Bottom Bar */}
         <div className="border-t border-gray-200 dark:border-gray-700 py-6">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+          <div className="flex flex-col md:flex-row justify-between items-center md:items-start space-y-4 md:space-y-0 text-center md:text-left">
             {/* Copyright */}
-            <div className="flex items-center text-gray-400 dark:text-gray-500 text-sm">
-              <span>&copy; {currentYear} Diary Vibes. Made with</span>
-              <Heart className="w-4 h-4 text-red-500 mx-1" />
-              <span>for journaling enthusiasts.</span>
+            <div className="flex flex-wrap items-center justify-center md:justify-start text-gray-400 dark:text-gray-500 text-sm gap-x-1">
+              <span>&copy; {currentYear} Diary Vibes.</span>
+              <span className="flex items-center">
+                Made with
+                <Heart className="w-4 h-4 text-red-500 mx-1" />
+                for journaling enthusiasts.
+              </span>
             </div>
             
             {/* Legal Links */}
-            <div className="flex space-x-6 text-sm text-gray-400 dark:text-gray-500">
+            <div className="flex flex-wrap justify-center md:justify-end gap-x-6 gap-y-2 text-sm text-gray-400 dark:text-gray-500">
               <a href="/privacy" className="hover:text-gray-900 dark:hover:text-white transition-colors">
                 Privacy Policy
               </a>

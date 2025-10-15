@@ -31,7 +31,7 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
   const isPlaying = isCurrentAudio && audioManager.isPlaying;
   const isLoading = isCurrentAudio && audioManager.isLoading;
   return (
-    <section className="py-20 lg:py-32">
+    <section className="py-20 lg:py-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left Column - Text Content */}
