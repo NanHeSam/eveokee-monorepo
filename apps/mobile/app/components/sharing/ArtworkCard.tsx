@@ -37,8 +37,8 @@ export const ArtworkCard = ({ title, imageUrl, lyric, shareUrl }: ArtworkCardPro
           <QRCode
             value={shareUrl}
             size={120}
-            backgroundColor="white"
-            color="black"
+            backgroundColor={colors.surface}
+            color={colors.textPrimary}
           />
           <Text style={[styles.scanText, { color: colors.textMuted }]}>
             Scan to listen
