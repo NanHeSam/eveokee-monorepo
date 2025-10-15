@@ -1,10 +1,11 @@
 import './global.css';
 
+import { useRef } from 'react';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { ConvexReactClient } from 'convex/react';
 import { Ionicons } from '@expo/vector-icons';
-import { NavigationContainer, DefaultTheme, DarkTheme, Theme } from '@react-navigation/native';
+import { NavigationContainer, NavigationContainerRef, DefaultTheme, DarkTheme, Theme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -23,6 +24,8 @@ import { DiaryStackParamList } from './app/navigation/types';
 import { MiniPlayer } from './app/components/player/MiniPlayer';
 import { FullPlayer } from './app/components/player/FullPlayer';
 import { TrackPlayerProvider } from './app/providers/TrackPlayerProvider';
+import { PostHogProvider } from './app/providers/PostHogProvider';
+import { usePostHogNavigation } from './app/hooks/usePostHogNavigation';
 import * as Sentry from '@sentry/react-native';
 
 // Only initialize Sentry in production/preview builds (not local development)
@@ -138,8 +141,13 @@ if (!publishableKey) {
   throw new Error('Missing EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY environment variable.');
 }
 
-function App() {
+function AppContent() {
   const colors = useThemeColors();
+  const navigationRef = useRef<NavigationContainerRef<any>>(null);
+
+  // Track navigation and screen time
+  usePostHogNavigation(navigationRef);
+
   const theme: Theme = colors.scheme === 'dark'
     ? {
         ...DarkTheme,
@@ -165,20 +173,28 @@ function App() {
       };
 
   return (
+    <SafeAreaProvider>
+      <TrackPlayerProvider>
+        <View style={{ flex: 1 }}>
+          <NavigationContainer ref={navigationRef} theme={theme}>
+            <RootNavigator />
+          </NavigationContainer>
+          <MiniPlayer />
+          <FullPlayer />
+        </View>
+      </TrackPlayerProvider>
+    </SafeAreaProvider>
+  );
+}
+
+function App() {
+  return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
         <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
-          <SafeAreaProvider>
-            <TrackPlayerProvider>
-              <View style={{ flex: 1 }}>
-                <NavigationContainer theme={theme}>
-                  <RootNavigator />
-                </NavigationContainer>
-                <MiniPlayer />
-                <FullPlayer />
-              </View>
-            </TrackPlayerProvider>
-          </SafeAreaProvider>
+          <PostHogProvider>
+            <AppContent />
+          </PostHogProvider>
         </ConvexProviderWithClerk>
       </ClerkProvider>
     </GestureHandlerRootView>
