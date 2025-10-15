@@ -13,11 +13,11 @@ export const captureEvent = <T extends CapturePayload>(
     return;
   }
 
-  const payload = {
+  const payload: PostHogCaptureProperties = {
     ...(params ?? {}),
     client: 'mobile',
     client_platform: Platform.OS,
-  } as PostHogCaptureProperties;
+  };
 
   posthogClient.capture(eventName, payload);
 };
@@ -46,7 +46,7 @@ export const trackAppBackground = () => {
 export const trackAppCrash = (error: Error) => {
   captureEvent('app_crashed', {
     error_message: error.message,
-    error_stack: error.stack,
+    error_stack: process.env.NODE_ENV === 'production' ? undefined : error.stack,
   });
 };
 
@@ -235,7 +235,7 @@ export const trackError = (params: {
   error_type: string;
   error_message: string;
   error_stack?: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }) => {
   captureEvent('error', params);
 };
@@ -246,7 +246,7 @@ export const trackError = (params: {
 
 export const trackFeatureUsed = (params: {
   feature_name: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }) => {
   captureEvent('feature_used', params);
 };
