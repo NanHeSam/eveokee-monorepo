@@ -12,6 +12,7 @@ export interface BlogPost {
 
 // Import the actual markdown content
 import markdownContent from '../content/blog/diary-vibes-alpha-building-something-new.md?raw';
+import whyPeopleLoveContent from '../content/blog/why-people-fall-in-love-with-diary-vibes.md?raw';
 
 // Parse frontmatter from markdown
 function parseFrontmatter(content: string) {
@@ -50,8 +51,20 @@ function parseFrontmatter(content: string) {
 }
 
 const { frontmatter, content } = parseFrontmatter(markdownContent);
+const { frontmatter: whyPeopleLoveFrontmatter, content: whyPeopleLoveContentParsed } = parseFrontmatter(whyPeopleLoveContent);
 
 const blogPosts: BlogPost[] = [
+  {
+    id: (typeof whyPeopleLoveFrontmatter.slug === 'string' ? whyPeopleLoveFrontmatter.slug : undefined) || 'why-people-fall-in-love-with-diary-vibes',
+    title: (typeof whyPeopleLoveFrontmatter.title === 'string' ? whyPeopleLoveFrontmatter.title : undefined) || 'Turning Your Journal into a Soundtrack',
+    slug: (typeof whyPeopleLoveFrontmatter.slug === 'string' ? whyPeopleLoveFrontmatter.slug : undefined) || 'why-people-fall-in-love-with-diary-vibes',
+    excerpt: (typeof whyPeopleLoveFrontmatter.excerpt === 'string' ? whyPeopleLoveFrontmatter.excerpt : undefined) || 'Eight stories about why people fall in love with Diary Vibes.',
+    content: whyPeopleLoveContentParsed,
+    publishedAt: (typeof whyPeopleLoveFrontmatter.publishedAt === 'string' ? whyPeopleLoveFrontmatter.publishedAt : undefined) || '2025-10-16',
+    author: (typeof whyPeopleLoveFrontmatter.author === 'string' ? whyPeopleLoveFrontmatter.author : undefined) || 'Sam He',
+    tags: Array.isArray(whyPeopleLoveFrontmatter.tags) ? whyPeopleLoveFrontmatter.tags : ['stories', 'music', 'journaling', 'emotional-tech', 'user-stories'],
+    readTime: (typeof whyPeopleLoveFrontmatter.readTime === 'string' ? parseInt(whyPeopleLoveFrontmatter.readTime, 10) : typeof whyPeopleLoveFrontmatter.readTime === 'number' ? whyPeopleLoveFrontmatter.readTime : undefined) || 8,
+  },
   {
     id: (typeof frontmatter.slug === 'string' ? frontmatter.slug : undefined) || 'diary-vibes-alpha-building-something-new',
     title: (typeof frontmatter.title === 'string' ? frontmatter.title : undefined) || 'Diary Vibes Alpha: Building Something New',
