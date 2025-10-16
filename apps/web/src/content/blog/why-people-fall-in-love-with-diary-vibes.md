@@ -1,5 +1,5 @@
 ---
-title: "Turning Your Journal into a Soundtrack: Why People Fall in Love with Diary Vibes"
+title: "Why People Fall in Love with Diary Vibes"
 slug: "why-people-fall-in-love-with-diary-vibes"
 excerpt: "I've always loved journaling. But if I'm honest… I almost never go back to read what I wrote. Most entries read like changelogs: records, not memories. That's why I built Diary Vibes..."
 publishedAt: "2025-10-16"
@@ -12,7 +12,7 @@ I've always loved journaling. But if I'm honest… I almost never go back to rea
 
 Most of my entries read like changelogs:
 
-> "Woke up late. Coffee with James. Deadline at 3. Tired."
+> "Woke up late. Coffee with coworker James. Deadline at 3. Tired."
 
 Useful? Sure. But years later, when I stumble across those lines, they don't take me back. They're records, not memories. I don't feel the sunlight of that morning or the jittery excitement of that coffee chat. It's all flat text.
 

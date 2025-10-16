@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Calendar, Clock, User, Search } from 'lucide-react';
-import Footer from '@/components/Footer';
 import BlogPost from '@/components/BlogPost';
 import { BlogService, BlogPost as BlogPostType } from '@/lib/blog-service';
 
@@ -42,41 +41,32 @@ export default function Blog() {
   if (slug) {
     if (loading) {
       return (
-        <>
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-            <div className="animate-pulse">
-              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mx-auto mb-4"></div>
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mx-auto"></div>
-            </div>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mx-auto mb-4"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mx-auto"></div>
           </div>
-          <Footer />
-        </>
+        </div>
       );
     }
     
     if (!currentPost) {
       return (
-        <>
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Post Not Found</h1>
-            <p className="text-gray-600 dark:text-gray-300 mb-8">The blog post you're looking for doesn't exist.</p>
-            <Link 
-              to="/blog" 
-              className="bg-accent-mint text-white px-6 py-3 rounded-lg font-medium hover:bg-accent-mint/90 transition-colors"
-            >
-              Back to Blog
-            </Link>
-          </div>
-          <Footer />
-        </>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Post Not Found</h1>
+          <p className="text-gray-600 dark:text-gray-300 mb-8">The blog post you're looking for doesn't exist.</p>
+          <Link 
+            to="/blog" 
+            className="bg-accent-mint text-white px-6 py-3 rounded-lg font-medium hover:bg-accent-mint/90 transition-colors"
+          >
+            Back to Blog
+          </Link>
+        </div>
       );
     }
 
     return (
-      <>
-        <BlogPost post={currentPost} onBack={handleBackToBlog} />
-        <Footer />
-      </>
+      <BlogPost post={currentPost} onBack={handleBackToBlog} />
     );
   }
 
@@ -97,25 +87,22 @@ export default function Blog() {
 
   if (loading) {
     return (
-      <>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="animate-pulse space-y-8">
-            <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mx-auto"></div>
-            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mx-auto"></div>
-            <div className="space-y-6">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-8 space-y-4">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
-                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
-                </div>
-              ))}
-            </div>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="animate-pulse space-y-8">
+          <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mx-auto"></div>
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mx-auto"></div>
+          <div className="space-y-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-8 space-y-4">
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+              </div>
+            ))}
           </div>
         </div>
-        <Footer />
-      </>
+      </div>
     );
   }
 
@@ -219,8 +206,6 @@ export default function Blog() {
           )}
         </div>
       </section>
-
-      <Footer />
     </>
   );
 }
