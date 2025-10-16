@@ -3,7 +3,7 @@ export const CLERK_WEBHOOK_PATH = "/webhooks/clerk";
 
 export const PLAN_CONFIG = {
     alpha: {
-      musicLimit: 3,
+      musicLimit: 100,
       periodDays: null,
       price: 0,
       hasUnlimited: false,
@@ -19,14 +19,14 @@ export const PLAN_CONFIG = {
     weekly: {
       musicLimit: 25,
       periodDays: 7,
-      price: 4.99,
+      price: 3.99,
       hasUnlimited: false,
       description: "Weekly access with expanded quota",
     },
     monthly: {
       musicLimit: 90,
       periodDays: 30,
-      price: 12.99,
+      price: 9.99,
       hasUnlimited: false,
       description: "Monthly Unlimited",
     },
