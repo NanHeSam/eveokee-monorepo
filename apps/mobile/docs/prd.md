@@ -113,25 +113,22 @@ To create a revolutionary journaling experience where emotions and memories are 
 
 **Free Tier:**
 - Unlimited diary entries
-- 10 music generations per month
+- 7 music generations per month
 
-
-**Weekly Tier ($2.99/week):**
+**Weekly Tier ($3.99/week):**
 - Unlimited diary entries
-- Unlimited music generations
-
+- 25 music generations per week
 
 **Monthly Tier ($9.99/month):**
 - Unlimited diary entries
-- Unlimited music generations
+- 90 music generations per month
 
 **Yearly Tier ($99.99/year):**
 - Unlimited diary entries
-- Unlimited music generations
+- 1000 music generations per year
 
 **4.2 Payment Processing**
 - In-app purchase integration
-
 
 ## Technical Architecture
 

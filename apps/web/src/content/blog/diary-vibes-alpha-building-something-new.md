@@ -1,5 +1,5 @@
 ---
-title: "Diary Vibes Alpha: Building Something New, With Love and Music"
+title: "Diary Vibes Alpha: Building With Love and Music"
 slug: "diary-vibes-alpha-building-something-new"
 excerpt: "It's October again. Almost exactly a year ago, I left my job — not because of burnout or frustration, but because something bigger was about to enter my life..."
 publishedAt: "2024-10-15"
