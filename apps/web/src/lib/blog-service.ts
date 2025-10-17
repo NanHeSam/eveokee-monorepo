@@ -11,8 +11,8 @@ export interface BlogPost {
 }
 
 // Import the actual markdown content
-import markdownContent from '../content/blog/eveokee-alpha-building-something-new.md?raw';
-import whyPeopleLoveContent from '../content/blog/why-people-fall-in-love-with-eveokee.md?raw';
+import markdownContent from '../content/blog/diary-vibes-alpha-building-something-new.md?raw';
+import whyPeopleLoveContent from '../content/blog/why-people-fall-in-love-with-diary-vibes.md?raw';
 
 // Parse frontmatter from markdown
 function parseFrontmatter(content: string) {
