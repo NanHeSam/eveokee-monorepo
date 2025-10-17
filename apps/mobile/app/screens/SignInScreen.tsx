@@ -6,12 +6,13 @@ import {
   Platform,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useSSO, useClerk } from '@clerk/clerk-expo';
+import { useSSO, useClerk, useSignIn } from '@clerk/clerk-expo';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { useNavigation } from '@react-navigation/native';
@@ -24,23 +25,93 @@ import { palette } from '../theme/colors';
 
 WebBrowser.maybeCompleteAuthSession();
 
-
 const redirectUrl = AuthSession.makeRedirectUri({
   scheme: "eveokee",
   path: "oauth-native-callback",
 });
+
+// Error handling helpers
+type SignInErrorType = 'unverified_account' | 'wrong_password' | 'generic_error';
+
+const getSignInErrorType = (
+  errorCode: string | undefined,
+  errorMessage: string | undefined,
+  errorLongMessage: string | undefined
+): SignInErrorType => {
+  // Strategy 1: Use Clerk's error code prefixes (most reliable)
+  if (errorCode) {
+    if (errorCode.startsWith('form_identifier_')) {
+      return 'unverified_account';
+    }
+    if (errorCode.startsWith('form_password_')) {
+      return 'wrong_password';
+    }
+  }
+  
+  // Strategy 2: Check if we have a sign-in result that indicates unverified account
+  // This is more reliable than parsing error messages
+  if (errorMessage && errorMessage.includes('Couldn\'t find your account')) {
+    // This specific error from Clerk usually means unverified account
+    return 'unverified_account';
+  }
+  
+  // Strategy 3: Minimal fallback - only check for very stable keywords
+  if (errorMessage || errorLongMessage) {
+    const message = `${errorMessage || ''} ${errorLongMessage || ''}`.toLowerCase();
+    if (message.includes('verification') || message.includes('unverified')) {
+      return 'unverified_account';
+    }
+  }
+  
+  return 'generic_error';
+};
+
+const handleSignInError = (
+  errorType: SignInErrorType,
+  email: string,
+  navigation: NativeStackNavigationProp<RootStackParamList>
+) => {
+  switch (errorType) {
+    case 'unverified_account':
+      Alert.alert(
+        'Account Not Verified',
+        'Your account exists but hasn\'t been verified yet. Please complete the sign-up process by verifying your email.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Go to Sign Up', onPress: () => navigation.navigate('SignUp', { 
+            prefillEmail: email,
+            isVerificationOnly: true 
+          }) },
+        ]
+      );
+      break;
+      
+    case 'wrong_password':
+      Alert.alert('Sign in failed', 'Incorrect password. Please try again.');
+      break;
+      
+    case 'generic_error':
+    default:
+      Alert.alert('Sign in failed', 'Unable to sign in. Please check your credentials and try again.');
+      break;
+  }
+};
 type RootStackParamList = {
   SignIn: undefined;
-  SignUp: undefined;
+  SignUp: { prefillEmail?: string; isVerificationOnly?: boolean } | undefined;
   Home: undefined;
 };
 
 export const SignInScreen = () => {
   const { setActive } = useClerk();
   const { startSSOFlow } = useSSO();
+  const { signIn } = useSignIn();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
 
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const ensureCurrentUserMutation = useMutation(api.users.ensureCurrentUser);
 
@@ -87,6 +158,63 @@ export const SignInScreen = () => {
     },
     [ensureConvexUser],
   );
+
+  const handlePasswordSignIn = useCallback(async () => {
+    if (!identifier.trim() || !password.trim()) {
+      Alert.alert('Missing fields', 'Please enter both email and password.');
+      return;
+    }
+
+    try {
+      setIsPasswordLoading(true);
+      
+      if (!signIn) {
+        Alert.alert('Error', 'Sign in is not available. Please try again.');
+        return;
+      }
+
+      const result = await signIn.create({
+        identifier: identifier.trim(),
+        password: password.trim(),
+      });
+
+      if (result.status === 'complete') {
+        await finalizeSession(setActive, result.createdSessionId);
+      } else if (result.status === 'needs_first_factor') {
+        // Account exists but might need verification or 2FA
+        Alert.alert(
+          'Verification Required',
+          'Please complete account verification. Go to Sign Up to receive a new verification code.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Go to Sign Up', onPress: () => navigation.navigate('SignUp', { 
+              prefillEmail: identifier.trim(),
+              isVerificationOnly: true 
+            }) },
+          ]
+        );
+      } else {
+        // Other incomplete statuses
+        console.log('Sign in status:', result.status);
+        Alert.alert('Sign in incomplete', 'Please complete the sign in process.');
+      }
+    } catch (err: any) {
+      console.error('Password sign in failed', err);
+      
+      // Extract error information from different possible structures
+      const errorCode = err?.errors?.[0]?.code || err?.code;
+      const errorMessage = err?.errors?.[0]?.message || err?.message || err?.toString();
+      const errorLongMessage = err?.errors?.[0]?.longMessage || err?.longMessage;
+      
+      console.log('Error details:', { errorCode, errorMessage, errorLongMessage });
+      
+      // Determine error type and show appropriate message
+      const errorType = getSignInErrorType(errorCode, errorMessage, errorLongMessage);
+      handleSignInError(errorType, identifier.trim(), navigation);
+    } finally {
+      setIsPasswordLoading(false);
+    }
+  }, [identifier, password, signIn, setActive, finalizeSession, navigation]);
 
   const handleGoogleSignIn = useCallback(async () => {
     try {
@@ -138,7 +266,54 @@ export const SignInScreen = () => {
           </View>
 
           <View style={styles.form}>
-            <Text style={styles.disabledLegend}>Email/password sign in is temporarily disabled.</Text>
+            <View>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your email"
+                placeholderTextColor="#999"
+                value={identifier}
+                onChangeText={setIdentifier}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                editable={!isPasswordLoading}
+              />
+            </View>
+
+            <View>
+              <Text style={styles.label}>Password</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your password"
+                placeholderTextColor="#999"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!isPasswordLoading}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.primaryButton, isPasswordLoading && styles.primaryButtonDisabled]}
+              onPress={handlePasswordSignIn}
+              activeOpacity={0.8}
+              disabled={isPasswordLoading}
+            >
+              {isPasswordLoading ? (
+                <ActivityIndicator color="#000" />
+              ) : (
+                <Text style={styles.primaryButtonText}>Sign In</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.dividerWrapper}>
+            <View style={styles.divider} />
+            <Text style={styles.dividerText}>OR</Text>
+            <View style={styles.divider} />
           </View>
 
           <TouchableOpacity
@@ -210,17 +385,18 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: '#fff',
+    color: palette.textPrimaryLight,
     marginBottom: 4,
+    fontWeight: '500',
   },
   input: {
     height: 48,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: '#D1D1D6',
     paddingHorizontal: 16,
-    color: '#fff',
-    backgroundColor: '#1C1C1E',
+    color: palette.textPrimaryLight,
+    backgroundColor: '#F2F2F7',
   },
   primaryButton: {
     height: 52,
