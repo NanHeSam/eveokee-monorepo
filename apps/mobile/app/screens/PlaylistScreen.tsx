@@ -8,8 +8,8 @@ import Reanimated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
 import { useThemeColors } from '../theme/useThemeColors';
-import { api } from '@diary-vibes/backend';
-import { Id } from '@diary-vibes/backend/convex/_generated/dataModel';
+import { api } from '@eveokee/backend';
+import { Id } from '@eveokee/backend/convex/_generated/dataModel';
 import { format } from 'date-fns';
 import TrackPlayer from 'react-native-track-player';
 import { useTrackPlayerStore } from '../store/useTrackPlayerStore';

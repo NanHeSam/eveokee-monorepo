@@ -8,8 +8,8 @@ export default function PrivacyPolicy() {
         </p>
 
         <p className="mb-6">
-          This Privacy Policy explains how DiaryVibes (“we,” “our,” “us”) collects, uses, and shares your personal information when you use 
-          <span className="font-mono"> https://www.diaryvibes.com </span> (the “Site”) and related services (the “Services”). By using our Services, you agree to this Policy.
+          This Privacy Policy explains how Eveokee (“we,” “our,” “us”) collects, uses, and shares your personal information when you use 
+          <span className="font-mono"> https://www.eveokee.com </span> (the “Site”) and related services (the “Services”). By using our Services, you agree to this Policy.
         </p>
 
         <div className="space-y-8">

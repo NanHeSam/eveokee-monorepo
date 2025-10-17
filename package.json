@@ -1,5 +1,5 @@
 {
-  "name": "diary-vibes-monorepo",
+  "name": "eveokee-monorepo",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -20,7 +20,7 @@
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
     "test": "turbo run test",
-    "test:backend": "pnpm --filter @diary-vibes/backend test",
+    "test:backend": "pnpm --filter @eveokee/backend test",
     "test:web": "pnpm --filter web test",
     "test:mobile": "pnpm --filter mobile test",
     "clean": "turbo run clean && rm -rf node_modules"

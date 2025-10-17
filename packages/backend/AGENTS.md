@@ -2,15 +2,15 @@
 
 ## Quick Start
 - Install dependencies at the repo root with `pnpm install`.
-- Start the Convex dev server via `pnpm dev:convex` (root) or `pnpm --filter @diary-vibes/backend dev`; it watches `convex/`.
-- Deploy with `pnpm --filter @diary-vibes/backend deploy` once changes are validated.
+- Start the Convex dev server via `pnpm dev:convex` (root) or `pnpm --filter @eveokee/backend dev`; it watches `convex/`.
+- Deploy with `pnpm --filter @eveokee/backend deploy` once changes are validated.
 - Regenerate types automatically by running the dev server; avoid editing files under `convex/_generated/`.
 
 ## Scripts
-- `pnpm --filter @diary-vibes/backend dev` — Runs `npx convex dev` locally.
-- `pnpm --filter @diary-vibes/backend deploy` — Publishes functions to the configured Convex project (requires `CONVEX_DEPLOY_KEY`).
-- `pnpm test:backend` or `pnpm --filter @diary-vibes/backend test` — Vitest suite.
-- `pnpm --filter @diary-vibes/backend test:watch` — Interactive Vitest mode.
+- `pnpm --filter @eveokee/backend dev` — Runs `npx convex dev` locally.
+- `pnpm --filter @eveokee/backend deploy` — Publishes functions to the configured Convex project (requires `CONVEX_DEPLOY_KEY`).
+- `pnpm test:backend` or `pnpm --filter @eveokee/backend test` — Vitest suite.
+- `pnpm --filter @eveokee/backend test:watch` — Interactive Vitest mode.
 - Type checking defers to Convex runtime types; no dedicated `tsc` step is provided.
 
 ## Testing Guidance
@@ -30,4 +30,4 @@
 - Local dev uses `.env.local` picked up by Convex CLI; ensure required secrets (Clerk, OpenAI, Suno, SHARE_BASE_URL) are available before calling dependent functions.
 - Production deploys require the `CONVEX_DEPLOY_KEY`; coordinate with ops before rotating keys or adding new secrets.
 - See [`ENV_VARS.md`](docs/ENV_VARS.md) for a complete list of required environment variables and setup instructions.
-- **Critical:** Always set `SHARE_BASE_URL` to your production domain in the Convex dashboard. The code has a fallback to `https://diaryvibes.com`, but this should never be used in production as it will generate incorrect share links.
+- **Critical:** Always set `SHARE_BASE_URL` to your production domain in the Convex dashboard. The code has a fallback to `https://eveokee.com`, but this should never be used in production as it will generate incorrect share links.

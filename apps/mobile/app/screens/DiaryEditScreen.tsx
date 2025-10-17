@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 
 import { useThemeColors } from '../theme/useThemeColors';
 import { DiaryEditNavigationProp, DiaryEditRouteProp } from '../navigation/types';
-import { api } from '@diary-vibes/backend';
+import { api } from '@eveokee/backend';
 import { useTrackPlayerStore } from '../store/useTrackPlayerStore';
 import { useMusicGeneration } from '../hooks/useMusicGeneration';
 import { PaywallModal } from '../components/billing/PaywallModal';

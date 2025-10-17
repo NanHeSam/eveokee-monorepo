@@ -71,9 +71,9 @@ export const createShareLink = mutation({
 
     if (existing) {
       // SHARE_BASE_URL should be set in Convex dashboard (Settings → Environment Variables)
-      // Fallback to diaryvibes.com is for development only
+      // Fallback to eveokee.com is for development only
       // See packages/backend/ENV_VARS.md for setup instructions
-      const baseUrl = process.env.SHARE_BASE_URL || "https://diaryvibes.com";
+      const baseUrl = process.env.SHARE_BASE_URL || "https://eveokee.com";
       return {
         shareId: existing.shareId,
         shareUrl: `${baseUrl}/share/${existing.shareId}`,
@@ -94,9 +94,9 @@ export const createShareLink = mutation({
     });
 
     // SHARE_BASE_URL should be set in Convex dashboard (Settings → Environment Variables)
-    // Fallback to diaryvibes.com is for development only
+    // Fallback to eveokee.com is for development only
     // See packages/backend/ENV_VARS.md for setup instructions
-    const baseUrl = process.env.SHARE_BASE_URL || "https://diaryvibes.com";
+    const baseUrl = process.env.SHARE_BASE_URL || "https://eveokee.com";
 
     return {
       shareId,
@@ -270,9 +270,9 @@ export const getMySharedMusic = query({
       .collect();
 
     // SHARE_BASE_URL should be set in Convex dashboard (Settings → Environment Variables)
-    // Fallback to diaryvibes.com is for development only
+    // Fallback to eveokee.com is for development only
     // See packages/backend/ENV_VARS.md for setup instructions
-    const baseUrl = process.env.SHARE_BASE_URL || "https://diaryvibes.com";
+    const baseUrl = process.env.SHARE_BASE_URL || "https://eveokee.com";
 
     const results = await Promise.all(
       shares.map(async (share) => {

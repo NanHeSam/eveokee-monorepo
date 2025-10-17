@@ -1,4 +1,4 @@
-Diary Vibes Landing Page
+Eveokee Landing Page
 
 Setup
 - Install dependencies: `npm install`

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "diary-vibes",
-    "slug": "diary-vibes",
+    "name": "eveokee",
+    "slug": "eveokee",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,7 +16,7 @@
         "@sentry/react-native/expo",
         {
           "url": "https://sentry.io/",
-          "project": "diary-vibes-mobile",
+          "project": "eveokee-mobile",
           "organization": "eveoky"
         }
       ]
@@ -28,7 +28,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.eveoky.diaryvibes",
+      "bundleIdentifier": "com.eveoky.eveokee",
       "infoPlist": {
         "UIBackgroundModes": [
           "audio"
@@ -43,9 +43,9 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.eveoky.diaryvibes"
+      "package": "com.eveoky.eveokee"
     },
-    "scheme": "diaryvibes",
+    "scheme": "eveokee",
     "web": {
       "bundler": "metro",
       "favicon": "./assets/favicon.png"

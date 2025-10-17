@@ -5,7 +5,7 @@ export default function SignUpPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Join Diary Vibes</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Join Eveokee</h1>
           <p className="text-gray-600">Create your account and start your journey</p>
         </div>
         <SignUp 

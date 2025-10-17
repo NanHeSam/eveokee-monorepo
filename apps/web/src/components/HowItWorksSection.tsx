@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { PenTool, Music, Headphones, Loader2, Sparkles } from 'lucide-react';
 import { SignedIn, SignedOut, useAuth } from '@clerk/clerk-react';
 import { useMutation, useQuery } from 'convex/react';
-import { api } from '@diary-vibes/backend';
+import { api } from '@eveokee/backend';
 import Confetti from 'react-confetti';
 import { Link } from 'react-router-dom';
 import DemoCard from './DemoCard';

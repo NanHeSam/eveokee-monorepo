@@ -26,7 +26,7 @@ const faqs: FAQ[] = [
   {
     id: '4',
     question: 'Do I need to be musical?',
-    answer: 'Not at all! That\'s the beauty of Diary Vibes. You just write your thoughts and feelings naturally, and my AI handles all the musical creation. No musical knowledge or experience required.'
+    answer: 'Not at all! That\'s the beauty of Eveokee. You just write your thoughts and feelings naturally, and my AI handles all the musical creation. No musical knowledge or experience required.'
   }
 ];
 
@@ -46,7 +46,7 @@ export default function FAQSection() {
             FAQs
           </h2>
           <p className="text-xl text-gray-600 dark:text-gray-300">
-            Everything you need to know about Diary Vibes
+            Everything you need to know about Eveokee
           </p>
         </div>
         

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Diary Vibes is a monorepo containing a mobile app (React Native/Expo), web app (Vite/React), and shared Convex backend. The app allows users to create diary entries and generates personalized music based on their entries using AI.
+Eveokee is a monorepo containing a mobile app (React Native/Expo), web app (Vite/React), and shared Convex backend. The app allows users to create diary entries and generates personalized music based on their entries using AI.
 
 ## Prerequisites
 
@@ -61,7 +61,7 @@ pnpm add -w <package>
 # Add to specific app
 pnpm add --filter mobile <package>
 pnpm add --filter web <package>
-pnpm add --filter @diary-vibes/backend <package>
+pnpm add --filter @eveokee/backend <package>
 ```
 
 ## Architecture
@@ -83,7 +83,7 @@ pnpm add --filter @diary-vibes/backend <package>
 
 - **packages/backend/convex/** - Shared Convex backend
   - Real-time database and serverless functions
-  - Shared between mobile and web via `@diary-vibes/backend` workspace package
+  - Shared between mobile and web via `@eveokee/backend` workspace package
   - Clerk authentication integration
   - OpenAI integration for music generation
 
@@ -103,12 +103,12 @@ The Convex backend is located at `packages/backend/convex/`. It's configured in 
 
 **Importing from apps:**
 ```typescript
-import { api } from '@diary-vibes/backend';
+import { api } from '@eveokee/backend';
 ```
 
-The package (`@diary-vibes/backend`) exports the generated API from `convex/_generated/api.js`.
+The package (`@eveokee/backend`) exports the generated API from `convex/_generated/api.js`.
 
-**Important:** Both mobile and web apps must use `@diary-vibes/backend` for imports. After `pnpm install`, the workspace package is symlinked in `node_modules/@diary-vibes/backend`.
+**Important:** Both mobile and web apps must use `@eveokee/backend` for imports. After `pnpm install`, the workspace package is symlinked in `node_modules/@eveokee/backend`.
 
 **Deploy** (run from repo root or `packages/backend`):
 ```bash
@@ -161,8 +161,8 @@ Turbo is used for build orchestration. Key pipeline tasks:
 - New Architecture enabled (`newArchEnabled: true`)
 - Audio background playback enabled for iOS
 - Custom Expo plugin: `./plugins/with-folly-no-coroutines`
-- Bundle identifiers: `com.eveoky.diaryvibes`
-- Custom URL scheme: `diaryvibes://`
+- Bundle identifiers: `com.eveoky.eveokee`
+- Custom URL scheme: `eveokee://`
 
 ## Web App Specifics
 
@@ -250,14 +250,14 @@ To add Android builds back to CI/CD:
 
 If `pnpm type-check` fails with module not found errors:
 
-1. **Missing workspace symlinks**: Run `pnpm install` to create `node_modules/@diary-vibes/backend` symlinks
-2. **Wrong import paths**: All imports must use `@diary-vibes/backend` (the workspace package name)
+1. **Missing workspace symlinks**: Run `pnpm install` to create `node_modules/@eveokee/backend` symlinks
+2. **Wrong import paths**: All imports must use `@eveokee/backend` (the workspace package name)
 3. **Cache issues**: Clear Turbo cache with `pnpm clean` and reinstall
 
 ### Import Best Practices
 
 ```typescript
 // ✅ Correct - import from workspace package
-import { api } from '@diary-vibes/backend';
-import { Id } from '@diary-vibes/backend/convex/_generated/dataModel';
+import { api } from '@eveokee/backend';
+import { Id } from '@eveokee/backend/convex/_generated/dataModel';
 ```

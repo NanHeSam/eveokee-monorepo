@@ -1,18 +1,18 @@
 ---
-title: "8 Surprising Reasons People Fall in Love with Diary Vibes"
+title: "8 Surprising Reasons People Fall in Love with Eveokee"
 slug: "why-people-fall-in-love-with-diary-vibes"
-excerpt: "Most journaling apps focus on what you wrote. Diary Vibes focuses on how it felt. Here are 8 reasons people are using Diary Vibes, and how it might fit into your life too."
+excerpt: "Most journaling apps focus on what you wrote. Eveokee focuses on how it felt. Here are 8 reasons people are using Eveokee, and how it might fit into your life too."
 publishedAt: "2025-10-16"
 author: "Sam He"
 tags: ["stories", "music", "journaling", "emotional-tech", "user-stories"]
 readTime: 8
 ---
 
-Most journaling apps focus on what you wrote. Diary Vibes focuses on how it felt.
+Most journaling apps focus on what you wrote. Eveokee focuses on how it felt.
 
-We built Diary Vibes because journaling is often powerful in the moment, but easy to forget later. Your words sit in a notebook or app, unread. The feelings behind those words fade. But music has a unique way of bringing those emotions back—instantly.
+We built Eveokee because journaling is often powerful in the moment, but easy to forget later. Your words sit in a notebook or app, unread. The feelings behind those words fade. But music has a unique way of bringing those emotions back—instantly.
 
-Here are 8 reasons people are using Diary Vibes, and how it might fit into your life too.
+Here are 8 reasons people are using Eveokee, and how it might fit into your life too.
 
 [music:why-people-love-diary-vibes title="Listen to This Article" duration="10:15" src="/audio/why-people-love-diary-vibes.mp3"]
 
@@ -22,7 +22,7 @@ Here are 8 reasons people are using Diary Vibes, and how it might fit into your 
 
 Most journal entries read like a changelog: "I woke up. I went to work. I had dinner." But life is more than bullet points.
 
-Diary Vibes turns your words into an original piece of music, capturing the vibe of the moment so you can replay it later. It's like turning your day into a soundtrack—one you can actually feel again.
+Eveokee turns your words into an original piece of music, capturing the vibe of the moment so you can replay it later. It's like turning your day into a soundtrack—one you can actually feel again.
 
 **🎯 Perfect for:** Reflective journalers, memory keepers, anyone who loves nostalgia.
 
@@ -32,7 +32,7 @@ Diary Vibes turns your words into an original piece of music, capturing the vibe
 
 Sometimes it's hard to name what you're feeling. You write "today was weird," but that doesn't quite cut it. Music can express emotional nuance that text can't.
 
-Diary Vibes helps surface the underlying emotional tone of your writing—without you needing to explain it. Just write as you normally would, tap a button, and hear what your day sounds like.
+Eveokee helps surface the underlying emotional tone of your writing—without you needing to explain it. Just write as you normally would, tap a button, and hear what your day sounds like.
 
 **🎯 Perfect for:** Deep feelers, therapy-adjacent journaling, people who struggle to "label" emotions.
 
@@ -52,7 +52,7 @@ This isn't just nostalgia; music has a powerful link to autobiographical memory.
 
 Journals are private. But sometimes, you want to share the vibe of a moment with someone—without handing them your diary.
 
-With Diary Vibes, you can generate a short track that conveys the emotion of your entry, then share the music instead of the text. It's like giving someone the "trailer" to your day.
+With Eveokee, you can generate a short track that conveys the emotion of your entry, then share the music instead of the text. It's like giving someone the "trailer" to your day.
 
 **🎯 Perfect for:** Creators, friends & couples, anyone who likes expressive but subtle sharing.
 
@@ -82,7 +82,7 @@ It's like making emotional "bookmarks" in your timeline.
 
 Even if you've never touched a DAW or played an instrument, you can turn your writing into a unique, AI-generated track. It's creative play at zero friction.
 
-Your journal is the instrument. Diary Vibes is the band.
+Your journal is the instrument. Eveokee is the band.
 
 **🎯 Perfect for:** AI music enthusiasts, bedroom creators, playful tinkerers.
 
@@ -90,7 +90,7 @@ Your journal is the instrument. Diary Vibes is the band.
 
 ## 8. Give Your Gratitude a Sound
 
-Gratitude journaling has real, evidence-backed benefits for mood and well-being. With Diary Vibes, your "one good thing" of the day doesn't just sit on a page—it sings.
+Gratitude journaling has real, evidence-backed benefits for mood and well-being. With Eveokee, your "one good thing" of the day doesn't just sit on a page—it sings.
 
 Over time, this becomes a beautiful, audible archive of moments you're thankful for.
 
@@ -98,4 +98,4 @@ Over time, this becomes a beautiful, audible archive of moments you're thankful 
 
 ---
 
-👉 [Try it for yourself](https://diaryvibes.com) — write something today, and hear what it sounds like.
+👉 [Try it for yourself](https://eveokee.com) — write something today, and hear what it sounds like.

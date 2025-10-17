@@ -2,8 +2,8 @@ import { useRef, useCallback } from 'react';
 import { Alert, Share } from 'react-native';
 import ViewShot from 'react-native-view-shot';
 import { useMutation } from 'convex/react';
-import { api } from '@diary-vibes/backend';
-import { Id } from '@diary-vibes/backend/convex/_generated/dataModel';
+import { api } from '@eveokee/backend';
+import { Id } from '@eveokee/backend/convex/_generated/dataModel';
 
 interface ArtworkCardData {
   title: string;
@@ -31,8 +31,8 @@ export const useArtworkCard = () => {
       
       try {
         await Share.share({
-          title: `Check out "${cardData.title}" on DiaryVibes`,
-          message: `Check out "${cardData.title}" on DiaryVibes!\n\n${shareResult.shareUrl}`,
+          title: `Check out "${cardData.title}" on Eveokee`,
+          message: `Check out "${cardData.title}" on Eveokee!\n\n${shareResult.shareUrl}`,
           url: uri,
         });
       } catch (shareError: any) {

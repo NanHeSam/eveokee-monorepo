@@ -8,8 +8,8 @@ export default function Terms() {
         </p>
 
         <p className="mb-6">
-          Welcome to DiaryVibes (“we,” “our,” “us”). These Terms and Conditions (“Terms”) govern your access to and use of
-          <span className="font-mono"> https://www.diaryvibes.com </span> (the “Site”) and our related services (the “Services”).
+          Welcome to Eveokee (“we,” “our,” “us”). These Terms and Conditions (“Terms”) govern your access to and use of
+          <span className="font-mono"> https://www.eveokee.com </span> (the “Site”) and our related services (the “Services”).
           By using our Services, you agree to these Terms.
         </p>
 
@@ -17,7 +17,7 @@ export default function Terms() {
           <section>
             <h2 className="text-xl font-semibold mb-2">1. Our Services</h2>
             <p className="text-gray-700">
-              DiaryVibes lets users write personal diary entries and uses Suno AI to generate accompanying music. Music quality
+              Eveokee lets users write personal diary entries and uses Suno AI to generate accompanying music. Music quality
               and availability depend on Suno’s systems. We don’t guarantee continuous access or uniqueness of generated outputs.
             </p>
           </section>
@@ -25,7 +25,7 @@ export default function Terms() {
           <section>
             <h2 className="text-xl font-semibold mb-2">2. Accounts & Eligibility</h2>
             <p className="text-gray-700">
-              You must be at least 13 years old to use DiaryVibes. If you’re between 13 and 18, you need permission from a parent
+              You must be at least 13 years old to use Eveokee. If you’re between 13 and 18, you need permission from a parent
               or guardian. You’re responsible for your account and password.
             </p>
           </section>
@@ -55,7 +55,7 @@ export default function Terms() {
           <section>
             <h2 className="text-xl font-semibold mb-2">5. Third-Party Services</h2>
             <p className="text-gray-700">
-              We rely on third-party providers like Suno AI. By using DiaryVibes, you also agree to comply with their terms. We’re
+              We rely on third-party providers like Suno AI. By using Eveokee, you also agree to comply with their terms. We’re
               not responsible for their performance, policies, or changes.
             </p>
           </section>
@@ -78,7 +78,7 @@ export default function Terms() {
           <section>
             <h2 className="text-xl font-semibold mb-2">8. Intellectual Property</h2>
             <p className="text-gray-700">
-              All rights in the platform (excluding your content and generated music) belong to DiaryVibes or its licensors.
+              All rights in the platform (excluding your content and generated music) belong to Eveokee or its licensors.
             </p>
           </section>
 

@@ -1,5 +1,5 @@
 {
-  "name": "@diary-vibes/backend",
+  "name": "@eveokee/backend",
   "version": "1.0.0",
   "private": true,
   "main": "./convex/_generated/api.js",

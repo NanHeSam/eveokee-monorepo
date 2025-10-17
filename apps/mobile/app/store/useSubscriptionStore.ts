@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { api } from '@diary-vibes/backend';
+import { api } from '@eveokee/backend';
 import { useQuery, useMutation } from 'convex/react';
 
 export type SubscriptionTier = 'free' | 'weekly' | 'monthly' | 'yearly';

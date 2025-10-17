@@ -30,7 +30,7 @@ Set environment variables in your Convex dashboard:
 - **Local Development:** `http://localhost:5173`
 - **Production:** Your production domain (e.g., `https://yourdomain.com`)
 
-**Default Fallback:** `https://diaryvibes.com` (DO NOT rely on this in production)
+**Default Fallback:** `https://eveokee.com` (DO NOT rely on this in production)
 
 **Example:**
 ```bash

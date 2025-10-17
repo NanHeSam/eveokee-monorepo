@@ -2,8 +2,8 @@ import { useCallback } from 'react';
 import { Share, Alert } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useMutation } from 'convex/react';
-import { api } from '@diary-vibes/backend';
-import { Id } from '@diary-vibes/backend/convex/_generated/dataModel';
+import { api } from '@eveokee/backend';
+import { Id } from '@eveokee/backend/convex/_generated/dataModel';
 
 export const useShareMusic = () => {
   const createShareLink = useMutation(api.sharing.createShareLink);
@@ -14,8 +14,8 @@ export const useShareMusic = () => {
       
       try {
         await Share.share({
-          title: `Check out "${title}" on DiaryVibes`,
-          message: `Check out "${title}" on DiaryVibes!\n\n${result.shareUrl}`,
+          title: `Check out "${title}" on Eveokee`,
+          message: `Check out "${title}" on Eveokee!\n\n${result.shareUrl}`,
           url: result.shareUrl,
         });
       } catch (shareError: any) {
