@@ -80,11 +80,11 @@ cd packages/backend && npx convex deploy
 
 **Import the shared backend:**
 ```typescript
-import { api } from '@eveokee/backend';
-import { Id } from '@eveokee/backend/convex/_generated/dataModel';
+import { api } from '@backend/convex';
+import { Id } from '@backend/convex/convex/_generated/dataModel';
 ```
 
-**Important**: Always use `@eveokee/backend` as the import path - this is the workspace package name.
+**Important**: Always use `@backend/convex` as the import path - this is the workspace package name.
 
 The Convex backend is shared between mobile and web apps. See root [CLAUDE.md](../../CLAUDE.md#convex-backend) for full database schema and backend documentation.
 

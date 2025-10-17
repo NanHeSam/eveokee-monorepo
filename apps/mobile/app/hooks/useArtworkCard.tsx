@@ -2,8 +2,8 @@ import { useRef, useCallback } from 'react';
 import { Alert, Share } from 'react-native';
 import ViewShot from 'react-native-view-shot';
 import { useMutation } from 'convex/react';
-import { api } from '@eveokee/backend';
-import { Id } from '@eveokee/backend/convex/_generated/dataModel';
+import { api } from '@backend/convex';
+import { Id } from '@backend/convex/convex/_generated/dataModel';
 
 interface ArtworkCardData {
   title: string;

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { api } from '@eveokee/backend';
+import { api } from '@backend/convex';
 import { useQuery, useMutation } from 'convex/react';
 
 export type SubscriptionTier = 'free' | 'weekly' | 'monthly' | 'yearly';

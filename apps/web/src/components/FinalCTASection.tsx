@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import { useMutation } from 'convex/react';
-import { api } from '@eveokee/backend';
+import { api } from '@backend/convex';
 import { isValidEmail } from '@/lib/utils';
 import { ArrowRight, CheckCircle } from 'lucide-react';
 

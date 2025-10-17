@@ -69,7 +69,7 @@ After running `npx convex deploy`:
 ### Manual Deployment
 ```bash
 # From repository root
-pnpm --filter @eveokee/backend deploy
+pnpm --filter @backend/convex deploy
 
 # Or directly with Convex CLI
 cd packages/backend
@@ -120,7 +120,7 @@ If deployment issues occur:
 2. **Fix and Redeploy**
    - Fix the issue in your code
    - Run tests: `pnpm test:backend`
-   - Redeploy: `pnpm --filter @eveokee/backend deploy`
+   - Redeploy: `pnpm --filter @backend/convex deploy`
 
 3. **Emergency Hotfix**
    - Create a hotfix branch

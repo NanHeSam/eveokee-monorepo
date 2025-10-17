@@ -1,6 +1,6 @@
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
-import { Id } from '@eveokee/backend/convex/_generated/dataModel';
+import { Id } from '@backend/convex/convex/_generated/dataModel';
 
 export type DiaryStackParamList = {
   DiaryHome: undefined;

@@ -3,7 +3,7 @@ export const CLERK_WEBHOOK_PATH = "/webhooks/clerk";
 
 export const PLAN_CONFIG = {
     alpha: {
-      musicLimit: 100,
+      musicLimit: 3,
       periodDays: null,
       price: 0,
       hasUnlimited: false,

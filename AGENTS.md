@@ -21,9 +21,9 @@
 - Shared assets and scripts live at the workspace root; expect Turbo to coordinate builds across packages.
 
 ## Convex Backend (`packages/backend`)
-- Dev server: `pnpm dev:convex` (or `pnpm --filter @eveokee/backend dev`).
+- Dev server: `pnpm dev:convex` (or `pnpm --filter @backend/convex dev`).
 - Tests: `pnpm test:backend` (Vitest). Use the shared `createMockCtx` helper to keep unit tests deterministic and mock external services (OpenAI, Clerk, Svix).
-- Convex deploy: `pnpm --filter @eveokee/backend deploy` (wraps `npx convex deploy`).
+- Convex deploy: `pnpm --filter @backend/convex deploy` (wraps `npx convex deploy`).
 - Generated types/API live under `packages/backend/convex/_generated`; avoid hand editing.
 - Keep functions pure and side-effect free; push any integration logic into Convex actions and mock remote calls in tests.
 
@@ -32,7 +32,7 @@
 - Build: `pnpm build:web` produces the production bundle (`vite build` after `tsc -b`).
 - Tests: `pnpm test:web` (Vitest + Testing Library). Query DOM via Testing Library helpers instead of implementation details; place shared utilities in `apps/web/src/test/`.
 - Type check: `pnpm --filter web type-check`. Lint: `pnpm --filter web lint`.
-- The app consumes Convex via `@eveokee/backend`; ensure any backend schema changes preserve web usage.
+- The app consumes Convex via `@backend/convex`; ensure any backend schema changes preserve web usage.
 
 ## Mobile App (`apps/mobile`)
 - Dev server: `pnpm dev:mobile` (Turbo → `expo start`). Use `pnpm dev:mobile:interactive` for Expo Dev Client flows.

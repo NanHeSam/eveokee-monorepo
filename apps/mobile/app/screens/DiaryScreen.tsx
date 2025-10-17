@@ -10,8 +10,8 @@ import { DiaryCalendar } from '../components/diary/DiaryCalendar';
 import { useThemeColors } from '../theme/useThemeColors';
 import { DiaryEntryCard } from '../components/diary/DiaryEntryCard';
 import { DiaryStackNavigationProp } from '../navigation/types';
-import { api } from '@eveokee/backend';
-import { Id } from '@eveokee/backend/convex/_generated/dataModel';
+import { api } from '@backend/convex';
+import { Id } from '@backend/convex/convex/_generated/dataModel';
 import { format } from "date-fns";
 
 type DiaryEntry = {

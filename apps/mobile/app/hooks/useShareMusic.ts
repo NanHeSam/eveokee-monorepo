@@ -2,8 +2,8 @@ import { useCallback } from 'react';
 import { Share, Alert } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useMutation } from 'convex/react';
-import { api } from '@eveokee/backend';
-import { Id } from '@eveokee/backend/convex/_generated/dataModel';
+import { api } from '@backend/convex';
+import { Id } from '@backend/convex/convex/_generated/dataModel';
 
 export const useShareMusic = () => {
   const createShareLink = useMutation(api.sharing.createShareLink);

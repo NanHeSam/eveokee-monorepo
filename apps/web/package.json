@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.50.0",
-    "@eveokee/backend": "workspace:*",
+    "@backend/convex": "workspace:*",
     "@sentry/react": "^10.17.0",
     "clsx": "^2.1.1",
     "convex": "^1.27.3",

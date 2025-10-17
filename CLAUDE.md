@@ -61,7 +61,7 @@ pnpm add -w <package>
 # Add to specific app
 pnpm add --filter mobile <package>
 pnpm add --filter web <package>
-pnpm add --filter @eveokee/backend <package>
+pnpm add --filter @backend/convex <package>
 ```
 
 ## Architecture
@@ -83,7 +83,7 @@ pnpm add --filter @eveokee/backend <package>
 
 - **packages/backend/convex/** - Shared Convex backend
   - Real-time database and serverless functions
-  - Shared between mobile and web via `@eveokee/backend` workspace package
+  - Shared between mobile and web via `@backend/convex` workspace package
   - Clerk authentication integration
   - OpenAI integration for music generation
 
@@ -103,12 +103,12 @@ The Convex backend is located at `packages/backend/convex/`. It's configured in 
 
 **Importing from apps:**
 ```typescript
-import { api } from '@eveokee/backend';
+import { api } from '@backend/convex';
 ```
 
-The package (`@eveokee/backend`) exports the generated API from `convex/_generated/api.js`.
+The package (`@backend/convex`) exports the generated API from `convex/_generated/api.js`.
 
-**Important:** Both mobile and web apps must use `@eveokee/backend` for imports. After `pnpm install`, the workspace package is symlinked in `node_modules/@eveokee/backend`.
+**Important:** Both mobile and web apps must use `@backend/convex` for imports. After `pnpm install`, the workspace package is symlinked in `node_modules/@backend/convex`.
 
 **Deploy** (run from repo root or `packages/backend`):
 ```bash
@@ -250,14 +250,14 @@ To add Android builds back to CI/CD:
 
 If `pnpm type-check` fails with module not found errors:
 
-1. **Missing workspace symlinks**: Run `pnpm install` to create `node_modules/@eveokee/backend` symlinks
-2. **Wrong import paths**: All imports must use `@eveokee/backend` (the workspace package name)
+1. **Missing workspace symlinks**: Run `pnpm install` to create `node_modules/@backend/convex` symlinks
+2. **Wrong import paths**: All imports must use `@backend/convex` (the workspace package name)
 3. **Cache issues**: Clear Turbo cache with `pnpm clean` and reinstall
 
 ### Import Best Practices
 
 ```typescript
 // ✅ Correct - import from workspace package
-import { api } from '@eveokee/backend';
-import { Id } from '@eveokee/backend/convex/_generated/dataModel';
+import { api } from '@backend/convex';
+import { Id } from '@backend/convex/convex/_generated/dataModel';
 ```

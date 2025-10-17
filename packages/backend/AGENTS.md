@@ -2,15 +2,15 @@
 
 ## Quick Start
 - Install dependencies at the repo root with `pnpm install`.
-- Start the Convex dev server via `pnpm dev:convex` (root) or `pnpm --filter @eveokee/backend dev`; it watches `convex/`.
-- Deploy with `pnpm --filter @eveokee/backend deploy` once changes are validated.
+- Start the Convex dev server via `pnpm dev:convex` (root) or `pnpm --filter @backend/convex dev`; it watches `convex/`.
+- Deploy with `pnpm --filter @backend/convex deploy` once changes are validated.
 - Regenerate types automatically by running the dev server; avoid editing files under `convex/_generated/`.
 
 ## Scripts
-- `pnpm --filter @eveokee/backend dev` — Runs `npx convex dev` locally.
-- `pnpm --filter @eveokee/backend deploy` — Publishes functions to the configured Convex project (requires `CONVEX_DEPLOY_KEY`).
-- `pnpm test:backend` or `pnpm --filter @eveokee/backend test` — Vitest suite.
-- `pnpm --filter @eveokee/backend test:watch` — Interactive Vitest mode.
+- `pnpm --filter @backend/convex dev` — Runs `npx convex dev` locally.
+- `pnpm --filter @backend/convex deploy` — Publishes functions to the configured Convex project (requires `CONVEX_DEPLOY_KEY`).
+- `pnpm test:backend` or `pnpm --filter @backend/convex test` — Vitest suite.
+- `pnpm --filter @backend/convex test:watch` — Interactive Vitest mode.
 - Type checking defers to Convex runtime types; no dedicated `tsc` step is provided.
 
 ## Testing Guidance

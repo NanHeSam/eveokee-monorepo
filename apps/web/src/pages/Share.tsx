@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useMutation, useQuery } from "convex/react";
-import { api } from "@eveokee/backend";
+import { api } from "@backend/convex";
 import MusicPlayer from "@/components/MusicPlayer";
 import { formatDistanceToNow } from "date-fns";
 import toast from "react-hot-toast";

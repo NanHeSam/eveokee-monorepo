@@ -134,7 +134,7 @@ After setting `SHARE_BASE_URL` in production:
 
 1. **Deploy the backend:**
    ```bash
-   pnpm --filter @eveokee/backend deploy
+   pnpm --filter @backend/convex deploy
    ```
 
 2. **Test share link generation:**
@@ -161,7 +161,7 @@ After setting `SHARE_BASE_URL` in production:
 1. ✅ Review the documentation in `ENV_VARS.md`
 2. ⚠️ **Action Required:** Set `SHARE_BASE_URL` in Convex dashboard to your production domain
 3. ⚠️ **Action Required:** Verify all other environment variables are set per `ENV_VARS.md`
-4. ✅ Deploy the updated code with `pnpm --filter @eveokee/backend deploy`
+4. ✅ Deploy the updated code with `pnpm --filter @backend/convex deploy`
 5. ✅ Test share link generation after deployment
 6. ✅ Follow the `DEPLOYMENT.md` checklist for future deployments
 

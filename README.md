@@ -158,14 +158,14 @@ pnpm add --filter mobile <package>
 pnpm add --filter web <package>
 
 # Add to backend
-pnpm add --filter @eveokee/backend <package>
+pnpm add --filter @backend/convex <package>
 ```
 
 ### Working with Convex
 
 The Convex backend is shared between mobile and web apps. Import like:
 ```typescript
-import { api } from '@eveokee/backend';
+import { api } from '@backend/convex';
 ```
 
 To deploy Convex functions:

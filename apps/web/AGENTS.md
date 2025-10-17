@@ -21,7 +21,7 @@
 - Mock Convex calls, Clerk, and Sentry integrations to keep suites deterministic.
 
 ## Implementation Notes
-- The app consumes Convex via `@eveokee/backend`; update generated types before shipping API changes.
+- The app consumes Convex via `@backend/convex`; update generated types before shipping API changes.
 - Sentry configuration (traces/replays) lives in `src/main.tsx`; adjust sampling carefully and document any changes.
 - Tailwind + `tailwind-merge` handle styling; follow existing utility class conventions instead of introducing CSS modules.
 - Markdown rendering (`react-markdown`, `remark-gfm`, `rehype-highlight`) powers diary previews—sanitize or escape content when adding new render paths.

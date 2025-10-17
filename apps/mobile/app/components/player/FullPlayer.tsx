@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTrackPlayerStore } from '../../store/useTrackPlayerStore';
 import { useThemeColors } from '../../theme/useThemeColors';
 import { useShareMusic } from '../../hooks/useShareMusic';
-import { Id } from '@eveokee/backend/convex/_generated/dataModel';
+import { Id } from '@backend/convex/convex/_generated/dataModel';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
