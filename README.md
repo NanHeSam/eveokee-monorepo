@@ -1,6 +1,6 @@
-# Diary Vibes Monorepo
+# Eveokee Monorepo
 
-This monorepo contains the Diary Vibes mobile app, web app, and shared Convex backend.
+This monorepo contains the Eveokee mobile app, web app, and shared Convex backend.
 
 ## Structure
 
@@ -158,14 +158,14 @@ pnpm add --filter mobile <package>
 pnpm add --filter web <package>
 
 # Add to backend
-pnpm add --filter @diary-vibes/backend <package>
+pnpm add --filter @backend/convex <package>
 ```
 
 ### Working with Convex
 
 The Convex backend is shared between mobile and web apps. Import like:
 ```typescript
-import { api } from '@diary-vibes/backend';
+import { api } from '@backend/convex';
 ```
 
 To deploy Convex functions:

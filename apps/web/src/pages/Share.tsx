@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useMutation, useQuery } from "convex/react";
-import { api } from "@diary-vibes/backend";
+import { api } from "@backend/convex";
 import MusicPlayer from "@/components/MusicPlayer";
 import { formatDistanceToNow } from "date-fns";
 import toast from "react-hot-toast";
@@ -110,7 +110,7 @@ export default function Share() {
             href="/"
             className="inline-block px-6 py-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-full font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
           >
-            Go to DiaryVibes
+            Go to Eveokee
           </a>
         </div>
       </div>
@@ -126,7 +126,7 @@ export default function Share() {
       try {
         await navigator.share({
           title: sharedMusic.title,
-          text: `Check out this music from DiaryVibes: ${sharedMusic.title}`,
+          text: `Check out this music from Eveokee: ${sharedMusic.title}`,
           url: shareUrl,
         });
       } catch (error) {
@@ -223,7 +223,7 @@ export default function Share() {
 
               <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                  Get DiaryVibes
+                  Get Eveokee
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
                   Create your own music diary. Turn your thoughts into personalized songs.
@@ -231,7 +231,7 @@ export default function Share() {
                 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center">
                   <a 
-                    href="https://apps.apple.com/app/diaryvibes"
+                    href="https://apps.apple.com/app/eveokee"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:opacity-80 transition-opacity"
@@ -243,7 +243,7 @@ export default function Share() {
                     />
                   </a>
                   <a 
-                    href="https://play.google.com/store/apps/details?id=com.diaryvibes"
+                    href="https://play.google.com/store/apps/details?id=com.eveokee"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:opacity-80 transition-opacity"

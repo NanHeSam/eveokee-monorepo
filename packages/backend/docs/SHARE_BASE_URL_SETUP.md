@@ -4,7 +4,7 @@ This document summarizes the work done to properly document and configure the `S
 
 ## Problem Statement
 
-The `sharing.ts` module was using a hardcoded fallback URL (`https://diaryvibes.com`) for generating shareable music links. This could lead to production deployments generating incorrect share links if the environment variable wasn't properly set.
+The `sharing.ts` module was using a hardcoded fallback URL (`https://eveokee.com`) for generating shareable music links. This could lead to production deployments generating incorrect share links if the environment variable wasn't properly set.
 
 ## Solution Implemented
 
@@ -61,7 +61,7 @@ Added explanatory comments at all three locations where `SHARE_BASE_URL` is used
 **Comment content:**
 ```typescript
 // SHARE_BASE_URL should be set in Convex dashboard (Settings → Environment Variables)
-// Fallback to diaryvibes.com is for development only
+// Fallback to eveokee.com is for development only
 // See packages/backend/ENV_VARS.md for setup instructions
 ```
 
@@ -79,7 +79,7 @@ Comprehensive deployment guide including:
 **Critical Share Link Testing Section:**
 ```bash
 # Expected: https://yourdomain.com/share/ABC123xyz
-# WRONG: https://diaryvibes.com/share/ABC123xyz
+# WRONG: https://eveokee.com/share/ABC123xyz
 ```
 
 ## Files Modified
@@ -134,13 +134,13 @@ After setting `SHARE_BASE_URL` in production:
 
 1. **Deploy the backend:**
    ```bash
-   pnpm --filter @diary-vibes/backend deploy
+   pnpm --filter @backend/convex deploy
    ```
 
 2. **Test share link generation:**
    - Create or select a music track in your app
    - Generate a share link using the UI
-   - Verify the returned URL contains your domain, not `diaryvibes.com`
+   - Verify the returned URL contains your domain, not `eveokee.com`
 
 3. **Test the share link:**
    - Open the generated link in an incognito/private window
@@ -161,7 +161,7 @@ After setting `SHARE_BASE_URL` in production:
 1. ✅ Review the documentation in `ENV_VARS.md`
 2. ⚠️ **Action Required:** Set `SHARE_BASE_URL` in Convex dashboard to your production domain
 3. ⚠️ **Action Required:** Verify all other environment variables are set per `ENV_VARS.md`
-4. ✅ Deploy the updated code with `pnpm --filter @diary-vibes/backend deploy`
+4. ✅ Deploy the updated code with `pnpm --filter @backend/convex deploy`
 5. ✅ Test share link generation after deployment
 6. ✅ Follow the `DEPLOYMENT.md` checklist for future deployments
 

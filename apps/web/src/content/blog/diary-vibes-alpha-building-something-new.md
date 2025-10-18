@@ -1,5 +1,5 @@
 ---
-title: "Diary Vibes Alpha: Building With Love and Music"
+title: "Eveokee Alpha: Building With Love and Music"
 slug: "diary-vibes-alpha-building-something-new"
 excerpt: "It's October again. Almost exactly a year ago, I left my job — not because of burnout or frustration, but because something bigger was about to enter my life..."
 publishedAt: "2024-10-15"
@@ -10,7 +10,7 @@ readTime: 5
 
 It's October again.
 
-Almost exactly a year ago, I left my job — not because of burnout or frustration, but because something bigger was about to enter my life: my son, Orion. I took that time to slow down, get ready for his birth, and embrace a new chapter as a father. In that quiet space, I also registered a domain name: diaryvibes.com.
+Almost exactly a year ago, I left my job — not because of burnout or frustration, but because something bigger was about to enter my life: my son, Orion. I took that time to slow down, get ready for his birth, and embrace a new chapter as a father. In that quiet space, I also registered a domain name: eveokee.com.
 
 I didn't know exactly what it would become, but I knew one thing: I've always been drawn to music. Not as a musician — I can't play a single instrument — but as someone who loves to feel. Music has always been my way of vibing with life.
 
@@ -24,7 +24,7 @@ Journaling has always intrigued me. Capturing thoughts, reflecting, giving shape
 
 Music, though — music is different. A single chord can hold more emotion than a page of text. And with generative music tools like Suno becoming genuinely powerful, I suddenly saw a way to bring journaling and music together.
 
-Diary Vibes is built around a simple, emotional idea:
+Eveokee is built around a simple, emotional idea:
 
 **What if your diary could sing back to you?**
 
@@ -36,7 +36,7 @@ When you write, the app turns your entry into music — songs that reflect the e
 
 About two weeks ago, I started building. I kept it lean, iterating quickly, chasing that feeling where the product is just enough to show, even if it's not perfect. I originally wanted to launch with mobile apps, but the developer accounts and approvals take time. So instead of waiting, I made a choice:
 
-🚀 **Launch the alpha as a website: diaryvibes.com**
+🚀 **Launch the alpha as a website: eveokee.com**
 
 It's free to use right now. Yes, it costs me something to run, but this isn't about monetization yet — it's about sharing something real. Letting others vibe with me early. When I finally pressed "publish," it was a mix of relief and acceptance. Relief that something I've dreamed of for a year is now out there. Acceptance that bugs will exist. But I'd rather share something alive than keep something perfect locked away.
 
@@ -54,12 +54,12 @@ Words can explain what a product does, but music captures why it matters. This s
 
 ## The Vision
 
-If Diary Vibes succeeds, I want people to have that "wow" moment — the kind where you don't need to explain your feelings, you just share a song that was born from your own words, and someone close to you gets it.
+If Eveokee succeeds, I want people to have that "wow" moment — the kind where you don't need to explain your feelings, you just share a song that was born from your own words, and someone close to you gets it.
 
 It's about letting your private world hum, sing, and echo back. It's about emotion made audible.
 
 This is just the alpha. I still have mobile apps to finish, more features to add, and plenty to improve. But right now, this is my emotional snapshot — a personal project, born out of love for my son, my life, and music.
 
-👉 **[diaryvibes.com](https://diaryvibes.com)**
+👉 **[eveokee.com](https://eveokee.com)**
 
 Come vibe with me.

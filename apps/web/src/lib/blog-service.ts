@@ -55,10 +55,10 @@ const { frontmatter: whyPeopleLoveFrontmatter, content: whyPeopleLoveContentPars
 
 const blogPosts: BlogPost[] = [
   {
-    id: (typeof whyPeopleLoveFrontmatter.slug === 'string' ? whyPeopleLoveFrontmatter.slug : undefined) || 'why-people-fall-in-love-with-diary-vibes',
+    id: (typeof whyPeopleLoveFrontmatter.slug === 'string' ? whyPeopleLoveFrontmatter.slug : undefined) || 'why-people-fall-in-love-with-eveokee',
     title: (typeof whyPeopleLoveFrontmatter.title === 'string' ? whyPeopleLoveFrontmatter.title : undefined) || 'Turning Your Journal into a Soundtrack',
-    slug: (typeof whyPeopleLoveFrontmatter.slug === 'string' ? whyPeopleLoveFrontmatter.slug : undefined) || 'why-people-fall-in-love-with-diary-vibes',
-    excerpt: (typeof whyPeopleLoveFrontmatter.excerpt === 'string' ? whyPeopleLoveFrontmatter.excerpt : undefined) || 'Eight stories about why people fall in love with Diary Vibes.',
+    slug: (typeof whyPeopleLoveFrontmatter.slug === 'string' ? whyPeopleLoveFrontmatter.slug : undefined) || 'why-people-fall-in-love-with-eveokee',
+    excerpt: (typeof whyPeopleLoveFrontmatter.excerpt === 'string' ? whyPeopleLoveFrontmatter.excerpt : undefined) || 'Eight stories about why people fall in love with Eveokee.',
     content: whyPeopleLoveContentParsed,
     publishedAt: (typeof whyPeopleLoveFrontmatter.publishedAt === 'string' ? whyPeopleLoveFrontmatter.publishedAt : undefined) || '2025-10-16',
     author: (typeof whyPeopleLoveFrontmatter.author === 'string' ? whyPeopleLoveFrontmatter.author : undefined) || 'Sam He',
@@ -66,9 +66,9 @@ const blogPosts: BlogPost[] = [
     readTime: (typeof whyPeopleLoveFrontmatter.readTime === 'string' ? parseInt(whyPeopleLoveFrontmatter.readTime, 10) : typeof whyPeopleLoveFrontmatter.readTime === 'number' ? whyPeopleLoveFrontmatter.readTime : undefined) || 8,
   },
   {
-    id: (typeof frontmatter.slug === 'string' ? frontmatter.slug : undefined) || 'diary-vibes-alpha-building-something-new',
-    title: (typeof frontmatter.title === 'string' ? frontmatter.title : undefined) || 'Diary Vibes Alpha: Building Something New',
-    slug: (typeof frontmatter.slug === 'string' ? frontmatter.slug : undefined) || 'diary-vibes-alpha-building-something-new',
+    id: (typeof frontmatter.slug === 'string' ? frontmatter.slug : undefined) || 'eveokee-alpha-building-something-new',
+    title: (typeof frontmatter.title === 'string' ? frontmatter.title : undefined) || 'Eveokee Alpha: Building Something New',
+    slug: (typeof frontmatter.slug === 'string' ? frontmatter.slug : undefined) || 'eveokee-alpha-building-something-new',
     excerpt: (typeof frontmatter.excerpt === 'string' ? frontmatter.excerpt : undefined) || 'The journey of creating an app that transforms your personal thoughts and experiences into personalized music.',
     content: content,
     publishedAt: (typeof frontmatter.publishedAt === 'string' ? frontmatter.publishedAt : undefined) || '2024-10-15',

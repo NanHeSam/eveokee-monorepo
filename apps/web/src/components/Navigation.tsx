@@ -32,7 +32,7 @@ export default function Navigation() {
               <div className="w-10 h-10 bg-accent-mint rounded-xl flex items-center justify-center relative overflow-hidden shadow-lg">
                 <span className="text-white text-lg font-bold">D</span>
               </div>
-              <span className="ml-3 text-xl font-bold text-gray-900 dark:text-white">Diary Vibes</span>
+              <span className="ml-3 text-xl font-bold text-gray-900 dark:text-white">Eveokee</span>
             </Link>
           </div>
 

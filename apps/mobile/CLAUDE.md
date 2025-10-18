@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is the **mobile app** in the Diary Vibes monorepo. It's a React Native application built with Expo that allows users to create diary entries with associated AI-generated music.
+This is the **mobile app** in the Eveokee monorepo. It's a React Native application built with Expo that allows users to create diary entries with associated AI-generated music.
 
 - **Frontend**: React Native with Expo (uses dev builds, **New Architecture enabled**)
 - **Backend**: Shared Convex backend from `packages/backend/convex/`
@@ -80,11 +80,11 @@ cd packages/backend && npx convex deploy
 
 **Import the shared backend:**
 ```typescript
-import { api } from '@diary-vibes/backend';
-import { Id } from '@diary-vibes/backend/convex/_generated/dataModel';
+import { api } from '@backend/convex';
+import { Id } from '@backend/convex/convex/_generated/dataModel';
 ```
 
-**Important**: Always use `@diary-vibes/backend` as the import path - this is the workspace package name.
+**Important**: Always use `@backend/convex` as the import path - this is the workspace package name.
 
 The Convex backend is shared between mobile and web apps. See root [CLAUDE.md](../../CLAUDE.md#convex-backend) for full database schema and backend documentation.
 

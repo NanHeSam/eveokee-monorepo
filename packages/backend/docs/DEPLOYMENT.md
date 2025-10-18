@@ -54,7 +54,7 @@ After running `npx convex deploy`:
 - [ ] Test critical endpoints:
   - [ ] Authentication (sign in/sign up)
   - [ ] Music generation
-  - [ ] Share link creation (verify URL uses your domain, not `diaryvibes.com`)
+  - [ ] Share link creation (verify URL uses your domain, not `eveokee.com`)
   - [ ] Webhook endpoints (if applicable)
 
 ### 4. Integration Tests
@@ -69,7 +69,7 @@ After running `npx convex deploy`:
 ### Manual Deployment
 ```bash
 # From repository root
-pnpm --filter @diary-vibes/backend deploy
+pnpm --filter @backend/convex deploy
 
 # Or directly with Convex CLI
 cd packages/backend
@@ -100,7 +100,7 @@ See `.github/workflows/ci.yml` for the full workflow.
    # 2. Generate a share link
    # 3. Verify the link URL:
    # Expected: https://yourdomain.com/share/ABC123xyz
-   # WRONG: https://diaryvibes.com/share/ABC123xyz
+   # WRONG: https://eveokee.com/share/ABC123xyz
    ```
 
 3. **Environment Variable Verification**
@@ -120,7 +120,7 @@ If deployment issues occur:
 2. **Fix and Redeploy**
    - Fix the issue in your code
    - Run tests: `pnpm test:backend`
-   - Redeploy: `pnpm --filter @diary-vibes/backend deploy`
+   - Redeploy: `pnpm --filter @backend/convex deploy`
 
 3. **Emergency Hotfix**
    - Create a hotfix branch
@@ -130,7 +130,7 @@ If deployment issues occur:
 
 ## Common Issues
 
-### Issue: Share links use `diaryvibes.com` instead of my domain
+### Issue: Share links use `eveokee.com` instead of my domain
 **Cause:** `SHARE_BASE_URL` not set in Convex dashboard  
 **Fix:** Set `SHARE_BASE_URL` in Convex Dashboard → Settings → Environment Variables
 
