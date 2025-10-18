@@ -31,8 +31,8 @@ export const useArtworkCard = () => {
       
       try {
         await Share.share({
-          title: `Check out "${cardData.title}" on Eveokee`,
-          message: `Check out "${cardData.title}" on Eveokee!\n\n${shareResult.shareUrl}`,
+          title: `Check out "${cardData.title}" on eveokee`,
+          message: `Check out "${cardData.title}" on eveokee!\n\n${shareResult.shareUrl}`,
           url: uri,
         });
       } catch (shareError: any) {

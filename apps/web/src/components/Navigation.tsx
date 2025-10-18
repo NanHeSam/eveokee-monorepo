@@ -30,9 +30,9 @@ export default function Navigation() {
           <div className="flex-shrink-0">
             <Link to="/" className="flex items-center hover:opacity-80 transition-opacity cursor-pointer">
               <div className="w-10 h-10 bg-accent-mint rounded-xl flex items-center justify-center relative overflow-hidden shadow-lg">
-                <span className="text-white text-lg font-bold">D</span>
+                <span className="text-white text-lg font-bold">e</span>
               </div>
-              <span className="ml-3 text-xl font-bold text-gray-900 dark:text-white">Eveokee</span>
+              <span className="ml-3 text-xl font-bold text-gray-900 dark:text-white">eveokee</span>
             </Link>
           </div>
 

@@ -109,10 +109,13 @@ export default function HowItWorksSection() {
   
   const startMusicGeneration = useMutation(api.music.startDiaryMusicGeneration);
   const [generatedMusic, setGeneratedMusic] = useState<GeneratedMusic | null>(null);
+  const [hasRestoredFromStorage, setHasRestoredFromStorage] = useState(false);
   const storageKey = `last_generated_music_${userId ?? 'guest'}`;
 
-  // Restore last generated music card on refresh
+  // Restore last generated music card on refresh (only once)
   useEffect(() => {
+    if (hasRestoredFromStorage) return;
+
     try {
       const raw = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
       if (raw && !generatedMusic) {
@@ -125,8 +128,9 @@ export default function HowItWorksSection() {
     } catch {
       // no-op
     }
-    // We only depend on storageKey so it runs on auth changes or first mount
-  }, [storageKey, generatedMusic]);
+    setHasRestoredFromStorage(true);
+    // Only run once on mount or when storageKey changes
+  }, [storageKey]);
 
   // Persist whenever generatedMusic changes (or clear when reset)
   useEffect(() => {
@@ -531,6 +535,7 @@ export default function HowItWorksSection() {
                           setDiaryContent('');
                           setElapsedTime(0);
                           setStartTime(null);
+                          setIsGenerating(false);
                         }}
                         className="inline-flex items-center px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                       >
@@ -558,6 +563,7 @@ export default function HowItWorksSection() {
                         setDiaryContent('');
                         setElapsedTime(0);
                         setStartTime(null);
+                        setIsGenerating(false);
                       }}
                       className="inline-flex items-center px-6 py-3 bg-accent-mint text-white font-medium rounded-lg hover:bg-accent-mint/90 transition-colors"
                     >
