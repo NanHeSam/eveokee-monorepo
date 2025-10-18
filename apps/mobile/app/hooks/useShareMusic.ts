@@ -14,8 +14,8 @@ export const useShareMusic = () => {
       
       try {
         await Share.share({
-          title: `Check out "${title}" on Eveokee`,
-          message: `Check out "${title}" on Eveokee!\n\n${result.shareUrl}`,
+          title: `Check out "${title}" on eveokee`,
+          message: `Check out "${title}" on eveokee!\n\n${result.shareUrl}`,
           url: result.shareUrl,
         });
       } catch (shareError: any) {

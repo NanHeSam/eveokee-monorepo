@@ -110,7 +110,7 @@ export default function Share() {
             href="/"
             className="inline-block px-6 py-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-full font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
           >
-            Go to Eveokee
+            Go to eveokee
           </a>
         </div>
       </div>
@@ -126,7 +126,7 @@ export default function Share() {
       try {
         await navigator.share({
           title: sharedMusic.title,
-          text: `Check out this music from Eveokee: ${sharedMusic.title}`,
+          text: `Check out this music from eveokee: ${sharedMusic.title}`,
           url: shareUrl,
         });
       } catch (error) {
@@ -223,7 +223,7 @@ export default function Share() {
 
               <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                  Get Eveokee
+                  Get eveokee
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
                   Create your own music diary. Turn your thoughts into personalized songs.

@@ -12,7 +12,7 @@ export default function Footer() {
         <div className="py-12 grid md:grid-cols-3 gap-8">
           {/* Brand */}
           <div className="md:col-span-2">
-            <h3 className="text-2xl font-bold mb-4">Eveokee</h3>
+            <h3 className="text-2xl font-bold mb-4">eveokee</h3>
             <p className="text-gray-400 dark:text-gray-500 mb-6 max-w-md">
               Turn your diary into sound. A new way of journaling where your words become music.
             </p>
@@ -77,7 +77,7 @@ export default function Footer() {
           <div className="flex flex-col md:flex-row justify-between items-center md:items-start space-y-4 md:space-y-0 text-center md:text-left">
             {/* Copyright */}
             <div className="flex flex-wrap items-center justify-center md:justify-start text-gray-400 dark:text-gray-500 text-sm gap-x-1">
-              <span>&copy; {currentYear} Eveokee.</span>
+              <span>&copy; {currentYear} eveokee.</span>
               <span className="flex items-center">
                 Made with
                 <Heart className="w-4 h-4 text-red-500 mx-1" />

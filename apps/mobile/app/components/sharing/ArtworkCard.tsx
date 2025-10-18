@@ -50,7 +50,7 @@ export const ArtworkCard = ({ title, imageUrl, lyric, shareUrl }: ArtworkCardPro
         
         <View style={[styles.footer, { borderTopColor: colors.border }]}>
           <Text style={[styles.branding, { color: colors.textMuted }]}>
-            Eveokee
+            eveokee
           </Text>
         </View>
       </View>

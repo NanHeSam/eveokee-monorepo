@@ -49,7 +49,7 @@ export default function FinalCTASection() {
           <div className="bg-white dark:bg-gray-800 rounded-3xl p-12 shadow-2xl">
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-6" />
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              Welcome to Eveokee!
+              Welcome to eveokee!
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
               Thank you for signing up! We're excited to have you on this journey of turning words into music.
@@ -72,7 +72,7 @@ export default function FinalCTASection() {
             Start your new journaling journey
           </h2>
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-            Sign up today to be notified when Eveokee launches and start turning your words into music.
+            Sign up today to be notified when eveokee launches and start turning your words into music.
           </p>
           
           {/* Email Signup Form */}

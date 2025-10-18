@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PenTool, Music, Headphones, Loader2, Sparkles } from 'lucide-react';
 import { SignedIn, SignedOut, useAuth } from '@clerk/clerk-react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@backend/convex';
+import { Id } from '@backend/convex/convex/_generated/dataModel';
 import Confetti from 'react-confetti';
 import { Link } from 'react-router-dom';
 import DemoCard from './DemoCard';
@@ -40,7 +41,7 @@ const steps: Step[] = [
 ];
 
 interface GeneratedMusic {
-  diaryId: string;
+  diaryId: Id<"diaries">;
   audioUrl?: string;
   title?: string;
   status: 'pending' | 'ready' | 'failed';
@@ -102,21 +103,29 @@ export default function HowItWorksSection() {
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
-  const [retryDiaryId, setRetryDiaryId] = useState<string | null>(null);
+  const [retryDiaryId, setRetryDiaryId] = useState<Id<"diaries"> | null>(null);
   const [testimonialIndex, setTestimonialIndex] = useState(0);
   
   const { isSignedIn, userId } = useAuth();
   
   const startMusicGeneration = useMutation(api.music.startDiaryMusicGeneration);
   const [generatedMusic, setGeneratedMusic] = useState<GeneratedMusic | null>(null);
+  const hasRestoredFromStorage = useRef(false);
   const storageKey = `last_generated_music_${userId ?? 'guest'}`;
 
-  // Restore last generated music card on refresh
+  // Reset the restoration flag when storageKey changes (different user)
   useEffect(() => {
+    hasRestoredFromStorage.current = false;
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (hasRestoredFromStorage.current) return;
+
     try {
       const raw = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
       if (raw && !generatedMusic) {
-        const data = JSON.parse(raw) as GeneratedMusic;
+        const json = JSON.parse(raw) as Omit<GeneratedMusic, 'diaryId'> & { diaryId: string };
+        const data: GeneratedMusic = { ...json, diaryId: json.diaryId as Id<"diaries"> };
         setGeneratedMusic(data);
         if (data.status === 'pending') {
           setIsGenerating(true);
@@ -125,7 +134,7 @@ export default function HowItWorksSection() {
     } catch {
       // no-op
     }
-    // We only depend on storageKey so it runs on auth changes or first mount
+    hasRestoredFromStorage.current = true;
   }, [storageKey, generatedMusic]);
 
   // Persist whenever generatedMusic changes (or clear when reset)
@@ -223,7 +232,7 @@ export default function HowItWorksSection() {
 
     try {
       // Reuse previous diaryId on retry to avoid creating new rows
-      const payload: { content: string; diaryId?: string } = { content: diaryContent.trim() };
+      const payload: { content: string; diaryId?: Id<"diaries"> } = { content: diaryContent.trim() };
       if (retryDiaryId) payload.diaryId = retryDiaryId;
       const result = await startMusicGeneration(payload);
 
@@ -235,7 +244,7 @@ export default function HowItWorksSection() {
         setElapsedTime(0);
         // Record returned diaryId for next attempt to reuse
         if (result?.diaryId) {
-          setRetryDiaryId(String(result.diaryId));
+          setRetryDiaryId(result.diaryId);
         }
         setToast({
           message: result?.reason || 'Failed to start music generation',
@@ -297,7 +306,7 @@ export default function HowItWorksSection() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleSelectTrack = (music: { diaryId: string; status?: string; createdAt?: number; diaryDate?: number; audioUrl?: string; title?: string; duration?: number; lyric?: string; imageUrl?: string }) => {
+  const handleSelectTrack = (music: { diaryId: Id<"diaries">; status?: string; createdAt?: number; diaryDate?: number; audioUrl?: string; title?: string; duration?: number; lyric?: string; imageUrl?: string }) => {
     if (!music) return;
     setShowConfetti(false);
 
@@ -518,7 +527,7 @@ export default function HowItWorksSection() {
                         title={generatedMusic.title || 'Your Personalized Song'}
                         date={new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                         imageUrl={generatedMusic.imageUrl}
-                        audioId={generatedMusic.diaryId}
+                        audioId={String(generatedMusic.diaryId)}
                         audioUrl={generatedMusic.audioUrl || ''}
                         duration={generatedMusic.duration ? `${Math.floor(generatedMusic.duration / 60)}:${Math.floor(generatedMusic.duration % 60).toString().padStart(2, '0')}` : '0:00'}
                       />
@@ -531,6 +540,7 @@ export default function HowItWorksSection() {
                           setDiaryContent('');
                           setElapsedTime(0);
                           setStartTime(null);
+                          setIsGenerating(false);
                         }}
                         className="inline-flex items-center px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                       >
@@ -558,6 +568,7 @@ export default function HowItWorksSection() {
                         setDiaryContent('');
                         setElapsedTime(0);
                         setStartTime(null);
+                        setIsGenerating(false);
                       }}
                       className="inline-flex items-center px-6 py-3 bg-accent-mint text-white font-medium rounded-lg hover:bg-accent-mint/90 transition-colors"
                     >
