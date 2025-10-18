@@ -17,7 +17,7 @@ import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-n
 import { useSignUp } from '@clerk/clerk-expo';
 
 import { useMutation } from 'convex/react';
-import { api } from '@diary-vibes/backend';
+import { api } from '@backend/convex';
 
 import { palette } from '../theme/colors';
 
