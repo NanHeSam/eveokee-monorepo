@@ -119,21 +119,7 @@ export const SignInScreen = () => {
 
       if (result.status === 'complete') {
         await finalizeSession(setActive, result.createdSessionId);
-      } else if (result.status === 'needs_first_factor') {
-        // Account exists but might need verification or 2FA
-        Alert.alert(
-          'Verification Required',
-          'Please complete account verification. Go to Sign Up to receive a new verification code.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Go to Sign Up', onPress: () => navigation.navigate('SignUp', { 
-              prefillEmail: identifier.trim(),
-              isVerificationOnly: true 
-            }) },
-          ]
-        );
       } else {
-        // Other incomplete statuses
         console.log('Sign in status:', result.status);
         Alert.alert('Sign in incomplete', 'Please complete the sign in process.');
       }

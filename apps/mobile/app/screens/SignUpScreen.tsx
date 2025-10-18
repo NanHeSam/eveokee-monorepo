@@ -148,7 +148,7 @@ export const SignUpScreen = ({ route }: SignUpScreenProps) => {
                 onPress: async () => {
                   try {
                     setIsLoading(true);
-                    // For unverified accounts, just send verification code
+                    await signUp?.create({ emailAddress: emailAddress.trim() });
                     await signUp?.prepareEmailAddressVerification({ strategy: 'email_code' });
                     setPendingVerification(true);
                   } catch (resendErr: any) {
