@@ -1,6 +1,6 @@
 import './global.css';
 
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { ConvexReactClient } from 'convex/react';
@@ -27,6 +27,7 @@ import { TrackPlayerProvider } from './app/providers/TrackPlayerProvider';
 import { PostHogProvider } from './app/providers/PostHogProvider';
 import { usePostHogNavigation } from './app/hooks/usePostHogNavigation';
 import * as Sentry from '@sentry/react-native';
+import { configureRevenueCat } from './app/utils/revenueCat';
 
 // Only initialize Sentry in production/preview builds (not local development)
 const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
@@ -188,6 +189,25 @@ function AppContent() {
 }
 
 function App() {
+  useEffect(() => {
+    const initializeRevenueCat = async () => {
+      const apiKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY;
+      
+      if (!apiKey) {
+        console.warn('RevenueCat API key not found. In-app purchases will not be available.');
+        return;
+      }
+
+      try {
+        await configureRevenueCat(apiKey);
+      } catch (error) {
+        console.error('Failed to initialize RevenueCat:', error);
+      }
+    };
+
+    initializeRevenueCat();
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
