@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PenTool, Music, Headphones, Loader2, Sparkles } from 'lucide-react';
 import { SignedIn, SignedOut, useAuth } from '@clerk/clerk-react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@backend/convex';
+import { Id } from '@backend/convex/convex/_generated/dataModel';
 import Confetti from 'react-confetti';
 import { Link } from 'react-router-dom';
 import DemoCard from './DemoCard';
@@ -102,19 +103,24 @@ export default function HowItWorksSection() {
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
-  const [retryDiaryId, setRetryDiaryId] = useState<string | null>(null);
+  const [retryDiaryId, setRetryDiaryId] = useState<Id<"diaries"> | null>(null);
   const [testimonialIndex, setTestimonialIndex] = useState(0);
   
   const { isSignedIn, userId } = useAuth();
   
   const startMusicGeneration = useMutation(api.music.startDiaryMusicGeneration);
   const [generatedMusic, setGeneratedMusic] = useState<GeneratedMusic | null>(null);
-  const [hasRestoredFromStorage, setHasRestoredFromStorage] = useState(false);
+  const hasRestoredFromStorage = useRef(false);
   const storageKey = `last_generated_music_${userId ?? 'guest'}`;
 
-  // Restore last generated music card on refresh (only once)
+  // Reset the restoration flag when storageKey changes (different user)
   useEffect(() => {
-    if (hasRestoredFromStorage) return;
+    hasRestoredFromStorage.current = false;
+  }, [storageKey]);
+
+  // Restore last generated music card on refresh (only once per storageKey)
+  useEffect(() => {
+    if (hasRestoredFromStorage.current) return;
 
     try {
       const raw = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
@@ -128,9 +134,8 @@ export default function HowItWorksSection() {
     } catch {
       // no-op
     }
-    setHasRestoredFromStorage(true);
-    // Only run once on mount or when storageKey changes
-  }, [storageKey]);
+    hasRestoredFromStorage.current = true;
+  }, [storageKey, generatedMusic]);
 
   // Persist whenever generatedMusic changes (or clear when reset)
   useEffect(() => {
@@ -227,7 +232,7 @@ export default function HowItWorksSection() {
 
     try {
       // Reuse previous diaryId on retry to avoid creating new rows
-      const payload: { content: string; diaryId?: string } = { content: diaryContent.trim() };
+      const payload: { content: string; diaryId?: Id<"diaries"> } = { content: diaryContent.trim() };
       if (retryDiaryId) payload.diaryId = retryDiaryId;
       const result = await startMusicGeneration(payload);
 
@@ -239,7 +244,7 @@ export default function HowItWorksSection() {
         setElapsedTime(0);
         // Record returned diaryId for next attempt to reuse
         if (result?.diaryId) {
-          setRetryDiaryId(String(result.diaryId));
+          setRetryDiaryId(result.diaryId);
         }
         setToast({
           message: result?.reason || 'Failed to start music generation',

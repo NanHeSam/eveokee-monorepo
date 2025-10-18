@@ -16,10 +16,25 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSignUp } from '@clerk/clerk-expo';
 
-import { useMutation } from 'convex/react';
-import { api } from '@backend/convex';
-
 import { palette } from '../theme/colors';
+import { useAuthSetup } from '../hooks/useAuthSetup';
+
+// Error handling helpers
+type SignUpErrorType = 'duplicate_verified' | 'duplicate_unverified' | 'generic_error';
+
+const getSignUpErrorType = (
+  errorCode: string | undefined,
+  errorMessage: string | undefined,
+  errorLongMessage: string | undefined
+): SignUpErrorType => {
+  if (errorCode === 'form_identifier_exists' || errorMessage?.includes('claimed by another user')) {
+    if (errorLongMessage?.includes('verification') || errorMessage?.includes('verification')) {
+      return 'duplicate_unverified';
+    }
+    return 'duplicate_verified';
+  }
+  return 'generic_error';
+};
 
 type RootStackParamList = {
   SignIn: undefined;
@@ -40,31 +55,13 @@ export const SignUpScreen = ({ route }: SignUpScreenProps) => {
   const [pendingVerification, setPendingVerification] = useState(false);
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
-  const ensureCurrentUserMutation = useMutation(api.users.ensureCurrentUser);
 
-  const ensureConvexUser = useCallback(async () => {
-    const maxAttempts = 3;
+  const { ensureConvexUser } = useAuthSetup();
 
-    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      try {
-        const result = await ensureCurrentUserMutation();
-        if (result) {
-          return result;
-        }
-      } catch (err) {
-        if (attempt === maxAttempts - 1) {
-          console.error('Failed to ensure Convex user document', err);
-        }
-      }
-
-      if (attempt < maxAttempts - 1) {
-        await new Promise(resolve => setTimeout(resolve, 200 * (attempt + 1)));
-      }
-    }
-
-    return null;
-  }, [ensureCurrentUserMutation]);
+  // Simple email validation regex
+  const isValidEmail = useCallback((email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }, []);
 
   const handleSignIn = useCallback(() => {
     navigation.navigate('SignIn');
@@ -94,6 +91,11 @@ export const SignUpScreen = ({ route }: SignUpScreenProps) => {
 
     if (!emailAddress.trim()) {
       Alert.alert('Missing email', 'Please enter your email address.');
+      return;
+    }
+
+    if (!isValidEmail(emailAddress.trim())) {
+      Alert.alert('Invalid email', 'Please enter a valid email address.');
       return;
     }
 
@@ -132,18 +134,18 @@ export const SignUpScreen = ({ route }: SignUpScreenProps) => {
       const errorCode = err?.errors?.[0]?.code;
       const errorMessage = err?.errors?.[0]?.message;
       const errorLongMessage = err?.errors?.[0]?.longMessage;
-      
-      // Handle specific error cases
-      if (errorCode === 'form_identifier_exists' || errorMessage?.includes('claimed by another user')) {
-        // Check if the account exists but is unverified
-        if (errorLongMessage?.includes('verification') || errorMessage?.includes('verification')) {
+
+      const errorType = getSignUpErrorType(errorCode, errorMessage, errorLongMessage);
+
+      switch (errorType) {
+        case 'duplicate_unverified':
           Alert.alert(
             'Account Already Exists',
             'This email is registered but not verified. Would you like to receive a new verification code?',
             [
               { text: 'Cancel', style: 'cancel' },
-              { 
-                text: 'Send Code', 
+              {
+                text: 'Send Code',
                 onPress: async () => {
                   try {
                     setIsLoading(true);
@@ -167,7 +169,9 @@ export const SignUpScreen = ({ route }: SignUpScreenProps) => {
               },
             ]
           );
-        } else {
+          break;
+
+        case 'duplicate_verified':
           Alert.alert(
             'Account Already Exists',
             'This email is already registered. Please sign in instead.',
@@ -176,14 +180,17 @@ export const SignUpScreen = ({ route }: SignUpScreenProps) => {
               { text: 'Go to Sign In', onPress: handleSignIn },
             ]
           );
-        }
-      } else {
-        Alert.alert('Sign up failed', errorMessage || 'Sign up failed. Please try again.');
+          break;
+
+        case 'generic_error':
+        default:
+          Alert.alert('Sign up failed', errorMessage || 'Sign up failed. Please try again.');
+          break;
       }
     } finally {
       setIsLoading(false);
     }
-  }, [isLoaded, emailAddress, password, signUp, handleSignIn, isVerificationOnly]);
+  }, [isLoaded, emailAddress, password, signUp, handleSignIn, isVerificationOnly, isValidEmail]);
 
   const handleVerify = useCallback(async () => {
     if (!isLoaded) return;

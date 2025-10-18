@@ -18,10 +18,8 @@ import * as WebBrowser from 'expo-web-browser';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { useMutation } from 'convex/react';
-import { api } from '@backend/convex';
-
 import { palette } from '../theme/colors';
+import { useAuthSetup } from '../hooks/useAuthSetup';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -113,30 +111,8 @@ export const SignInScreen = () => {
   const [password, setPassword] = useState('');
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const ensureCurrentUserMutation = useMutation(api.users.ensureCurrentUser);
 
-  const ensureConvexUser = useCallback(async () => {
-    const maxAttempts = 3;
-
-    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      try {
-        const result = await ensureCurrentUserMutation();
-        if (result) {
-          return result;
-        }
-      } catch (err) {
-        if (attempt === maxAttempts - 1) {
-          console.error('Failed to ensure Convex user document', err);
-        }
-      }
-
-      if (attempt < maxAttempts - 1) {
-        await new Promise(resolve => setTimeout(resolve, 200 * (attempt + 1)));
-      }
-    }
-
-    return null;
-  }, [ensureCurrentUserMutation]);
+  const { ensureConvexUser } = useAuthSetup();
 
   const finalizeSession = useCallback(
     async (
