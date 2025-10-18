@@ -41,7 +41,7 @@ const steps: Step[] = [
 ];
 
 interface GeneratedMusic {
-  diaryId: string;
+  diaryId: Id<"diaries">;
   audioUrl?: string;
   title?: string;
   status: 'pending' | 'ready' | 'failed';
@@ -118,14 +118,14 @@ export default function HowItWorksSection() {
     hasRestoredFromStorage.current = false;
   }, [storageKey]);
 
-  // Restore last generated music card on refresh (only once per storageKey)
   useEffect(() => {
     if (hasRestoredFromStorage.current) return;
 
     try {
       const raw = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
       if (raw && !generatedMusic) {
-        const data = JSON.parse(raw) as GeneratedMusic;
+        const json = JSON.parse(raw) as Omit<GeneratedMusic, 'diaryId'> & { diaryId: string };
+        const data: GeneratedMusic = { ...json, diaryId: json.diaryId as Id<"diaries"> };
         setGeneratedMusic(data);
         if (data.status === 'pending') {
           setIsGenerating(true);
@@ -306,7 +306,7 @@ export default function HowItWorksSection() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleSelectTrack = (music: { diaryId: string; status?: string; createdAt?: number; diaryDate?: number; audioUrl?: string; title?: string; duration?: number; lyric?: string; imageUrl?: string }) => {
+  const handleSelectTrack = (music: { diaryId: Id<"diaries">; status?: string; createdAt?: number; diaryDate?: number; audioUrl?: string; title?: string; duration?: number; lyric?: string; imageUrl?: string }) => {
     if (!music) return;
     setShowConfetti(false);
 
@@ -527,7 +527,7 @@ export default function HowItWorksSection() {
                         title={generatedMusic.title || 'Your Personalized Song'}
                         date={new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                         imageUrl={generatedMusic.imageUrl}
-                        audioId={generatedMusic.diaryId}
+                        audioId={String(generatedMusic.diaryId)}
                         audioUrl={generatedMusic.audioUrl || ''}
                         duration={generatedMusic.duration ? `${Math.floor(generatedMusic.duration / 60)}:${Math.floor(generatedMusic.duration % 60).toString().padStart(2, '0')}` : '0:00'}
                       />

@@ -29,61 +29,24 @@ const redirectUrl = AuthSession.makeRedirectUri({
 });
 
 // Error handling helpers
-type SignInErrorType = 'unverified_account' | 'wrong_password' | 'generic_error';
+type SignInErrorType = 'wrong_password' | 'generic_error';
 
 const getSignInErrorType = (
   errorCode: string | undefined,
   errorMessage: string | undefined,
   errorLongMessage: string | undefined
 ): SignInErrorType => {
-  // Strategy 1: Use Clerk's error code prefixes (most reliable)
-  if (errorCode) {
-    if (errorCode.startsWith('form_identifier_')) {
-      return 'unverified_account';
-    }
-    if (errorCode.startsWith('form_password_')) {
-      return 'wrong_password';
-    }
-  }
-  
-  // Strategy 2: Check if we have a sign-in result that indicates unverified account
-  // This is more reliable than parsing error messages
-  if (errorMessage && errorMessage.includes('Couldn\'t find your account')) {
-    // This specific error from Clerk usually means unverified account
-    return 'unverified_account';
-  }
-  
-  // Strategy 3: Minimal fallback - only check for very stable keywords
-  if (errorMessage || errorLongMessage) {
-    const message = `${errorMessage || ''} ${errorLongMessage || ''}`.toLowerCase();
-    if (message.includes('verification') || message.includes('unverified')) {
-      return 'unverified_account';
-    }
+  if (errorCode === 'form_password_incorrect' || errorCode?.startsWith('form_password_')) {
+    return 'wrong_password';
   }
   
   return 'generic_error';
 };
 
 const handleSignInError = (
-  errorType: SignInErrorType,
-  email: string,
-  navigation: NativeStackNavigationProp<RootStackParamList>
+  errorType: SignInErrorType
 ) => {
   switch (errorType) {
-    case 'unverified_account':
-      Alert.alert(
-        'Account Not Verified',
-        'Your account exists but hasn\'t been verified yet. Please complete the sign-up process by verifying your email.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Go to Sign Up', onPress: () => navigation.navigate('SignUp', { 
-            prefillEmail: email,
-            isVerificationOnly: true 
-          }) },
-        ]
-      );
-      break;
-      
     case 'wrong_password':
       Alert.alert('Sign in failed', 'Incorrect password. Please try again.');
       break;
@@ -177,16 +140,14 @@ export const SignInScreen = () => {
     } catch (err: any) {
       console.error('Password sign in failed', err);
       
-      // Extract error information from different possible structures
       const errorCode = err?.errors?.[0]?.code || err?.code;
       const errorMessage = err?.errors?.[0]?.message || err?.message || err?.toString();
       const errorLongMessage = err?.errors?.[0]?.longMessage || err?.longMessage;
       
       console.log('Error details:', { errorCode, errorMessage, errorLongMessage });
       
-      // Determine error type and show appropriate message
       const errorType = getSignInErrorType(errorCode, errorMessage, errorLongMessage);
-      handleSignInError(errorType, identifier.trim(), navigation);
+      handleSignInError(errorType);
     } finally {
       setIsPasswordLoading(false);
     }

@@ -114,18 +114,17 @@ export const SignUpScreen = ({ route }: SignUpScreenProps) => {
       }
 
       if (isVerificationOnly) {
-        // For verification-only mode, just send the verification code
-        // The account already exists, we just need to prepare verification
+        await signUp.create({
+          emailAddress: emailAddress.trim(),
+        });
         await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
         setPendingVerification(true);
       } else {
-        // Normal sign-up flow
         await signUp.create({
           emailAddress: emailAddress.trim(),
           password: password.trim(),
         });
 
-        // Send user an email with verification code
         await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
         setPendingVerification(true);
       }

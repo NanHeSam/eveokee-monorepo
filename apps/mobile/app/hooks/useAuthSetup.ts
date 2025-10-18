@@ -19,6 +19,7 @@ export const useAuthSetup = () => {
    */
   const ensureConvexUser = useCallback(async () => {
     const maxAttempts = 3;
+    let lastError: unknown | null = null;
 
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       try {
@@ -27,6 +28,7 @@ export const useAuthSetup = () => {
           return result;
         }
       } catch (err) {
+        lastError = err;
         if (attempt === maxAttempts - 1) {
           console.error('Failed to ensure Convex user document', err);
           Alert.alert(
@@ -36,10 +38,17 @@ export const useAuthSetup = () => {
         }
       }
 
-      // Exponential backoff: 200ms, 400ms, 800ms
       if (attempt < maxAttempts - 1) {
         await new Promise(resolve => setTimeout(resolve, 200 * Math.pow(2, attempt)));
       }
+    }
+
+    if (!lastError) {
+      console.error('Failed to ensure Convex user document: no result after retries');
+      Alert.alert(
+        'Setup Incomplete',
+        'Your account was created but setup is incomplete. Please try signing in again.'
+      );
     }
 
     return null;
