@@ -120,7 +120,7 @@ export default function Terms() {
 
           <section>
             <h2 className="text-xl font-semibold mb-2">13. Contact</h2>
-            <p className="text-gray-700">📧 support@eveoky.com • 📍 San Jose, California, USA</p>
+            <p className="text-gray-700">📧 support@eveoky.com • 📍 Campbell, California, USA</p>
           </section>
         </div>
       </div>

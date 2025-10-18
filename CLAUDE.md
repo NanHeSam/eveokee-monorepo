@@ -161,7 +161,7 @@ Turbo is used for build orchestration. Key pipeline tasks:
 - New Architecture enabled (`newArchEnabled: true`)
 - Audio background playback enabled for iOS
 - Custom Expo plugin: `./plugins/with-folly-no-coroutines`
-- Bundle identifiers: `com.eveoky.eveokee`
+- Bundle identifiers: `com.eveokee.app`
 - Custom URL scheme: `eveokee://`
 
 ## Web App Specifics

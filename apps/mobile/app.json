@@ -17,7 +17,7 @@
         {
           "url": "https://sentry.io/",
           "project": "eveokee-mobile",
-          "organization": "eveoky"
+          "organization": "eveokee"
         }
       ]
     ],
@@ -28,13 +28,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.eveoky.eveokee",
+      "bundleIdentifier": "com.eveokee.app",
       "infoPlist": {
         "UIBackgroundModes": [
           "audio"
         ],
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "appleTeamId": "5KQ8K9W7XS"
     },
     "android": {
       "adaptiveIcon": {
@@ -43,7 +44,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.eveoky.eveokee"
+      "package": "com.eveokee.app"
     },
     "scheme": "eveokee",
     "web": {
@@ -55,6 +56,6 @@
         "projectId": "f5517f61-7cab-4fe6-ba29-bff37fab518f"
       }
     },
-    "owner": "eveoky"
+    "owner": "eveokee"
   }
 }
