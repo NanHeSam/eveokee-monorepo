@@ -137,8 +137,69 @@ Configure your products, entitlements, and offerings in the [RevenueCat dashboar
 3. Create offerings with packages (e.g., monthly, annual)
 4. Set up webhooks for server-side integration if needed
 
+## Backend Integration
+
+The backend automatically syncs subscription status from RevenueCat via webhooks:
+
+### Webhook Setup
+
+1. In your RevenueCat dashboard, go to Project Settings → Integrations → Webhooks
+2. Add a new webhook with URL: `https://your-convex-backend.convex.site/webhooks/revenuecat`
+3. The webhook will automatically sync subscription status to your Convex backend
+
+### How It Works
+
+- When a user makes a purchase, RevenueCat sends a webhook to your backend
+- The backend updates the user's subscription status and tier
+- Usage limits are automatically enforced based on the subscription tier
+- The backend tracks music generation usage and resets counters based on the subscription period
+
+### Subscription Tiers
+
+The following product IDs map to subscription tiers:
+- `eveokee_premium_weekly` → weekly tier (25 generations/week)
+- `eveokee_premium_monthly` → monthly tier (90 generations/month)
+- `eveokee_premium_annual` → yearly tier (1000 generations/year)
+
+Make sure these product IDs match what you configure in App Store Connect and Google Play Console.
+
+## Mobile App Usage
+
+Use the `useRevenueCat` hook to manage purchases in your app:
+
+```typescript
+import { useRevenueCat } from './app/hooks/useRevenueCat';
+
+function SubscriptionScreen() {
+  const {
+    offerings,
+    customerInfo,
+    loading,
+    purchasePackage,
+    restorePurchases,
+    hasActiveSubscription,
+  } = useRevenueCat();
+
+  if (loading) return <LoadingSpinner />;
+
+  return (
+    <View>
+      {offerings?.availablePackages.map((pkg) => (
+        <Button
+          key={pkg.identifier}
+          onPress={() => purchasePackage(pkg)}
+          title={`Subscribe - ${pkg.product.priceString}`}
+        />
+      ))}
+      <Button onPress={restorePurchases} title="Restore Purchases" />
+    </View>
+  );
+}
+```
+
 ## Resources
 
 - [RevenueCat Documentation](https://docs.revenuecat.com/)
 - [React Native SDK Guide](https://docs.revenuecat.com/docs/reactnative)
 - [Expo Integration](https://docs.revenuecat.com/docs/reactnative#expo)
+- [Webhook Events](https://docs.revenuecat.com/docs/webhooks)

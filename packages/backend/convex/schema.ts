@@ -7,16 +7,18 @@ export default defineSchema({
     email: v.optional(v.string()),
     name: v.optional(v.string()),
     activeSubscriptionId: v.optional(v.id("subscriptionStatuses")),
+    revenueCatCustomerId: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_clerkId", ["clerkId"])
-    .index("by_email", ["email"]),
+    .index("by_email", ["email"])
+    .index("by_revenueCatCustomerId", ["revenueCatCustomerId"]),
 
   subscriptionStatuses: defineTable({
     userId: v.id("users"),
-    platform: v.optional(v.union(v.literal("apple"), v.literal("google"), v.literal("clerk"))),
+    platform: v.optional(v.union(v.literal("apple"), v.literal("google"), v.literal("clerk"), v.literal("revenuecat"))),
     productId: v.string(),
     status: v.union(
       v.literal("active"),

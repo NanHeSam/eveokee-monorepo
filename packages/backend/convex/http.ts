@@ -1,7 +1,7 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { MUSIC_GENERATION_CALLBACK_PATH, CLERK_WEBHOOK_PATH } from "./constant";
+import { MUSIC_GENERATION_CALLBACK_PATH, CLERK_WEBHOOK_PATH, REVENUECAT_WEBHOOK_PATH } from "./constant";
 import { verifyWebhook } from "@clerk/backend/webhooks";
 
 type RawSunoCallback = {
@@ -210,6 +210,106 @@ const clerkWebhookHandler = httpAction(async (ctx, req) => {
   );
 });
 
+const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
+  // 1. Validate request
+  if (req.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
+  }
+
+  let event: any;
+  try {
+    event = await req.json();
+  } catch (error) {
+    console.error("Failed to parse RevenueCat webhook JSON", error);
+    return new Response(
+      JSON.stringify({ error: "Invalid JSON" }),
+      {
+        status: 400,
+        headers: jsonHeaders,
+      },
+    );
+  }
+
+  const eventType = event.type;
+  
+  if (eventType === "INITIAL_PURCHASE" || eventType === "RENEWAL" || eventType === "NON_RENEWING_PURCHASE") {
+    const subscriber = event.event?.app_user_id;
+    const productId = event.event?.product_id;
+    const expiresAt = event.event?.expiration_at_ms;
+
+    if (!subscriber || !productId) {
+      console.warn("RevenueCat webhook missing required fields", event);
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        {
+          status: 400,
+          headers: jsonHeaders,
+        },
+      );
+    }
+
+    try {
+      await ctx.runMutation(internal.revenueCatBilling.syncRevenueCatSubscription, {
+        revenueCatCustomerId: subscriber,
+        productId,
+        status: "active",
+        expiresAt: expiresAt ? parseInt(expiresAt) : undefined,
+      });
+    } catch (error) {
+      console.error("Failed to sync RevenueCat subscription", error);
+      return new Response(
+        JSON.stringify({ error: "Failed to sync subscription" }),
+        {
+          status: 500,
+          headers: jsonHeaders,
+        },
+      );
+    }
+  } else if (eventType === "CANCELLATION" || eventType === "EXPIRATION") {
+    const subscriber = event.event?.app_user_id;
+    const productId = event.event?.product_id;
+
+    if (!subscriber || !productId) {
+      console.warn("RevenueCat webhook missing required fields", event);
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        {
+          status: 400,
+          headers: jsonHeaders,
+        },
+      );
+    }
+
+    try {
+      await ctx.runMutation(internal.revenueCatBilling.syncRevenueCatSubscription, {
+        revenueCatCustomerId: subscriber,
+        productId,
+        status: eventType === "CANCELLATION" ? "canceled" : "expired",
+      });
+    } catch (error) {
+      console.error("Failed to sync RevenueCat subscription", error);
+      return new Response(
+        JSON.stringify({ error: "Failed to sync subscription" }),
+        {
+          status: 500,
+          headers: jsonHeaders,
+        },
+      );
+    }
+  } else {
+    console.log(`Ignoring RevenueCat webhook event type: ${eventType}`);
+  }
+
+  // 3. Return response
+  return new Response(
+    JSON.stringify({ status: "ok" }),
+    {
+      status: 200,
+      headers: jsonHeaders,
+    },
+  );
+});
+
 const http = httpRouter();
 
 http.route({
@@ -222,6 +322,12 @@ http.route({
   path: CLERK_WEBHOOK_PATH,
   method: "POST",
   handler: clerkWebhookHandler,
+});
+
+http.route({
+  path: REVENUECAT_WEBHOOK_PATH,
+  method: "POST",
+  handler: revenueCatWebhookHandler,
 });
 
 export default http;
