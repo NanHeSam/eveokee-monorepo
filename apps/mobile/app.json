@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "eveokee",
-    "slug": "eveokee",
+    "slug": "eveokee-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -53,7 +53,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "f5517f61-7cab-4fe6-ba29-bff37fab518f"
+        "projectId": "bfdda9bf-addd-4b16-9602-89df7a96933b"
       }
     },
     "owner": "eveokee"
