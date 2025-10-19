@@ -6,12 +6,16 @@ import Purchases, {
 } from 'react-native-purchases';
 import { Platform } from 'react-native';
 
-export const configureRevenueCat = async (apiKey: string) => {
+export const configureRevenueCat = async (iosApiKey: string, androidApiKey: string) => {
   try {
-    if (Platform.OS === 'ios' || Platform.OS === 'android') {
+    if (Platform.OS === 'ios') {
       Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-      Purchases.configure({ apiKey });
-      console.log('RevenueCat configured successfully');
+      Purchases.configure({ apiKey: iosApiKey });
+      console.log('RevenueCat configured successfully for iOS');
+    } else if (Platform.OS === 'android') {
+      Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+      Purchases.configure({ apiKey: androidApiKey });
+      console.log('RevenueCat configured successfully for Android');
     } else {
       console.warn('RevenueCat is only supported on iOS and Android');
     }

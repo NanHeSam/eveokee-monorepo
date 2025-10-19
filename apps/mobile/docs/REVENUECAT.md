@@ -10,16 +10,20 @@ RevenueCat is integrated to handle in-app purchases and subscription management 
 
 ### Environment Variables
 
-Add the RevenueCat API key to your `.env` file:
+Add the RevenueCat API keys to your `.env` file. You need separate keys for iOS and Android:
 
 ```bash
-EXPO_PUBLIC_REVENUECAT_API_KEY=your_api_key_here
+EXPO_PUBLIC_REVENUECAT_IOS_API_KEY=your_ios_api_key_here
+EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY=your_android_api_key_here
 ```
 
-For testing, use the test API key:
+For testing, you can use the same test API key for both platforms:
 ```bash
-EXPO_PUBLIC_REVENUECAT_API_KEY=test_LtxNCqRAMjnUpkXWhgPBPXGxsza
+EXPO_PUBLIC_REVENUECAT_IOS_API_KEY=test_LtxNCqRAMjnUpkXWhgPBPXGxsza
+EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY=test_LtxNCqRAMjnUpkXWhgPBPXGxsza
 ```
+
+**Important**: In production, you must use different API keys for iOS and Android. Get these from your RevenueCat dashboard under Project Settings → API Keys.
 
 ### Configuration
 

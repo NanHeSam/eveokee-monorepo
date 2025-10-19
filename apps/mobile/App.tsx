@@ -191,15 +191,16 @@ function AppContent() {
 function App() {
   useEffect(() => {
     const initializeRevenueCat = async () => {
-      const apiKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY;
+      const iosApiKey = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY;
+      const androidApiKey = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY;
       
-      if (!apiKey) {
-        console.warn('RevenueCat API key not found. In-app purchases will not be available.');
+      if (!iosApiKey || !androidApiKey) {
+        console.warn('RevenueCat API keys not found. In-app purchases will not be available.');
         return;
       }
 
       try {
-        await configureRevenueCat(apiKey);
+        await configureRevenueCat(iosApiKey, androidApiKey);
       } catch (error) {
         console.error('Failed to initialize RevenueCat:', error);
       }
