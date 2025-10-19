@@ -28,9 +28,16 @@ EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY=test_LtxNCqRAMjnUpkXWhgPBPXGxsza
 ### Configuration
 
 RevenueCat is automatically initialized when the app starts in `App.tsx`. The initialization:
-- Checks for the API key in environment variables
-- Configures the SDK with debug logging enabled
+- Checks for the API keys in environment variables
+- Configures the SDK with platform-specific keys (iOS or Android)
+- Enables debug logging for development
 - Only runs on iOS and Android platforms (not web)
+
+#### Android BILLING Permission
+
+The app includes a custom Expo config plugin (`plugins/with-android-billing-permission.js`) that automatically adds the required `com.android.vending.BILLING` permission to the Android manifest. This permission is required for Google Play in-app purchases to work.
+
+When you build the app with EAS or run `npx expo prebuild`, this permission will be automatically added to your AndroidManifest.xml.
 
 ## Usage
 
