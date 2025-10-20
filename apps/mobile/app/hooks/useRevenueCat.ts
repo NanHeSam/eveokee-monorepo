@@ -1,24 +1,30 @@
 import { useState, useEffect } from 'react';
 import Purchases, { PurchasesOffering, PurchasesPackage, CustomerInfo } from 'react-native-purchases';
-import { useAuth } from '@clerk/clerk-expo';
+import { useMutation } from 'convex/react';
+import { api } from '@backend/convex';
 
 export function useRevenueCat() {
-  const { userId } = useAuth();
+  const ensureCurrentUser = useMutation(api.users.ensureCurrentUser);
   const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   useEffect(() => {
-    loadOfferings();
-    loadCustomerInfo();
+    const initializeUser = async () => {
+      try {
+        const { userId } = await ensureCurrentUser({});
+        await Purchases.logIn(userId);
+        await loadOfferings();
+        await loadCustomerInfo();
+      } catch (e) {
+        console.error('Failed to initialize user:', e);
+        setError('Failed to initialize');
+        setLoading(false);
+      }
+    };
+    
+    initializeUser();
   }, []);
-
-  useEffect(() => {
-    if (userId) {
-      Purchases.logIn(userId);
-    }
-  }, [userId]);
 
   const loadOfferings = async () => {
     try {

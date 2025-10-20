@@ -27,7 +27,7 @@ export const syncRevenueCatSubscription = internalMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    const user = await ctx.db
+    let user = await ctx.db
       .query("users")
       .withIndex("by_revenueCatCustomerId", (q) =>
         q.eq("revenueCatCustomerId", args.revenueCatCustomerId)
@@ -35,10 +35,23 @@ export const syncRevenueCatSubscription = internalMutation({
       .first();
 
     if (!user) {
-      console.error(
-        `User not found for RevenueCat customer ID: ${args.revenueCatCustomerId}`
-      );
-      return { success: false };
+      const userById = await ctx.db.get(args.revenueCatCustomerId as any);
+      
+      if (userById) {
+        user = userById;
+        await ctx.db.patch(userById._id, {
+          revenueCatCustomerId: args.revenueCatCustomerId,
+          updatedAt: now,
+        });
+        console.log(
+          `Linked RevenueCat customer ${args.revenueCatCustomerId} to user ${userById._id}`
+        );
+      } else {
+        console.error(
+          `User not found for RevenueCat customer ID: ${args.revenueCatCustomerId}`
+        );
+        return { success: false };
+      }
     }
 
     const tier = REVENUECAT_PRODUCT_TO_TIER[args.productId] || "free";
