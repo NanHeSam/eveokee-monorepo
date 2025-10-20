@@ -230,7 +230,7 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
     );
   }
 
-  const eventType = event.type;
+  const eventType = event.event?.type;
   
   if (eventType === "INITIAL_PURCHASE" || eventType === "RENEWAL" || eventType === "NON_RENEWING_PURCHASE") {
     const subscriber = event.event?.app_user_id;
@@ -297,7 +297,7 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
       );
     }
   } else {
-    console.log(`Ignoring RevenueCat webhook event type: ${eventType}`);
+    console.log(`Ignoring RevenueCat webhook event type: ${eventType}`, event);
   }
 
   // 3. Return response
