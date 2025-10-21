@@ -12,8 +12,27 @@ export function useRevenueCat() {
       try {
         // Note: User identification is handled by useRevenueCatSync hook in App.tsx
         // This hook only loads offerings and customer info
-        await loadOfferings();
-        await loadCustomerInfo();
+        
+        // Load offerings
+        try {
+          const offerings = await Purchases.getOfferings();
+          if (offerings.current) {
+            setOfferings(offerings.current);
+          }
+        } catch (e) {
+          setError('Failed to load offerings');
+          console.error('Failed to load offerings:', e);
+        } finally {
+          setLoading(false);
+        }
+
+        // Load customer info
+        try {
+          const info = await Purchases.getCustomerInfo();
+          setCustomerInfo(info);
+        } catch (e) {
+          console.error('Failed to load customer info:', e);
+        }
       } catch (e) {
         console.error('Failed to load RevenueCat data:', e);
         setError('Failed to load data');
@@ -26,6 +45,7 @@ export function useRevenueCat() {
 
   const loadOfferings = async () => {
     try {
+      setLoading(true);
       const offerings = await Purchases.getOfferings();
       if (offerings.current) {
         setOfferings(offerings.current);
@@ -43,6 +63,7 @@ export function useRevenueCat() {
       const info = await Purchases.getCustomerInfo();
       setCustomerInfo(info);
     } catch (e) {
+      setError('Failed to load customer info');
       console.error('Failed to load customer info:', e);
     }
   };
@@ -91,6 +112,8 @@ export function useRevenueCat() {
     customerInfo,
     loading,
     error,
+    loadOfferings,
+    loadCustomerInfo,
     purchasePackage,
     restorePurchases,
     hasActiveSubscription: hasActiveSubscription(),

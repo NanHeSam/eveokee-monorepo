@@ -19,6 +19,19 @@ const jsonHeaders = {
   "Content-Type": "application/json",
 };
 
+// Map RevenueCat store names to our platform enum
+const getPlatformFromStore = (store: string | undefined): string | undefined => {
+  const platformMap: Record<string, string> = {
+    "APP_STORE": "app_store",
+    "PLAY_STORE": "play_store",
+    "STRIPE": "stripe",
+    "AMAZON": "amazon",
+    "MAC_APP_STORE": "mac_app_store",
+    "PROMOTIONAL": "promotional",
+  };
+  return store ? platformMap[store] : undefined;
+};
+
 const sunoMusicGenerationCallback = httpAction(async (ctx, req) => {
   if (req.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
@@ -249,15 +262,7 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
     }
 
     // Map RevenueCat store names to our platform enum
-    const platformMap: Record<string, string> = {
-      "APP_STORE": "app_store",
-      "PLAY_STORE": "play_store",
-      "STRIPE": "stripe",
-      "AMAZON": "amazon",
-      "MAC_APP_STORE": "mac_app_store",
-      "PROMOTIONAL": "promotional",
-    };
-    const platform = store ? platformMap[store] : undefined;
+    const platform = getPlatformFromStore(store);
 
     try {
       // app_user_id is the Convex user._id (set via Purchases.logIn)
@@ -295,15 +300,7 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
     }
 
     // Map RevenueCat store names to our platform enum
-    const platformMap: Record<string, string> = {
-      "APP_STORE": "app_store",
-      "PLAY_STORE": "play_store",
-      "STRIPE": "stripe",
-      "AMAZON": "amazon",
-      "MAC_APP_STORE": "mac_app_store",
-      "PROMOTIONAL": "promotional",
-    };
-    const platform = store ? platformMap[store] : undefined;
+    const platform = getPlatformFromStore(store);
 
     try {
       // app_user_id is the Convex user._id (set via Purchases.logIn)

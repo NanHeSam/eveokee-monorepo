@@ -78,18 +78,42 @@ if (offering) {
 
 ```typescript
 const packageToPurchase = offering.availablePackages[0];
-const customerInfo = await purchasePackage(packageToPurchase);
-if (customerInfo) {
-  // Purchase successful
+const result = await purchasePackage(packageToPurchase);
+
+switch (result.status) {
+  case 'success':
+    // Purchase successful
+    console.log('Customer info:', result.customerInfo);
+    break;
+  case 'cancelled':
+    // User cancelled the purchase
+    console.log('Purchase was cancelled by user');
+    break;
+  case 'error':
+    // Purchase failed with error
+    console.error('Purchase failed:', result.code, result.message);
+    break;
 }
 ```
 
 ### Restore Purchases
 
 ```typescript
-const customerInfo = await restorePurchases();
-if (customerInfo) {
-  // Purchases restored
+const result = await restorePurchases();
+
+switch (result.status) {
+  case 'success':
+    // Restore successful
+    console.log('Customer info:', result.customerInfo);
+    break;
+  case 'cancelled':
+    // User cancelled the restore (uncommon)
+    console.log('Restore was cancelled by user');
+    break;
+  case 'error':
+    // Restore failed with error
+    console.error('Restore failed:', result.code, result.message);
+    break;
 }
 ```
 
@@ -107,20 +131,35 @@ if (hasAccess) {
 When a user signs in, identify them with RevenueCat:
 
 ```typescript
-await identifyUser(userId);
+try {
+  await identifyUser(userId);
+  console.log('User successfully identified in RevenueCat');
+} catch (error) {
+  console.error('Failed to identify user in RevenueCat:', error);
+  // Handle error (e.g., retry, show user message)
+}
 ```
 
 When a user signs out, log them out from RevenueCat:
 
 ```typescript
-await logoutUser();
+try {
+  await logoutUser();
+  console.log('User successfully logged out from RevenueCat');
+} catch (error) {
+  console.error('Failed to logout user from RevenueCat:', error);
+  // Handle error (e.g., retry, show user message)
+}
 ```
 
 ## Best Practices
 
 1. **User Identification**: Always identify users with their unique user ID after authentication to sync purchases across devices.
 
-2. **Error Handling**: All utility functions handle errors gracefully and return null on failure. Always check return values.
+2. **Error Handling**: 
+   - Purchase functions (`purchasePackage`, `restorePurchases`) return discriminated result objects that distinguish between success, cancellation, and errors
+   - User identity functions (`identifyUser`, `logoutUser`) throw errors that should be caught and handled by callers
+   - Always wrap these functions in try-catch blocks for proper error handling and retry logic
 
 3. **Restore Purchases**: Provide a "Restore Purchases" button in your settings for users who reinstall the app or switch devices.
 

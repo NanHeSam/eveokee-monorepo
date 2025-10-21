@@ -11,6 +11,12 @@ interface PaywallModalProps {
 
 export function PaywallModal({ visible, onClose, onPurchased }: PaywallModalProps) {
   const isPresentingRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+  const onPurchasedRef = useRef(onPurchased);
+
+  // Update refs when callbacks change
+  onCloseRef.current = onClose;
+  onPurchasedRef.current = onPurchased;
 
   useEffect(() => {
     if (visible && !isPresentingRef.current) {
@@ -23,24 +29,24 @@ export function PaywallModal({ visible, onClose, onPurchased }: PaywallModalProp
           switch (paywallResult) {
             case PAYWALL_RESULT.PURCHASED:
               console.log('Purchase completed successfully');
-              onPurchased?.();
-              onClose();
+              onPurchasedRef.current?.();
+              onCloseRef.current();
               break;
             case PAYWALL_RESULT.CANCELLED:
               console.log('Paywall cancelled by user');
-              onClose();
+              onCloseRef.current();
               break;
             case PAYWALL_RESULT.ERROR:
               console.error('Paywall error occurred');
-              onClose();
+              onCloseRef.current();
               break;
             default:
-              onClose();
+              onCloseRef.current();
               break;
           }
         } catch (error) {
           console.error('Paywall error:', error);
-          onClose();
+          onCloseRef.current();
         } finally {
           isPresentingRef.current = false;
         }
@@ -48,7 +54,7 @@ export function PaywallModal({ visible, onClose, onPurchased }: PaywallModalProp
 
       showPaywall();
     }
-  }, [visible, onClose, onPurchased]);
+  }, [visible]);
 
   // Return null since RevenueCatUI.presentPaywall() handles the UI
   return null;
