@@ -77,7 +77,7 @@ const testimonials: Testimonial[] = [
     avatarUrl: 'https://randomuser.me/api/portraits/women/68.jpg',
   },
   {
-    quote: 'It helped me capture a feeling I couldn't put into words.',
+    quote: "It helped me capture a feeling I couldn't put into words.",
     name: 'Daniel Park',
     role: 'Early user',
     avatarUrl: 'https://randomuser.me/api/portraits/men/9.jpg',
