@@ -38,6 +38,7 @@ export default defineSchema({
     autoRenewStatus: v.optional(v.union(v.literal("on"), v.literal("off"))),
     latestReceipt: v.optional(v.string()),
     lastVerifiedAt: v.number(),
+    expiresAt: v.optional(v.number()),
     canceledAt: v.optional(v.number()),
     // Custom limit override (for manual adjustments)
     customMusicLimit: v.optional(v.number()),

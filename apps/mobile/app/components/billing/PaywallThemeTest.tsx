@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
-import { useColorScheme } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, useColorScheme } from 'react-native';
 import { useThemeColors } from '../../theme/useThemeColors';
 import { useSubscriptionUIStore } from '../../store/useSubscriptionStore';
 

@@ -91,6 +91,10 @@ export const recordMusicGeneration = internalMutation({
   args: { userId: v.id("users") },
   returns: v.object({
     success: v.boolean(),
+    code: v.optional(v.union(
+      v.literal("USAGE_LIMIT_REACHED"),
+      v.literal("UNKNOWN_ERROR")
+    )),
     reason: v.optional(v.string()),
     currentUsage: v.number(),
     limit: v.number(),
@@ -118,6 +122,7 @@ export const recordMusicGeneration = internalMutation({
     if (currentUsage >= effectiveLimit) {
       return {
         success: false,
+        code: "USAGE_LIMIT_REACHED" as const,
         reason: "Usage limit reached",
         currentUsage,
         limit: effectiveLimit,
@@ -140,6 +145,7 @@ export const recordMusicGeneration = internalMutation({
 
     return {
       success: true,
+      code: undefined,
       currentUsage: currentUsage + 1,
       limit: effectiveLimit,
       remainingQuota,
@@ -264,6 +270,10 @@ export const recordCurrentUserMusicGeneration = mutation({
   args: {},
   returns: v.object({
     success: v.boolean(),
+    code: v.optional(v.union(
+      v.literal("USAGE_LIMIT_REACHED"),
+      v.literal("UNKNOWN_ERROR")
+    )),
     reason: v.optional(v.string()),
     currentUsage: v.number(),
     limit: v.number(),
@@ -280,6 +290,7 @@ export const recordCurrentUserMusicGeneration = mutation({
 
     return {
       success: result.success,
+      code: result.code,
       reason: result.reason,
       currentUsage: result.currentUsage,
       limit: result.limit,

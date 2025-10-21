@@ -38,13 +38,15 @@ export function useRevenueCatSync() {
           await identifyUser(convexUserId);
 
           console.log('[RevenueCat] Successfully linked user:', convexUserId);
+          // Only mark as handled after successful completion
+          previousSignInState.current = true;
         } catch (error) {
           console.error('[RevenueCat] Failed to link user:', error);
+          // Don't update previousSignInState so it can retry on next effect run
         }
       };
 
       linkUser();
-      previousSignInState.current = true;
     }
 
     // Handle sign out
@@ -55,13 +57,15 @@ export function useRevenueCatSync() {
         try {
           await logoutUser();
           console.log('[RevenueCat] Successfully cleared user identity');
+          // Only mark as handled after successful completion
+          previousSignInState.current = false;
         } catch (error) {
           console.error('[RevenueCat] Failed to clear user identity:', error);
+          // Don't update previousSignInState so it can retry on next effect run
         }
       };
 
       unlinkUser();
-      previousSignInState.current = false;
     }
 
     // Update the ref if this is the first check

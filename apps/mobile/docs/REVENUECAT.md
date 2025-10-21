@@ -157,7 +157,6 @@ The backend automatically syncs subscription status from RevenueCat via webhooks
 ### Subscription Tiers
 
 The following product IDs map to subscription tiers:
-- `eveokee_premium_weekly` → weekly tier (25 generations/week)
 - `eveokee_premium_monthly` → monthly tier (90 generations/month)
 - `eveokee_premium_annual` → yearly tier (1000 generations/year)
 

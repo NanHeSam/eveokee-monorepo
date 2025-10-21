@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { internalMutation } from "./_generated/server";
 
 const REVENUECAT_PRODUCT_TO_TIER: Record<string, string> = {
+  "eveokee_premium_weekly": "monthly",
   "eveokee_premium_monthly": "monthly",
   "eveokee_premium_annual": "yearly",
 };
@@ -42,7 +43,16 @@ export const syncRevenueCatSubscription = internalMutation({
       return { success: false };
     }
 
-    const tier = REVENUECAT_PRODUCT_TO_TIER[args.productId] || "free";
+    // Validate product ID mapping
+    const mappedTier = REVENUECAT_PRODUCT_TO_TIER[args.productId];
+    if (!mappedTier) {
+      console.error(
+        `Unknown RevenueCat product ID: ${args.productId}. Valid products: ${Object.keys(REVENUECAT_PRODUCT_TO_TIER).join(", ")}`
+      );
+      return { success: false };
+    }
+    const effectiveTier =
+      args.status === "active" || args.status === "in_grace" ? mappedTier : "free";
 
     if (user.activeSubscriptionId) {
       const existingSubscription = await ctx.db.get(user.activeSubscriptionId);
@@ -51,7 +61,8 @@ export const syncRevenueCatSubscription = internalMutation({
         ...(args.platform && { platform: args.platform }),
         productId: args.productId,
         status: args.status,
-        subscriptionTier: tier,
+        subscriptionTier: effectiveTier,
+        ...(typeof args.expiresAt === "number" && { expiresAt: args.expiresAt }),
         lastVerifiedAt: now,
         ...(args.status === "canceled" && { canceledAt: now }),
       });
@@ -61,10 +72,11 @@ export const syncRevenueCatSubscription = internalMutation({
         ...(args.platform && { platform: args.platform }),
         productId: args.productId,
         status: args.status,
-        subscriptionTier: tier,
+        subscriptionTier: effectiveTier,
         lastResetAt: now,
         musicGenerationsUsed: 0,
         lastVerifiedAt: now,
+        ...(typeof args.expiresAt === "number" && { expiresAt: args.expiresAt }),
         ...(args.status === "canceled" && { canceledAt: now }),
       });
 
@@ -76,10 +88,9 @@ export const syncRevenueCatSubscription = internalMutation({
     }
 
     console.log(
-      `Successfully synced RevenueCat subscription for user ${user._id}: ${tier} (${args.status})`
+      `Successfully synced RevenueCat subscription for user ${user._id}: ${effectiveTier} (${args.status})`
     );
 
     return { success: true, userId: user._id };
   },
 });
-

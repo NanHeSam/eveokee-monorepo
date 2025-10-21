@@ -28,6 +28,11 @@ export const startDiaryMusicGeneration = mutation({
   returns: v.object({
     diaryId: v.id("diaries"),
     success: v.boolean(),
+    code: v.optional(v.union(
+      v.literal("USAGE_LIMIT_REACHED"),
+      v.literal("ALREADY_IN_PROGRESS"),
+      v.literal("UNKNOWN_ERROR")
+    )),
     reason: v.optional(v.string()),
     remainingQuota: v.optional(v.number()),
   }),
@@ -66,6 +71,7 @@ export const startDiaryMusicGeneration = mutation({
       return {
         diaryId,
         success: false,
+        code: "ALREADY_IN_PROGRESS" as const,
         reason: "Music generation already in progress for this diary",
         remainingQuota: undefined,
       };
@@ -84,6 +90,7 @@ export const startDiaryMusicGeneration = mutation({
       return {
         diaryId,
         success: false,
+        code: (usageResult.code || "UNKNOWN_ERROR") as "USAGE_LIMIT_REACHED" | "UNKNOWN_ERROR",
         reason: usageResult.reason,
         remainingQuota: usageResult.remainingQuota,
       };
@@ -103,9 +110,10 @@ export const startDiaryMusicGeneration = mutation({
       },
     });
 
-    return { 
+    return {
       diaryId,
       success: true,
+      code: undefined,
       remainingQuota: usageResult.remainingQuota,
     };
   },

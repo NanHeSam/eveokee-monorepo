@@ -10,7 +10,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
 
 import { DiaryScreen } from './app/screens/DiaryScreen';
 import { DiaryEditScreen } from './app/screens/DiaryEditScreen';
@@ -195,16 +195,20 @@ function AppContent() {
 function App() {
   useEffect(() => {
     const initializeRevenueCat = async () => {
-      const iosApiKey = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY;
-      const androidApiKey = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY;
-      
-      if (!iosApiKey || !androidApiKey) {
-        console.warn('RevenueCat API keys not found. In-app purchases will not be available.');
+      // Delay RevenueCat initialization to allow other native modules to register first
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const apiKey = Platform.OS === 'ios'
+        ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY
+        : process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY;
+
+      if (!apiKey) {
+        console.warn(`RevenueCat API key not found for ${Platform.OS}. In-app purchases will not be available.`);
         return;
       }
 
       try {
-        await configureRevenueCat(iosApiKey, androidApiKey);
+        await configureRevenueCat(apiKey);
       } catch (error) {
         console.error('Failed to initialize RevenueCat:', error);
       }

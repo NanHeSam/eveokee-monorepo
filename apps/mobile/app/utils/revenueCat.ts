@@ -6,20 +6,20 @@ import Purchases, {
 } from 'react-native-purchases';
 import { Platform } from 'react-native';
 
-export const configureRevenueCat = async (iosApiKey: string, androidApiKey: string) => {
+export const configureRevenueCat = async (apiKey: string) => {
   try {
     if (Platform.OS === 'ios') {
       Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.INFO);
-      Purchases.configure({ 
-        apiKey: iosApiKey,
+      Purchases.configure({
+        apiKey,
         // Enable automatic theme detection
         shouldShowInAppMessagesAutomatically: true
       });
       console.log('RevenueCat configured successfully for iOS');
     } else if (Platform.OS === 'android') {
       Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-      Purchases.configure({ 
-        apiKey: androidApiKey,
+      Purchases.configure({
+        apiKey,
         // Enable automatic theme detection
         shouldShowInAppMessagesAutomatically: true
       });

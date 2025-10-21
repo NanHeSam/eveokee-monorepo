@@ -27,6 +27,7 @@ export const DiaryEditScreen = () => {
   const initialBody = useMemo(() => route.params?.content ?? '', [route.params?.content]);
   const [body, setBody] = useState(initialBody);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [isEditing, setIsEditing] = useState(!route.params?.diaryId);
   
   // Billing integration
@@ -101,6 +102,7 @@ export const DiaryEditScreen = () => {
 
     // Start music generation (this handles usage tracking internally)
     try {
+      setIsGenerating(true);
       const result = await startMusicGeneration({
         content: trimmed,
         diaryId: diaryId,
@@ -108,21 +110,36 @@ export const DiaryEditScreen = () => {
 
       if (!result.success) {
         // Handle limit reached or other errors
-        if (result.reason === 'Usage limit reached') {
+        if (result.code === 'USAGE_LIMIT_REACHED') {
           setShowPaywall(true, 'limit_reached');
-        } else if (result.reason !== 'Music generation already in progress for this diary') {
+        } else if (result.code === 'ALREADY_IN_PROGRESS') {
+          // Navigate to Playlist - music generation is already in progress
+          // Use a 1-button alert so it's less intrusive than the error alert
+          Alert.alert(
+            'Music Generation in Progress',
+            'Your music is already being generated. Check the Playlist to see the status.',
+            [
+              {
+                text: 'View Playlist',
+                onPress: () => {
+                  navigation.goBack();
+                  navigation.getParent()?.navigate('Playlist' as never);
+                }
+              }
+            ]
+          );
+        } else {
           Alert.alert('Unable to start music generation', result.reason || 'Please try again.');
         }
-        setIsSaving(false);
       } else {
         // Success - navigate back and go to playlist
-        setIsSaving(false);
         navigation.goBack();
         navigation.getParent()?.navigate('Playlist' as never);
       }
     } catch (error) {
       Alert.alert('Unable to start music generation', 'Please try again.');
-      setIsSaving(false);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -284,10 +301,10 @@ export const DiaryEditScreen = () => {
         >
           <TouchableOpacity
             className="flex-1 items-center justify-center rounded-[26px] py-4"
-            style={{ backgroundColor: colors.card, opacity: isSaving ? 0.7 : 1 }}
+            style={{ backgroundColor: colors.card, opacity: (isSaving || isGenerating) ? 0.7 : 1 }}
             activeOpacity={0.85}
             onPress={handleDone}
-            disabled={isSaving}
+            disabled={isSaving || isGenerating}
           >
             <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
               {isSaving ? 'Saving...' : 'Done'}
@@ -296,13 +313,13 @@ export const DiaryEditScreen = () => {
 
           <TouchableOpacity
             className="flex-1 items-center justify-center rounded-[26px] py-4"
-            style={{ backgroundColor: colors.accentMint, opacity: isSaving ? 0.7 : 1 }}
+            style={{ backgroundColor: colors.accentMint, opacity: (isSaving || isGenerating) ? 0.7 : 1 }}
             activeOpacity={0.85}
             onPress={handleGenerateMusic}
-            disabled={isSaving}
+            disabled={isSaving || isGenerating}
           >
             <Text className="text-base font-semibold" style={{ color: colors.background }}>
-              {isSaving ? 'Generating...' : 'Generate Music'}
+              {isGenerating ? 'Generating...' : 'Generate Music'}
             </Text>
           </TouchableOpacity>
         </View>
