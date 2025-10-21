@@ -24,7 +24,7 @@ export async function createTestUser(
     clerkId?: string;
     email?: string;
     name?: string;
-    tier?: "alpha" | "free" | "weekly" | "monthly" | "yearly";
+    tier?: "free" | "monthly" | "yearly";
     musicGenerationsUsed?: number;
     customMusicLimit?: number;
     tags?: string[];
@@ -33,7 +33,7 @@ export async function createTestUser(
   const clerkId = options?.clerkId ?? `test-clerk-${Date.now()}-${Math.random()}`;
   const email = options?.email ?? `test-${Date.now()}-${Math.random()}@example.com`;
   const name = options?.name ?? "Test User";
-  const tier = options?.tier ?? "alpha";
+  const tier = options?.tier ?? "free";
   const tags = options?.tags ?? [];
 
   return await t.run(async (ctx) => {
@@ -53,7 +53,7 @@ export async function createTestUser(
     const subscriptionId = await ctx.db.insert("subscriptionStatuses", {
       userId,
       platform: "clerk",
-      productId: tier === "alpha" ? "alpha-access" : `${tier}-plan`,
+      productId: tier === "free" ? "free-tier" : `${tier}-plan`,
       status: "active",
       subscriptionTier: tier,
       lastResetAt: now,

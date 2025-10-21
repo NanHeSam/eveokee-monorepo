@@ -1,6 +1,5 @@
 import { v } from "convex/values";
 import {
-  mutation,
   query,
   internalMutation,
 } from "./_generated/server";
@@ -42,30 +41,30 @@ export function getEffectiveMusicLimit(
   return PLAN_CONFIG[tier].musicLimit;
 }
 
-// Mutation to create an alpha subscription for alpha users
-export const createAlphaSubscription = internalMutation({
+// Mutation to create a free subscription for new users
+export const createFreeSubscription = internalMutation({
   args: { userId: v.id("users") },
   returns: v.id("subscriptionStatuses"),
   handler: async (ctx, args) => {
     const now = Date.now();
-    
+
     // Check if user already has a subscription
     const user = await ctx.db.get(args.userId);
     if (user?.activeSubscriptionId) {
       return user.activeSubscriptionId;
     }
 
-    // Create alpha subscription
+    // Create free subscription
     const subscriptionId = await ctx.db.insert("subscriptionStatuses", {
       userId: args.userId,
       platform: "clerk",
-      productId: "alpha-access",
+      productId: "free-tier",
       status: "active",
-      subscriptionTier: "alpha",
+      subscriptionTier: "free",
       lastResetAt: now,
       musicGenerationsUsed: 0,
       lastVerifiedAt: now,
-      // No custom limit or bonus credits by default - uses plan default (3)
+      // Uses plan default (10 per month)
     });
 
     // Update user with active subscription
@@ -86,7 +85,6 @@ export const getPlans = query({
       musicLimit: v.number(),
       periodDays: v.union(v.number(), v.null()),
       price: v.number(),
-      hasUnlimited: v.boolean(),
     }),
   ),
   handler: async () => {
@@ -101,7 +99,6 @@ export const getPlans = query({
         : 9007199254740991,
       periodDays: config.periodDays,
       price: config.price,
-      hasUnlimited: config.hasUnlimited ?? false,
     }));
   },
 });
@@ -111,7 +108,6 @@ const usageStateValidator = v.object({
   status: subscriptionStatusValidator,
   musicGenerationsUsed: v.number(),
   musicLimit: v.number(),
-  hasUnlimited: v.boolean(),
   periodStart: v.number(),
   periodEnd: v.number(),
   isActive: v.boolean(),
@@ -123,49 +119,6 @@ export const getCurrentUserStatus = query({
   returns: v.union(usageStateValidator, v.null()),
   handler: async (ctx) => {
     const { userId } = await ensureCurrentUser(ctx);
-
-    const snapshot = await ctx.runQuery(internal.usage.getUsageSnapshot, {
-      userId,
-    });
-
-    if (!snapshot) {
-      return null;
-    }
-
-    const isActive = snapshot.status === "active" || snapshot.status === "in_grace";
-
-    return {
-      tier: snapshot.tier,
-      status: snapshot.status,
-      musicGenerationsUsed: snapshot.musicGenerationsUsed,
-      musicLimit: snapshot.musicLimit,
-      hasUnlimited: snapshot.hasUnlimited,
-      periodStart: snapshot.periodStart,
-      periodEnd: snapshot.periodEnd,
-      isActive,
-      remainingQuota: snapshot.remainingQuota,
-    };
-  },
-});
-
-export const resetCounters = mutation({
-  args: {},
-  returns: v.union(usageStateValidator, v.null()),
-  handler: async (ctx) => {
-    const { userId } = await ensureCurrentUser(ctx);
-    const user = await ctx.db.get(userId);
-
-    if (!user?.activeSubscriptionId) {
-      return null;
-    }
-
-    const now = Date.now();
-
-    await ctx.db.patch(user.activeSubscriptionId, {
-      musicGenerationsUsed: 0,
-      lastResetAt: now,
-      lastVerifiedAt: now,
-    });
 
     const snapshot = await ctx.runQuery(internal.usage.getUsageSnapshot, {
       userId,

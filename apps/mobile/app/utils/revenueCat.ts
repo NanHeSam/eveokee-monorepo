@@ -9,7 +9,7 @@ import { Platform } from 'react-native';
 export const configureRevenueCat = async (iosApiKey: string, androidApiKey: string) => {
   try {
     if (Platform.OS === 'ios') {
-      Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+      Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.INFO);
       Purchases.configure({ 
         apiKey: iosApiKey,
         // Enable automatic theme detection

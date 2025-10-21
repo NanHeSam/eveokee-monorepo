@@ -55,7 +55,6 @@ export function SubscriptionStatus({
   const getTierDisplayName = (tier: string) => {
     switch (tier) {
       case 'free': return 'Free';
-      case 'weekly': return 'Weekly Pro';
       case 'monthly': return 'Monthly Pro';
       case 'yearly': return 'Yearly Pro';
       default: return tier;
@@ -65,7 +64,6 @@ export function SubscriptionStatus({
   const getTierColor = (tier: string) => {
     switch (tier) {
       case 'free': return 'bg-gray-100 text-gray-800';
-      case 'weekly': return 'bg-blue-100 text-blue-800';
       case 'monthly': return 'bg-purple-100 text-purple-800';
       case 'yearly': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';

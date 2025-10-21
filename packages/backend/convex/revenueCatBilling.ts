@@ -1,16 +1,14 @@
 import { v } from "convex/values";
 import { internalMutation } from "./_generated/server";
-import { internal } from "./_generated/api";
 
 const REVENUECAT_PRODUCT_TO_TIER: Record<string, string> = {
-  "eveokee_premium_weekly": "weekly",
   "eveokee_premium_monthly": "monthly",
   "eveokee_premium_annual": "yearly",
 };
 
 export const syncRevenueCatSubscription = internalMutation({
   args: {
-    revenueCatCustomerId: v.string(),
+    userId: v.id("users"),
     productId: v.string(),
     status: v.union(
       v.literal("active"),
@@ -18,6 +16,14 @@ export const syncRevenueCatSubscription = internalMutation({
       v.literal("expired"),
       v.literal("in_grace")
     ),
+    platform: v.optional(v.union(
+      v.literal("app_store"),
+      v.literal("play_store"),
+      v.literal("stripe"),
+      v.literal("amazon"),
+      v.literal("mac_app_store"),
+      v.literal("promotional")
+    )),
     expiresAt: v.optional(v.number()),
   },
   returns: v.object({
@@ -27,16 +33,11 @@ export const syncRevenueCatSubscription = internalMutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    let user = await ctx.db
-      .query("users")
-      .withIndex("by_revenueCatCustomerId", (q) =>
-        q.eq("revenueCatCustomerId", args.revenueCatCustomerId)
-      )
-      .first();
+    const user = await ctx.db.get(args.userId);
 
     if (!user) {
       console.error(
-        `User not found for RevenueCat customer ID: ${args.revenueCatCustomerId}`
+        `User not found for ID: ${args.userId}`
       );
       return { success: false };
     }
@@ -47,7 +48,7 @@ export const syncRevenueCatSubscription = internalMutation({
       const existingSubscription = await ctx.db.get(user.activeSubscriptionId);
 
       await ctx.db.patch(user.activeSubscriptionId, {
-        platform: "revenuecat",
+        ...(args.platform && { platform: args.platform }),
         productId: args.productId,
         status: args.status,
         subscriptionTier: tier,
@@ -57,7 +58,7 @@ export const syncRevenueCatSubscription = internalMutation({
     } else {
       const subscriptionId = await ctx.db.insert("subscriptionStatuses", {
         userId: user._id,
-        platform: "revenuecat",
+        ...(args.platform && { platform: args.platform }),
         productId: args.productId,
         status: args.status,
         subscriptionTier: tier,
@@ -82,24 +83,3 @@ export const syncRevenueCatSubscription = internalMutation({
   },
 });
 
-export const linkRevenueCatCustomer = internalMutation({
-  args: {
-    userId: v.id("users"),
-    revenueCatCustomerId: v.string(),
-  },
-  returns: v.object({
-    success: v.boolean(),
-  }),
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.userId, {
-      revenueCatCustomerId: args.revenueCatCustomerId,
-      updatedAt: Date.now(),
-    });
-
-    console.log(
-      `Linked RevenueCat customer ${args.revenueCatCustomerId} to user ${args.userId}`
-    );
-
-    return { success: true };
-  },
-});

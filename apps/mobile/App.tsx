@@ -1,6 +1,6 @@
 import './global.css';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { ConvexReactClient } from 'convex/react';
@@ -26,6 +26,7 @@ import { FullPlayer } from './app/components/player/FullPlayer';
 import { TrackPlayerProvider } from './app/providers/TrackPlayerProvider';
 import { PostHogProvider } from './app/providers/PostHogProvider';
 import { usePostHogNavigation } from './app/hooks/usePostHogNavigation';
+import { useRevenueCatSync } from './app/hooks/useRevenueCatSync';
 import * as Sentry from '@sentry/react-native';
 import { configureRevenueCat } from './app/utils/revenueCat';
 
@@ -148,6 +149,9 @@ function AppContent() {
 
   // Track navigation and screen time
   usePostHogNavigation(navigationRef);
+
+  // Sync RevenueCat user identity with Convex auth
+  useRevenueCatSync();
 
   const theme: Theme = colors.scheme === 'dark'
     ? {

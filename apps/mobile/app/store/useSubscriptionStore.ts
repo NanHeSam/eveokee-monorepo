@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { api } from '@backend/convex';
 import { useQuery, useMutation } from 'convex/react';
 
-export type SubscriptionTier = 'free' | 'weekly' | 'monthly' | 'yearly';
+export type SubscriptionTier = 'free' | 'monthly' | 'yearly';
 export type SubscriptionStatus = 'active' | 'canceled' | 'expired' | 'in_grace';
 
 export interface SubscriptionPlan {
@@ -58,12 +58,10 @@ export function useSubscription() {
   const subscriptionStatus = useQuery(api.billing.getCurrentUserStatus);
   const availablePlans = useQuery(api.billing.getPlans);
   const ensureCurrentUser = useMutation(api.users.ensureCurrentUser);
-  const resetCounters = useMutation(api.billing.resetCounters);
 
   return {
     subscriptionStatus,
     availablePlans,
-    resetCounters,
     ensureCurrentUser,
   };
 }

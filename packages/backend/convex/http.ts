@@ -175,20 +175,19 @@ const clerkWebhookHandler = httpAction(async (ctx, req) => {
 
   try {
     // 4. Database operations
-    // 4.1 Create user record with alpha-user tag
+    // 4.1 Create user record
     const { userId } = await ctx.runMutation(internal.users.createUser, {
       clerkId: userData.id,
       email: primaryEmail || undefined,
       name: fullName || userData.username || undefined,
-      tags: ["alpha-user"],
     });
 
-    // 4.2 Provision alpha subscription
-    await ctx.runMutation(internal.billing.createAlphaSubscription, {
+    // 4.2 Provision free subscription
+    await ctx.runMutation(internal.billing.createFreeSubscription, {
       userId,
     });
 
-    console.log(`Successfully created alpha user with subscription for Clerk ID: ${userData.id}`);
+    console.log(`Successfully created user with free subscription for Clerk ID: ${userData.id}`);
   } catch (error) {
     console.error("Failed to create user from Clerk webhook", error);
     return new Response(
@@ -233,11 +232,12 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
   const eventType = event.event?.type;
   
   if (eventType === "INITIAL_PURCHASE" || eventType === "RENEWAL" || eventType === "NON_RENEWING_PURCHASE") {
-    const subscriber = event.event?.app_user_id;
+    const appUserId = event.event?.app_user_id; // This is the Convex user._id
     const productId = event.event?.product_id;
     const expiresAt = event.event?.expiration_at_ms;
+    const store = event.event?.store; // e.g., "APP_STORE", "PLAY_STORE", "STRIPE", etc.
 
-    if (!subscriber || !productId) {
+    if (!appUserId || !productId) {
       console.warn("RevenueCat webhook missing required fields", event);
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
@@ -248,11 +248,24 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
       );
     }
 
+    // Map RevenueCat store names to our platform enum
+    const platformMap: Record<string, string> = {
+      "APP_STORE": "app_store",
+      "PLAY_STORE": "play_store",
+      "STRIPE": "stripe",
+      "AMAZON": "amazon",
+      "MAC_APP_STORE": "mac_app_store",
+      "PROMOTIONAL": "promotional",
+    };
+    const platform = store ? platformMap[store] : undefined;
+
     try {
+      // app_user_id is the Convex user._id (set via Purchases.logIn)
       await ctx.runMutation(internal.revenueCatBilling.syncRevenueCatSubscription, {
-        revenueCatCustomerId: subscriber,
+        userId: appUserId as any, // Cast to Id<"users"> - validated in mutation
         productId,
         status: "active",
+        platform: platform as any,
         expiresAt: expiresAt ? parseInt(expiresAt) : undefined,
       });
     } catch (error) {
@@ -266,10 +279,11 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
       );
     }
   } else if (eventType === "CANCELLATION" || eventType === "EXPIRATION") {
-    const subscriber = event.event?.app_user_id;
+    const appUserId = event.event?.app_user_id; // This is the Convex user._id
     const productId = event.event?.product_id;
+    const store = event.event?.store;
 
-    if (!subscriber || !productId) {
+    if (!appUserId || !productId) {
       console.warn("RevenueCat webhook missing required fields", event);
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
@@ -280,11 +294,24 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
       );
     }
 
+    // Map RevenueCat store names to our platform enum
+    const platformMap: Record<string, string> = {
+      "APP_STORE": "app_store",
+      "PLAY_STORE": "play_store",
+      "STRIPE": "stripe",
+      "AMAZON": "amazon",
+      "MAC_APP_STORE": "mac_app_store",
+      "PROMOTIONAL": "promotional",
+    };
+    const platform = store ? platformMap[store] : undefined;
+
     try {
+      // app_user_id is the Convex user._id (set via Purchases.logIn)
       await ctx.runMutation(internal.revenueCatBilling.syncRevenueCatSubscription, {
-        revenueCatCustomerId: subscriber,
+        userId: appUserId as any, // Cast to Id<"users"> - validated in mutation
         productId,
         status: eventType === "CANCELLATION" ? "canceled" : "expired",
+        platform: platform as any,
       });
     } catch (error) {
       console.error("Failed to sync RevenueCat subscription", error);

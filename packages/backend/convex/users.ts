@@ -75,7 +75,7 @@ const ensureCurrentUserHandler = async (
       }
 
       if (!existingUser.activeSubscriptionId) {
-        await ctx.runMutation(internal.billing.createAlphaSubscription, {
+        await ctx.runMutation(internal.billing.createFreeSubscription, {
           userId: existingUser._id,
         });
       }
@@ -99,7 +99,7 @@ const ensureCurrentUserHandler = async (
   });
 
   // Ensure the new user is enrolled in the free subscription tier
-  await ctx.runMutation(internal.billing.createAlphaSubscription, {
+  await ctx.runMutation(internal.billing.createFreeSubscription, {
     userId,
   });
 

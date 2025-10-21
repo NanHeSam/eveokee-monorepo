@@ -1,29 +1,27 @@
 import { useState, useEffect } from 'react';
 import Purchases, { PurchasesOffering, PurchasesPackage, CustomerInfo } from 'react-native-purchases';
-import { useMutation } from 'convex/react';
-import { api } from '@backend/convex';
 
 export function useRevenueCat() {
-  const ensureCurrentUser = useMutation(api.users.ensureCurrentUser);
   const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    const initializeUser = async () => {
+    const initializeData = async () => {
       try {
-        const { userId } = await ensureCurrentUser({});
-        await Purchases.logIn(userId);
+        // Note: User identification is handled by useRevenueCatSync hook in App.tsx
+        // This hook only loads offerings and customer info
         await loadOfferings();
         await loadCustomerInfo();
       } catch (e) {
-        console.error('Failed to initialize user:', e);
-        setError('Failed to initialize');
+        console.error('Failed to load RevenueCat data:', e);
+        setError('Failed to load data');
         setLoading(false);
       }
     };
-    
-    initializeUser();
+
+    initializeData();
   }, []);
 
   const loadOfferings = async () => {

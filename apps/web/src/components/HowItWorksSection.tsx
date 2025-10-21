@@ -77,9 +77,9 @@ const testimonials: Testimonial[] = [
     avatarUrl: 'https://randomuser.me/api/portraits/women/68.jpg',
   },
   {
-    quote: 'It helped me capture a feeling I couldn’t put into words.',
+    quote: 'It helped me capture a feeling I couldn't put into words.',
     name: 'Daniel Park',
-    role: 'Alpha tester',
+    role: 'Early user',
     avatarUrl: 'https://randomuser.me/api/portraits/men/9.jpg',
   },
   {
@@ -365,16 +365,6 @@ export default function HowItWorksSection() {
               Write a few sentences about your day and watch as we transform your words into a personalized song.
             </p>
           </SignedIn>
-        </div>
-
-        {/* Alpha Credits Note (visible to everyone) */}
-        <div className="max-w-3xl mx-auto mb-10">
-          <div className="flex items-start gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4 text-gray-800 dark:text-gray-200">
-            <Sparkles className="w-5 h-5 text-accent-mint mt-0.5" />
-            <p className="text-sm">
-              <span className="font-semibold">Alpha note:</span> Total credits are <span className="font-semibold">3</span> during the alpha period.
-            </p>
-          </div>
         </div>
 
         <SignedOut>
