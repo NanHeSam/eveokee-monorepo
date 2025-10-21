@@ -75,7 +75,7 @@ const ensureCurrentUserHandler = async (
       }
 
       if (!existingUser.activeSubscriptionId) {
-        await ctx.runMutation(internal.billing.createAlphaSubscription, {
+        await ctx.runMutation(internal.billing.createFreeSubscription, {
           userId: existingUser._id,
         });
       }
@@ -99,11 +99,29 @@ const ensureCurrentUserHandler = async (
   });
 
   // Ensure the new user is enrolled in the free subscription tier
-  await ctx.runMutation(internal.billing.createAlphaSubscription, {
+  await ctx.runMutation(internal.billing.createFreeSubscription, {
     userId,
   });
 
   return { userId };
+};
+
+const AUTH_ERROR_MESSAGES = new Set(["Unauthorized", "User not found"]);
+
+export const getOptionalCurrentUser = async (
+  ctx: MutationCtx | QueryCtx,
+): Promise<EnsureCurrentUserResult | null> => {
+  try {
+    return await ensureCurrentUserHandler(ctx);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      AUTH_ERROR_MESSAGES.has(error.message)
+    ) {
+      return null;
+    }
+    throw error;
+  }
 };
 
 export const ensureCurrentUser = mutation({
@@ -115,5 +133,4 @@ export const ensureCurrentUser = mutation({
 });
 
 export default ensureCurrentUserHandler;
-
 

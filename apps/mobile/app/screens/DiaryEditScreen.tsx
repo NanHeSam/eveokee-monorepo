@@ -12,7 +12,6 @@ import { useThemeColors } from '../theme/useThemeColors';
 import { DiaryEditNavigationProp, DiaryEditRouteProp } from '../navigation/types';
 import { api } from '@backend/convex';
 import { useTrackPlayerStore } from '../store/useTrackPlayerStore';
-import { useMusicGeneration } from '../hooks/useMusicGeneration';
 import { PaywallModal } from '../components/billing/PaywallModal';
 import { UsageProgress } from '../components/billing/UsageProgress';
 import { useSubscriptionUIStore } from '../store/useSubscriptionStore';
@@ -28,19 +27,11 @@ export const DiaryEditScreen = () => {
   const initialBody = useMemo(() => route.params?.content ?? '', [route.params?.content]);
   const [body, setBody] = useState(initialBody);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [isEditing, setIsEditing] = useState(!route.params?.diaryId);
   
   // Billing integration
   const { showPaywall, paywallReason, setShowPaywall } = useSubscriptionUIStore();
-  const { generateMusic, isGenerating } = useMusicGeneration({
-    onGenerationStart: () => setIsSaving(true),
-    onGenerationComplete: () => {
-      setIsSaving(false);
-      navigation.goBack();
-      navigation.getParent()?.navigate('Playlist' as never);
-    },
-    onGenerationError: () => setIsSaving(false),
-  });
 
   const diaryDocs = useQuery(api.diaries.listDiaries);
   const currentDiary = useMemo(
@@ -109,19 +100,46 @@ export const DiaryEditScreen = () => {
       return;
     }
 
-    // Then generate music with usage tracking
-    const result = await generateMusic();
-    if (result?.success) {
-      // Start the actual music generation process
-      try {
-        await startMusicGeneration({
-          content: trimmed,
-          diaryId: diaryId,
-        });
-      } catch (error) {
-        Alert.alert('Unable to start music generation', 'Please try again.');
-        setIsSaving(false);
+    // Start music generation (this handles usage tracking internally)
+    try {
+      setIsGenerating(true);
+      const result = await startMusicGeneration({
+        content: trimmed,
+        diaryId: diaryId,
+      });
+
+      if (!result.success) {
+        // Handle limit reached or other errors
+        if (result.code === 'USAGE_LIMIT_REACHED') {
+          setShowPaywall(true, 'limit_reached');
+        } else if (result.code === 'ALREADY_IN_PROGRESS') {
+          // Navigate to Playlist - music generation is already in progress
+          // Use a 1-button alert so it's less intrusive than the error alert
+          Alert.alert(
+            'Music Generation in Progress',
+            'Your music is already being generated. Check the Playlist to see the status.',
+            [
+              {
+                text: 'View Playlist',
+                onPress: () => {
+                  navigation.goBack();
+                  navigation.getParent()?.navigate('Playlist' as never);
+                }
+              }
+            ]
+          );
+        } else {
+          Alert.alert('Unable to start music generation', result.reason || 'Please try again.');
+        }
+      } else {
+        // Success - navigate back and go to playlist
+        navigation.goBack();
+        navigation.getParent()?.navigate('Playlist' as never);
       }
+    } catch (error) {
+      Alert.alert('Unable to start music generation', 'Please try again.');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -283,10 +301,10 @@ export const DiaryEditScreen = () => {
         >
           <TouchableOpacity
             className="flex-1 items-center justify-center rounded-[26px] py-4"
-            style={{ backgroundColor: colors.card, opacity: isSaving ? 0.7 : 1 }}
+            style={{ backgroundColor: colors.card, opacity: (isSaving || isGenerating) ? 0.7 : 1 }}
             activeOpacity={0.85}
             onPress={handleDone}
-            disabled={isSaving}
+            disabled={isSaving || isGenerating}
           >
             <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
               {isSaving ? 'Saving...' : 'Done'}
@@ -301,7 +319,7 @@ export const DiaryEditScreen = () => {
             disabled={isSaving || isGenerating}
           >
             <Text className="text-base font-semibold" style={{ color: colors.background }}>
-              {isSaving || isGenerating ? 'Generating...' : 'Generate Music'}
+              {isGenerating ? 'Generating...' : 'Generate Music'}
             </Text>
           </TouchableOpacity>
         </View>

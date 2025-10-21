@@ -17,8 +17,8 @@
     "build:ios": "eas build --platform ios"
   },
   "dependencies": {
-    "@clerk/clerk-expo": "^2.15.3",
     "@backend/convex": "workspace:*",
+    "@clerk/clerk-expo": "^2.15.3",
     "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-navigation/bottom-tabs": "^6.6.1",
@@ -47,6 +47,8 @@
     "react-native-calendars": "^1.1313.0",
     "react-native-css-interop": "^0.2.1",
     "react-native-gesture-handler": "~2.28.0",
+    "react-native-purchases": "9.5.4",
+    "react-native-purchases-ui": "9.5.4",
     "react-native-qrcode-svg": "^6.3.15",
     "react-native-reanimated": "4.1.2",
     "react-native-safe-area-context": "^5.6.1",

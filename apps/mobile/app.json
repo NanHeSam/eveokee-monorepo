@@ -9,6 +9,7 @@
     "newArchEnabled": true,
     "plugins": [
       "./plugins/with-folly-no-coroutines",
+      "./plugins/with-revenuecat",
       "expo-dev-client",
       "expo-system-ui",
       "expo-web-browser",

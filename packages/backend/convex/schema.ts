@@ -16,7 +16,15 @@ export default defineSchema({
 
   subscriptionStatuses: defineTable({
     userId: v.id("users"),
-    platform: v.optional(v.union(v.literal("apple"), v.literal("google"), v.literal("clerk"))),
+    platform: v.optional(v.union(
+      v.literal("app_store"),      // Apple App Store
+      v.literal("play_store"),      // Google Play Store
+      v.literal("stripe"),          // Stripe
+      v.literal("amazon"),          // Amazon Appstore
+      v.literal("mac_app_store"),   // Mac App Store
+      v.literal("promotional"),     // Promotional/free
+      v.literal("clerk")            // Clerk-managed (free users)
+    )),
     productId: v.string(),
     status: v.union(
       v.literal("active"),
@@ -30,6 +38,7 @@ export default defineSchema({
     autoRenewStatus: v.optional(v.union(v.literal("on"), v.literal("off"))),
     latestReceipt: v.optional(v.string()),
     lastVerifiedAt: v.number(),
+    expiresAt: v.optional(v.number()),
     canceledAt: v.optional(v.number()),
     // Custom limit override (for manual adjustments)
     customMusicLimit: v.optional(v.number()),

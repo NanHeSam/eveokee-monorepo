@@ -1,6 +1,6 @@
 import './global.css';
 
-import { useRef } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { ConvexReactClient } from 'convex/react';
@@ -10,7 +10,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
 
 import { DiaryScreen } from './app/screens/DiaryScreen';
 import { DiaryEditScreen } from './app/screens/DiaryEditScreen';
@@ -26,7 +26,9 @@ import { FullPlayer } from './app/components/player/FullPlayer';
 import { TrackPlayerProvider } from './app/providers/TrackPlayerProvider';
 import { PostHogProvider } from './app/providers/PostHogProvider';
 import { usePostHogNavigation } from './app/hooks/usePostHogNavigation';
+import { useRevenueCatSync } from './app/hooks/useRevenueCatSync';
 import * as Sentry from '@sentry/react-native';
+import { configureRevenueCat } from './app/utils/revenueCat';
 
 // Only initialize Sentry in production/preview builds (not local development)
 const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
@@ -148,6 +150,9 @@ function AppContent() {
   // Track navigation and screen time
   usePostHogNavigation(navigationRef);
 
+  // Sync RevenueCat user identity with Convex auth
+  useRevenueCatSync();
+
   const theme: Theme = colors.scheme === 'dark'
     ? {
         ...DarkTheme,
@@ -188,6 +193,30 @@ function AppContent() {
 }
 
 function App() {
+  useEffect(() => {
+    const initializeRevenueCat = async () => {
+      // Delay RevenueCat initialization to allow other native modules to register first
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const apiKey = Platform.OS === 'ios'
+        ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY
+        : process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY;
+
+      if (!apiKey) {
+        console.warn(`RevenueCat API key not found for ${Platform.OS}. In-app purchases will not be available.`);
+        return;
+      }
+
+      try {
+        await configureRevenueCat(apiKey);
+      } catch (error) {
+        console.error('Failed to initialize RevenueCat:', error);
+      }
+    };
+
+    initializeRevenueCat();
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>

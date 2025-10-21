@@ -75,7 +75,7 @@ export function useMusicGeneration(options: UseMusicGenerationOptions = {}) {
         return result;
       } else {
         // Handle limit reached case
-        if (result.reason === 'Usage limit reached') {
+        if (result.code === 'USAGE_LIMIT_REACHED') {
           if (showPaywallOnLimit) {
             setShowPaywall(true, 'limit_reached');
           } else {
@@ -84,8 +84,8 @@ export function useMusicGeneration(options: UseMusicGenerationOptions = {}) {
               `You've used all your music generations (${result.currentUsage}/${result.limit}). Upgrade to continue creating music.`,
               [
                 { text: 'Cancel', style: 'cancel' },
-                { 
-                  text: 'Upgrade', 
+                {
+                  text: 'Upgrade',
                   onPress: () => setShowPaywall(true, 'limit_reached')
                 }
               ]
@@ -115,7 +115,6 @@ export function useMusicGeneration(options: UseMusicGenerationOptions = {}) {
         limit: result.limit,
         remainingQuota: result.remainingQuota,
         tier: result.tier,
-        hasUnlimited: result.hasUnlimited,
       };
     } catch (error) {
       console.error('Error getting usage info:', error);
@@ -130,4 +129,3 @@ export function useMusicGeneration(options: UseMusicGenerationOptions = {}) {
     isGenerating,
   };
 }
-

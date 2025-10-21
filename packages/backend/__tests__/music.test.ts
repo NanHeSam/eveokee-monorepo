@@ -88,8 +88,8 @@ describe("Music Generation Flow", () => {
     it("should return failure when usage limit is reached", async () => {
       const t = createTestEnvironment();
       const { userId, subscriptionId } = await createTestUser(t, {
-        tier: "alpha", // Alpha has limit of 3
-        musicGenerationsUsed: 3, // Already at limit
+        tier: "free", // Free tier has limit of 10
+        musicGenerationsUsed: 10, // Already at limit
       });
 
       // Create diary beforehand
@@ -110,14 +110,14 @@ describe("Music Generation Flow", () => {
 
       // Verify usage counter was NOT incremented
       const subscription = await getSubscription(t, subscriptionId);
-      expect(subscription?.musicGenerationsUsed).toBe(3);
+      expect(subscription?.musicGenerationsUsed).toBe(10);
     });
 
     it("should increment usage counter when under limit", async () => {
       const t = createTestEnvironment();
       const { userId, subscriptionId } = await createTestUser(t, {
-        tier: "alpha", // Limit of 3
-        musicGenerationsUsed: 1, // Under limit
+        tier: "free", // Limit of 10
+        musicGenerationsUsed: 5, // Under limit
       });
 
       const result = await t.mutation(internal.usage.recordMusicGeneration, {
@@ -125,18 +125,18 @@ describe("Music Generation Flow", () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.remainingQuota).toBe(1); // 3 - 2 = 1
+      expect(result.remainingQuota).toBe(4); // 10 - 6 = 4
 
       // Verify usage counter was incremented
       const subscription = await getSubscription(t, subscriptionId);
-      expect(subscription?.musicGenerationsUsed).toBe(2);
+      expect(subscription?.musicGenerationsUsed).toBe(6);
     });
 
     it("should return correct remainingQuota", async () => {
       const t = createTestEnvironment();
       const { userId } = await createTestUser(t, {
-        tier: "weekly", // Limit of 25
-        musicGenerationsUsed: 20,
+        tier: "monthly", // Limit of 90
+        musicGenerationsUsed: 75,
       });
 
       const result = await t.mutation(internal.usage.recordMusicGeneration, {
@@ -144,7 +144,7 @@ describe("Music Generation Flow", () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.remainingQuota).toBe(4); // 25 - 21 = 4
+      expect(result.remainingQuota).toBe(14); // 90 - 76 = 14
     });
 
     it("should detect pending music for a diary", async () => {

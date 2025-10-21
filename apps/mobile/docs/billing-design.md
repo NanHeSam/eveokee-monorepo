@@ -39,7 +39,7 @@ interface SubscriptionStatus {
   platform: "apple" | "google" | "clerk";
   productId: string; // Store product identifier
   status: "active" | "canceled" | "expired" | "in_grace";
-  subscriptionTier: string; // "free" | "weekly" | "monthly" | "yearly"
+  subscriptionTier: string; // "free" | "monthly" | "yearly"
   lastResetAt: number; // Period start timestamp
   musicGenerationsUsed: number;
   autoRenewStatus?: "on" | "off";

@@ -217,9 +217,9 @@ describe("Webhook Logic Tests", () => {
       expect(user?.name).toBe("Webhook Test User");
       expect(user?.tags).toContain("alpha-user");
 
-      // Create alpha subscription (webhook does this next)
+      // Create free subscription (webhook does this next)
       const subscriptionId = await t.mutation(
-        internal.billing.createAlphaSubscription,
+        internal.billing.createFreeSubscription,
         { userId }
       );
 
@@ -231,7 +231,7 @@ describe("Webhook Logic Tests", () => {
 
       const subscription = await t.run(async (ctx) => ctx.db.get(subscriptionId));
       expect(subscription).toBeDefined();
-      expect(subscription?.subscriptionTier).toBe("alpha");
+      expect(subscription?.subscriptionTier).toBe("free");
       expect(subscription?.status).toBe("active");
       expect(subscription?.userId).toBe(userId);
       expect(subscription?.musicGenerationsUsed).toBe(0);
@@ -253,24 +253,24 @@ describe("Webhook Logic Tests", () => {
       expect(user?.tags).toBeUndefined();
     });
 
-    it("should create subscription with correct alpha tier defaults", async () => {
+    it("should create subscription with correct free tier defaults", async () => {
       const t = createTestEnvironment();
 
       const { userId } = await t.mutation(internal.users.createUser, {
-        clerkId: "clerk_alpha_test",
-        email: "alpha@example.com",
+        clerkId: "clerk_free_test",
+        email: "free@example.com",
       });
 
       const subscriptionId = await t.mutation(
-        internal.billing.createAlphaSubscription,
+        internal.billing.createFreeSubscription,
         { userId }
       );
 
       const subscription = await t.run(async (ctx) => ctx.db.get(subscriptionId));
 
-      // Verify alpha subscription defaults
-      expect(subscription?.subscriptionTier).toBe("alpha");
-      expect(subscription?.productId).toBe("alpha-access");
+      // Verify free subscription defaults
+      expect(subscription?.subscriptionTier).toBe("free");
+      expect(subscription?.productId).toBe("free-tier");
       expect(subscription?.platform).toBe("clerk");
       expect(subscription?.status).toBe("active");
       expect(subscription?.musicGenerationsUsed).toBe(0);
@@ -289,9 +289,9 @@ describe("Webhook Logic Tests", () => {
       const initialSubId = user?.activeSubscriptionId;
       expect(initialSubId).toBeDefined();
 
-      // Try to create another alpha subscription
+      // Try to create another free subscription
       const returnedSubId = await t.mutation(
-        internal.billing.createAlphaSubscription,
+        internal.billing.createFreeSubscription,
         { userId }
       );
 
@@ -322,8 +322,8 @@ describe("Webhook Logic Tests", () => {
         tags: ["alpha-user"],
       });
 
-      // 2. Create alpha subscription
-      await t.mutation(internal.billing.createAlphaSubscription, { userId });
+      // 2. Create free subscription
+      await t.mutation(internal.billing.createFreeSubscription, { userId });
 
       // 3. Verify user can generate music
       const usageResult = await t.mutation(
@@ -332,10 +332,10 @@ describe("Webhook Logic Tests", () => {
       );
 
       expect(usageResult.success).toBe(true);
-      expect(usageResult.tier).toBe("alpha");
-      expect(usageResult.limit).toBe(3);
+      expect(usageResult.tier).toBe("free");
+      expect(usageResult.limit).toBe(10);
       expect(usageResult.currentUsage).toBe(1);
-      expect(usageResult.remainingQuota).toBe(2);
+      expect(usageResult.remainingQuota).toBe(9);
     });
 
     it("should handle music generation webhook completing after user creates diary", async () => {

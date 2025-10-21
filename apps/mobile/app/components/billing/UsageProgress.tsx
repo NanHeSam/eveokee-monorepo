@@ -23,25 +23,10 @@ export function UsageProgress({
     );
   }
 
-  const { tier, musicGenerationsUsed, musicLimit, hasUnlimited, remainingQuota } = usage;
   const usageText = formatUsageText(usage);
   const remainingText = formatRemainingQuota(usage);
   const usagePercentage = getUsagePercentage(usage);
   const needsUpgradeNow = needsUpgrade(usage);
-
-  // Don't show progress for unlimited plans
-  if (hasUnlimited) {
-    return (
-      <View className="bg-green-50 p-3 rounded-lg border border-green-200">
-        <View className="flex-row items-center">
-          <Text className="text-green-600 text-sm font-medium">✓</Text>
-          <Text className="text-green-800 text-sm font-medium ml-2">
-            Unlimited music generations
-          </Text>
-        </View>
-      </View>
-    );
-  }
 
   if (compact) {
     return (
@@ -110,4 +95,3 @@ export function UsageProgress({
     </View>
   );
 }
-
