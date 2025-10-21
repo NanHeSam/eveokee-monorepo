@@ -284,7 +284,7 @@ export const recordCurrentUserMusicGeneration = mutation({
   },
 });
 
-export const canCurrentUserGenerateMusic = mutation({
+export const canCurrentUserGenerateMusic = query({
   args: {},
   returns: v.object({
     canGenerate: v.boolean(),

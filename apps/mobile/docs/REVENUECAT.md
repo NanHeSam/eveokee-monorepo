@@ -212,12 +212,24 @@ function SubscriptionScreen() {
   const {
     offerings,
     customerInfo,
+    // Individual loading states for granular control
+    loadingOfferings,
+    loadingPurchase,
+    loadingRestore,
+    loadingCustomerInfo,
+    // Computed loading state for backward compatibility
     loading,
     purchasePackage,
     restorePurchases,
     hasActiveSubscription,
   } = useRevenueCat();
 
+  // Use specific loading states for better UX
+  if (loadingOfferings) return <LoadingSpinner text="Loading offerings..." />;
+  if (loadingPurchase) return <LoadingSpinner text="Processing purchase..." />;
+  if (loadingRestore) return <LoadingSpinner text="Restoring purchases..." />;
+  
+  // Or use the computed loading state for simple cases
   if (loading) return <LoadingSpinner />;
 
   return (
@@ -226,14 +238,35 @@ function SubscriptionScreen() {
         <Button
           key={pkg.identifier}
           onPress={() => purchasePackage(pkg)}
-          title={`Subscribe - ${pkg.product.priceString}`}
+          disabled={loadingPurchase}
+          title={loadingPurchase ? 'Processing...' : `Subscribe - ${pkg.product.priceString}`}
         />
       ))}
-      <Button onPress={restorePurchases} title="Restore Purchases" />
+      <Button 
+        onPress={restorePurchases} 
+        disabled={loadingRestore}
+        title={loadingRestore ? 'Restoring...' : 'Restore Purchases'} 
+      />
     </View>
   );
 }
 ```
+
+### Loading States
+
+The `useRevenueCat` hook provides granular loading states for better user experience:
+
+- `loadingOfferings` - When loading available subscription packages
+- `loadingPurchase` - When processing a purchase
+- `loadingRestore` - When restoring previous purchases
+- `loadingCustomerInfo` - When loading customer subscription status
+- `loading` - Computed state that's true if any operation is loading (for backward compatibility)
+
+This allows you to:
+- Show specific loading messages for each operation
+- Disable only the relevant buttons during operations
+- Allow concurrent operations without UI conflicts
+- Provide better user feedback
 
 ## Theme Support
 
