@@ -11,7 +11,7 @@ import {
   type SubscriptionTier,
   subscriptionStatusValidator,
 } from "./billing";
-import ensureCurrentUser from "./users";
+import ensureCurrentUser, { getOptionalCurrentUser } from "./users";
 import { internal } from "./_generated/api";
 
 // Helper function to check and reset subscription if period expired
@@ -66,20 +66,17 @@ async function getUserUsageInfo(ctx: any, userId: string) {
     tier,
     updatedSubscription.customMusicLimit
   );
-  const hasUnlimited = false;
-  const resolvedLimit = effectiveLimit;
   const periodDuration = getPeriodDurationMs(tier);
   const periodStart = updatedSubscription.lastResetAt;
   const periodEnd = periodStart + periodDuration;
-  const remainingQuota = Math.max(0, resolvedLimit - currentUsage);
+  const remainingQuota = Math.max(0, effectiveLimit - currentUsage);
 
   return {
     subscriptionId: user.activeSubscriptionId,
     tier,
     status: updatedSubscription.status,
     currentUsage,
-    effectiveLimit: resolvedLimit,
-    hasUnlimited,
+    effectiveLimit,
     periodStart,
     periodEnd,
     remainingQuota,
@@ -101,21 +98,11 @@ export const recordMusicGeneration = internalMutation({
     remainingQuota: v.number(),
     tier: v.string(),
     status: subscriptionStatusValidator,
-    hasUnlimited: v.boolean(),
     periodStart: v.number(),
     periodEnd: v.number(),
   }),
   handler: async (ctx, args) => {
-    const {
-      subscriptionId,
-      tier,
-      currentUsage,
-      effectiveLimit,
-      hasUnlimited,
-      status,
-      periodStart,
-      periodEnd,
-    } =
+    const { subscriptionId, tier, currentUsage, effectiveLimit, status, periodStart, periodEnd } =
       await getUserUsageInfo(ctx, args.userId);
 
     // Check if user has reached their limit
@@ -129,7 +116,6 @@ export const recordMusicGeneration = internalMutation({
         remainingQuota: 0,
         tier,
         status,
-        hasUnlimited,
         periodStart,
         periodEnd,
       };
@@ -151,7 +137,6 @@ export const recordMusicGeneration = internalMutation({
       remainingQuota,
       tier,
       status,
-      hasUnlimited,
       periodStart,
       periodEnd,
     };
@@ -198,7 +183,6 @@ export const getUsageSnapshot = internalQuery({
       status: subscriptionStatusValidator,
       musicGenerationsUsed: v.number(),
       musicLimit: v.number(),
-      hasUnlimited: v.boolean(),
       periodStart: v.number(),
       periodEnd: v.number(),
       remainingQuota: v.number(),
@@ -218,7 +202,6 @@ export const getUsageSnapshot = internalQuery({
         status: usageInfo.status,
         musicGenerationsUsed: usageInfo.currentUsage,
         musicLimit: usageInfo.effectiveLimit,
-        hasUnlimited: usageInfo.hasUnlimited,
         periodStart: usageInfo.periodStart,
         periodEnd: usageInfo.periodEnd,
         remainingQuota: usageInfo.remainingQuota,
@@ -237,7 +220,6 @@ export const getCurrentUserUsage = query({
       tier: v.string(),
       musicGenerationsUsed: v.number(),
       musicLimit: v.number(),
-      hasUnlimited: v.boolean(),
       remainingQuota: v.number(),
       periodStart: v.number(),
       periodEnd: v.number(),
@@ -245,7 +227,11 @@ export const getCurrentUserUsage = query({
     v.null(),
   ),
   handler: async (ctx) => {
-    const { userId } = await ensureCurrentUser(ctx);
+    const authResult = await getOptionalCurrentUser(ctx);
+    if (!authResult) {
+      return null;
+    }
+    const { userId } = authResult;
     const snapshot = await ctx.runQuery(internal.usage.getUsageSnapshot, {
       userId,
     });
@@ -258,7 +244,6 @@ export const getCurrentUserUsage = query({
       tier: snapshot.tier,
       musicGenerationsUsed: snapshot.musicGenerationsUsed,
       musicLimit: snapshot.musicLimit,
-      hasUnlimited: snapshot.hasUnlimited,
       remainingQuota: snapshot.remainingQuota,
       periodStart: snapshot.periodStart,
       periodEnd: snapshot.periodEnd,
@@ -279,7 +264,6 @@ export const recordCurrentUserMusicGeneration = mutation({
     limit: v.number(),
     remainingQuota: v.number(),
     tier: v.string(),
-    hasUnlimited: v.boolean(),
   }),
   handler: async (ctx) => {
     const { userId } = await ensureCurrentUser(ctx);
@@ -296,7 +280,6 @@ export const recordCurrentUserMusicGeneration = mutation({
       limit: result.limit,
       remainingQuota: result.remainingQuota,
       tier: result.tier,
-      hasUnlimited: result.hasUnlimited,
     };
   },
 });
@@ -309,10 +292,19 @@ export const canCurrentUserGenerateMusic = mutation({
     currentUsage: v.number(),
     limit: v.number(),
     remainingQuota: v.number(),
-    hasUnlimited: v.boolean(),
   }),
   handler: async (ctx) => {
-    const { userId } = await ensureCurrentUser(ctx);
+    const authResult = await getOptionalCurrentUser(ctx);
+    if (!authResult) {
+      return {
+        canGenerate: false,
+        tier: "free",
+        currentUsage: 0,
+        limit: 0,
+        remainingQuota: 0,
+      };
+    }
+    const { userId } = authResult;
     const snapshot = await ctx.runQuery(internal.usage.getUsageSnapshot, {
       userId,
     });
@@ -324,11 +316,10 @@ export const canCurrentUserGenerateMusic = mutation({
         currentUsage: 0,
         limit: 0,
         remainingQuota: 0,
-        hasUnlimited: false,
       };
     }
 
-    const canGenerate = snapshot.hasUnlimited || snapshot.remainingQuota > 0;
+    const canGenerate = snapshot.remainingQuota > 0;
 
     return {
       canGenerate,
@@ -336,8 +327,6 @@ export const canCurrentUserGenerateMusic = mutation({
       currentUsage: snapshot.musicGenerationsUsed,
       limit: snapshot.musicLimit,
       remainingQuota: snapshot.remainingQuota,
-      hasUnlimited: snapshot.hasUnlimited,
     };
   },
 });
-

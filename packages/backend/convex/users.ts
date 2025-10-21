@@ -106,6 +106,24 @@ const ensureCurrentUserHandler = async (
   return { userId };
 };
 
+const AUTH_ERROR_MESSAGES = new Set(["Unauthorized", "User not found"]);
+
+export const getOptionalCurrentUser = async (
+  ctx: MutationCtx | QueryCtx,
+): Promise<EnsureCurrentUserResult | null> => {
+  try {
+    return await ensureCurrentUserHandler(ctx);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      AUTH_ERROR_MESSAGES.has(error.message)
+    ) {
+      return null;
+    }
+    throw error;
+  }
+};
+
 export const ensureCurrentUser = mutation({
   args: {},
   returns: v.object({
@@ -115,5 +133,4 @@ export const ensureCurrentUser = mutation({
 });
 
 export default ensureCurrentUserHandler;
-
 

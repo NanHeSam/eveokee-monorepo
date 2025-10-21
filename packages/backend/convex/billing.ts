@@ -4,7 +4,7 @@ import {
   internalMutation,
 } from "./_generated/server";
 import { internal } from "./_generated/api";
-import ensureCurrentUser from "./users";
+import { getOptionalCurrentUser } from "./users";
 import { PLAN_CONFIG } from "./constant";
 
 export const subscriptionStatusValidator = v.union(
@@ -118,7 +118,11 @@ export const getCurrentUserStatus = query({
   args: {},
   returns: v.union(usageStateValidator, v.null()),
   handler: async (ctx) => {
-    const { userId } = await ensureCurrentUser(ctx);
+    const authResult = await getOptionalCurrentUser(ctx);
+    if (!authResult) {
+      return null;
+    }
+    const { userId } = authResult;
 
     const snapshot = await ctx.runQuery(internal.usage.getUsageSnapshot, {
       userId,
@@ -135,7 +139,6 @@ export const getCurrentUserStatus = query({
       status: snapshot.status,
       musicGenerationsUsed: snapshot.musicGenerationsUsed,
       musicLimit: snapshot.musicLimit,
-      hasUnlimited: snapshot.hasUnlimited,
       periodStart: snapshot.periodStart,
       periodEnd: snapshot.periodEnd,
       isActive,

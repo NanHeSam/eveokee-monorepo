@@ -13,7 +13,7 @@ export function SubscriptionStatus({
   showUpgradeButton = true, 
   compact = false 
 }: SubscriptionStatusProps) {
-  const { subscriptionStatus, availablePlans } = useSubscription();
+  const { subscriptionStatus } = useSubscription();
 
   if (!subscriptionStatus) {
     return (
@@ -23,34 +23,20 @@ export function SubscriptionStatus({
     );
   }
 
-  const { tier, musicGenerationsUsed, musicLimit, hasUnlimited, periodEnd, isActive } = subscriptionStatus;
-  const usageText = formatUsageText({ 
-    tier, 
-    musicGenerationsUsed, 
-    musicLimit, 
-    hasUnlimited, 
-    remainingQuota: hasUnlimited ? Infinity : musicLimit - musicGenerationsUsed,
-    periodStart: subscriptionStatus.periodStart,
-    periodEnd: subscriptionStatus.periodEnd
-  });
-  const remainingText = formatRemainingQuota({ 
-    tier, 
-    musicGenerationsUsed, 
-    musicLimit, 
-    hasUnlimited, 
-    remainingQuota: hasUnlimited ? Infinity : musicLimit - musicGenerationsUsed,
-    periodStart: subscriptionStatus.periodStart,
-    periodEnd: subscriptionStatus.periodEnd
-  });
-  const usagePercentage = getUsagePercentage({ 
-    tier, 
-    musicGenerationsUsed, 
-    musicLimit, 
-    hasUnlimited, 
-    remainingQuota: hasUnlimited ? Infinity : musicLimit - musicGenerationsUsed,
-    periodStart: subscriptionStatus.periodStart,
-    periodEnd: subscriptionStatus.periodEnd
-  });
+  const { tier, musicGenerationsUsed, musicLimit, remainingQuota, periodEnd, periodStart, isActive } = subscriptionStatus;
+
+  const usageData = {
+    tier,
+    musicGenerationsUsed,
+    musicLimit,
+    remainingQuota,
+    periodStart,
+    periodEnd,
+  };
+
+  const usageText = formatUsageText(usageData);
+  const remainingText = formatRemainingQuota(usageData);
+  const usagePercentage = getUsagePercentage(usageData);
 
   const getTierDisplayName = (tier: string) => {
     switch (tier) {
@@ -108,29 +94,21 @@ export function SubscriptionStatus({
         )}
       </View>
 
-      {!hasUnlimited && (
-        <View className="mb-2">
-          <View className="flex-row justify-between items-center mb-1">
-            <Text className="text-sm text-gray-600">Music Generations</Text>
-            <Text className="text-sm font-medium">{usageText}</Text>
-          </View>
-          <View className="bg-gray-200 rounded-full h-2">
-            <View 
-              className="bg-blue-500 h-2 rounded-full"
-              style={{ width: `${usagePercentage}%` }}
-            />
-          </View>
-          <Text className="text-xs text-gray-500 mt-1">
-            {remainingText}
-          </Text>
+      <View className="mb-2">
+        <View className="flex-row justify-between items-center mb-1">
+          <Text className="text-sm text-gray-600">Music Generations</Text>
+          <Text className="text-sm font-medium">{usageText}</Text>
         </View>
-      )}
-
-      {hasUnlimited && (
-        <Text className="text-sm text-gray-600">
-          Unlimited music generations
+        <View className="bg-gray-200 rounded-full h-2">
+          <View 
+            className="bg-blue-500 h-2 rounded-full"
+            style={{ width: `${usagePercentage}%` }}
+          />
+        </View>
+        <Text className="text-xs text-gray-500 mt-1">
+          {remainingText}
         </Text>
-      )}
+      </View>
 
       <Text className="text-xs text-gray-500 mt-2">
         {new Date(periodEnd).toLocaleDateString()} • {isActive ? 'Active' : 'Expired'}
@@ -138,4 +116,3 @@ export function SubscriptionStatus({
     </TouchableOpacity>
   );
 }
-

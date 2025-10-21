@@ -115,7 +115,6 @@ export function useMusicGeneration(options: UseMusicGenerationOptions = {}) {
         limit: result.limit,
         remainingQuota: result.remainingQuota,
         tier: result.tier,
-        hasUnlimited: result.hasUnlimited,
       };
     } catch (error) {
       console.error('Error getting usage info:', error);
@@ -130,4 +129,3 @@ export function useMusicGeneration(options: UseMusicGenerationOptions = {}) {
     isGenerating,
   };
 }
-

@@ -17,7 +17,8 @@ export type PurchaseResult =
 export const configureRevenueCat = async (apiKey: string) => {
   try {
     if (Platform.OS === 'ios' || Platform.OS === 'android') {
-      const logLevel = __DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.INFO;
+
+      const logLevel = (__DEV__) ? LOG_LEVEL.DEBUG : LOG_LEVEL.INFO;
       Purchases.setLogLevel(logLevel);
       Purchases.configure({
         apiKey,

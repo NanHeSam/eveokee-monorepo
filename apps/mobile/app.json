@@ -9,12 +9,10 @@
     "newArchEnabled": true,
     "plugins": [
       "./plugins/with-folly-no-coroutines",
-      "./plugins/with-android-billing-permission",
+      "./plugins/with-revenuecat",
       "expo-dev-client",
       "expo-system-ui",
       "expo-web-browser",
-      "react-native-purchases",
-      "react-native-purchases-ui",
       [
         "@sentry/react-native/expo",
         {

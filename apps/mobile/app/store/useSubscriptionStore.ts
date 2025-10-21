@@ -10,7 +10,6 @@ export interface SubscriptionPlan {
   musicLimit: number;
   periodDays: number;
   price: number;
-  hasUnlimited: boolean;
 }
 
 export interface SubscriptionState {
@@ -18,7 +17,7 @@ export interface SubscriptionState {
   status: SubscriptionStatus;
   musicGenerationsUsed: number;
   musicLimit: number;
-  hasUnlimited: boolean;
+  remainingQuota: number;
   periodStart: number;
   periodEnd: number;
   isActive: boolean;
@@ -28,7 +27,6 @@ export interface UsageState {
   tier: SubscriptionTier;
   musicGenerationsUsed: number;
   musicLimit: number;
-  hasUnlimited: boolean;
   remainingQuota: number;
   periodStart: number;
   periodEnd: number;
@@ -40,7 +38,6 @@ export interface CanGenerateResult {
   currentUsage: number;
   limit: number;
   remainingQuota: number;
-  hasUnlimited: boolean;
 }
 
 export interface RecordGenerationResult {
@@ -50,7 +47,6 @@ export interface RecordGenerationResult {
   limit: number;
   remainingQuota: number;
   tier: SubscriptionTier;
-  hasUnlimited: boolean;
 }
 
 // Hook for subscription management
@@ -102,31 +98,21 @@ export const useSubscriptionUIStore = create<SubscriptionUIState>((set) => ({
 // Utility functions for subscription checks
 export function canUserGenerateMusic(usage: UsageState | undefined): boolean {
   if (!usage) return false;
-  return usage.hasUnlimited || usage.remainingQuota > 0;
+  return usage.remainingQuota > 0;
 }
 
 export function getUsagePercentage(usage: UsageState | undefined): number {
-  if (!usage || usage.hasUnlimited) return 0;
+  if (!usage) return 0;
   return Math.min(100, (usage.musicGenerationsUsed / usage.musicLimit) * 100);
 }
 
 export function formatUsageText(usage: UsageState | undefined): string {
   if (!usage) return 'Loading...';
-  
-  if (usage.hasUnlimited) {
-    return 'Unlimited';
-  }
-  
   return `${usage.musicGenerationsUsed}/${usage.musicLimit}`;
 }
 
 export function formatRemainingQuota(usage: UsageState | undefined): string {
   if (!usage) return 'Loading...';
-  
-  if (usage.hasUnlimited) {
-    return 'Unlimited';
-  }
-  
   return `${usage.remainingQuota} remaining`;
 }
 
@@ -137,6 +123,5 @@ export function isSubscriptionExpired(subscription: SubscriptionState | undefine
 
 export function needsUpgrade(usage: UsageState | undefined): boolean {
   if (!usage) return false;
-  return !usage.hasUnlimited && usage.remainingQuota === 0;
+  return usage.remainingQuota === 0;
 }
-
