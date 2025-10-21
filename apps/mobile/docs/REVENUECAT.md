@@ -197,9 +197,33 @@ function SubscriptionScreen() {
 }
 ```
 
+## Theme Support
+
+The paywall automatically adapts to the user's system theme (light/dark mode). This is configured through the RevenueCat dashboard and handled automatically by the `PaywallModal` component.
+
+### Configuration
+
+1. **RevenueCat Dashboard Setup**
+   - Go to your RevenueCat dashboard → Tools → Paywalls
+   - Configure separate themes for light and dark modes
+   - Enable "Auto-detect system theme" option
+
+2. **Color Configuration**
+   - Use the app's color palette for consistent theming
+   - Light mode: Use `backgroundLight`, `textPrimaryLight`, etc.
+   - Dark mode: Use `backgroundDark`, `textPrimaryDark`, etc.
+
+3. **Testing**
+   - Test on both iOS and Android devices
+   - Switch between light and dark modes in device settings
+   - Verify paywall appearance matches the app's theme
+
+For detailed setup instructions, see [REVENUECAT_THEME_SETUP.md](./REVENUECAT_THEME_SETUP.md).
+
 ## Resources
 
 - [RevenueCat Documentation](https://docs.revenuecat.com/)
 - [React Native SDK Guide](https://docs.revenuecat.com/docs/reactnative)
 - [Expo Integration](https://docs.revenuecat.com/docs/reactnative#expo)
 - [Webhook Events](https://docs.revenuecat.com/docs/webhooks)
+- [Paywall Theme Configuration](https://docs.revenuecat.com/docs/tools/paywalls/creating-paywalls/customer-states)

@@ -10,11 +10,19 @@ export const configureRevenueCat = async (iosApiKey: string, androidApiKey: stri
   try {
     if (Platform.OS === 'ios') {
       Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-      Purchases.configure({ apiKey: iosApiKey });
+      Purchases.configure({ 
+        apiKey: iosApiKey,
+        // Enable automatic theme detection
+        shouldShowInAppMessagesAutomatically: true
+      });
       console.log('RevenueCat configured successfully for iOS');
     } else if (Platform.OS === 'android') {
       Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-      Purchases.configure({ apiKey: androidApiKey });
+      Purchases.configure({ 
+        apiKey: androidApiKey,
+        // Enable automatic theme detection
+        shouldShowInAppMessagesAutomatically: true
+      });
       console.log('RevenueCat configured successfully for Android');
     } else {
       console.warn('RevenueCat is only supported on iOS and Android');

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useColorScheme } from 'react-native';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 
 interface PaywallModalProps {
@@ -8,10 +9,14 @@ interface PaywallModalProps {
 }
 
 export function PaywallModal({ visible, onClose, reason }: PaywallModalProps) {
+  const colorScheme = useColorScheme();
+
   useEffect(() => {
     if (visible) {
       const showPaywall = async () => {
         try {
+          // RevenueCat will automatically detect the system theme
+          // and display the appropriate paywall configuration
           const paywallResult = await RevenueCatUI.presentPaywall();
           switch (paywallResult) {
             case PAYWALL_RESULT.PURCHASED:
@@ -38,7 +43,7 @@ export function PaywallModal({ visible, onClose, reason }: PaywallModalProps) {
 
       showPaywall();
     }
-  }, [visible, onClose]);
+  }, [visible, onClose, colorScheme]);
 
   // Return null since RevenueCatUI.presentPaywall() handles the UI
   return null;
