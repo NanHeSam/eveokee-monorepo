@@ -1,7 +1,7 @@
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActivityIndicator, Alert, FlatList, Image, Pressable, Text, View, Animated } from 'react-native';
 import { useMutation, useQuery } from 'convex/react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
 import Reanimated, { FadeIn, FadeOut } from 'react-native-reanimated';
@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import TrackPlayer from 'react-native-track-player';
 import { useTrackPlayerStore } from '../store/useTrackPlayerStore';
 import { useShareMusic } from '../hooks/useShareMusic';
+import { useMusicGenerationStatus } from '../store/useMusicGenerationStatus';
 
 export const PlaylistScreen = () => {
   const colors = useThemeColors();
@@ -21,10 +22,37 @@ export const PlaylistScreen = () => {
   const musicDocs = useQuery(api.music.listPlaylistMusic);
   const softDeleteMusic = useMutation(api.music.softDeleteMusic);
   const { shareMusic } = useShareMusic();
+  const pendingGenerations = useMusicGenerationStatus((state) => state.pendingGenerations);
+  const removePendingGeneration = useMusicGenerationStatus((state) => state.removePendingGeneration);
 
   const items = useMemo(() => (musicDocs ? mapMusicDocsToItems(musicDocs) : []), [musicDocs]);
+  const placeholderItems = useMemo(() => {
+    if (!pendingGenerations.length) {
+      return [];
+    }
+    const resolvedDiaryIds = new Set(items.map((item) => item.diaryId));
+    return pendingGenerations
+      .filter((entry) => !resolvedDiaryIds.has(entry.diaryId))
+      .map((entry) => ({
+        id: `pending-${entry.diaryId}` as const,
+        diaryId: entry.diaryId,
+        title: 'Generating music…',
+        imageUrl: undefined,
+        diaryDateLabel: undefined,
+        diaryContent: undefined,
+        diaryTitle: undefined,
+        audioUrl: undefined,
+        lyric: undefined,
+        status: 'pending' as const,
+        canPlay: false,
+        isPlaceholder: true,
+        startedAt: entry.startedAt,
+      }));
+  }, [pendingGenerations, items]);
+  const displayItems = useMemo(() => [...placeholderItems, ...items], [placeholderItems, items]);
 
   const isLoading = musicDocs === undefined;
+  const hasDisplayItems = displayItems.length > 0;
 
   const handleDeleteMusic = (musicId: Id<"music">, title: string) => {
     Alert.alert(
@@ -51,6 +79,18 @@ export const PlaylistScreen = () => {
     );
   };
 
+  useEffect(() => {
+    if (!pendingGenerations.length || !items.length) {
+      return;
+    }
+    const resolvedDiaryIds = new Set(items.map((item) => item.diaryId));
+    pendingGenerations.forEach((entry) => {
+      if (resolvedDiaryIds.has(entry.diaryId)) {
+        removePendingGeneration(entry.diaryId);
+      }
+    });
+  }, [pendingGenerations, items, removePendingGeneration]);
+
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
       <View className="flex-1 px-5 pt-2">
@@ -60,8 +100,8 @@ export const PlaylistScreen = () => {
           </Text>
           <Text className="mt-1 text-sm text-center" style={{ color: colors.textSecondary }}>
             Curate sounds that match your mood.
-          </Text>
-        </View>
+            </Text>
+          </View>
 
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
@@ -70,7 +110,7 @@ export const PlaylistScreen = () => {
               Loading your tracks…
             </Text>
           </View>
-        ) : items.length === 0 ? (
+        ) : !hasDisplayItems ? (
           <View className="flex-1 items-center justify-center">
             <Text className="text-base text-center" style={{ color: colors.textSecondary }}>
               No tracks yet. Generate music from your diary entries to fill this space.
@@ -78,12 +118,15 @@ export const PlaylistScreen = () => {
           </View>
         ) : (
           <FlatList
-            data={items}
+            data={displayItems}
             keyExtractor={item => item.id}
             contentContainerStyle={{ paddingBottom: 32 }}
             ItemSeparatorComponent={() => <View className="h-px" style={{ backgroundColor: colors.border }} />}
             showsVerticalScrollIndicator={false}
-            renderItem={({ item, index }) => (
+            renderItem={({ item }) => (
+              item.isPlaceholder || item.status === 'pending' ? (
+                <GeneratingRow colors={colors} />
+              ) : (
               <PlaylistRow
                 item={item}
                 colors={colors}
@@ -119,6 +162,7 @@ export const PlaylistScreen = () => {
                 onDelete={() => handleDeleteMusic(item.id, item.title)}
                 onShare={() => { void shareMusic(item.id, item.title) }}
               />
+              )
             )}
           />
         )}
@@ -143,8 +187,32 @@ const mapMusicDocsToItems = (
     audioUrl: doc.audioUrl,
     lyric: doc.lyric,
     status: doc.status,
-    canPlay: doc.status === 'ready' && !!doc.audioUrl
+    canPlay: doc.status === 'ready' && !!doc.audioUrl,
+    isPlaceholder: false,
   }));
+
+const GeneratingRow = ({
+  colors,
+}: {
+  colors: ReturnType<typeof useThemeColors>;
+}) => (
+  <View className="flex-row items-center py-3">
+    <View
+      className="h-14 w-14 items-center justify-center rounded-2xl"
+      style={{ backgroundColor: colors.surface }}
+    >
+      <ActivityIndicator size="small" color={colors.accentMint} />
+    </View>
+    <View className="ml-3 flex-1">
+      <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
+        Generating your music…
+      </Text>
+      <Text className="mt-0.5 text-xs" style={{ color: colors.textSecondary }}>
+        We're composing a new track. This may take up to a minute.
+      </Text>
+    </View>
+  </View>
+);
 
 const PlaylistRow = ({
   item,
@@ -230,16 +298,6 @@ const PlaylistRow = ({
         ) : null}
       </View>
 
-      {item.status === 'pending' && (
-        <View className="mr-2 items-center justify-center" style={{ width: 36, height: 36 }}>
-          <Ionicons
-            name="time-outline"
-            size={18}
-            color={colors.textSecondary}
-          />
-        </View>
-      )}
-
       {item.status === 'failed' && (
         <View className="mr-2 items-center justify-center" style={{ width: 36, height: 36 }}>
           <Ionicons
@@ -295,5 +353,3 @@ const PlaylistRow = ({
     </View>
   );
 };
-
-
