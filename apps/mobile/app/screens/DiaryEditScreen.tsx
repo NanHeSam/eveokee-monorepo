@@ -15,6 +15,7 @@ import { useTrackPlayerStore } from '../store/useTrackPlayerStore';
 import { PaywallModal } from '../components/billing/PaywallModal';
 import { UsageProgress } from '../components/billing/UsageProgress';
 import { useSubscriptionUIStore } from '../store/useSubscriptionStore';
+import { useMusicGenerationStatus } from '../store/useMusicGenerationStatus';
 
 export const DiaryEditScreen = () => {
   const colors = useThemeColors();
@@ -32,6 +33,7 @@ export const DiaryEditScreen = () => {
   
   // Billing integration
   const { showPaywall, paywallReason, setShowPaywall } = useSubscriptionUIStore();
+  const addPendingGeneration = useMusicGenerationStatus((state) => state.addPendingGeneration);
 
   const diaryDocs = useQuery(api.diaries.listDiaries);
   const currentDiary = useMemo(
@@ -133,6 +135,9 @@ export const DiaryEditScreen = () => {
         }
       } else {
         // Success - navigate back and go to playlist
+        if (diaryId) {
+          addPendingGeneration(diaryId);
+        }
         navigation.goBack();
         navigation.getParent()?.navigate('Playlist' as never);
       }
@@ -334,4 +339,3 @@ export const DiaryEditScreen = () => {
     </SafeAreaView>
   );
 };
-
