@@ -13,7 +13,6 @@ import { DiaryEditNavigationProp, DiaryEditRouteProp } from '../navigation/types
 import { api } from '@backend/convex';
 import { useTrackPlayerStore } from '../store/useTrackPlayerStore';
 import { PaywallModal } from '../components/billing/PaywallModal';
-import { UsageProgress } from '../components/billing/UsageProgress';
 import { useSubscriptionUIStore } from '../store/useSubscriptionStore';
 import { useMusicGenerationStatus } from '../store/useMusicGenerationStatus';
 
@@ -291,13 +290,13 @@ export const DiaryEditScreen = () => {
             />
           </View>
 
-          {/* Usage Progress */}
-          <View className="mt-4">
-            <UsageProgress 
+          {/* Usage Progress - Hidden for better UX */}
+          {/* <View className="mt-4">
+            <UsageProgress
               onUpgradePress={() => setShowPaywall(true, 'limit_reached')}
               showUpgradeButton={true}
             />
-          </View>
+          </View> */}
         </ScrollView>
 
         <View

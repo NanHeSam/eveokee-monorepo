@@ -7,7 +7,6 @@ import { useMutation } from 'convex/react';
 
 import { useThemeColors } from '../theme/useThemeColors';
 import { useSubscription, useSubscriptionUIStore } from '../store/useSubscriptionStore';
-import { SubscriptionStatus } from '../components/billing/SubscriptionStatus';
 import { PaywallModal } from '../components/billing/PaywallModal';
 import { api } from '@backend/convex';
 
@@ -101,56 +100,62 @@ export const SettingsScreen = () => {
           {/* Subscription Status */}
           <View className="mt-6">
             <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
-              Subscription Type:{' '}
-              <Text style={{ color: colors.textPrimary, fontWeight: 'bold' }}>
-                {subscriptionStatus?.tier
-                  ? subscriptionStatus.tier.charAt(0).toUpperCase() + subscriptionStatus.tier.slice(1)
-                  : '—'}
-              </Text>
+              Subscription
             </Text>
-            <SubscriptionStatus 
-              onPress={() => setShowPaywall(true, 'settings')}
-              showUpgradeButton={true}
-            />
-          </View>
-
-          {/* Test Buttons (only show for free tier) */}
-          {subscriptionStatus?.tier === 'free' && (
-            <View className="mt-6">
-              <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
-                Test Subscription Flow
-              </Text>
-              <Text className="text-sm mb-4" style={{ color: colors.textSecondary }}>
-                Use these buttons to test the subscription flow without payment processing
-              </Text>
-              
-              <View className="gap-3">
-                <TouchableOpacity
-                  className="items-center rounded-[26px] py-4"
-                  style={{ backgroundColor: colors.accentMint, opacity: isProcessing ? 0.7 : 1 }}
-                  activeOpacity={0.85}
-                  onPress={handleTestSubscriptionSuccess}
-                  disabled={isProcessing}
-                >
-                  <Text className="text-base font-semibold" style={{ color: colors.background }}>
-                    {isProcessing ? 'Processing...' : 'Test: Activate Monthly Pro'}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  className="items-center rounded-[26px] py-4"
-                  style={{ backgroundColor: colors.accentApricot, opacity: isProcessing ? 0.7 : 1 }}
-                  activeOpacity={0.85}
-                  onPress={handleTestSubscriptionFailure}
-                  disabled={isProcessing}
-                >
-                  <Text className="text-base font-semibold" style={{ color: colors.background }}>
-                    {isProcessing ? 'Processing...' : 'Test: Simulate Payment Failure'}
-                  </Text>
-                </TouchableOpacity>
+            <View className="rounded-3xl p-5" style={{ backgroundColor: colors.surface }}>
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="text-sm" style={{ color: colors.textSecondary }}>
+                  Plan
+                </Text>
+                <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
+                  {subscriptionStatus?.tier === 'free' && 'Free'}
+                  {subscriptionStatus?.tier === 'monthly' && 'Monthly Pro'}
+                  {subscriptionStatus?.tier === 'yearly' && 'Yearly Pro'}
+                  {!subscriptionStatus?.tier && '—'}
+                </Text>
               </View>
+
+              {subscriptionStatus?.periodEnd && (
+                <View className="flex-row items-center justify-between mb-3">
+                  <Text className="text-sm" style={{ color: colors.textSecondary }}>
+                    {subscriptionStatus.tier === 'free' ? 'Period Ends' : 'Renews On'}
+                  </Text>
+                  <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
+                    {new Date(subscriptionStatus.periodEnd).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </Text>
+                </View>
+              )}
+
+              <View className="flex-row items-center justify-between">
+                <Text className="text-sm" style={{ color: colors.textSecondary }}>
+                  Status
+                </Text>
+                <Text
+                  className="text-base font-semibold"
+                  style={{ color: subscriptionStatus?.isActive ? colors.accentMint : colors.accentApricot }}
+                >
+                  {subscriptionStatus?.isActive ? 'Active' : 'Expired'}
+                </Text>
+              </View>
+
+              {subscriptionStatus?.tier === 'free' && (
+                <TouchableOpacity
+                  className="mt-4 items-center rounded-[20px] py-3"
+                  style={{ backgroundColor: colors.accentMint }}
+                  activeOpacity={0.85}
+                  onPress={() => setShowPaywall(true, 'settings')}
+                >
+                  <Text className="text-sm font-semibold" style={{ color: colors.background }}>
+                    Upgrade to Pro
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
-          )}
+          </View>
 
           {/* Logout Button */}
           <TouchableOpacity
