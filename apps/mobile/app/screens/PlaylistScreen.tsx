@@ -1,4 +1,4 @@
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityIndicator, Alert, FlatList, Image, Pressable, Text, View, Animated } from 'react-native';
 import { useMutation, useQuery } from 'convex/react';
 import { useEffect, useMemo, useState } from 'react';
@@ -18,7 +18,6 @@ import { useMusicGenerationStatus } from '../store/useMusicGenerationStatus';
 
 export const PlaylistScreen = () => {
   const colors = useThemeColors();
-  const insets = useSafeAreaInsets();
   const musicDocs = useQuery(api.music.listPlaylistMusic);
   const softDeleteMusic = useMutation(api.music.softDeleteMusic);
   const { shareMusic } = useShareMusic();
@@ -208,7 +207,7 @@ const GeneratingRow = ({
         Generating your music…
       </Text>
       <Text className="mt-0.5 text-xs" style={{ color: colors.textSecondary }}>
-        We're composing a new track. This may take up to a minute.
+        We&apos;re composing a new track. This may take up to a minute.
       </Text>
     </View>
   </View>

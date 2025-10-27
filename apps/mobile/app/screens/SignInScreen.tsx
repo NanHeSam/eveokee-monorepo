@@ -137,7 +137,7 @@ export const SignInScreen = () => {
     } finally {
       setIsPasswordLoading(false);
     }
-  }, [identifier, password, signIn, setActive, finalizeSession, navigation]);
+  }, [identifier, password, signIn, setActive, finalizeSession]);
 
   const handleGoogleSignIn = useCallback(async () => {
     try {
@@ -170,7 +170,7 @@ export const SignInScreen = () => {
     } finally {
       setIsGoogleLoading(false);
     }
-  }, [finalizeSession, redirectUrl, setActive, startSSOFlow]);
+  }, [finalizeSession, setActive, startSSOFlow]);
 
   const handleSignUp = useCallback(() => {
     navigation.navigate('SignUp');

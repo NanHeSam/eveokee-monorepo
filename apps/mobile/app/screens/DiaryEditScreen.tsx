@@ -70,7 +70,7 @@ export const DiaryEditScreen = () => {
         await createDiary({ content: trimmed });
       }
       navigation.goBack();
-    } catch (error) {
+    } catch {
       Alert.alert('Unable to save entry', 'Please try again.');
     } finally {
       setIsSaving(false);
@@ -95,7 +95,7 @@ export const DiaryEditScreen = () => {
         const result = await createDiary({ content: trimmed });
         diaryId = result._id;
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Unable to save entry', 'Please try again.');
       setIsSaving(false);
       return;
@@ -140,7 +140,7 @@ export const DiaryEditScreen = () => {
         navigation.goBack();
         navigation.getParent()?.navigate('Playlist' as never);
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Unable to start music generation', 'Please try again.');
     } finally {
       setIsGenerating(false);

@@ -1,9 +1,8 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth, useUser } from '@clerk/clerk-expo';
-import { useEffect } from 'react';
 import { useMutation } from 'convex/react';
 
 import { api } from '@backend/convex';
