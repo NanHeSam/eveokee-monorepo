@@ -4,7 +4,7 @@
  */
 
 import { internalAction } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { isTodayInCadence } from "./cadenceHelpers";
 import { localTimeToUTC, getUTCDayBounds } from "./timezoneHelpers";
 
@@ -22,7 +22,7 @@ export const runDailyPlanner = internalAction({
     console.log("Starting daily planner job...");
     
     try {
-      const activeSettings = await ctx.runQuery(internal.callSettings.getActiveCallSettings);
+      const activeSettings = await ctx.runQuery(api.callSettings.getActiveCallSettings);
       
       console.log(`Found ${activeSettings.length} active call settings`);
       

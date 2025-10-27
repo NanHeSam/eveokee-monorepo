@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '@backend/convex';
 
+type StatusFilter = 'all' | 'queued' | 'scheduled' | 'started' | 'completed' | 'failed' | 'canceled';
+
 export default function CallMonitoring() {
-  const [statusFilter, setStatusFilter] = useState<'all' | 'queued' | 'scheduled' | 'started' | 'completed' | 'failed' | 'canceled'>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [limit, setLimit] = useState(50);
   
   const callJobs = useQuery(api.callJobs.getCallJobs, {
@@ -115,7 +117,7 @@ export default function CallMonitoring() {
               <div className="flex items-center space-x-4">
                 <select
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as any)}
+                  onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="all">All Status</option>

@@ -4,7 +4,6 @@ import { useCallback, useState, useEffect } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@backend/convex';
 import { useThemeColors } from '../theme/useThemeColors';
-import { Picker } from '@react-native-picker/picker';
 
 const TIMEZONES = [
   'America/New_York',
@@ -143,7 +142,7 @@ export const CallSettingsScreen = () => {
           </Text>
           
           <Text className="mt-4 text-base" style={{ color: colors.textSecondary }}>
-            Configure your daily call schedule. You'll receive a call at your specified time based on your cadence.
+            Configure your daily call schedule. You&apos;ll receive a call at your specified time based on your cadence.
           </Text>
           
           {/* Active Toggle */}
@@ -189,17 +188,18 @@ export const CallSettingsScreen = () => {
             <Text className="text-base font-semibold mb-2" style={{ color: colors.textPrimary }}>
               Timezone
             </Text>
-            <View className="rounded-2xl overflow-hidden" style={{ backgroundColor: colors.surface }}>
-              <Picker
-                selectedValue={timezone}
-                onValueChange={setTimezone}
-                style={{ color: colors.textPrimary }}
-              >
-                {TIMEZONES.map((tz) => (
-                  <Picker.Item key={tz} label={tz} value={tz} />
-                ))}
-              </Picker>
-            </View>
+            <Text className="text-sm mb-2" style={{ color: colors.textSecondary }}>
+              Enter your IANA timezone (e.g., America/New_York)
+            </Text>
+            <TextInput
+              className="rounded-2xl p-4 text-base"
+              style={{ backgroundColor: colors.surface, color: colors.textPrimary }}
+              placeholder="America/New_York"
+              placeholderTextColor={colors.textSecondary}
+              value={timezone}
+              onChangeText={setTimezone}
+              autoCapitalize="none"
+            />
           </View>
           
           {/* Time of Day */}
@@ -226,16 +226,40 @@ export const CallSettingsScreen = () => {
             <Text className="text-base font-semibold mb-2" style={{ color: colors.textPrimary }}>
               Cadence
             </Text>
-            <View className="rounded-2xl overflow-hidden" style={{ backgroundColor: colors.surface }}>
-              <Picker
-                selectedValue={cadence}
-                onValueChange={(value) => setCadence(value as 'daily' | 'weekdays' | 'weekends')}
-                style={{ color: colors.textPrimary }}
-              >
-                {CADENCE_OPTIONS.map((option) => (
-                  <Picker.Item key={option.value} label={option.label} value={option.value} />
-                ))}
-              </Picker>
+            <View className="gap-3">
+              {CADENCE_OPTIONS.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  className="flex-row items-center rounded-2xl p-4"
+                  style={{ 
+                    backgroundColor: cadence === option.value ? colors.accentMint : colors.surface,
+                  }}
+                  activeOpacity={0.7}
+                  onPress={() => setCadence(option.value as 'daily' | 'weekdays' | 'weekends')}
+                >
+                  <View 
+                    className="w-5 h-5 rounded-full border-2 items-center justify-center mr-3"
+                    style={{ 
+                      borderColor: cadence === option.value ? colors.background : colors.textSecondary,
+                    }}
+                  >
+                    {cadence === option.value && (
+                      <View 
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: colors.background }}
+                      />
+                    )}
+                  </View>
+                  <Text 
+                    className="text-base font-medium"
+                    style={{ 
+                      color: cadence === option.value ? colors.background : colors.textPrimary,
+                    }}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
           
