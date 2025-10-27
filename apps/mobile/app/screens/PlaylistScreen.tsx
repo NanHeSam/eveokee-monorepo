@@ -134,12 +134,12 @@ export const PlaylistScreen = () => {
                     return;
                   }
 
-                  const playableItems = items.filter((i: any) => i.canPlay && i.audioUrl);
-                  const playableIndex = playableItems.findIndex((i: any) => i.id === item.id);
+                  const playableItems = items.filter(isPlayable);
+                  const playableIndex = playableItems.findIndex((i) => i.id === item.id);
 
-                  const tracks = playableItems.map((i: any) => ({
+                  const tracks = playableItems.map((i: PlayablePlaylistItem) => ({
                     id: i.id,
-                    url: i.audioUrl!,
+                    url: i.audioUrl,
                     title: i.title,
                     artist: i.diaryDateLabel ?? 'Music Diary',
                     artwork: i.imageUrl,
@@ -171,6 +171,15 @@ export const PlaylistScreen = () => {
 };
 
 type PlaylistItem = ReturnType<typeof mapMusicDocsToItems>[number];
+
+type PlayablePlaylistItem = PlaylistItem & {
+  canPlay: true;
+  audioUrl: string;
+};
+
+function isPlayable(item: PlaylistItem): item is PlayablePlaylistItem {
+  return item.canPlay === true && !!item.audioUrl;
+}
 
 const mapMusicDocsToItems = (
   docs: NonNullable<typeof api.music.listPlaylistMusic._returnType>
