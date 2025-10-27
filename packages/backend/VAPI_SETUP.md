@@ -86,35 +86,30 @@ The following environment variables must be configured in the Convex Dashboard:
    - `call.ended`
    - `call.failed`
 
-### 4. Set Up Daily Planner Cron Job
+### 4. Daily Planner Cron Job (Automatic)
 
-The daily planner should run once per day (recommended: 00:00 UTC) to schedule calls for eligible users.
+The daily planner is **automatically configured** to run every day at 00:00 UTC via `convex/crons.ts`.
 
-**Option A: Using Convex Cron (Recommended)**
+The cron job:
+- Runs `internal.dailyPlanner.runDailyPlanner()` daily at midnight UTC
+- Checks all active call settings
+- Schedules calls for eligible users based on their cadence and timezone
+- No manual configuration required - it's deployed automatically with your Convex backend
 
-Add to your `convex.json`:
-```json
-{
-  "functions": {
-    "dailyPlanner:runDailyPlanner": {
-      "cron": "0 0 * * *"
-    }
-  }
-}
+**Manual Testing**
+
+To manually trigger the daily planner for testing:
+```typescript
+// In Convex Dashboard, run:
+internal.dailyPlanner.triggerDailyPlanner()
 ```
 
-**Option B: External Cron Service**
+**Monitoring Cron Execution**
 
-Use a service like GitHub Actions, AWS EventBridge, or Vercel Cron to call:
-```bash
-curl -X POST https://your-deployment.convex.cloud/api/run \
-  -H "Content-Type: application/json" \
-  -d '{
-    "path": "dailyPlanner:runDailyPlanner",
-    "args": {},
-    "format": "json"
-  }'
-```
+Check Convex logs for:
+- "Starting daily planner job..." - indicates cron ran
+- Scheduled/skipped/failed counts
+- Any errors during execution
 
 ### 5. Deploy Backend
 
