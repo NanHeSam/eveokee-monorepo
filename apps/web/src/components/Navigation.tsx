@@ -60,6 +60,14 @@ export default function Navigation() {
               <Link to="/blog" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
                 Blog
               </Link>
+              <SignedIn>
+                <Link to="/call-settings" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                  Call Settings
+                </Link>
+                <Link to="/call-monitoring" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                  Call Monitoring
+                </Link>
+              </SignedIn>
             </div>
           </div>
 
@@ -164,6 +172,22 @@ export default function Navigation() {
             >
               Blog
             </Link>
+            <SignedIn>
+              <Link 
+                to="/call-settings" 
+                className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white block px-3 py-2 rounded-md text-base font-medium"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Call Settings
+              </Link>
+              <Link 
+                to="/call-monitoring" 
+                className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white block px-3 py-2 rounded-md text-base font-medium"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Call Monitoring
+              </Link>
+            </SignedIn>
             <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-600">
               <SignedOut>
                 <div className="flex items-center px-3 space-x-3">

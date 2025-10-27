@@ -9,6 +9,8 @@ import TermsAndConditions from "@/pages/TermsAndConditions";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Blog from "./pages/Blog";
 import Share from "./pages/Share";
+import CallSettings from "./pages/CallSettings";
+import CallMonitoring from "./pages/CallMonitoring";
 
 export default function App() {
   // Initialize theme globally
@@ -41,6 +43,8 @@ export default function App() {
             <Route path="privacy" element={<PrivacyPolicy />} />
             <Route path="blog" element={<Blog />} />
             <Route path="blog/:slug" element={<Blog />} />
+            <Route path="call-settings" element={<CallSettings />} />
+            <Route path="call-monitoring" element={<CallMonitoring />} />
             <Route path="other" element={<div className="text-center text-xl">Other Page - Coming Soon</div>} />
           </Route>
           
