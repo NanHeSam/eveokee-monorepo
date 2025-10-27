@@ -54,7 +54,7 @@ export const processMusicComponents = (content: string): (string | React.ReactEl
         );
         return musicComponent;
       } catch (e) {
-        console.error('Failed to parse music component data');
+        console.error('Failed to parse music component data:', e);
         return '[Music unavailable]';
       }
     }

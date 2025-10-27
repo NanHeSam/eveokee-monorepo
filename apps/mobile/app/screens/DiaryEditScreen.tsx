@@ -15,6 +15,7 @@ import { useTrackPlayerStore } from '../store/useTrackPlayerStore';
 import { PaywallModal } from '../components/billing/PaywallModal';
 import { useSubscriptionUIStore } from '../store/useSubscriptionStore';
 import { useMusicGenerationStatus } from '../store/useMusicGenerationStatus';
+import { UsageProgress } from '../components/billing/UsageProgress';
 
 export const DiaryEditScreen = () => {
   const colors = useThemeColors();
@@ -290,13 +291,13 @@ export const DiaryEditScreen = () => {
             />
           </View>
 
-          {/* Usage Progress - Hidden for better UX */}
-          {/* <View className="mt-4">
+          {/* Usage Progress */}
+          <View className="mt-4">
             <UsageProgress
               onUpgradePress={() => setShowPaywall(true, 'limit_reached')}
               showUpgradeButton={true}
             />
-          </View> */}
+          </View>
         </ScrollView>
 
         <View

@@ -7,6 +7,7 @@ import { useAuth, useUser } from '@clerk/clerk-expo';
 import { useThemeColors } from '../theme/useThemeColors';
 import { useSubscription, useSubscriptionUIStore } from '../store/useSubscriptionStore';
 import { PaywallModal } from '../components/billing/PaywallModal';
+import { UsageProgress } from '../components/billing/UsageProgress';
 
 export const SettingsScreen = () => {
   const { user } = useUser();
@@ -128,6 +129,19 @@ export const SettingsScreen = () => {
                   </Text>
                 </TouchableOpacity>
               )}
+            </View>
+          </View>
+
+          {/* Usage Information */}
+          <View className="mt-6">
+            <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
+              Free Tier Usage
+            </Text>
+            <View className="rounded-3xl p-5" style={{ backgroundColor: colors.surface }}>
+              <UsageProgress
+                onUpgradePress={() => setShowPaywall(true, 'settings')}
+                showUpgradeButton={true}
+              />
             </View>
           </View>
 
