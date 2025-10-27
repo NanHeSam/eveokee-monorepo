@@ -80,20 +80,29 @@ export const SettingsScreen = () => {
                 </Text>
               </View>
 
-              {subscriptionStatus?.periodEnd && (
-                <View className="flex-row items-center justify-between mb-3">
-                  <Text className="text-sm" style={{ color: colors.textSecondary }}>
-                    {subscriptionStatus.tier === 'free' ? 'Period Ends' : 'Renews On'}
-                  </Text>
-                  <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
-                    {new Date(subscriptionStatus.periodEnd).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
-                  </Text>
-                </View>
-              )}
+              {(() => {
+                if (!subscriptionStatus?.periodEnd) return null;
+                
+                const date = new Date(subscriptionStatus.periodEnd);
+                const isValidDate = !isNaN(date.getTime());
+                
+                return (
+                  <View className="flex-row items-center justify-between mb-3">
+                    <Text className="text-sm" style={{ color: colors.textSecondary }}>
+                      {subscriptionStatus?.tier === 'free' ? 'Period Ends' : 'Renews On'}
+                    </Text>
+                    <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
+                      {isValidDate
+                        ? date.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                          })
+                        : '—'}
+                    </Text>
+                  </View>
+                );
+              })()}
 
               <View className="flex-row items-center justify-between">
                 <Text className="text-sm" style={{ color: colors.textSecondary }}>
