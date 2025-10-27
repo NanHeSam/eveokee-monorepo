@@ -1,29 +1,22 @@
-import { Image, Text, TouchableOpacity, View, ScrollView, Alert } from 'react-native';
+import { Image, Text, TouchableOpacity, View, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 
 import { useAuth, useUser } from '@clerk/clerk-expo';
-import { useMutation } from 'convex/react';
 
 import { useThemeColors } from '../theme/useThemeColors';
 import { useSubscription, useSubscriptionUIStore } from '../store/useSubscriptionStore';
 import { PaywallModal } from '../components/billing/PaywallModal';
-import { api } from '@backend/convex';
 
 export const SettingsScreen = () => {
   const { user } = useUser();
   const { signOut } = useAuth();
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
-  const [isProcessing, setIsProcessing] = useState(false);
-  
+
   // Billing hooks
-  const { subscriptionStatus, ensureCurrentUser } = useSubscription();
+  const { subscriptionStatus } = useSubscription();
   const { showPaywall, paywallReason, setShowPaywall } = useSubscriptionUIStore();
-  
-  // Test mutations for subscription simulation
-  const testSubscriptionSuccess = useMutation(api.billing.testSubscriptionSuccess);
-  const testSubscriptionFailure = useMutation(api.billing.testSubscriptionFailure);
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -32,34 +25,6 @@ export const SettingsScreen = () => {
       console.error('Sign out failed', err);
     }
   }, [signOut]);
-
-  const handleTestSubscriptionSuccess = useCallback(async () => {
-    setIsProcessing(true);
-    try {
-      const { userId } = await ensureCurrentUser();
-      await testSubscriptionSuccess({ userId, tier: 'monthly' });
-      Alert.alert('Success!', 'Test subscription activated successfully');
-    } catch (error) {
-      console.error('Test subscription success failed:', error);
-      Alert.alert('Error', 'Failed to activate test subscription');
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [ensureCurrentUser, testSubscriptionSuccess]);
-
-  const handleTestSubscriptionFailure = useCallback(async () => {
-    setIsProcessing(true);
-    try {
-      const { userId } = await ensureCurrentUser();
-      await testSubscriptionFailure({ userId });
-      Alert.alert('Test Complete', 'Subscription failure scenario simulated');
-    } catch (error) {
-      console.error('Test subscription failure failed:', error);
-      Alert.alert('Error', 'Failed to simulate subscription failure');
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [ensureCurrentUser, testSubscriptionFailure]);
 
   const displayName = user?.fullName || user?.primaryEmailAddress?.emailAddress || 'Friend';
   const email = user?.primaryEmailAddress?.emailAddress;

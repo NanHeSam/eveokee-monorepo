@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { Text, TouchableOpacity, View, Pressable, ScrollView, Alert } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTrackPlayerStore } from '../store/useTrackPlayerStore';
@@ -110,7 +110,6 @@ export const DiaryScreen = () => {
   const dateGroups = useMemo(() => buildDateGroups(entries), [entries]);
   const entriesByDate = useMemo(() => createEntriesMap(entries), [entries]);
   const colors = useThemeColors();
-  const insets = useSafeAreaInsets();
   const navigation = useNavigation<DiaryStackNavigationProp>();
   const { isVisible: isMiniPlayerVisible } = useTrackPlayerStore();
 
