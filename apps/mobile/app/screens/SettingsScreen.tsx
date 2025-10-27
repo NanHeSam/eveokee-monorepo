@@ -132,18 +132,20 @@ export const SettingsScreen = () => {
             </View>
           </View>
 
-          {/* Usage Information */}
-          <View className="mt-6">
-            <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
+          {/* Usage Information - Only show for free tier */}
+          {subscriptionStatus?.tier === 'free' && (
+            <View className="mt-6">
+              <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
               Free Tier Usage
-            </Text>
-            <View className="rounded-3xl p-5" style={{ backgroundColor: colors.surface }}>
-              <UsageProgress
-                onUpgradePress={() => setShowPaywall(true, 'settings')}
-                showUpgradeButton={true}
-              />
+              </Text>
+              <View className="rounded-3xl p-5" style={{ backgroundColor: colors.surface }}>
+                <UsageProgress
+                  onUpgradePress={() => setShowPaywall(true, 'settings')}
+                  showUpgradeButton={true}
+                />
+              </View>
             </View>
-          </View>
+          )}
 
           {/* Logout Button */}
           <TouchableOpacity

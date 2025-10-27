@@ -13,7 +13,7 @@ import { DiaryEditNavigationProp, DiaryEditRouteProp } from '../navigation/types
 import { api } from '@backend/convex';
 import { useTrackPlayerStore } from '../store/useTrackPlayerStore';
 import { PaywallModal } from '../components/billing/PaywallModal';
-import { useSubscriptionUIStore } from '../store/useSubscriptionStore';
+import { useSubscriptionUIStore, useSubscription } from '../store/useSubscriptionStore';
 import { useMusicGenerationStatus } from '../store/useMusicGenerationStatus';
 import { UsageProgress } from '../components/billing/UsageProgress';
 
@@ -33,6 +33,7 @@ export const DiaryEditScreen = () => {
   
   // Billing integration
   const { showPaywall, paywallReason, setShowPaywall } = useSubscriptionUIStore();
+  const { subscriptionStatus } = useSubscription();
   const addPendingGeneration = useMusicGenerationStatus((state) => state.addPendingGeneration);
 
   const diaryDocs = useQuery(api.diaries.listDiaries);
@@ -291,13 +292,15 @@ export const DiaryEditScreen = () => {
             />
           </View>
 
-          {/* Usage Progress */}
-          <View className="mt-4">
-            <UsageProgress
-              onUpgradePress={() => setShowPaywall(true, 'limit_reached')}
-              showUpgradeButton={true}
-            />
-          </View>
+          {/* Usage Progress - Only show for free tier */}
+          {subscriptionStatus?.tier === 'free' && (
+            <View className="mt-4">
+              <UsageProgress
+                onUpgradePress={() => setShowPaywall(true, 'limit_reached')}
+                showUpgradeButton={true}
+              />
+            </View>
+          )}
         </ScrollView>
 
         <View
