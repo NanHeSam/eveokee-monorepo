@@ -1,7 +1,7 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { MUSIC_GENERATION_CALLBACK_PATH, CLERK_WEBHOOK_PATH, REVENUECAT_WEBHOOK_PATH } from "./constant";
+import { MUSIC_GENERATION_CALLBACK_PATH, CLERK_WEBHOOK_PATH, REVENUECAT_WEBHOOK_PATH, VAPI_WEBHOOK_PATH } from "./constant";
 import { verifyWebhook } from "@clerk/backend/webhooks";
 
 type RawSunoCallback = {
@@ -222,6 +222,152 @@ const clerkWebhookHandler = httpAction(async (ctx, req) => {
   );
 });
 
+const vapiWebhookHandler = httpAction(async (ctx, req) => {
+  // 1. Validate request
+  if (req.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
+  }
+
+  let event: any;
+  try {
+    event = await req.json();
+  } catch (error) {
+    console.error("Failed to parse VAPI webhook JSON", error);
+    return new Response(
+      JSON.stringify({ error: "Invalid JSON" }),
+      {
+        status: 400,
+        headers: jsonHeaders,
+      },
+    );
+  }
+
+  const eventType = event.type || event.event?.type;
+  const vapiCallId = event.call?.id || event.callId || event.id;
+
+  if (!vapiCallId) {
+    console.warn("VAPI webhook missing call ID", event);
+    return new Response(
+      JSON.stringify({ error: "Missing call ID" }),
+      {
+        status: 400,
+        headers: jsonHeaders,
+      },
+    );
+  }
+
+  try {
+    if (eventType === "call.started" || eventType === "started") {
+      const job = await ctx.runMutation(internal.callJobs.getCallJobByVapiId, {
+        vapiCallId,
+      });
+
+      if (!job) {
+        console.warn(`No job found for VAPI call ID: ${vapiCallId}`);
+        return new Response(
+          JSON.stringify({ status: "ignored", reason: "Job not found" }),
+          {
+            status: 200,
+            headers: jsonHeaders,
+          },
+        );
+      }
+
+      await ctx.runMutation(internal.callJobs.updateCallJobStatus, {
+        jobId: job._id,
+        status: "started",
+      });
+
+      await ctx.runMutation(internal.callJobs.createCallSession, {
+        userId: job.userId,
+        callJobId: job._id,
+        vapiCallId,
+        startedAt: Date.now(),
+      });
+
+      console.log(`Call started for job ${job._id}, VAPI call ID: ${vapiCallId}`);
+    } else if (eventType === "call.ended" || eventType === "ended" || eventType === "completed") {
+      const job = await ctx.runMutation(internal.callJobs.getCallJobByVapiId, {
+        vapiCallId,
+      });
+
+      if (!job) {
+        console.warn(`No job found for VAPI call ID: ${vapiCallId}`);
+        return new Response(
+          JSON.stringify({ status: "ignored", reason: "Job not found" }),
+          {
+            status: 200,
+            headers: jsonHeaders,
+          },
+        );
+      }
+
+      const endedAt = event.endedAt || event.call?.endedAt || Date.now();
+      const duration = event.duration || event.call?.duration;
+      const disposition = event.disposition || event.call?.disposition || "completed";
+
+      await ctx.runMutation(internal.callJobs.updateCallJobStatus, {
+        jobId: job._id,
+        status: "completed",
+      });
+
+      await ctx.runMutation(internal.callJobs.updateCallSession, {
+        vapiCallId,
+        endedAt,
+        durationSec: duration,
+        disposition,
+        metadata: event,
+      });
+
+      console.log(`Call completed for job ${job._id}, VAPI call ID: ${vapiCallId}, duration: ${duration}s`);
+    } else if (eventType === "call.failed" || eventType === "failed") {
+      const job = await ctx.runMutation(internal.callJobs.getCallJobByVapiId, {
+        vapiCallId,
+      });
+
+      if (!job) {
+        console.warn(`No job found for VAPI call ID: ${vapiCallId}`);
+        return new Response(
+          JSON.stringify({ status: "ignored", reason: "Job not found" }),
+          {
+            status: 200,
+            headers: jsonHeaders,
+          },
+        );
+      }
+
+      const errorMessage = event.error || event.errorMessage || "Call failed";
+
+      await ctx.runMutation(internal.callJobs.updateCallJobStatus, {
+        jobId: job._id,
+        status: "failed",
+        errorMessage,
+      });
+
+      console.error(`Call failed for job ${job._id}, VAPI call ID: ${vapiCallId}, error: ${errorMessage}`);
+    } else {
+      console.log(`Ignoring VAPI webhook event type: ${eventType}`, event);
+    }
+  } catch (error) {
+    console.error("Failed to process VAPI webhook", error);
+    return new Response(
+      JSON.stringify({ error: "Failed to process webhook" }),
+      {
+        status: 500,
+        headers: jsonHeaders,
+      },
+    );
+  }
+
+  return new Response(
+    JSON.stringify({ status: "ok" }),
+    {
+      status: 200,
+      headers: jsonHeaders,
+    },
+  );
+});
+
 const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
   // 1. Validate request
   if (req.method !== "POST") {
@@ -352,6 +498,12 @@ http.route({
   path: REVENUECAT_WEBHOOK_PATH,
   method: "POST",
   handler: revenueCatWebhookHandler,
+});
+
+http.route({
+  path: VAPI_WEBHOOK_PATH,
+  method: "POST",
+  handler: vapiWebhookHandler,
 });
 
 export default http;

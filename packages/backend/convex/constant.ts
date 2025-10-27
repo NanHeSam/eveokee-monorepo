@@ -1,6 +1,7 @@
 export const MUSIC_GENERATION_CALLBACK_PATH = "/callback/suno-music-generation";
 export const CLERK_WEBHOOK_PATH = "/webhooks/clerk";
 export const REVENUECAT_WEBHOOK_PATH = "/webhooks/revenuecat";
+export const VAPI_WEBHOOK_PATH = "/webhooks/vapi";
 
 export const PLAN_CONFIG = {
     free: {

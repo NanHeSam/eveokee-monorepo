@@ -137,4 +137,65 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_isActive", ["isActive"])
     .index("by_userId_and_isActive", ["userId", "isActive"]),
+
+  callSettings: defineTable({
+    userId: v.id("users"),
+    phoneE164: v.string(), // E.164 format phone number
+    timezone: v.string(), // IANA timezone (e.g., "America/New_York")
+    timeOfDay: v.string(), // HH:MM format in 24h (e.g., "09:00")
+    cadence: v.union(
+      v.literal("daily"),
+      v.literal("weekdays"),
+      v.literal("weekends"),
+      v.literal("custom")
+    ),
+    daysOfWeek: v.optional(v.array(v.number())), // 0-6 for Sunday-Saturday (for custom cadence)
+    active: v.boolean(),
+    voiceId: v.optional(v.string()), // For future voice selection
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_active", ["active"])
+    .index("by_phoneE164", ["phoneE164"]),
+
+  callJobs: defineTable({
+    userId: v.id("users"),
+    callSettingsId: v.id("callSettings"),
+    scheduledForUTC: v.number(), // UTC timestamp for when call should happen
+    status: v.union(
+      v.literal("queued"),
+      v.literal("scheduled"),
+      v.literal("started"),
+      v.literal("completed"),
+      v.literal("failed"),
+      v.literal("canceled")
+    ),
+    vapiCallId: v.optional(v.string()), // VAPI's call ID
+    attempts: v.number(),
+    errorMessage: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_and_scheduledForUTC", ["userId", "scheduledForUTC"])
+    .index("by_status", ["status"])
+    .index("by_scheduledForUTC", ["scheduledForUTC"])
+    .index("by_vapiCallId", ["vapiCallId"]),
+
+  callSessions: defineTable({
+    userId: v.id("users"),
+    callJobId: v.id("callJobs"),
+    vapiCallId: v.string(),
+    startedAt: v.number(),
+    endedAt: v.optional(v.number()),
+    durationSec: v.optional(v.number()),
+    disposition: v.optional(v.string()), // e.g., "completed", "no-answer", "busy"
+    metadata: v.optional(v.any()), // Store any additional VAPI metadata
+    createdAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_callJobId", ["callJobId"])
+    .index("by_vapiCallId", ["vapiCallId"])
+    .index("by_userId_and_startedAt", ["userId", "startedAt"]),
 });
