@@ -208,7 +208,7 @@ export const SignInScreen = () => {
     } finally {
       setIsAppleLoading(false);
     }
-  }, [finalizeSession, redirectUrl, setActive, startSSOFlow]);
+  }, [finalizeSession, setActive, startSSOFlow]);
 
   const handleSignUp = useCallback(() => {
     navigation.navigate('SignUp');

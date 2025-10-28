@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -173,7 +172,7 @@ export const SignUpScreen = ({ route }: SignUpScreenProps) => {
     } finally {
       setIsAppleLoading(false);
     }
-  }, [finalizeSession, redirectUrl, setActiveFromClerk, startSSOFlow]);
+  }, [finalizeSession, setActiveFromClerk, startSSOFlow]);
 
   const handleResendCode = useCallback(async () => {
     if (!isLoaded || !signUp) return;
