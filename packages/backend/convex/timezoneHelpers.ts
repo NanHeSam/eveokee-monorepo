@@ -6,11 +6,12 @@
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 
 /**
- * Convert a local time (HH:MM) in a specific timezone to UTC timestamp for today
- * @param timeOfDay - Time in HH:MM format (24h)
- * @param timezone - IANA timezone (e.g., "America/New_York")
- * @param referenceDate - Optional reference date (defaults to now)
- * @returns UTC timestamp in milliseconds
+ * Convert a local time (HH:MM) in the given IANA timezone to the corresponding UTC timestamp for the reference date.
+ *
+ * @param timeOfDay - Time in `HH:MM` 24-hour format
+ * @param timezone - IANA timezone identifier (for example, `America/New_York`)
+ * @param referenceDate - Optional reference `Date`; defaults to the current date/time
+ * @returns The UTC timestamp (milliseconds since epoch) that corresponds to the provided local time on the reference date
  */
 export function localTimeToUTC(
   timeOfDay: string,
@@ -51,10 +52,12 @@ export function localTimeToUTC(
 }
 
 /**
- * Get the current local date in a specific timezone
- * @param timezone - IANA timezone
- * @param referenceDate - Optional reference date (defaults to now)
- * @returns Date object representing local date
+ * Get the current local date in the specified IANA timezone.
+ *
+ * @param timezone - IANA timezone identifier (e.g., "America/New_York")
+ * @param referenceDate - Optional reference date; defaults to now
+ * @returns A Date representing the local date/time in the specified timezone
+ * @throws Error if `timezone` is not a valid IANA timezone
  */
 export function getLocalDate(timezone: string, referenceDate?: Date): Date {
   const now = referenceDate || new Date();
@@ -94,9 +97,10 @@ export function getUTCDayBounds(
 }
 
 /**
- * Validate HH:MM time format
- * @param time - Time string to validate
- * @returns true if valid HH:MM format
+ * Checks whether a string is a valid 24-hour `HH:MM` time.
+ *
+ * @param time - The time string to validate
+ * @returns `true` if `time` matches 24-hour `HH:MM` format (00:00–23:59), `false` otherwise
  */
 export function isValidTimeOfDay(time: string): boolean {
   const timeRegex = /^([0-1][0-9]|2[0-3]):([0-5][0-9])$/;
@@ -104,9 +108,13 @@ export function isValidTimeOfDay(time: string): boolean {
 }
 
 /**
- * Validate IANA timezone
- * @param timezone - Timezone string to validate
- * @returns true if valid IANA timezone
+ * Check whether a string is a valid IANA time zone identifier.
+ *
+ * Accepts 'UTC' and 'Etc/UTC' as valid. Explicitly rejects common non-IANA abbreviations
+ * such as 'EST', 'PST', 'CST', etc.
+ *
+ * @param timezone - Time zone identifier to validate
+ * @returns `true` if `timezone` is a recognized IANA time zone identifier or an accepted UTC alias, `false` otherwise.
  */
 export function isValidTimezone(timezone: string): boolean {
   // Special case: UTC is valid

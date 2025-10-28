@@ -24,19 +24,13 @@ interface ConvexQueryBoundaryProps {
 }
 
 /**
- * ConvexQueryBoundary - Handles loading and error states for multiple Convex queries
- * 
- * Usage:
- * ```tsx
- * const data1 = useQuery(api.example.getData1);
- * const data2 = useQuery(api.example.getData2);
- * 
- * return (
- *   <ConvexQueryBoundary queries={[{ data: data1 }, { data: data2 }]}>
- *     <YourComponent data1={data1} data2={data2} />
- *   </ConvexQueryBoundary>
- * );
- * ```
+ * Renders children when a set of Convex queries have loaded successfully and shows loading or error UI otherwise.
+ *
+ * @param queries - Array of query results to monitor; each item should include `data`, and may include `isLoading` and `error`.
+ * @param loadingFallback - Optional node to render while any query's `data` is `undefined`.
+ * @param errorFallback - Optional node to render when any query has a truthy `error` or any query's `data` is `null`.
+ * @param children - Content to render once all queries have non-`undefined`, non-`null` `data` and no errors are present.
+ * @returns The `children` when all queries loaded without error; otherwise a loading view or an error view (or the provided fallbacks).
  */
 export default function ConvexQueryBoundary({
   queries,
@@ -101,4 +95,3 @@ export default function ConvexQueryBoundary({
 
   return <>{children}</>;
 }
-

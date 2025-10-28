@@ -109,10 +109,15 @@ export class VapiClient {
 }
 
 /**
- * Create a VAPI client from environment variables
- * @param env - Environment variables object with VAPI configuration
- * @returns VapiClient instance
- * @throws Error if required environment variables are missing
+ * Instantiate a VapiClient using VAPI_* environment variables.
+ *
+ * @param env - Object containing VAPI configuration environment variables:
+ *   - `VAPI_API_KEY`: API key for authorization (required)
+ *   - `VAPI_WEBHOOK_URL`: webhook callback URL (required)
+ *   - `VAPI_PHONE_NUMBER_ID`: phone number identifier to use for calls (required)
+ *   - `VAPI_TIMEOUT`: optional request timeout in milliseconds
+ * @returns A configured VapiClient instance
+ * @throws Error if `VAPI_API_KEY`, `VAPI_WEBHOOK_URL`, or `VAPI_PHONE_NUMBER_ID` is missing
  */
 export function createVapiClientFromEnv(env: {
   VAPI_API_KEY?: string;
@@ -144,4 +149,3 @@ export function createVapiClientFromEnv(env: {
     timeout,
   });
 }
-

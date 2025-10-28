@@ -8,6 +8,19 @@ interface SubscriptionStatusProps {
   compact?: boolean;
 }
 
+/**
+ * Renders a subscription status UI that reflects the current subscription and usage.
+ *
+ * Displays a compact tier pill when `compact` is true, otherwise renders a full card with tier badge,
+ * optional upgrade action, usage progress for the Free tier, and the billing period end plus active state.
+ * The component reads subscription state from the subscription store; while that data is loading it shows
+ * a small "Loading subscription…" placeholder.
+ *
+ * @param onPress - Optional handler invoked when the component is pressed.
+ * @param showUpgradeButton - Whether to show the "Upgrade" label for the Free tier (default: `true`).
+ * @param compact - When `true`, renders a compact pill-style badge instead of the full card (default: `false`).
+ * @returns The rendered SubscriptionStatus React element.
+ */
 export function SubscriptionStatus({ 
   onPress, 
   showUpgradeButton = true, 

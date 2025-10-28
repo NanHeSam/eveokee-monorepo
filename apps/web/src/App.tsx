@@ -15,6 +15,11 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
+/**
+ * Initializes the global theme and renders the application's top-level UI, including global toast notifications and the routing structure.
+ *
+ * @returns The root React element for the application
+ */
 export default function App() {
   // Initialize theme globally
   useTheme();
