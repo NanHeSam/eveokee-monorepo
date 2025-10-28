@@ -98,3 +98,126 @@ export function getCadenceDescription(
       return 'Unknown';
   }
 }
+
+/**
+ * Convert HH:MM time string to minutes since midnight (0-1439)
+ * @param timeOfDay - Time in HH:MM format
+ * @returns Minutes since midnight
+ */
+export function calculateLocalMinutes(timeOfDay: string): number {
+  const [hours, minutes] = timeOfDay.split(':').map(Number);
+  if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+    throw new Error(`Invalid timeOfDay format: ${timeOfDay}. Expected HH:MM in 24h format.`);
+  }
+  return hours * 60 + minutes;
+}
+
+/**
+ * Convert cadence configuration to 7-bit day-of-week mask
+ * @param cadence - Cadence type
+ * @param daysOfWeek - Optional custom days array
+ * @returns 7-bit mask (bit0=Sunday...bit6=Saturday)
+ */
+export function calculateBydayMask(
+  cadence: Cadence,
+  daysOfWeek?: number[]
+): number {
+  let mask = 0;
+  
+  switch (cadence) {
+    case 'daily':
+      // All days: 0b1111111 = 127
+      mask = 127;
+      break;
+    
+    case 'weekdays':
+      // Mon-Fri: bit1-bit5
+      mask = (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 5);
+      break;
+    
+    case 'weekends':
+      // Sat-Sun: bit0 and bit6
+      mask = (1 << 0) | (1 << 6);
+      break;
+    
+    case 'custom':
+      if (!daysOfWeek || daysOfWeek.length === 0) {
+        throw new Error('Custom cadence requires daysOfWeek array');
+      }
+      // Set bits for each specified day
+      for (const day of daysOfWeek) {
+        if (day < 0 || day > 6) {
+          throw new Error(`Invalid day value: ${day}. Must be 0-6 (Sunday-Saturday)`);
+        }
+        mask |= (1 << day);
+      }
+      break;
+    
+    default:
+      throw new Error(`Unknown cadence: ${cadence}`);
+  }
+  
+  return mask;
+}
+
+/**
+ * Calculate the next UTC timestamp when this cadence should run
+ * @param localMinutes - Minutes since midnight in local time
+ * @param bydayMask - 7-bit day mask
+ * @param timezone - IANA timezone string
+ * @param currentTime - Current UTC timestamp in ms (defaults to now)
+ * @returns Next UTC timestamp in ms when call should fire
+ */
+export function calculateNextRunAtUTC(
+  localMinutes: number,
+  bydayMask: number,
+  timezone: string,
+  currentTime: number = Date.now()
+): number {
+  // Start from current time and look forward
+  let candidate = new Date(currentTime);
+  
+  // Check up to 7 days ahead for the next matching day
+  for (let daysAhead = 0; daysAhead < 7; daysAhead++) {
+    const testDate = new Date(candidate.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+    const localDate = new Date(testDate.toLocaleString('en-US', { timeZone: timezone }));
+    
+    // Get day of week (0=Sunday, 6=Saturday)
+    const dayOfWeek = localDate.getDay();
+    
+    // Check if this day matches the mask
+    if ((bydayMask & (1 << dayOfWeek)) !== 0) {
+      // This day matches! Now calculate the exact time
+      const year = localDate.getFullYear();
+      const month = localDate.getMonth();
+      const date = localDate.getDate();
+      
+      // Create a date at the specified local time on this day
+      const targetDate = new Date(year, month, date);
+      const hours = Math.floor(localMinutes / 60);
+      const minutes = localMinutes % 60;
+      targetDate.setHours(hours, minutes, 0, 0);
+      
+      // Convert to UTC
+      const offset = getTimezoneOffsetForDay(timezone, targetDate);
+      const utcTimestamp = targetDate.getTime() - (offset * 60 * 1000);
+      
+      // Only return if this time is in the future
+      if (utcTimestamp > currentTime) {
+        return utcTimestamp;
+      }
+    }
+  }
+  
+  // If we get here, no match found in the next 7 days (shouldn't happen)
+  throw new Error('Could not find next run time within 7 days');
+}
+
+/**
+ * Get timezone offset in minutes for a specific day (handles DST)
+ */
+function getTimezoneOffsetForDay(timezone: string, date: Date): number {
+  const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const tzDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
+  return (tzDate.getTime() - utcDate.getTime()) / (60 * 1000);
+}

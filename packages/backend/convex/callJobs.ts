@@ -4,7 +4,7 @@
  */
 
 import { v } from "convex/values";
-import { mutation, query, internalMutation } from "./_generated/server";
+import { mutation, query, internalMutation, internalQuery } from "./_generated/server";
 import { getCurrentUserOrThrow } from "./users";
 import { Doc, Id } from "./_generated/dataModel";
 
@@ -81,7 +81,8 @@ export const getCallJobStats = query({
 });
 
 /**
- * Create a new call job (internal - used by daily planner)
+ * Create a new call job (internal - used by executor)
+ * Ensures only one queued job exists per callSettingsId by updating if one exists
  */
 export const createCallJob = internalMutation({
   args: {
@@ -90,6 +91,30 @@ export const createCallJob = internalMutation({
     scheduledForUTC: v.number(),
   },
   handler: async (ctx, args) => {
+    // Check if a queued job already exists for this callSettingsId
+    // Use index for efficient lookup
+    const existingJob = await ctx.db
+      .query("callJobs")
+      .withIndex("by_callSettingsId", (q) => 
+        q.eq("callSettingsId", args.callSettingsId)
+      )
+      .filter((q) => q.eq(q.field("status"), "queued"))
+      .first();
+    
+    if (existingJob) {
+      // Update existing queued job instead of creating a new one
+      const now = Date.now();
+      await ctx.db.patch(existingJob._id, {
+        scheduledForUTC: args.scheduledForUTC,
+        updatedAt: now,
+        // Reset attempts since this is a new scheduled time
+        attempts: 0,
+      });
+      console.log(`Updated existing queued job for settings ${args.callSettingsId} at ${args.scheduledForUTC}`);
+      return existingJob._id;
+    }
+    
+    // Create new job if none exists
     const now = Date.now();
     
     const jobId = await ctx.db.insert("callJobs", {
@@ -207,6 +232,19 @@ export const hasCallJobForDay = internalMutation({
 });
 
 /**
+ * Get call job by ID (internal - used by VAPI integration)
+ */
+export const getCallJobById = internalQuery({
+  args: {
+    jobId: v.id("callJobs"),
+  },
+  handler: async (ctx, args) => {
+    const job = await ctx.db.get(args.jobId);
+    return job;
+  },
+});
+
+/**
  * Cancel a call job (user-facing)
  */
 export const cancelCallJob = mutation({
@@ -292,23 +330,46 @@ export const createCallSession = internalMutation({
 
 /**
  * Update a call session (internal - used by webhooks)
+ * Creates the session if it doesn't exist (handles out-of-order webhooks)
  */
 export const updateCallSession = internalMutation({
   args: {
     vapiCallId: v.string(),
+    jobId: v.optional(v.id("callJobs")),
+    userId: v.optional(v.id("users")),
+    startedAt: v.optional(v.number()),
     endedAt: v.optional(v.number()),
     durationSec: v.optional(v.number()),
     disposition: v.optional(v.string()),
     metadata: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
-    const session = await ctx.db
+    let session = await ctx.db
       .query("callSessions")
       .withIndex("by_vapiCallId", (q) => q.eq("vapiCallId", args.vapiCallId))
       .first();
     
+    // If session doesn't exist, create it (handles out-of-order webhooks)
     if (!session) {
-      throw new Error("Call session not found");
+      // Need job info to create session
+      if (!args.jobId || !args.userId) {
+        console.warn(`No call session found for VAPI call ID ${args.vapiCallId}, and missing job info to create it. Skipping update.`);
+        return { success: false, reason: "Session not found and missing job info" };
+      }
+      
+      const sessionId = await ctx.db.insert("callSessions", {
+        userId: args.userId,
+        callJobId: args.jobId,
+        vapiCallId: args.vapiCallId,
+        startedAt: args.startedAt || Date.now(),
+        endedAt: args.endedAt,
+        durationSec: args.durationSec,
+        disposition: args.disposition,
+        metadata: args.metadata,
+      });
+      
+      console.log(`Created call session ${sessionId} for VAPI call ID ${args.vapiCallId}`);
+      return { success: true, created: true };
     }
     
     const updateData: Partial<Doc<"callSessions">> = {};
@@ -331,6 +392,6 @@ export const updateCallSession = internalMutation({
     
     await ctx.db.patch(session._id, updateData);
     
-    return { success: true };
+    return { success: true, created: false };
   },
 });

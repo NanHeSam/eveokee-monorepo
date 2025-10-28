@@ -242,8 +242,9 @@ const vapiWebhookHandler = httpAction(async (ctx, req) => {
     );
   }
 
-  const eventType = event.type || event.event?.type;
-  const vapiCallId = event.call?.id || event.callId || event.id;
+
+  const messageType = event.message?.type;
+  const vapiCallId = event.call?.id || event.callId || event.id || event.message?.call?.id;
 
   if (!vapiCallId) {
     console.warn("VAPI webhook missing call ID", event);
@@ -257,7 +258,8 @@ const vapiWebhookHandler = httpAction(async (ctx, req) => {
   }
 
   try {
-    if (eventType === "call.started" || eventType === "started") {
+    // Handle end-of-call report (transcript data)
+    if (messageType === "end-of-call-report") {
       const job = await ctx.runMutation(internal.callJobs.getCallJobByVapiId, {
         vapiCallId,
       });
@@ -273,38 +275,12 @@ const vapiWebhookHandler = httpAction(async (ctx, req) => {
         );
       }
 
-      await ctx.runMutation(internal.callJobs.updateCallJobStatus, {
-        jobId: job._id,
-        status: "started",
-      });
-
-      await ctx.runMutation(internal.callJobs.createCallSession, {
-        userId: job.userId,
-        callJobId: job._id,
-        vapiCallId,
-        startedAt: Date.now(),
-      });
-
-      console.log(`Call started for job ${job._id}, VAPI call ID: ${vapiCallId}`);
-    } else if (eventType === "call.ended" || eventType === "ended" || eventType === "completed") {
-      const job = await ctx.runMutation(internal.callJobs.getCallJobByVapiId, {
-        vapiCallId,
-      });
-
-      if (!job) {
-        console.warn(`No job found for VAPI call ID: ${vapiCallId}`);
-        return new Response(
-          JSON.stringify({ status: "ignored", reason: "Job not found" }),
-          {
-            status: 200,
-            headers: jsonHeaders,
-          },
-        );
-      }
-
-      const endedAt = event.endedAt || event.call?.endedAt || Date.now();
-      const duration = event.duration || event.call?.duration;
-      const disposition = event.disposition || event.call?.disposition || "completed";
+      const endedAt = event.message.call?.endedAt || Date.now();
+      const durationSeconds = event.message.call?.durationSeconds;
+      const disposition = event.message.call?.disposition || "completed";
+      
+      // Store the complete artifact in metadata
+      const artifact = event.message.artifact || {};
 
       await ctx.runMutation(internal.callJobs.updateCallJobStatus, {
         jobId: job._id,
@@ -313,40 +289,22 @@ const vapiWebhookHandler = httpAction(async (ctx, req) => {
 
       await ctx.runMutation(internal.callJobs.updateCallSession, {
         vapiCallId,
-        endedAt,
-        durationSec: duration,
-        disposition,
-        metadata: event,
-      });
-
-      console.log(`Call completed for job ${job._id}, VAPI call ID: ${vapiCallId}, duration: ${duration}s`);
-    } else if (eventType === "call.failed" || eventType === "failed") {
-      const job = await ctx.runMutation(internal.callJobs.getCallJobByVapiId, {
-        vapiCallId,
-      });
-
-      if (!job) {
-        console.warn(`No job found for VAPI call ID: ${vapiCallId}`);
-        return new Response(
-          JSON.stringify({ status: "ignored", reason: "Job not found" }),
-          {
-            status: 200,
-            headers: jsonHeaders,
-          },
-        );
-      }
-
-      const errorMessage = event.error || event.errorMessage || "Call failed";
-
-      await ctx.runMutation(internal.callJobs.updateCallJobStatus, {
         jobId: job._id,
-        status: "failed",
-        errorMessage,
+        userId: job.userId,
+        endedAt,
+        durationSec: durationSeconds,
+        disposition,
+        metadata: {
+          transcript: artifact.transcript,
+          messages: artifact.messages,
+          recording: artifact.recording,
+          endedReason: event.message.endedReason,
+        },
       });
 
-      console.error(`Call failed for job ${job._id}, VAPI call ID: ${vapiCallId}, error: ${errorMessage}`);
+      console.log(`Call completed with transcript for job ${job._id}, VAPI call ID: ${vapiCallId}, duration: ${durationSeconds}s, ${JSON.parse(event)}`);
     } else {
-      console.log(`Ignoring VAPI webhook event type: ${eventType}`, event);
+      console.log(`Ignoring VAPI webhook event type: ${messageType}`);
     }
   } catch (error) {
     console.error("Failed to process VAPI webhook", error);

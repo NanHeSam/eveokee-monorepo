@@ -4,10 +4,10 @@
  */
 
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation, internalQuery } from "./_generated/server";
 import { getCurrentUserOrThrow } from "./users";
 import { isValidE164, isValidTimeOfDay, isValidTimezone } from "./timezoneHelpers";
-import { isValidCadenceConfig } from "./cadenceHelpers";
+import { isValidCadenceConfig, calculateLocalMinutes, calculateBydayMask, calculateNextRunAtUTC } from "./cadenceHelpers";
 
 /**
  * Get current user's call settings
@@ -42,7 +42,6 @@ export const upsertCallSettings = mutation({
     ),
     daysOfWeek: v.optional(v.array(v.number())),
     active: v.boolean(),
-    voiceId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const user = await getCurrentUserOrThrow(ctx);
@@ -70,6 +69,16 @@ export const upsertCallSettings = mutation({
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .first();
     
+    // Calculate canonical cadence fields
+    const localMinutes = calculateLocalMinutes(args.timeOfDay);
+    const bydayMask = calculateBydayMask(args.cadence, args.daysOfWeek);
+    const nextRunAtUTC = calculateNextRunAtUTC(
+      localMinutes,
+      bydayMask,
+      args.timezone,
+      now
+    );
+    
     if (existing) {
       await ctx.db.patch(existing._id, {
         phoneE164: args.phoneE164,
@@ -78,7 +87,9 @@ export const upsertCallSettings = mutation({
         cadence: args.cadence,
         daysOfWeek: args.daysOfWeek,
         active: args.active,
-        voiceId: args.voiceId,
+        localMinutes,
+        bydayMask,
+        nextRunAtUTC,
         updatedAt: now,
       });
       
@@ -92,7 +103,9 @@ export const upsertCallSettings = mutation({
         cadence: args.cadence,
         daysOfWeek: args.daysOfWeek,
         active: args.active,
-        voiceId: args.voiceId,
+        localMinutes,
+        bydayMask,
+        nextRunAtUTC,
         updatedAt: now,
       });
       
@@ -120,10 +133,34 @@ export const toggleCallSettings = mutation({
       throw new Error("No call settings found. Please create settings first.");
     }
     
-    await ctx.db.patch(settings._id, {
+    const now = Date.now();
+    
+    // If cadence fields are missing, calculate and set them
+    const needsCadenceUpdate = 
+      settings.localMinutes === undefined || 
+      settings.bydayMask === undefined || 
+      settings.nextRunAtUTC === undefined;
+    
+    const update: any = {
       active: args.active,
-      updatedAt: Date.now(),
-    });
+      updatedAt: now,
+    };
+    
+    if (needsCadenceUpdate) {
+      const localMinutes = calculateLocalMinutes(settings.timeOfDay);
+      const bydayMask = calculateBydayMask(settings.cadence, settings.daysOfWeek);
+      const nextRunAtUTC = calculateNextRunAtUTC(
+        localMinutes,
+        bydayMask,
+        settings.timezone,
+        now
+      );
+      update.localMinutes = localMinutes;
+      update.bydayMask = bydayMask;
+      update.nextRunAtUTC = nextRunAtUTC;
+    }
+    
+    await ctx.db.patch(settings._id, update);
     
     return { success: true };
   },
@@ -183,5 +220,66 @@ export const getActiveCallSettings = query({
       .collect();
     
     return settings;
+  },
+});
+
+/**
+ * Get settings that are ready to call (internal for executor)
+ */
+export const getActiveCallSettingsForExecutor = internalMutation({
+  args: {
+    currentTime: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Query where active=true AND nextRunAtUTC <= currentTime
+    const settings = await ctx.db
+      .query("callSettings")
+      .withIndex("by_active_and_nextRunAtUTC", (q) => 
+        q.eq("active", true)
+         .lte("nextRunAtUTC", args.currentTime)
+      )
+      .collect();
+    
+    // Also include active settings with undefined nextRunAtUTC (old documents needing migration)
+    const activeSettingsWithoutNextRun = await ctx.db
+      .query("callSettings")
+      .withIndex("by_active", (q) => q.eq("active", true))
+      .collect();
+    
+    const settingsNeedingMigration = activeSettingsWithoutNextRun.filter(
+      s => s.nextRunAtUTC === undefined
+    );
+    
+    return [...settings, ...settingsNeedingMigration];
+  },
+});
+
+/**
+ * Get call settings by ID (internal for executor)
+ */
+export const getCallSettingsById = internalQuery({
+  args: {
+    settingsId: v.id("callSettings"),
+  },
+  handler: async (ctx, args) => {
+    const settings = await ctx.db.get(args.settingsId);
+    return settings;
+  },
+});
+
+/**
+ * Update nextRunAtUTC for a settings record (internal for executor)
+ */
+export const updateNextRunAtUTC = internalMutation({
+  args: {
+    settingsId: v.id("callSettings"),
+    nextRunAtUTC: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    await ctx.db.patch(args.settingsId, {
+      nextRunAtUTC: args.nextRunAtUTC,
+      updatedAt: now,
+    });
   },
 });

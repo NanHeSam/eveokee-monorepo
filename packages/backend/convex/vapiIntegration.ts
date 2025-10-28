@@ -6,15 +6,16 @@
 import { action } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
+import { buildVapiAssistant } from "./service/vapi/helpers";
 
 /**
  * Schedule a call with VAPI
+ * Now uses transient assistant with parameterized system prompt
  */
 export const scheduleVapiCall = action({
   args: {
     jobId: v.id("callJobs"),
     phoneNumber: v.string(),
-    scheduledForUTC: v.number(),
     userId: v.id("users"),
   },
   handler: async (ctx, args) => {
@@ -34,10 +35,40 @@ export const scheduleVapiCall = action({
     }
 
     try {
+      // Get call job to find call settings
+      const job = await ctx.runQuery(internal.callJobs.getCallJobById, {
+        jobId: args.jobId,
+      });
+
+      if (!job) {
+        throw new Error("Call job not found");
+      }
+
+      // Get user and call settings
+      const user = await ctx.runQuery(internal.users.getUserById, {
+        userId: args.userId,
+      });
+
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      const callSettings = await ctx.runQuery(internal.callSettings.getCallSettingsById, {
+        settingsId: job.callSettingsId,
+      });
+
+      if (!callSettings) {
+        throw new Error("Call settings not found");
+      }
+
+      // Build transient assistant with user context
+      const assistant = buildVapiAssistant(user, callSettings, job.scheduledForUTC);
+
       await ctx.runMutation(internal.callJobs.incrementCallJobAttempts, {
         jobId: args.jobId,
       });
 
+      // Call immediately (no scheduledFor field)
       const response = await fetch("https://api.vapi.ai/call", {
         method: "POST",
         headers: {
@@ -49,10 +80,7 @@ export const scheduleVapiCall = action({
           customer: {
             number: args.phoneNumber,
           },
-          scheduledFor: new Date(args.scheduledForUTC).toISOString(),
-          serverUrl: webhookUrl,
-          serverUrlSecret: process.env.VAPI_WEBHOOK_SECRET,
-          assistantId: process.env.VAPI_ASSISTANT_ID,
+          assistant,
           metadata: {
             jobId: args.jobId,
             userId: args.userId,
@@ -65,7 +93,7 @@ export const scheduleVapiCall = action({
         throw new Error(`VAPI API error: ${response.status} - ${errorText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
       const vapiCallId = data.id || data.callId;
 
       if (!vapiCallId) {
@@ -162,7 +190,7 @@ export const getVapiCallStatus = action({
         throw new Error(`VAPI API error: ${response.status} - ${errorText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       return {
         success: true,

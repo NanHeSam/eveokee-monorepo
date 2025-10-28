@@ -11,25 +11,20 @@ import { internal } from "./_generated/api";
 const crons = cronJobs();
 
 /**
- * Daily VAPI Call Planner
+ * VAPI Call Executor
  * 
- * Runs every day at 00:00 UTC (midnight UTC) to:
- * 1. Load all active call settings
- * 2. Check which users should receive calls today based on their cadence
- * 3. Schedule VAPI calls for eligible users at their local time
+ * Runs every minute to:
+ * 1. Find call settings where nextRunAtUTC <= now
+ * 2. Schedule immediate VAPI calls for those settings
+ * 3. Calculate and update nextRunAtUTC for the next occurrence
  * 
- * This ensures calls are scheduled once per day, accounting for:
- * - User timezone and DST transitions
- * - Cadence preferences (daily, weekdays, weekends)
- * - Avoiding duplicate scheduling
+ * This ensures calls are scheduled efficiently without scanning all settings daily.
  */
-crons.daily(
-  "daily-vapi-call-planner",
-  {
-    hourUTC: 0,
-    minuteUTC: 0,
-  },
-  internal.dailyPlanner.runDailyPlanner
+crons.interval(
+  "call-executor",
+  { minutes: 1 },
+  internal.service.vapi.executor.executeScheduledCalls,
+  {}
 );
 
 export default crons;

@@ -1,5 +1,6 @@
 import {
   internalMutation,
+  internalQuery,
   mutation,
   query,
   type MutationCtx,
@@ -257,7 +258,6 @@ export const getUserProfile = query({
         cadence: settings.cadence,
         daysOfWeek: settings.daysOfWeek,
         active: settings.active,
-        voiceId: settings.voiceId,
       };
     }
 
@@ -270,6 +270,19 @@ export const getUserProfile = query({
       subscription,
       callSettings,
     };
+  },
+});
+
+/**
+ * Get user by ID (internal - used by VAPI integration)
+ */
+export const getUserById = internalQuery({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    return user;
   },
 });
 
