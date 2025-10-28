@@ -12,7 +12,10 @@ vi.mock('convex/react', () => ({
 
 // Mock react-hot-toast
 vi.mock('react-hot-toast', () => {
-  const toast = vi.fn() as any;
+  const toast = vi.fn() as ReturnType<typeof vi.fn> & {
+    error: ReturnType<typeof vi.fn>;
+    success: ReturnType<typeof vi.fn>;
+  };
   toast.error = vi.fn();
   toast.success = vi.fn();
   return {

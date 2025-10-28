@@ -264,6 +264,58 @@ export const getCallSessions = query({
 });
 
 /**
+ * Get dashboard statistics for current user
+ */
+export const getDashboardStats = query({
+  args: {},
+  returns: v.object({
+    totalCalls: v.number(),
+    activeDaysThisMonth: v.number(),
+  }),
+  handler: async (ctx) => {
+    const user = await getCurrentUserOrThrow(ctx);
+    
+    // Get all call sessions
+    const allSessions = await ctx.db
+      .query("callSessions")
+      .withIndex("by_userId_and_startedAt", (q) => q.eq("userId", user._id))
+      .collect();
+    
+    const totalCalls = allSessions.length;
+    
+    // Calculate active days this month from diary entries
+    const now = Date.now();
+    const startOfMonth = new Date(now);
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    const startOfMonthTimestamp = startOfMonth.getTime();
+    
+    // Get all diary entries
+    const allDiaries = await ctx.db
+      .query("diaries")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
+    
+    // Get unique days from diary entries this month
+    const diariesThisMonth = allDiaries.filter(
+      (diary) => diary.date >= startOfMonthTimestamp
+    );
+    
+    const uniqueDays = new Set<string>();
+    for (const diary of diariesThisMonth) {
+      const date = new Date(diary.date);
+      const dayKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+      uniqueDays.add(dayKey);
+    }
+    
+    return {
+      totalCalls,
+      activeDaysThisMonth: uniqueDays.size,
+    };
+  },
+});
+
+/**
  * Update a call session (internal - used by webhooks)
  * Creates the session if it doesn't exist (handles out-of-order webhooks)
  */
