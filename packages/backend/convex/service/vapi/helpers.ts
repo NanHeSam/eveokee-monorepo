@@ -31,7 +31,7 @@ export function formatLocalTime(timestamp: number, timezone: string): string {
     
     return formatter.format(date);
   } catch (error) {
-    // Fallback to UTC if timezone is invalid
+    // Throw a descriptive error for invalid timezone
     console.error(`Invalid timezone: ${timezone}`, error);
     throw new Error(`Invalid timezone: ${timezone}`);
   }
@@ -46,27 +46,24 @@ export function formatLocalTime(timestamp: number, timezone: string): string {
 export function getDayOfWeekLabel(timestamp: number, timezone: string): string {
   const date = new Date(timestamp);
   
-  let dayName: string;
   try {
     // Get the local day name using toLocaleString with 'long' format
-    dayName = date.toLocaleString('en-US', {
+    const dayName = date.toLocaleString('en-US', {
       timeZone: timezone,
       weekday: 'long'
     });
+    
+    // Check if it's a weekend
+    if (dayName === 'Saturday' || dayName === 'Sunday') {
+      return 'Weekend';
+    }
+    
+    return dayName;
   } catch (error) {
-    // Fallback to timezone-agnostic approach using UTC day
-    console.error(`Invalid timezone or error in toLocaleString: ${timezone}`, error);
-    const utcDay = date.getUTCDay();
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    dayName = days[utcDay];
+    // Throw a descriptive error for invalid timezone
+    console.error(`Invalid timezone: ${timezone}`, error);
+    throw new Error(`Invalid timezone: ${timezone}`);
   }
-  
-  // Check if it's a weekend
-  if (dayName === 'Saturday' || dayName === 'Sunday') {
-    return 'Weekend';
-  }
-  
-  return dayName;
 }
 
 /**
