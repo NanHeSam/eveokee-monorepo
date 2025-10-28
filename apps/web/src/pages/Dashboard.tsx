@@ -14,6 +14,16 @@ import ConvexQueryBoundary from '@/components/ConvexQueryBoundary';
 import MusicPlayer from '@/components/MusicPlayer';
 import { useState, useRef, useEffect } from 'react';
 
+/**
+ * Render the dashboard page that displays a personalized welcome, key statistics, and diary entries.
+ *
+ * Uses the current user's profile and fetched diary and dashboard statistics to populate:
+ * - a welcome header that greets by the user's first name when available,
+ * - a stats overview with total calls, songs generated, diary entries, and active days,
+ * - a diary entries section that shows either an empty-state or a horizontal carousel of diaries.
+ *
+ * @returns The dashboard page as a JSX element.
+ */
 export default function Dashboard() {
   const { user } = useUser();
   const diaries = useQuery(api.diaries.listDiaries);
@@ -96,6 +106,16 @@ interface StatCardProps {
   color: string;
 }
 
+/**
+ * Renders a statistic card with an icon badge, title, numeric value, and subtitle.
+ *
+ * @param icon - Icon or visual element displayed inside the colored badge
+ * @param title - Short label shown above the value
+ * @param value - Primary numeric value displayed prominently
+ * @param subtitle - Secondary descriptive text shown below the value
+ * @param color - Tailwind CSS color classes applied to the icon badge container
+ * @returns The rendered stat card JSX element
+ */
 function StatCard({ icon, title, value, subtitle, color }: StatCardProps) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
@@ -134,6 +154,12 @@ interface DiaryCarouselProps {
   }>;
 }
 
+/**
+ * Render a horizontal, scrollable carousel of diary entries with optional left/right scroll controls.
+ *
+ * @param diaries - Array of diary objects to display; each item is rendered as a DiaryCard inside the carousel.
+ * @returns A JSX element containing the horizontal carousel of diary cards and conditional left/right scroll buttons.
+ */
 function DiaryCarousel({ diaries }: DiaryCarouselProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -237,6 +263,12 @@ interface DiaryCardProps {
   };
 }
 
+/**
+ * Renders a diary entry card showing the entry date, truncated content, optional music artwork or pending loader, and a linked music player when audio is ready.
+ *
+ * @param diary - The diary entry to display. May include an optional `primaryMusic` object with fields such as `imageUrl`, `audioUrl`, `title`, `duration`, `_id`, and `status`.
+ * @returns The JSX element for the diary card.
+ */
 function DiaryCard({ diary }: DiaryCardProps) {
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -312,4 +344,3 @@ function DiaryCard({ diary }: DiaryCardProps) {
     </div>
   );
 }
-

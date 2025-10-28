@@ -1,6 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Home, ArrowLeft } from 'lucide-react';
 
+/**
+ * Renders a full-page 404 "Not Found" UI with primary actions and helpful links.
+ *
+ * @returns A JSX element containing a gradient-backed 404 layout with a large "404" heading, a "Page Not Found" message, a "Go Home" link, a "Go Back" button (calls window.history.back()), quick links to Dashboard/Profile/Blog, and a decorative SVG.
+ */
 export default function NotFound() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-4 sm:px-6 lg:px-8">
@@ -89,4 +94,3 @@ export default function NotFound() {
     </div>
   );
 }
-

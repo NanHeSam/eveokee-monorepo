@@ -4,6 +4,14 @@ import { UserButton } from '@clerk/clerk-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '@/hooks/useTheme';
 
+/**
+ * Render the responsive dashboard navigation bar with theme toggle, account controls, and a collapsible mobile menu.
+ *
+ * The component highlights the active link based on the current location pathname, provides desktop and mobile theme toggle buttons,
+ * displays the authenticated user's UserButton, and toggles a mobile menu that closes when a mobile link is selected.
+ *
+ * @returns A JSX element rendering the dashboard navigation bar.
+ */
 export default function DashboardNavigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
@@ -160,4 +168,3 @@ export default function DashboardNavigation() {
     </nav>
   );
 }
-

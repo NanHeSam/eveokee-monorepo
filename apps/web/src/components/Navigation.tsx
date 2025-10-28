@@ -4,6 +4,13 @@ import { SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '@/hooks/useTheme';
 
+/**
+ * Top-level navigation bar component that adapts layout and available links based on viewport size, theme, and authentication state.
+ *
+ * Renders the site logo, anchor and route links (Demo, How it works, FAQ, Blog, Dashboard), a theme toggle, authentication controls (Log in / Sign up or user avatar), and a responsive mobile menu that mirrors desktop actions.
+ *
+ * @returns The navigation JSX element described above.
+ */
 export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();

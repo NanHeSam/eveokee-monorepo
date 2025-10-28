@@ -10,7 +10,9 @@ export interface SystemPromptParams {
 }
 
 /**
- * Generate the Evokee system prompt with user context
+ * Generate the Evokee system prompt incorporating the provided user context.
+ *
+ * @returns The complete system prompt string with `userName`, `localTime`, and `dayOfWeek` interpolated into the template
  */
 export function getSystemPrompt(params: SystemPromptParams): string {
   const { userName, localTime, dayOfWeek } = params;
@@ -87,4 +89,3 @@ DON'TS
 OBJECTIVE
 Help the user notice one tiny, real moment in their day — but only after you understand what actually happened.`;
 }
-

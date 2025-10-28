@@ -37,10 +37,11 @@ export function formatLocalTime(timestamp: number, timezone: string): string {
 }
 
 /**
- * Get day of week label from timestamp
+ * Determine the day-of-week label for a UTC timestamp in a given timezone.
+ *
  * @param timestamp - UTC timestamp in milliseconds
  * @param timezone - IANA timezone string
- * @returns Day label (e.g., "Monday", "Tuesday", or "Weekend" for Sat/Sun)
+ * @returns `'Weekend'` for Saturday or Sunday, otherwise the weekday name (e.g., `'Monday'`)
  */
 export function getDayOfWeekLabel(timestamp: number, timezone: string): string {
   const date = new Date(timestamp);
@@ -66,7 +67,12 @@ export function getDayOfWeekLabel(timestamp: number, timezone: string): string {
 }
 
 /**
- * Build the system prompt with user context
+ * Construct a system prompt tailored to the given user context.
+ *
+ * @param userName - The user's display name to include in the prompt
+ * @param localTime - Localized time string for the user (e.g., "Apr 3, 3:30 PM")
+ * @param dayOfWeek - Day label for the user (weekday name or "Weekend")
+ * @returns A system prompt string that incorporates the provided user context
  */
 export function buildSystemPrompt(
   userName: string,
@@ -83,12 +89,13 @@ export function buildSystemPrompt(
 }
 
 /**
- * Build a complete VAPI assistant object
- * @param user - User document
- * @param callSettings - Call settings document
- * @param scheduledForUTC - UTC timestamp when call is scheduled
- * @param webhookUrl - Webhook URL for call events
- * @returns VAPI assistant object
+ * Construct a VAPI assistant configuration object customized for a scheduled call.
+ *
+ * @param user - User document; `user.name` is used in the system prompt (falls back to "there" if absent)
+ * @param callSettings - Call settings document; `callSettings.timezone` should be an IANA timezone identifier used to localize the scheduled time
+ * @param scheduledForUTC - UTC timestamp (milliseconds since epoch) when the call is scheduled
+ * @param webhookUrl - URL for the assistant's webhook server to receive call events
+ * @returns A VAPI assistant object containing transcriber, model (with system message), voice, messaging defaults, and server configuration (including `url`)
  */
 export function buildVapiAssistant(
   user: Doc<"users">,
@@ -138,4 +145,3 @@ export function buildVapiAssistant(
     },
   };
 }
-

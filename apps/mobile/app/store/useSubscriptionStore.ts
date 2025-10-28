@@ -62,7 +62,14 @@ export function useSubscription() {
   };
 }
 
-// Hook for usage tracking
+/**
+ * Provides queries and a mutation for accessing and updating the current user's music usage and generation allowance.
+ *
+ * @returns An object with:
+ * - `usage` — Query result containing the current user's `UsageState` (or `undefined` while loading).
+ * - `recordGeneration` — Mutation function to record a music generation for the current user.
+ * - `canGenerate` — Query result indicating whether the current user may generate music (`true` or `false`, or `undefined` while loading).
+ */
 export function useUsage() {
   const usage = useQuery(api.usage.getCurrentUserUsage);
   const recordGeneration = useMutation(api.usage.recordCurrentUserMusicGeneration);

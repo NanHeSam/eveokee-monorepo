@@ -1,5 +1,10 @@
 import { useRouteError, isRouteErrorResponse, Link, useNavigate } from 'react-router-dom';
 
+/**
+ * Render a full-page error boundary UI that displays route error status, details, and navigation actions.
+ *
+ * @returns A JSX element showing the computed error status and message with "Go Back" and "Go Home" actions.
+ */
 export default function RouteErrorBoundary() {
   const error = useRouteError();
   const navigate = useNavigate();
@@ -78,4 +83,3 @@ export default function RouteErrorBoundary() {
     </div>
   );
 }
-

@@ -8,12 +8,13 @@ import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 export type Cadence = 'daily' | 'weekdays' | 'weekends' | 'custom';
 
 /**
- * Check if today matches the user's call cadence
- * @param cadence - User's cadence setting
- * @param timezone - User's IANA timezone
- * @param daysOfWeek - Optional array of days (0-6) for custom cadence
- * @param referenceDate - Optional reference date (defaults to now)
- * @returns true if today matches the cadence
+ * Determine whether the reference date (or now) falls on a day included by the cadence in the specified timezone.
+ *
+ * @param daysOfWeek - For `custom` cadence, array of weekday numbers where 0 = Sunday and 6 = Saturday
+ * @param referenceDate - Optional Date to evaluate instead of the current time
+ * @returns `true` if the local day of week matches the cadence, `false` otherwise.
+ * @throws If `cadence` is `custom` and `daysOfWeek` is missing or empty.
+ * @throws If `cadence` is not one of 'daily', 'weekdays', 'weekends', or 'custom'.
  */
 export function isTodayInCadence(
   cadence: Cadence,
@@ -45,10 +46,11 @@ export function isTodayInCadence(
 }
 
 /**
- * Get the day of week (0-6, Sunday-Saturday) for a date in a specific timezone
- * @param timezone - IANA timezone
- * @param referenceDate - Optional reference date (defaults to now)
- * @returns Day of week (0=Sunday, 6=Saturday)
+ * Get the local day of week for a given timezone and reference date.
+ *
+ * @param timezone - IANA timezone identifier
+ * @param referenceDate - Optional reference Date; defaults to the current date and time
+ * @returns The day of week as 0 (Sunday) through 6 (Saturday)
  */
 function getLocalDayOfWeek(timezone: string, referenceDate?: Date): number {
   const now = referenceDate || new Date();
@@ -93,10 +95,13 @@ export function getCadenceDescription(
 }
 
 /**
- * Validate cadence configuration
- * @param cadence - Cadence type
- * @param daysOfWeek - Optional days of week array
- * @returns true if valid configuration
+ * Validate a cadence configuration.
+ *
+ * For `custom` cadence the `daysOfWeek` array must be present, non-empty, and contain only integers 0 (Sunday) through 6 (Saturday). For other cadences no additional configuration is required.
+ *
+ * @param cadence - The cadence type to validate
+ * @param daysOfWeek - Optional array of days for `custom` cadence (0 = Sunday ... 6 = Saturday)
+ * @returns `true` if the cadence configuration is valid, `false` otherwise
  */
 export function isValidCadenceConfig(
   cadence: Cadence,
@@ -113,9 +118,11 @@ export function isValidCadenceConfig(
 }
 
 /**
- * Convert HH:MM time string to minutes since midnight (0-1439)
- * @param timeOfDay - Time in HH:MM format
+ * Converts an HH:MM 24-hour time string to minutes since midnight (0–1439).
+ *
+ * @param timeOfDay - Time in `HH:MM` 24-hour format
  * @returns Minutes since midnight
+ * @throws Error if `timeOfDay` is not a valid `HH:MM` 24-hour string
  */
 export function calculateLocalMinutes(timeOfDay: string): number {
   const [hours, minutes] = timeOfDay.split(':').map(Number);
@@ -174,12 +181,16 @@ export function calculateBydayMask(
 }
 
 /**
- * Calculate the next UTC timestamp when this cadence should run
- * @param localMinutes - Minutes since midnight in local time
- * @param bydayMask - 7-bit day mask
- * @param timezone - IANA timezone string
- * @param currentTime - Current UTC timestamp in ms (defaults to now)
- * @returns Next UTC timestamp in ms when call should fire
+ * Finds the next UTC timestamp when the cadence should run for the given local time and day mask.
+ *
+ * Searches forward up to 7 days from `currentTime` and returns the UTC instant corresponding to the next matching local date/time. Throws if no matching run time is found within 7 days.
+ *
+ * @param localMinutes - Minutes since midnight in the user's local time (0–1439)
+ * @param bydayMask - 7-bit mask of allowed days where bit0 = Sunday, bit6 = Saturday
+ * @param timezone - IANA timezone identifier used to interpret the local time
+ * @param currentTime - Reference current UTC timestamp in milliseconds used as the search origin
+ * @returns UTC timestamp in milliseconds for the next scheduled run
+ * @throws Error if no run time is found within the next 7 days
  */
 export function calculateNextRunAtUTC(
   localMinutes: number,
@@ -225,4 +236,3 @@ export function calculateNextRunAtUTC(
   // If we get here, no match found in the next 7 days (shouldn't happen)
   throw new Error('Could not find next run time within 7 days');
 }
-

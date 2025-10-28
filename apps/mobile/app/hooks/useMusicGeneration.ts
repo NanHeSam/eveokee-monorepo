@@ -9,6 +9,20 @@ interface UseMusicGenerationOptions {
   showPaywallOnLimit?: boolean;
 }
 
+/**
+ * Provides helpers to check generation quota, initiate a music generation, and read usage state.
+ *
+ * @param options - Optional callbacks and behavior flags:
+ *   - onGenerationStart: called when a generation begins.
+ *   - onGenerationComplete: called with the generation result when recording succeeds.
+ *   - onGenerationError: called with the thrown error when generation fails.
+ *   - showPaywallOnLimit: when true (default), automatically opens the paywall on usage limit.
+ * @returns An object with:
+ *   - generateMusic: starts a music generation and returns the recording result or `null` on failure.
+ *   - checkCanGenerate: returns `true` if the current usage allows a generation, `false` otherwise.
+ *   - getUsageInfo: returns current usage details (`canGenerate`, `currentUsage`, `limit`, optional `remainingQuota`, and `tier`) or `null` if unavailable.
+ *   - isGenerating: `true` while a generation is in progress, `false` otherwise.
+ */
 export function useMusicGeneration(options: UseMusicGenerationOptions = {}) {
   const { recordGeneration, canGenerate } = useUsage();
   const { setShowPaywall } = useSubscriptionUIStore();

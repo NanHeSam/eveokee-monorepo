@@ -1,6 +1,14 @@
 /**
- * ErrorFallback - Used by Sentry's ErrorBoundary
- * Follows Convex's recommended error handling pattern
+ * Render a user-friendly error fallback UI for Sentry's ErrorBoundary.
+ *
+ * Displays an error message, optional stack trace in development, a retry action when provided,
+ * and a button to navigate home.
+ *
+ * @param error - The error value or object to display; non-Error values are converted to an Error.
+ * @param resetError - Optional callback invoked to retry or reset the error boundary.
+ * @param componentStack - Optional component stack information provided by ErrorBoundary (not used).
+ * @param eventId - Optional Sentry event identifier associated with the error (not used).
+ * @returns The rendered React element for the fallback UI.
  */
 export default function ErrorFallback({ 
   error, 
@@ -84,4 +92,3 @@ export default function ErrorFallback({
     </div>
   );
 }
-

@@ -38,6 +38,13 @@ const getBrowserTimezone = (): string => {
 
 const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+/**
+ * Renders the Profile & Settings page with user information, subscription details, and an editable Call Settings form.
+ *
+ * The component fetches the current user's profile and call settings, initializes form fields from the profile or browser defaults, and provides an edit flow that validates and persists call settings (including E.164 phone validation and custom cadence day selection). It also displays subscription status and usage, and uses toast notifications for success and error feedback.
+ *
+ * @returns The React element for the profile page.
+ */
 export default function Profile() {
   const profile = useQuery(api.users.getUserProfile);
   const upsertCallSettings = useMutation(api.callSettings.upsertCallSettings);
@@ -462,4 +469,3 @@ export default function Profile() {
     </div>
   );
 }
-
