@@ -116,14 +116,3 @@ export const runDailyPlanner = internalAction({
     }
   },
 });
-
-/**
- * Manual trigger for daily planner (for testing/debugging)
- * This can be called from the Convex dashboard or via API
- */
-export const triggerDailyPlanner = internalAction({
-  args: {},
-  handler: async (ctx) => {
-    return await ctx.runAction(internal.dailyPlanner.runDailyPlanner);
-  },
-});
