@@ -292,7 +292,7 @@ const vapiWebhookHandler = httpAction(async (ctx, req) => {
     );
   }
 
-  const vapiCallId = event.call?.id;
+  const vapiCallId = event.message.call?.id;
 
   if (!vapiCallId) {
     console.warn("VAPI webhook missing call ID", event);
