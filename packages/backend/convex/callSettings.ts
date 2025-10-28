@@ -93,7 +93,6 @@ export const upsertCallSettings = mutation({
         daysOfWeek: args.daysOfWeek,
         active: args.active,
         voiceId: args.voiceId,
-        createdAt: now,
         updatedAt: now,
       });
       

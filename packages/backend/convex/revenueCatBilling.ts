@@ -57,6 +57,16 @@ export const syncRevenueCatSubscription = internalMutation({
     if (user.activeSubscriptionId) {
       const existingSubscription = await ctx.db.get(user.activeSubscriptionId);
 
+      // Determine canceledAt based on status
+      let canceledAtUpdate: { canceledAt: number } | { canceledAt: undefined } | {} = {};
+      if (args.status === "canceled" || args.status === "expired") {
+        // Set canceledAt when subscription is canceled or expired
+        canceledAtUpdate = { canceledAt: now };
+      } else if (args.status === "active" || args.status === "in_grace") {
+        // Clear canceledAt when subscription is active or in grace period
+        canceledAtUpdate = { canceledAt: undefined };
+      }
+
       await ctx.db.patch(user.activeSubscriptionId, {
         ...(args.platform && { platform: args.platform }),
         productId: args.productId,
@@ -64,9 +74,10 @@ export const syncRevenueCatSubscription = internalMutation({
         subscriptionTier: effectiveTier,
         ...(typeof args.expiresAt === "number" && { expiresAt: args.expiresAt }),
         lastVerifiedAt: now,
-        ...(args.status === "canceled" && { canceledAt: now }),
+        ...canceledAtUpdate,
       });
     } else {
+      // For new subscriptions, only set canceledAt if status is canceled or expired
       const subscriptionId = await ctx.db.insert("subscriptionStatuses", {
         userId: user._id,
         ...(args.platform && { platform: args.platform }),
@@ -77,7 +88,7 @@ export const syncRevenueCatSubscription = internalMutation({
         musicGenerationsUsed: 0,
         lastVerifiedAt: now,
         ...(typeof args.expiresAt === "number" && { expiresAt: args.expiresAt }),
-        ...(args.status === "canceled" && { canceledAt: now }),
+        ...((args.status === "canceled" || args.status === "expired") && { canceledAt: now }),
       });
 
       // Update user with active subscription

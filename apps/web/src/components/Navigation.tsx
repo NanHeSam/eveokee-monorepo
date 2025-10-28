@@ -61,11 +61,8 @@ export default function Navigation() {
                 Blog
               </Link>
               <SignedIn>
-                <Link to="/call-settings" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                  Call Settings
-                </Link>
-                <Link to="/call-monitoring" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                  Call Monitoring
+                <Link to="/dashboard" className="bg-accent-mint/10 text-accent-mint dark:bg-accent-mint/20 px-3 py-2 rounded-md text-sm font-medium hover:bg-accent-mint/20 dark:hover:bg-accent-mint/30 transition-colors">
+                  Dashboard
                 </Link>
               </SignedIn>
             </div>
@@ -174,18 +171,11 @@ export default function Navigation() {
             </Link>
             <SignedIn>
               <Link 
-                to="/call-settings" 
-                className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white block px-3 py-2 rounded-md text-base font-medium"
+                to="/dashboard" 
+                className="bg-accent-mint/10 text-accent-mint dark:bg-accent-mint/20 px-3 py-2 rounded-md text-base font-medium hover:bg-accent-mint/20 dark:hover:bg-accent-mint/30 transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Call Settings
-              </Link>
-              <Link 
-                to="/call-monitoring" 
-                className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white block px-3 py-2 rounded-md text-base font-medium"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Call Monitoring
+                Dashboard
               </Link>
             </SignedIn>
             <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-600">

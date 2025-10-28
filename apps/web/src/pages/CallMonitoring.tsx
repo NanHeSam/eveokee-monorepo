@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '@backend/convex';
+import ConvexQueryBoundary from '@/components/ConvexQueryBoundary';
 
 type StatusFilter = 'all' | 'queued' | 'scheduled' | 'started' | 'completed' | 'failed' | 'canceled';
 
@@ -14,7 +15,7 @@ export default function CallMonitoring() {
   });
   
   const callStats = useQuery(api.callJobs.getCallJobStats);
-  const callSessions = useQuery(api.callSessions.getCallSessions, { limit: 20 });
+  const callSessions = useQuery(api.callJobs.getCallSessions, { limit: 20 });
   
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleString();
@@ -53,6 +54,19 @@ export default function CallMonitoring() {
           Call Monitoring Dashboard
         </h1>
         
+        <ConvexQueryBoundary
+          queries={[
+            { data: callJobs },
+            { data: callStats },
+            { data: callSessions },
+          ]}
+          loadingFallback={
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <span className="ml-3 text-gray-600">Loading dashboard data...</span>
+            </div>
+          }
+        >
         {/* Statistics Cards */}
         {callStats && (
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-8">
@@ -160,9 +174,7 @@ export default function CallMonitoring() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Error
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created At
-                  </th>
+
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -185,16 +197,14 @@ export default function CallMonitoring() {
                     <td className="px-6 py-4 text-sm text-red-600 max-w-xs truncate">
                       {job.errorMessage || '—'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(job.createdAt)}
-                    </td>
+
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
           
-          {callJobs?.length === 0 && (
+          {callJobs && callJobs.length === 0 && (
             <div className="text-center py-12">
               <p className="text-gray-500">No call jobs found</p>
             </div>
@@ -252,12 +262,13 @@ export default function CallMonitoring() {
             </table>
           </div>
           
-          {callSessions?.length === 0 && (
+          {callSessions && callSessions.length === 0 && (
             <div className="text-center py-12">
               <p className="text-gray-500">No call sessions found</p>
             </div>
           )}
         </div>
+        </ConvexQueryBoundary>
       </div>
     </div>
   );

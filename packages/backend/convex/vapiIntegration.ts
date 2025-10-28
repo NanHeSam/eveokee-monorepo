@@ -6,7 +6,6 @@
 import { action } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { Id } from "./_generated/dataModel";
 
 /**
  * Schedule a call with VAPI
@@ -29,6 +28,11 @@ export const scheduleVapiCall = action({
       throw new Error("VAPI_WEBHOOK_URL environment variable is not set");
     }
 
+    const phoneNumberId = process.env.VAPI_PHONE_NUMBER_ID;
+    if (!phoneNumberId) {
+      throw new Error("VAPI_PHONE_NUMBER_ID environment variable is not set");
+    }
+
     try {
       await ctx.runMutation(internal.callJobs.incrementCallJobAttempts, {
         jobId: args.jobId,
@@ -41,7 +45,7 @@ export const scheduleVapiCall = action({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          phoneNumberId: phoneNumber, // or phoneNumber depending on VAPI API
+          phoneNumberId: phoneNumberId,
           customer: {
             number: args.phoneNumber,
           },

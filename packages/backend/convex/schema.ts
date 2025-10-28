@@ -152,7 +152,6 @@ export default defineSchema({
     daysOfWeek: v.optional(v.array(v.number())), // 0-6 for Sunday-Saturday (for custom cadence)
     active: v.boolean(),
     voiceId: v.optional(v.string()), // For future voice selection
-    createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_userId", ["userId"])
@@ -174,7 +173,6 @@ export default defineSchema({
     vapiCallId: v.optional(v.string()), // VAPI's call ID
     attempts: v.number(),
     errorMessage: v.optional(v.string()),
-    createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_userId", ["userId"])
@@ -192,7 +190,6 @@ export default defineSchema({
     durationSec: v.optional(v.number()),
     disposition: v.optional(v.string()), // e.g., "completed", "no-answer", "busy"
     metadata: v.optional(v.any()), // Store any additional VAPI metadata
-    createdAt: v.number(),
   })
     .index("by_userId", ["userId"])
     .index("by_callJobId", ["callJobId"])

@@ -98,7 +98,6 @@ export const createCallJob = internalMutation({
       scheduledForUTC: args.scheduledForUTC,
       status: "queued",
       attempts: 0,
-      createdAt: now,
       updatedAt: now,
     });
     
@@ -275,7 +274,6 @@ export const createCallSession = internalMutation({
     metadata: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
-    const now = Date.now();
     
     const sessionId = await ctx.db.insert("callSessions", {
       userId: args.userId,
@@ -286,7 +284,6 @@ export const createCallSession = internalMutation({
       durationSec: args.durationSec,
       disposition: args.disposition,
       metadata: args.metadata,
-      createdAt: now,
     });
     
     return sessionId;

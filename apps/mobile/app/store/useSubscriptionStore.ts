@@ -66,7 +66,7 @@ export function useSubscription() {
 export function useUsage() {
   const usage = useQuery(api.usage.getCurrentUserUsage);
   const recordGeneration = useMutation(api.usage.recordCurrentUserMusicGeneration);
-  const canGenerate = useMutation(api.usage.canCurrentUserGenerateMusic);
+  const canGenerate = useQuery(api.usage.canCurrentUserGenerateMusic);
 
   return {
     usage,

@@ -91,4 +91,159 @@ describe("RevenueCat subscription sync", () => {
     expect(subscription?.subscriptionTier).toBe("free");
     expect(subscription?.status).toBe("expired");
   });
+
+  it("sets canceledAt when status is canceled", async () => {
+    const t = createTestEnvironment();
+    const { userId, subscriptionId } = await createTestUser(t, {
+      tier: "yearly",
+    });
+
+    // First, ensure we have an active subscription
+    await t.mutation(
+      internal.revenueCatBilling.syncRevenueCatSubscription,
+      {
+        userId,
+        productId: "eveokee_premium_annual",
+        status: "active",
+        platform: "app_store",
+        expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000,
+      }
+    );
+
+    let subscription = await getSubscription(t, subscriptionId);
+    expect(subscription?.canceledAt).toBeUndefined();
+
+    // Cancel the subscription
+    const cancelResult = await t.mutation(
+      internal.revenueCatBilling.syncRevenueCatSubscription,
+      {
+        userId,
+        productId: "eveokee_premium_annual",
+        status: "canceled",
+        platform: "app_store",
+      }
+    );
+
+    expect(cancelResult.success).toBe(true);
+
+    subscription = await getSubscription(t, subscriptionId);
+    expect(subscription?.status).toBe("canceled");
+    expect(subscription?.canceledAt).toBeDefined();
+    expect(typeof subscription?.canceledAt).toBe("number");
+  });
+
+  it("clears canceledAt when subscription becomes active again", async () => {
+    const t = createTestEnvironment();
+    const { userId, subscriptionId } = await createTestUser(t, {
+      tier: "yearly",
+    });
+
+    // First, cancel the subscription
+    await t.mutation(
+      internal.revenueCatBilling.syncRevenueCatSubscription,
+      {
+        userId,
+        productId: "eveokee_premium_annual",
+        status: "canceled",
+        platform: "app_store",
+      }
+    );
+
+    let subscription = await getSubscription(t, subscriptionId);
+    expect(subscription?.status).toBe("canceled");
+    expect(subscription?.canceledAt).toBeDefined();
+
+    // Reactivate the subscription (user renewed)
+    const reactivateResult = await t.mutation(
+      internal.revenueCatBilling.syncRevenueCatSubscription,
+      {
+        userId,
+        productId: "eveokee_premium_annual",
+        status: "active",
+        platform: "app_store",
+        expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000,
+      }
+    );
+
+    expect(reactivateResult.success).toBe(true);
+
+    subscription = await getSubscription(t, subscriptionId);
+    expect(subscription?.status).toBe("active");
+    expect(subscription?.canceledAt).toBeUndefined();
+  });
+
+  it("sets canceledAt when status is expired", async () => {
+    const t = createTestEnvironment();
+    const { userId, subscriptionId } = await createTestUser(t, {
+      tier: "monthly",
+    });
+
+    // Start with active subscription
+    await t.mutation(
+      internal.revenueCatBilling.syncRevenueCatSubscription,
+      {
+        userId,
+        productId: "eveokee_premium_monthly",
+        status: "active",
+        platform: "play_store",
+        expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
+      }
+    );
+
+    let subscription = await getSubscription(t, subscriptionId);
+    expect(subscription?.canceledAt).toBeUndefined();
+
+    // Expire the subscription
+    await t.mutation(
+      internal.revenueCatBilling.syncRevenueCatSubscription,
+      {
+        userId,
+        productId: "eveokee_premium_monthly",
+        status: "expired",
+        platform: "play_store",
+      }
+    );
+
+    subscription = await getSubscription(t, subscriptionId);
+    expect(subscription?.status).toBe("expired");
+    expect(subscription?.canceledAt).toBeDefined();
+    expect(typeof subscription?.canceledAt).toBe("number");
+  });
+
+  it("clears canceledAt when transitioning from expired to in_grace", async () => {
+    const t = createTestEnvironment();
+    const { userId, subscriptionId } = await createTestUser(t, {
+      tier: "yearly",
+    });
+
+    // Expire the subscription
+    await t.mutation(
+      internal.revenueCatBilling.syncRevenueCatSubscription,
+      {
+        userId,
+        productId: "eveokee_premium_annual",
+        status: "expired",
+        platform: "app_store",
+      }
+    );
+
+    let subscription = await getSubscription(t, subscriptionId);
+    expect(subscription?.canceledAt).toBeDefined();
+
+    // Move to grace period (payment issue resolved)
+    await t.mutation(
+      internal.revenueCatBilling.syncRevenueCatSubscription,
+      {
+        userId,
+        productId: "eveokee_premium_annual",
+        status: "in_grace",
+        platform: "app_store",
+        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+      }
+    );
+
+    subscription = await getSubscription(t, subscriptionId);
+    expect(subscription?.status).toBe("in_grace");
+    expect(subscription?.canceledAt).toBeUndefined();
+  });
 });
