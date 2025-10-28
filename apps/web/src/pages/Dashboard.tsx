@@ -1,7 +1,6 @@
 import { useUser } from '@clerk/clerk-react';
-import { 
-  LayoutDashboard, 
-  Settings, 
+import {
+  LayoutDashboard,
   Calendar,
   Music,
   Phone,
@@ -62,13 +61,6 @@ export default function Dashboard() {
           Quick Actions
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <QuickActionCard
-            icon={<Settings className="h-8 w-8" />}
-            title="Call Settings"
-            description="Configure your daily check-in calls"
-            to="/dashboard/call-settings"
-            color="text-accent-mint"
-          />
           <QuickActionCard
             icon={<LayoutDashboard className="h-8 w-8" />}
             title="View Diary"

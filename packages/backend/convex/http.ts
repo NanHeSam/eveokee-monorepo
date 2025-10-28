@@ -228,6 +228,9 @@ const vapiWebhookHandler = httpAction(async (ctx, req) => {
     return new Response("Method Not Allowed", { status: 405 });
   }
 
+  // TODO: Implement webhook authentication (Bearer token, HMAC, or X-Vapi-Secret signature verification)
+  // to prevent spoofing attacks. See Clerk webhook handler for reference implementation.
+
   let event: any;
   try {
     event = await req.json();
@@ -308,7 +311,7 @@ const vapiWebhookHandler = httpAction(async (ctx, req) => {
   try {
     // Handle end-of-call report (transcript data)
     if (messageType === "end-of-call-report") {
-      const job = await ctx.runMutation(internal.callJobs.getCallJobByVapiId, {
+      const job = await ctx.runQuery(internal.callJobs.getCallJobByVapiId, {
         vapiCallId,
       });
 

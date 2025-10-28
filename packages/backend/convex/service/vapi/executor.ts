@@ -27,20 +27,21 @@ export const executeScheduledCalls = internalAction({
     
     for (const setting of settingsToCall) {
       try {
-        // Use current time if nextRunAtUTC is undefined (for old documents)
-        const scheduledForUTC = setting.nextRunAtUTC ?? now;
-        
         // Calculate and update next run time FIRST to prevent duplicate execution
-        const nextRunAtUTC = await ctx.runMutation(
+        // This also calculates the proper scheduledForUTC for migrated records
+        const result = await ctx.runMutation(
           internal.service.vapi.executor.calculateAndUpdateNextRun,
           {
             settingsId: setting._id,
             currentTime: now,
           }
         );
-        
-        console.log(`Updated next run for settings ${setting._id}, next run: ${new Date(nextRunAtUTC).toISOString()}`);
-        
+
+        console.log(`Updated next run for settings ${setting._id}, next run: ${new Date(result.nextRunAtUTC).toISOString()}`);
+
+        // Use the calculated scheduled time (handles both new and migrated records)
+        const scheduledForUTC = result.scheduledForUTC;
+
         // Schedule the call to be processed immediately
         await ctx.scheduler.runAfter(0, internal.service.vapi.executor.processCallJob, {
           callSettingsId: setting._id,
@@ -48,7 +49,7 @@ export const executeScheduledCalls = internalAction({
           phoneE164: setting.phoneE164,
           scheduledForUTC,
         });
-        
+
         console.log(`Scheduled call for settings ${setting._id}`);
       } catch (error) {
         console.error(`Failed to process call for settings ${setting._id}:`, error);
@@ -70,20 +71,24 @@ export const calculateAndUpdateNextRun = internalMutation({
   },
   handler: async (ctx, args) => {
     const settings = await ctx.db.get(args.settingsId);
-    
+
     if (!settings) {
       throw new Error(`Settings not found: ${args.settingsId}`);
     }
-    
+
     // If cadence fields are missing, calculate them
     let localMinutes = settings.localMinutes;
     let bydayMask = settings.bydayMask;
-    
+
     if (localMinutes === undefined || bydayMask === undefined) {
       localMinutes = calculateLocalMinutes(settings.timeOfDay);
       bydayMask = calculateBydayMask(settings.cadence, settings.daysOfWeek);
     }
-    
+
+    // For migrated records without nextRunAtUTC, use the setting's actual scheduled time
+    // instead of the current execution time to avoid wrong time context in calls
+    const scheduledForUTC = settings.nextRunAtUTC ?? args.currentTime;
+
     // Calculate next run time
     const nextRun = calculateNextRunAtUTC(
       localMinutes,
@@ -91,7 +96,7 @@ export const calculateAndUpdateNextRun = internalMutation({
       settings.timezone,
       args.currentTime
     );
-    
+
     // Update in database
     const now = Date.now();
     await ctx.db.patch(args.settingsId, {
@@ -100,8 +105,8 @@ export const calculateAndUpdateNextRun = internalMutation({
       nextRunAtUTC: nextRun,
       updatedAt: now,
     });
-    
-    return nextRun;
+
+    return { nextRunAtUTC: nextRun, scheduledForUTC };
   },
 });
 

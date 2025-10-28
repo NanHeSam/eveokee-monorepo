@@ -5,8 +5,7 @@
 
 import { Doc, Id } from "../../_generated/dataModel";
 import { getSystemPrompt, SystemPromptParams } from "./systemPrompt";
-
-const DEFAULT_VOICE_ID = "d46abd1d-2d02-43e8-819f-51fb652c1c61";
+import { DEFAULT_VOICE_ID } from "../../constant";
 
 /**
  * Format UTC timestamp to local time string

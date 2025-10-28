@@ -21,17 +21,17 @@ export function useMusicGeneration(options: UseMusicGenerationOptions = {}) {
     showPaywallOnLimit = true,
   } = options;
 
-  const checkCanGenerate = async (): Promise<boolean> => {
+  const checkCanGenerate = (): boolean => {
     try {
-      const result = await canGenerate();
+      const result = canGenerate.data;
       
-      if (!result.canGenerate) {
+      if (!result?.canGenerate) {
         if (showPaywallOnLimit) {
           setShowPaywall(true, 'limit_reached');
         } else {
           Alert.alert(
             'Limit Reached',
-            `You've used all your music generations (${result.currentUsage}/${result.limit}). Upgrade to continue creating music.`,
+            `You've used all your music generations (${result?.currentUsage || 0}/${result?.limit || 0}). Upgrade to continue creating music.`,
             [
               { text: 'Cancel', style: 'cancel' },
               { 
@@ -59,7 +59,7 @@ export function useMusicGeneration(options: UseMusicGenerationOptions = {}) {
     }
 
     // Check if user can generate music
-    const canGenerateMusic = await checkCanGenerate();
+    const canGenerateMusic = checkCanGenerate();
     if (!canGenerateMusic) {
       return null;
     }
@@ -106,9 +106,12 @@ export function useMusicGeneration(options: UseMusicGenerationOptions = {}) {
     }
   };
 
-  const getUsageInfo = async () => {
+  const getUsageInfo = () => {
     try {
-      const result = await canGenerate();
+      const result = canGenerate.data;
+      if (!result) {
+        return null;
+      }
       return {
         canGenerate: result.canGenerate,
         currentUsage: result.currentUsage,

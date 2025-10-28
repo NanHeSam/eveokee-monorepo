@@ -120,16 +120,10 @@ export function isValidTimezone(timezone: string): boolean {
   }
   
   try {
-    // Use Intl to validate the timezone
+    // Use Intl to validate the timezone - this supports all valid IANA timezones
+    // including multi-segment paths (America/Indiana/Indianapolis),
+    // hyphens (America/Port-au-Prince), and GMT offsets (Etc/GMT+1)
     Intl.DateTimeFormat(undefined, { timeZone: timezone });
-    
-    // Additional check: ensure it's in IANA format (Continent/City or Etc/*)
-    // Examples: America/New_York, Europe/London, Asia/Tokyo, Etc/UTC
-    const ianaPattern = /^([A-Za-z_]+\/[A-Za-z_]+|Etc\/[A-Za-z_]+)$/;
-    if (!ianaPattern.test(timezone)) {
-      return false;
-    }
-    
     return true;
   } catch (error) {
     return false;

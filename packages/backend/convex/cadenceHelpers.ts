@@ -77,15 +77,16 @@ export function getCadenceDescription(
     
     case 'weekends':
       return 'Saturday and Sunday';
-    
-    case 'custom':
+
+    case 'custom': {
       if (!daysOfWeek || daysOfWeek.length === 0) {
         return 'Custom (not configured)';
       }
       const sortedDays = [...daysOfWeek].sort((a, b) => a - b);
       const dayNamesList = sortedDays.map(day => dayNames[day]);
       return dayNamesList.join(', ');
-    
+    }
+
     default:
       return 'Unknown';
   }

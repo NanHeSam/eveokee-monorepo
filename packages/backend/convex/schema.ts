@@ -151,15 +151,15 @@ export default defineSchema({
     ),
     daysOfWeek: v.optional(v.array(v.number())), // 0-6 for Sunday-Saturday (for custom cadence)
     active: v.boolean(),
-    
+
     // Canonical cadence representation (optional for backward compatibility)
     localMinutes: v.optional(v.number()),        // 0..1439 (HH*60 + MM)
     bydayMask: v.optional(v.number()),           // 7-bit mask: bit0=Sun … bit6=Sat
     nextRunAtUTC: v.optional(v.number()),        // UTC ms of next fire
-    
+
     updatedAt: v.number(),
   })
-    .index("by_userId", ["userId"])
+    .index("by_userId", ["userId"]) // One settings record per user (enforced in upsert logic)
     .index("by_active", ["active"])
     .index("by_phoneE164", ["phoneE164"])
     .index("by_active_and_nextRunAtUTC", ["active", "nextRunAtUTC"]),

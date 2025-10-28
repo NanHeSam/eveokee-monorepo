@@ -29,11 +29,8 @@ export const scheduleVapiCall = action({
       VAPI_TIMEOUT: process.env.VAPI_TIMEOUT,
     });
 
-    // Get webhook URL from environment for assistant configuration
-    const webhookUrl = process.env.VAPI_WEBHOOK_URL;
-    if (!webhookUrl) {
-      throw new Error("VAPI_WEBHOOK_URL environment variable is not set");
-    }
+    // Get webhook URL from environment for assistant configuration (already validated by createVapiClientFromEnv)
+    const webhookUrl = process.env.VAPI_WEBHOOK_URL!;
 
     try {
       // Get call job to find call settings

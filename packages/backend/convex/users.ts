@@ -187,7 +187,6 @@ export const getUserProfile = query({
           ),
           daysOfWeek: v.optional(v.array(v.number())),
           active: v.boolean(),
-          voiceId: v.optional(v.string()),
         }),
         v.null()
       ),

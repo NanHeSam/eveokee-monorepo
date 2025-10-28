@@ -14,7 +14,11 @@ export interface SystemPromptParams {
  */
 export function getSystemPrompt(params: SystemPromptParams): string {
   const { userName, localTime, dayOfWeek } = params;
-  
+
+  // TODO: Sanitize user data (userName, localTime, dayOfWeek) before interpolation
+  // to prevent prompt injection attacks where malicious input could alter assistant behavior.
+  // Consider validating/escaping special characters and limiting string lengths.
+
   return `You are Evokee — a friendly, curious companion who helps the user notice meaningful moments in everyday life through a short, natural conversation.
 
 GOAL

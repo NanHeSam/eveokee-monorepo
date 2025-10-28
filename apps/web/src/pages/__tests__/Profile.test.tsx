@@ -11,12 +11,15 @@ vi.mock('convex/react', () => ({
 }));
 
 // Mock react-hot-toast
-vi.mock('react-hot-toast', () => ({
-  default: {
+vi.mock('react-hot-toast', () => {
+  const toastFn = Object.assign(vi.fn(), {
     error: vi.fn(),
     success: vi.fn(),
-  },
-}));
+  });
+  return {
+    default: toastFn,
+  };
+});
 
 import { useQuery, useMutation } from 'convex/react';
 
@@ -44,7 +47,6 @@ const mockProfile = {
     cadence: 'daily' as const,
     daysOfWeek: undefined,
     active: true,
-    voiceId: undefined,
   },
 };
 

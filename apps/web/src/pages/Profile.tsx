@@ -78,6 +78,19 @@ export default function Profile() {
       return;
     }
 
+    // Validate E.164 phone format (+ followed by 1-15 digits)
+    const e164Regex = /^\+[1-9]\d{1,14}$/;
+    if (!e164Regex.test(phoneE164)) {
+      toast.error('Phone number must be in E.164 format (e.g., +12025551234)');
+      return;
+    }
+
+    // Validate custom cadence has at least one day selected
+    if (cadence === 'custom' && daysOfWeek.length === 0) {
+      toast.error('Please select at least one day for custom cadence');
+      return;
+    }
+
     setIsSaving(true);
     try {
       await upsertCallSettings({
