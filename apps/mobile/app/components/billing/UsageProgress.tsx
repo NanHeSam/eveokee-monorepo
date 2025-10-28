@@ -8,19 +8,20 @@ interface UsageProgressProps {
   compact?: boolean;
 }
 
-export function UsageProgress({ 
-  onUpgradePress, 
-  showUpgradeButton = true, 
-  compact = false 
+export function UsageProgress({
+  onUpgradePress,
+  showUpgradeButton = true,
+  compact = false
 }: UsageProgressProps) {
   const { usage } = useUsage();
 
   if (!usage) {
-    return (
-      <View className="bg-gray-100 p-3 rounded-lg">
-        <Text className="text-gray-600 text-sm">Loading usage...</Text>
-      </View>
-    );
+    return null;
+  }
+
+  // Only show usage information for free tier users
+  if (usage.tier !== 'free') {
+    return null;
   }
 
   const usageText = formatUsageText(usage);
