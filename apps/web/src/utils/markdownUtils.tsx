@@ -11,7 +11,6 @@ export const markdownComponents = {
 export const parseMusicShortcodes = (content: string): string => {
   // Simple regex to match [music:id title="Title" duration="3:24"]
   const musicRegex = /\[music:([^\s\]]+)([^\]]*)\]/g;
-
   // Reset regex
   musicRegex.lastIndex = 0;
 
@@ -30,7 +29,6 @@ export const parseMusicShortcodes = (content: string): string => {
     const placeholder = `__MUSIC_COMPONENT__${musicData}__END_MUSIC__`;
     return placeholder;
   });
-
   return result;
 };
 
@@ -61,3 +59,6 @@ export const processMusicComponents = (content: string): (string | React.ReactEl
     return part;
   });
 };
+
+
+
