@@ -12,12 +12,11 @@ vi.mock('convex/react', () => ({
 
 // Mock react-hot-toast
 vi.mock('react-hot-toast', () => {
-  const toastFn = Object.assign(vi.fn(), {
-    error: vi.fn(),
-    success: vi.fn(),
-  });
+  const toast = vi.fn() as any;
+  toast.error = vi.fn();
+  toast.success = vi.fn();
   return {
-    default: toastFn,
+    default: toast,
   };
 });
 
@@ -30,7 +29,8 @@ const mockProfile = {
     email: 'john@example.com',
   },
   subscription: {
-    tier: 'premium',
+    tier: 'monthly',
+    productId: 'eveokee_premium_monthly',
     status: 'active' as const,
     musicGenerationsUsed: 5,
     musicLimit: 100,
@@ -114,10 +114,55 @@ describe('Profile', () => {
       expect(screen.getByText('Subscription Status')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('premium')).toBeInTheDocument();
-    expect(screen.getByText('active')).toBeInTheDocument();
-    expect(screen.getByText(/5 \/ 100/)).toBeInTheDocument();
-    expect(screen.getByText(/95 remaining/)).toBeInTheDocument();
+    // Check Plan shows the tier
+    expect(screen.getByText('Premium Monthly')).toBeInTheDocument();
+    // Check Product shows formatted productId and status
+    expect(screen.getByText(/Eveokee Premium Monthly/i)).toBeInTheDocument();
+    // There will be multiple "Active" elements (subscription and call settings)
+    expect(screen.getAllByText(/Active/i).length).toBeGreaterThanOrEqual(1);
+    // Music generations should NOT be shown for paid plans
+    expect(screen.queryByText(/Music Generations/i)).not.toBeInTheDocument();
+  });
+
+  it('renders subscription information for free tier with limit', async () => {
+    const mockFreeProfile = {
+      ...mockProfile,
+      subscription: {
+        tier: 'free',
+        productId: 'free-tier',
+        status: 'active' as const,
+        musicGenerationsUsed: 4,
+        musicLimit: 10,
+        periodStart: Date.now() - 10 * 24 * 60 * 60 * 1000,
+        periodEnd: Date.now() + 20 * 24 * 60 * 60 * 1000,
+        isActive: true,
+        remainingQuota: 6,
+      },
+    };
+    
+    vi.mocked(useQuery).mockReturnValue(mockFreeProfile);
+    vi.mocked(useMutation).mockReturnValue(createMutationMock());
+
+    render(
+      <MemoryRouter>
+        <Profile />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Subscription Status')).toBeInTheDocument();
+    });
+
+    // Check Plan shows the tier
+    expect(screen.getByText('Free')).toBeInTheDocument();
+    // Check Product shows formatted productId and status
+    expect(screen.getByText(/Free Tier/i)).toBeInTheDocument();
+    // There will be multiple "Active" elements (subscription and call settings)
+    expect(screen.getAllByText(/Active/i).length).toBeGreaterThanOrEqual(1);
+    // Music generations SHOULD be shown for free tier
+    expect(screen.getByText(/Music Generations/i)).toBeInTheDocument();
+    expect(screen.getByText(/4 \/ 10/)).toBeInTheDocument();
+    expect(screen.getByText(/6 remaining/)).toBeInTheDocument();
   });
 
   it('renders call settings in view mode', async () => {
@@ -138,7 +183,9 @@ describe('Profile', () => {
     expect(screen.getByText('America/New_York')).toBeInTheDocument();
     expect(screen.getByText('09:00')).toBeInTheDocument();
     expect(screen.getByText('Every day')).toBeInTheDocument();
-    expect(screen.getByText('Active')).toBeInTheDocument();
+    // Check Active status - there will be two (subscription and call settings)
+    const activeStatuses = screen.getAllByText('Active');
+    expect(activeStatuses.length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows edit button and switches to edit mode', async () => {

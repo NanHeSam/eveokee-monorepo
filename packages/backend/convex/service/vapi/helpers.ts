@@ -3,7 +3,7 @@
  * Builds assistant objects and formats context for calls
  */
 
-import { Doc, Id } from "../../_generated/dataModel";
+import { Doc } from "../../_generated/dataModel";
 import { getSystemPrompt, SystemPromptParams } from "./systemPrompt";
 import { DEFAULT_VOICE_ID } from "../../constant";
 

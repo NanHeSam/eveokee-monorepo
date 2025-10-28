@@ -158,6 +158,7 @@ export const getUserProfile = query({
       subscription: v.union(
         v.object({
           tier: v.string(),
+          productId: v.string(),
           status: v.union(
             v.literal("active"),
             v.literal("canceled"),
@@ -223,6 +224,7 @@ export const getUserProfile = query({
 
         subscription = {
           tier: sub.subscriptionTier,
+          productId: sub.productId,
           status: sub.status,
           musicGenerationsUsed: sub.musicGenerationsUsed,
           musicLimit,

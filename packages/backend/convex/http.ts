@@ -363,7 +363,7 @@ const vapiWebhookHandler = httpAction(async (ctx, req) => {
         }
 
         // Validate durationSeconds
-        const durationValue = event.message.call.durationSeconds;
+        const durationValue = event.message.durationSeconds;
         if (durationValue !== undefined && durationValue !== null) {
           if (typeof durationValue === "number" && !isNaN(durationValue) && isFinite(durationValue)) {
             durationSeconds = durationValue;

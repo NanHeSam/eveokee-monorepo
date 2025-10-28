@@ -148,6 +148,29 @@ export default function Profile() {
     }
   };
 
+  const getSubscriptionStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'Active';
+      case 'in_grace':
+        return 'In Grace Period';
+      case 'canceled':
+        return 'Canceled';
+      case 'expired':
+        return 'Expired';
+      default:
+        return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+  };
+
+  const formatProductName = (productId: string) => {
+    // Split by _ or - and capitalize each word
+    return productId
+      .split(/[_-]/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   const getCadenceDisplay = (cadenceType: string, days?: number[]) => {
     switch (cadenceType) {
       case 'daily':
@@ -209,25 +232,32 @@ export default function Profile() {
                   <div className="space-y-3">
                     <div>
                       <label className="text-sm font-medium text-gray-600">Plan</label>
-                      <p className="text-gray-900 capitalize font-semibold">{profile.subscription.tier}</p>
+                      <p className="text-gray-900 font-semibold">
+                        {profile.subscription.tier === 'monthly' && 'Premium Monthly'}
+                        {profile.subscription.tier === 'yearly' && 'Premium Yearly'}
+                        {profile.subscription.tier === 'free' && 'Free'}
+                        {!['monthly', 'yearly', 'free'].includes(profile.subscription.tier) && profile.subscription.tier.charAt(0).toUpperCase() + profile.subscription.tier.slice(1)}
+                      </p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-600">Status</label>
+                      <label className="text-sm font-medium text-gray-600">Product</label>
                       <p>
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getSubscriptionStatusColor(profile.subscription.status)}`}>
-                          {profile.subscription.status}
+                          {formatProductName(profile.subscription.productId)} - {getSubscriptionStatusLabel(profile.subscription.status)}
                         </span>
                       </p>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-600">Music Generations</label>
-                      <p className="text-gray-900">
-                        {profile.subscription.musicGenerationsUsed} / {profile.subscription.musicLimit}
-                        <span className="text-sm text-gray-500 ml-2">
-                          ({profile.subscription.remainingQuota} remaining)
-                        </span>
-                      </p>
-                    </div>
+                    {profile.subscription.tier === 'free' && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-600">Music Generations</label>
+                        <p className="text-gray-900">
+                          {profile.subscription.musicGenerationsUsed} / {profile.subscription.musicLimit}
+                          <span className="text-sm text-gray-500 ml-2">
+                            ({profile.subscription.remainingQuota} remaining)
+                          </span>
+                        </p>
+                      </div>
+                    )}
                     <div>
                       <label className="text-sm font-medium text-gray-600">Current Period</label>
                       <p className="text-gray-900">

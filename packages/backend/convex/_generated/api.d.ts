@@ -22,6 +22,7 @@ import type * as music from "../music.js";
 import type * as musicActions from "../musicActions.js";
 import type * as phoneHelpers from "../phoneHelpers.js";
 import type * as revenueCatBilling from "../revenueCatBilling.js";
+import type * as service_vapi_client from "../service/vapi/client.js";
 import type * as service_vapi_executor from "../service/vapi/executor.js";
 import type * as service_vapi_helpers from "../service/vapi/helpers.js";
 import type * as service_vapi_systemPrompt from "../service/vapi/systemPrompt.js";
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   musicActions: typeof musicActions;
   phoneHelpers: typeof phoneHelpers;
   revenueCatBilling: typeof revenueCatBilling;
+  "service/vapi/client": typeof service_vapi_client;
   "service/vapi/executor": typeof service_vapi_executor;
   "service/vapi/helpers": typeof service_vapi_helpers;
   "service/vapi/systemPrompt": typeof service_vapi_systemPrompt;
