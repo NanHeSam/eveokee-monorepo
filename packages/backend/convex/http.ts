@@ -243,8 +243,56 @@ const vapiWebhookHandler = httpAction(async (ctx, req) => {
   }
 
 
-  const messageType = event.message?.type;
-  const vapiCallId = event.call?.id || event.callId || event.id || event.message?.call?.id;
+  // Validate event structure
+  if (!event || typeof event !== "object") {
+    console.error("VAPI webhook: event is not an object", typeof event);
+    return new Response(
+      JSON.stringify({ error: "Invalid event structure" }),
+      {
+        status: 400,
+        headers: jsonHeaders,
+      },
+    );
+  }
+
+  // Validate event.message structure
+  const hasMessage = event.message !== undefined && event.message !== null;
+  if (!hasMessage) {
+    console.warn("VAPI webhook missing message field");
+    return new Response(
+      JSON.stringify({ error: "Missing message field" }),
+      {
+        status: 400,
+        headers: jsonHeaders,
+      },
+    );
+  }
+
+  if (typeof event.message !== "object" || Array.isArray(event.message)) {
+    console.error("VAPI webhook: message is not a plain object", typeof event.message, Array.isArray(event.message));
+    return new Response(
+      JSON.stringify({ error: "Invalid message field: must be an object" }),
+      {
+        status: 400,
+        headers: jsonHeaders,
+      },
+    );
+  }
+
+  // Validate message.type
+  const messageType = event.message.type;
+  if (typeof messageType !== "string") {
+    console.error("VAPI webhook: message.type is not a string", typeof messageType);
+    return new Response(
+      JSON.stringify({ error: "Invalid message.type: must be a string" }),
+      {
+        status: 400,
+        headers: jsonHeaders,
+      },
+    );
+  }
+
+  const vapiCallId = event.call?.id;
 
   if (!vapiCallId) {
     console.warn("VAPI webhook missing call ID", event);
@@ -275,12 +323,72 @@ const vapiWebhookHandler = httpAction(async (ctx, req) => {
         );
       }
 
-      const endedAt = event.message.call?.endedAt || Date.now();
-      const durationSeconds = event.message.call?.durationSeconds;
-      const disposition = event.message.call?.disposition || "completed";
-      
-      // Store the complete artifact in metadata
-      const artifact = event.message.artifact || {};
+      // Validate message.call structure
+      const hasCall = event.message.call !== undefined && event.message.call !== null;
+      let endedAt = Date.now();
+      let durationSeconds: number | undefined = undefined;
+      let disposition = "completed";
+
+      if (hasCall) {
+        if (typeof event.message.call !== "object" || Array.isArray(event.message.call)) {
+          console.error("VAPI webhook: message.call is not an object");
+          return new Response(
+            JSON.stringify({ error: "Invalid message.call: must be an object" }),
+            {
+              status: 400,
+              headers: jsonHeaders,
+            },
+          );
+        }
+
+        // Validate endedAt
+        const endedAtValue = event.message.call.endedAt;
+        if (endedAtValue !== undefined && endedAtValue !== null) {
+          if (typeof endedAtValue === "number") {
+            endedAt = endedAtValue;
+          } else if (typeof endedAtValue === "string") {
+            // Try parsing as ISO string
+            const parsed = Date.parse(endedAtValue);
+            if (!isNaN(parsed)) {
+              endedAt = parsed;
+            } else {
+              console.warn("VAPI webhook: invalid ISO string for endedAt", endedAtValue);
+            }
+          } else {
+            console.warn("VAPI webhook: endedAt is not a number or ISO string", typeof endedAtValue);
+          }
+        }
+
+        // Validate durationSeconds
+        const durationValue = event.message.call.durationSeconds;
+        if (durationValue !== undefined && durationValue !== null) {
+          if (typeof durationValue === "number" && !isNaN(durationValue) && isFinite(durationValue)) {
+            durationSeconds = durationValue;
+          } else {
+            console.warn("VAPI webhook: durationSeconds is not a valid number", typeof durationValue, durationValue);
+          }
+        }
+
+        // Validate disposition
+        const dispositionValue = event.message.call.disposition;
+        if (dispositionValue !== undefined && dispositionValue !== null) {
+          if (typeof dispositionValue === "string") {
+            disposition = dispositionValue;
+          } else {
+            console.warn("VAPI webhook: disposition is not a string", typeof dispositionValue);
+          }
+        }
+      }
+
+      // Validate artifact - ensure it's always an object
+      let artifact: Record<string, any> = {};
+      if (event.message.artifact !== undefined && event.message.artifact !== null) {
+        if (typeof event.message.artifact === "object" && !Array.isArray(event.message.artifact)) {
+          artifact = event.message.artifact;
+        } else {
+          console.warn("VAPI webhook: artifact is not an object, using empty object", typeof event.message.artifact);
+        }
+      }
 
       await ctx.runMutation(internal.callJobs.updateCallJobStatus, {
         jobId: job._id,
@@ -302,7 +410,7 @@ const vapiWebhookHandler = httpAction(async (ctx, req) => {
         },
       });
 
-      console.log(`Call completed with transcript for job ${job._id}, VAPI call ID: ${vapiCallId}, duration: ${durationSeconds}s, ${JSON.parse(event)}`);
+      console.log(`Call completed with transcript for job ${job._id}, VAPI call ID: ${vapiCallId}, duration: ${durationSeconds}s`, JSON.stringify(event));
     } else {
       console.log(`Ignoring VAPI webhook event type: ${messageType}`);
     }

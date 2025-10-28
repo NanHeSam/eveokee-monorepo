@@ -1,27 +1,28 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { convexTest } from "convex-test";
+import { describe, it, expect } from "vitest";
 import { api } from "../convex/_generated/api";
-import schema from "../convex/schema";
 import { Id } from "../convex/_generated/dataModel";
+import { createTestEnvironment, withAuth } from "./convexTestUtils";
 
 describe("getUserProfile", () => {
-  let t: ReturnType<typeof convexTest>;
-
-  beforeEach(() => {
-    t = convexTest(schema);
-  });
+  const createT = () => createTestEnvironment();
 
   it("returns null when user is not authenticated", async () => {
+    const t = createT();
     const result = await t.query(api.users.getUserProfile, {});
     expect(result).toBeNull();
   });
 
   it("returns user profile with subscription but no call settings", async () => {
-    const userId = await t.run(async (ctx) => {
+    const t = createT();
+    const clerkId = "user_test123";
+    const email = "test@example.com";
+    const name = "Test User";
+
+    await t.run(async (ctx) => {
       const userId = await ctx.db.insert("users", {
-        clerkId: "user_test123",
-        email: "test@example.com",
-        name: "Test User",
+        clerkId,
+        email,
+        name,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
@@ -38,11 +39,10 @@ describe("getUserProfile", () => {
       });
 
       await ctx.db.patch(userId, { activeSubscriptionId: subscriptionId });
-
-      return userId;
     });
 
-    const result = await t.query(api.users.getUserProfile, {}, userId);
+    const asUser = withAuth(t, clerkId, email, name);
+    const result = await asUser.query(api.users.getUserProfile, {});
 
     expect(result).toBeDefined();
     expect(result?.user.name).toBe("Test User");
@@ -56,11 +56,16 @@ describe("getUserProfile", () => {
   });
 
   it("returns user profile with call settings", async () => {
-    const userId = await t.run(async (ctx) => {
+    const t = createT();
+    const clerkId = "user_test456";
+    const email = "test2@example.com";
+    const name = "Test User 2";
+
+    await t.run(async (ctx) => {
       const userId = await ctx.db.insert("users", {
-        clerkId: "user_test456",
-        email: "test2@example.com",
-        name: "Test User 2",
+        clerkId,
+        email,
+        name,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
@@ -68,9 +73,9 @@ describe("getUserProfile", () => {
       const subscriptionId = await ctx.db.insert("subscriptionStatuses", {
         userId,
         platform: "stripe",
-        productId: "premium-tier",
+        productId: "yearly-tier",
         status: "active",
-        subscriptionTier: "premium",
+        subscriptionTier: "yearly",
         lastResetAt: Date.now(),
         musicGenerationsUsed: 50,
         lastVerifiedAt: Date.now(),
@@ -87,16 +92,15 @@ describe("getUserProfile", () => {
         active: true,
         updatedAt: Date.now(),
       });
-
-      return userId;
     });
 
-    const result = await t.query(api.users.getUserProfile, {}, userId);
+    const asUser = withAuth(t, clerkId, email, name);
+    const result = await asUser.query(api.users.getUserProfile, {});
 
     expect(result).toBeDefined();
     expect(result?.user.name).toBe("Test User 2");
     expect(result?.subscription).toBeDefined();
-    expect(result?.subscription?.tier).toBe("premium");
+    expect(result?.subscription?.tier).toBe("yearly");
     expect(result?.callSettings).toBeDefined();
     expect(result?.callSettings?.phoneE164).toBe("+12125551234");
     expect(result?.callSettings?.timezone).toBe("America/New_York");
@@ -106,11 +110,16 @@ describe("getUserProfile", () => {
   });
 
   it("returns user profile with custom cadence settings", async () => {
-    const userId = await t.run(async (ctx) => {
+    const t = createT();
+    const clerkId = "user_test789";
+    const email = "test3@example.com";
+    const name = "Test User 3";
+
+    await t.run(async (ctx) => {
       const userId = await ctx.db.insert("users", {
-        clerkId: "user_test789",
-        email: "test3@example.com",
-        name: "Test User 3",
+        clerkId,
+        email,
+        name,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
@@ -138,11 +147,10 @@ describe("getUserProfile", () => {
         active: true,
         updatedAt: Date.now(),
       });
-
-      return userId;
     });
 
-    const result = await t.query(api.users.getUserProfile, {}, userId);
+    const asUser = withAuth(t, clerkId, email, name);
+    const result = await asUser.query(api.users.getUserProfile, {});
 
     expect(result).toBeDefined();
     expect(result?.callSettings).toBeDefined();
@@ -151,11 +159,16 @@ describe("getUserProfile", () => {
   });
 
   it("handles inactive call settings", async () => {
-    const userId = await t.run(async (ctx) => {
+    const t = createT();
+    const clerkId = "user_test000";
+    const email = "test4@example.com";
+    const name = "Test User 4";
+
+    await t.run(async (ctx) => {
       const userId = await ctx.db.insert("users", {
-        clerkId: "user_test000",
-        email: "test4@example.com",
-        name: "Test User 4",
+        clerkId,
+        email,
+        name,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
@@ -182,11 +195,10 @@ describe("getUserProfile", () => {
         active: false, // Inactive
         updatedAt: Date.now(),
       });
-
-      return userId;
     });
 
-    const result = await t.query(api.users.getUserProfile, {}, userId);
+    const asUser = withAuth(t, clerkId, email, name);
+    const result = await asUser.query(api.users.getUserProfile, {});
 
     expect(result).toBeDefined();
     expect(result?.callSettings).toBeDefined();
@@ -194,13 +206,18 @@ describe("getUserProfile", () => {
     expect(result?.callSettings?.cadence).toBe("weekdays");
   });
 
-  it("calculates subscription metrics correctly for premium tier", async () => {
+  it("calculates subscription metrics correctly for yearly tier", async () => {
+    const t = createT();
+    const clerkId = "user_yearly";
+    const email = "yearly@example.com";
+    const name = "Yearly User";
     const now = Date.now();
-    const userId = await t.run(async (ctx) => {
+
+    await t.run(async (ctx) => {
       const userId = await ctx.db.insert("users", {
-        clerkId: "user_premium",
-        email: "premium@example.com",
-        name: "Premium User",
+        clerkId,
+        email,
+        name,
         createdAt: now,
         updatedAt: now,
       });
@@ -208,35 +225,39 @@ describe("getUserProfile", () => {
       const subscriptionId = await ctx.db.insert("subscriptionStatuses", {
         userId,
         platform: "stripe",
-        productId: "premium-tier",
+        productId: "yearly-tier",
         status: "active",
-        subscriptionTier: "premium",
+        subscriptionTier: "yearly",
         lastResetAt: now - 10 * 24 * 60 * 60 * 1000, // 10 days ago
         musicGenerationsUsed: 100,
         lastVerifiedAt: now,
       });
 
       await ctx.db.patch(userId, { activeSubscriptionId: subscriptionId });
-
-      return userId;
     });
 
-    const result = await t.query(api.users.getUserProfile, {}, userId);
+    const asUser = withAuth(t, clerkId, email, name);
+    const result = await asUser.query(api.users.getUserProfile, {});
 
     expect(result).toBeDefined();
     expect(result?.subscription).toBeDefined();
-    expect(result?.subscription?.tier).toBe("premium");
-    expect(result?.subscription?.musicLimit).toBe(9007199254740991); // Effectively unlimited
-    expect(result?.subscription?.remainingQuota).toBe(9007199254740991);
+    expect(result?.subscription?.tier).toBe("yearly");
+    expect(result?.subscription?.musicLimit).toBe(1000); // Yearly tier limit
+    expect(result?.subscription?.remainingQuota).toBe(900); // 1000 - 100 used
     expect(result?.subscription?.isActive).toBe(true);
   });
 
   it("handles canceled subscription status", async () => {
-    const userId = await t.run(async (ctx) => {
+    const t = createT();
+    const clerkId = "user_canceled";
+    const email = "canceled@example.com";
+    const name = "Canceled User";
+
+    await t.run(async (ctx) => {
       const userId = await ctx.db.insert("users", {
-        clerkId: "user_canceled",
-        email: "canceled@example.com",
-        name: "Canceled User",
+        clerkId,
+        email,
+        name,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
@@ -244,20 +265,19 @@ describe("getUserProfile", () => {
       const subscriptionId = await ctx.db.insert("subscriptionStatuses", {
         userId,
         platform: "stripe",
-        productId: "premium-tier",
+        productId: "monthly-tier",
         status: "canceled",
-        subscriptionTier: "premium",
+        subscriptionTier: "monthly",
         lastResetAt: Date.now(),
         musicGenerationsUsed: 20,
         lastVerifiedAt: Date.now(),
       });
 
       await ctx.db.patch(userId, { activeSubscriptionId: subscriptionId });
-
-      return userId;
     });
 
-    const result = await t.query(api.users.getUserProfile, {}, userId);
+    const asUser = withAuth(t, clerkId, email, name);
+    const result = await asUser.query(api.users.getUserProfile, {});
 
     expect(result).toBeDefined();
     expect(result?.subscription).toBeDefined();
@@ -266,17 +286,23 @@ describe("getUserProfile", () => {
   });
 
   it("returns null subscription when user has no active subscription", async () => {
-    const userId = await t.run(async (ctx) => {
-      return await ctx.db.insert("users", {
-        clerkId: "user_nosub",
-        email: "nosub@example.com",
-        name: "No Sub User",
+    const t = createT();
+    const clerkId = "user_nosub";
+    const email = "nosub@example.com";
+    const name = "No Sub User";
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("users", {
+        clerkId,
+        email,
+        name,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
     });
 
-    const result = await t.query(api.users.getUserProfile, {}, userId);
+    const asUser = withAuth(t, clerkId, email, name);
+    const result = await asUser.query(api.users.getUserProfile, {});
 
     expect(result).toBeDefined();
     expect(result?.user.name).toBe("No Sub User");
@@ -284,4 +310,3 @@ describe("getUserProfile", () => {
     expect(result?.callSettings).toBeNull();
   });
 });
-

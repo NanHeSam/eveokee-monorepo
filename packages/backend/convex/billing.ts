@@ -94,9 +94,7 @@ export const getPlans = query({
     ]>;
     return entries.map(([tier, config]) => ({
       tier,
-      musicLimit: isFinite(config.musicLimit)
-        ? config.musicLimit
-        : 9007199254740991,
+      musicLimit: config.musicLimit,
       periodDays: config.periodDays,
       price: config.price,
     }));

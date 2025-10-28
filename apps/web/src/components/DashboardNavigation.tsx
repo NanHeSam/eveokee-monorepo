@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, X, Sun, Moon, LayoutDashboard, Activity, User } from 'lucide-react';
+import { Menu, X, Sun, Moon, LayoutDashboard, User } from 'lucide-react';
 import { UserButton } from '@clerk/clerk-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '@/hooks/useTheme';
@@ -38,17 +38,6 @@ export default function DashboardNavigation() {
               >
                 <LayoutDashboard className="h-4 w-4" />
                 <span>Dashboard</span>
-              </Link>
-              <Link 
-                to="/dashboard/call-monitoring" 
-                className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isActive('/dashboard/call-monitoring')
-                    ? 'bg-accent-mint/10 text-accent-mint dark:bg-accent-mint/20'
-                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-                }`}
-              >
-                <Activity className="h-4 w-4" />
-                <span>Call Monitoring</span>
               </Link>
               <Link 
                 to="/dashboard/profile" 
@@ -132,18 +121,6 @@ export default function DashboardNavigation() {
             >
               <LayoutDashboard className="h-4 w-4" />
               <span>Dashboard</span>
-            </Link>
-            <Link 
-              to="/dashboard/call-monitoring" 
-              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-base font-medium ${
-                isActive('/dashboard/call-monitoring')
-                  ? 'bg-accent-mint/10 text-accent-mint dark:bg-accent-mint/20'
-                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-              }`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              <Activity className="h-4 w-4" />
-              <span>Call Monitoring</span>
             </Link>
             <Link 
               to="/dashboard/profile" 

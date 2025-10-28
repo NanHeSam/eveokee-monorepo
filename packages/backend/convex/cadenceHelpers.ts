@@ -3,7 +3,7 @@
  * Determines if a given date matches a user's call cadence
  */
 
-import { getLocalDayOfWeek } from './timezoneHelpers';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 
 export type Cadence = 'daily' | 'weekdays' | 'weekends' | 'custom';
 
@@ -45,23 +45,15 @@ export function isTodayInCadence(
 }
 
 /**
- * Validate cadence configuration
- * @param cadence - Cadence type
- * @param daysOfWeek - Optional days of week array
- * @returns true if valid configuration
+ * Get the day of week (0-6, Sunday-Saturday) for a date in a specific timezone
+ * @param timezone - IANA timezone
+ * @param referenceDate - Optional reference date (defaults to now)
+ * @returns Day of week (0=Sunday, 6=Saturday)
  */
-export function isValidCadenceConfig(
-  cadence: Cadence,
-  daysOfWeek?: number[]
-): boolean {
-  if (cadence === 'custom') {
-    if (!daysOfWeek || daysOfWeek.length === 0) {
-      return false;
-    }
-    return daysOfWeek.every(day => day >= 0 && day <= 6);
-  }
-  
-  return true;
+function getLocalDayOfWeek(timezone: string, referenceDate?: Date): number {
+  const now = referenceDate || new Date();
+  const localDate = toZonedTime(now, timezone);
+  return localDate.getDay();
 }
 
 /**
@@ -97,6 +89,26 @@ export function getCadenceDescription(
     default:
       return 'Unknown';
   }
+}
+
+/**
+ * Validate cadence configuration
+ * @param cadence - Cadence type
+ * @param daysOfWeek - Optional days of week array
+ * @returns true if valid configuration
+ */
+export function isValidCadenceConfig(
+  cadence: Cadence,
+  daysOfWeek?: number[]
+): boolean {
+  if (cadence === 'custom') {
+    if (!daysOfWeek || daysOfWeek.length === 0) {
+      return false;
+    }
+    return daysOfWeek.every(day => day >= 0 && day <= 6);
+  }
+  
+  return true;
 }
 
 /**
@@ -175,12 +187,14 @@ export function calculateNextRunAtUTC(
   currentTime: number = Date.now()
 ): number {
   // Start from current time and look forward
-  let candidate = new Date(currentTime);
+  const currentUTC = new Date(currentTime);
   
   // Check up to 7 days ahead for the next matching day
   for (let daysAhead = 0; daysAhead < 7; daysAhead++) {
-    const testDate = new Date(candidate.getTime() + daysAhead * 24 * 60 * 60 * 1000);
-    const localDate = new Date(testDate.toLocaleString('en-US', { timeZone: timezone }));
+    const testUTC = new Date(currentUTC.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+    
+    // Convert UTC to the user's timezone to get local date components
+    const localDate = toZonedTime(testUTC, timezone);
     
     // Get day of week (0=Sunday, 6=Saturday)
     const dayOfWeek = localDate.getDay();
@@ -191,16 +205,14 @@ export function calculateNextRunAtUTC(
       const year = localDate.getFullYear();
       const month = localDate.getMonth();
       const date = localDate.getDate();
-      
-      // Create a date at the specified local time on this day
-      const targetDate = new Date(year, month, date);
       const hours = Math.floor(localMinutes / 60);
       const minutes = localMinutes % 60;
-      targetDate.setHours(hours, minutes, 0, 0);
       
-      // Convert to UTC
-      const offset = getTimezoneOffsetForDay(timezone, targetDate);
-      const utcTimestamp = targetDate.getTime() - (offset * 60 * 1000);
+      // Create a date at the specified local time on this day
+      const localTime = new Date(year, month, date, hours, minutes, 0, 0);
+      
+      // Convert local time to UTC using date-fns-tz
+      const utcTimestamp = fromZonedTime(localTime, timezone).getTime();
       
       // Only return if this time is in the future
       if (utcTimestamp > currentTime) {
@@ -213,11 +225,3 @@ export function calculateNextRunAtUTC(
   throw new Error('Could not find next run time within 7 days');
 }
 
-/**
- * Get timezone offset in minutes for a specific day (handles DST)
- */
-function getTimezoneOffsetForDay(timezone: string, date: Date): number {
-  const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
-  const tzDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
-  return (tzDate.getTime() - utcDate.getTime()) / (60 * 1000);
-}

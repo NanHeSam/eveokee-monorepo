@@ -168,40 +168,6 @@ export const getSharedMusic = query({
   },
 });
 
-export const deactivateShareLink = mutation({
-  args: {
-    musicId: v.id("music"),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const { userId } = await ensureCurrentUser(ctx);
-
-    const music = await ctx.db.get(args.musicId);
-    if (!music) {
-      throw new Error("Music not found");
-    }
-
-    if (music.userId !== userId) {
-      throw new Error("Not authorized to deactivate this share link");
-    }
-
-    const shared = await ctx.db
-      .query("sharedMusic")
-      .withIndex("by_musicId", (q) => q.eq("musicId", args.musicId))
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .first();
-
-    if (shared) {
-      await ctx.db.patch(shared._id, {
-        isActive: false,
-        updatedAt: Date.now(),
-      });
-    }
-
-    return null;
-  },
-});
-
 /**
  * Records a view for a shared music track.
  * 
@@ -244,57 +210,5 @@ export const recordShareView = mutation({
     });
 
     return null;
-  },
-});
-
-export const getMySharedMusic = query({
-  args: {},
-  returns: v.array(
-    v.object({
-      shareId: v.string(),
-      musicId: v.id("music"),
-      title: v.string(),
-      imageUrl: v.optional(v.string()),
-      viewCount: v.number(),
-      createdAt: v.number(),
-      shareUrl: v.string(),
-    })
-  ),
-  handler: async (ctx) => {
-    const { userId } = await ensureCurrentUser(ctx);
-
-    const shares = await ctx.db
-      .query("sharedMusic")
-      .withIndex("by_userId", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .collect();
-
-    // SHARE_BASE_URL should be set in Convex dashboard (Settings → Environment Variables)
-    // Fallback to eveokee.com is for development only
-    // See packages/backend/ENV_VARS.md for setup instructions
-    const baseUrl = process.env.SHARE_BASE_URL || "https://eveokee.com";
-
-    const results = await Promise.all(
-      shares.map(async (share) => {
-        const music = await ctx.db.get(share.musicId);
-        if (!music || music.deletedAt) {
-          return null;
-        }
-
-        const imageUrl = music.imageUrl ?? music.metadata?.source_image_url;
-
-        return {
-          shareId: share.shareId,
-          musicId: share.musicId,
-          title: music.title ?? "Untitled Track",
-          imageUrl: imageUrl ?? undefined,
-          viewCount: share.viewCount,
-          createdAt: share.createdAt,
-          shareUrl: `${baseUrl}/share/${share.shareId}`,
-        };
-      })
-    );
-
-    return results.filter((r): r is NonNullable<typeof r> => r !== null);
   },
 });

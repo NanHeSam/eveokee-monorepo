@@ -20,6 +20,7 @@ import type * as http from "../http.js";
 import type * as index from "../index.js";
 import type * as music from "../music.js";
 import type * as musicActions from "../musicActions.js";
+import type * as phoneHelpers from "../phoneHelpers.js";
 import type * as revenueCatBilling from "../revenueCatBilling.js";
 import type * as service_vapi_executor from "../service/vapi/executor.js";
 import type * as service_vapi_helpers from "../service/vapi/helpers.js";
@@ -57,6 +58,7 @@ declare const fullApi: ApiFromModules<{
   index: typeof index;
   music: typeof music;
   musicActions: typeof musicActions;
+  phoneHelpers: typeof phoneHelpers;
   revenueCatBilling: typeof revenueCatBilling;
   "service/vapi/executor": typeof service_vapi_executor;
   "service/vapi/helpers": typeof service_vapi_helpers;

@@ -61,11 +61,10 @@ describe('NotFound', () => {
     // Check for helpful links
     expect(screen.getByRole('link', { name: /^dashboard$/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /profile/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /call monitoring/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /blog/i })).toBeInTheDocument();
   });
 
-  it('calls window.history.back when "Go Back" is clicked', async () => {
+  it('calls window.history.back when "Go Back" is clicked', () => {
     const mockBack = vi.fn();
     const originalBack = window.history.back;
     window.history.back = mockBack;
@@ -94,7 +93,6 @@ describe('NotFound', () => {
 
     expect(screen.getByRole('link', { name: /^dashboard$/i })).toHaveAttribute('href', '/dashboard');
     expect(screen.getByRole('link', { name: /profile/i })).toHaveAttribute('href', '/dashboard/profile');
-    expect(screen.getByRole('link', { name: /call monitoring/i })).toHaveAttribute('href', '/dashboard/call-monitoring');
     expect(screen.getByRole('link', { name: /blog/i })).toHaveAttribute('href', '/blog');
   });
 });

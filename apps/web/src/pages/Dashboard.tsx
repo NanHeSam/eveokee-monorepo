@@ -2,7 +2,6 @@ import { useUser } from '@clerk/clerk-react';
 import { 
   LayoutDashboard, 
   Settings, 
-  Activity, 
   Calendar,
   Music,
   Phone,
@@ -62,20 +61,13 @@ export default function Dashboard() {
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
           Quick Actions
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <QuickActionCard
             icon={<Settings className="h-8 w-8" />}
             title="Call Settings"
             description="Configure your daily check-in calls"
             to="/dashboard/call-settings"
             color="text-accent-mint"
-          />
-          <QuickActionCard
-            icon={<Activity className="h-8 w-8" />}
-            title="Call Monitoring"
-            description="View and manage your call history"
-            to="/dashboard/call-monitoring"
-            color="text-blue-500"
           />
           <QuickActionCard
             icon={<LayoutDashboard className="h-8 w-8" />}

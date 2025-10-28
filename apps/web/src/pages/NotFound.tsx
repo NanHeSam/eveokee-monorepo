@@ -60,13 +60,6 @@ export default function NotFound() {
             </Link>
             <span className="text-gray-300 dark:text-gray-600">•</span>
             <Link
-              to="/dashboard/call-monitoring"
-              className="text-accent-mint hover:text-accent-mint/80 dark:text-accent-mint dark:hover:text-accent-mint/80 font-medium transition-colors"
-            >
-              Call Monitoring
-            </Link>
-            <span className="text-gray-300 dark:text-gray-600">•</span>
-            <Link
               to="/blog"
               className="text-accent-mint hover:text-accent-mint/80 dark:text-accent-mint dark:hover:text-accent-mint/80 font-medium transition-colors"
             >

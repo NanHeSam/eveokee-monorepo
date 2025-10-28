@@ -12,7 +12,6 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Blog from "./pages/Blog";
 import Share from "./pages/Share";
 import Dashboard from "./pages/Dashboard";
-import CallMonitoring from "./pages/CallMonitoring";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
@@ -52,7 +51,6 @@ export default function App() {
             {/* Dashboard routes with authenticated navigation */}
             <Route path="/dashboard" element={<DashboardLayout />} errorElement={<RouteErrorBoundary />}>
               <Route index element={<Dashboard />} />
-              <Route path="call-monitoring" element={<CallMonitoring />} />
               <Route path="profile" element={<Profile />} />
             </Route>
             

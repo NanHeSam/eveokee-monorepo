@@ -18,7 +18,6 @@ export const SettingsScreen = () => {
   // Billing hooks
   const { subscriptionStatus } = useSubscription();
   const { showPaywall, paywallReason, setShowPaywall } = useSubscriptionUIStore();
-
   const handleSignOut = useCallback(async () => {
     try {
       await signOut();

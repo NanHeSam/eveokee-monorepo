@@ -9,6 +9,7 @@ import {
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { Id, Doc } from "./_generated/dataModel";
+import { getEffectiveMusicLimit, getPeriodDurationMs, type SubscriptionTier } from "./billing";
 
 export const createUser = internalMutation({
   args: {
@@ -210,34 +211,26 @@ export const getUserProfile = query({
     if (user.activeSubscriptionId) {
       const sub = await ctx.db.get(user.activeSubscriptionId);
       if (sub) {
-        const musicLimit =
-          sub.customMusicLimit ??
-          (sub.subscriptionTier === "free"
-            ? 10
-            : sub.subscriptionTier === "premium"
-              ? Infinity
-              : 10);
+        const musicLimit = getEffectiveMusicLimit(
+          sub.subscriptionTier as SubscriptionTier,
+          sub.customMusicLimit ?? undefined
+        );
         const isActive =
           sub.status === "active" || sub.status === "in_grace";
 
-        const periodDurationMs =
-          sub.subscriptionTier === "premium"
-            ? 100 * 365 * 24 * 60 * 60 * 1000
-            : 30 * 24 * 60 * 60 * 1000;
+        const periodDurationMs = getPeriodDurationMs(
+          sub.subscriptionTier as SubscriptionTier
+        );
 
         subscription = {
           tier: sub.subscriptionTier,
           status: sub.status,
           musicGenerationsUsed: sub.musicGenerationsUsed,
-          musicLimit: isFinite(musicLimit) ? musicLimit : 9007199254740991,
+          musicLimit,
           periodStart: sub.lastResetAt,
           periodEnd: sub.lastResetAt + periodDurationMs,
           isActive,
-          remainingQuota: Math.max(
-            0,
-            (isFinite(musicLimit) ? musicLimit : 9007199254740991) -
-              sub.musicGenerationsUsed
-          ),
+          remainingQuota: Math.max(0, musicLimit - sub.musicGenerationsUsed),
         };
       }
     }

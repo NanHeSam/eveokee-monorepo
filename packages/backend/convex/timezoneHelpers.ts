@@ -3,6 +3,8 @@
  * Handles IANA timezone conversions with DST awareness
  */
 
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
+
 /**
  * Convert a local time (HH:MM) in a specific timezone to UTC timestamp for today
  * @param timeOfDay - Time in HH:MM format (24h)
@@ -15,48 +17,37 @@ export function localTimeToUTC(
   timezone: string,
   referenceDate?: Date
 ): number {
-  const now = referenceDate || new Date();
-  
   const [hours, minutes] = timeOfDay.split(':').map(Number);
   if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
     throw new Error(`Invalid timeOfDay format: ${timeOfDay}. Expected HH:MM in 24h format.`);
   }
 
-  const year = now.getUTCFullYear();
-  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(now.getUTCDate()).padStart(2, '0');
-  const hoursStr = String(hours).padStart(2, '0');
-  const minutesStr = String(minutes).padStart(2, '0');
+  const reference = referenceDate || new Date();
   
-  const dateString = `${year}-${month}-${day}T${hoursStr}:${minutesStr}:00`;
+  // Validate timezone first
+  if (!isValidTimezone(timezone)) {
+    throw new Error(`Invalid timezone: ${timezone}. Must be a valid IANA timezone.`);
+  }
   
   try {
-    const localDate = new Date(dateString);
+    // Get the local date components in the target timezone
+    const localDate = toZonedTime(reference, timezone);
     
-    const offset = getTimezoneOffset(timezone, localDate);
+    // Set the hours and minutes
+    const year = localDate.getFullYear();
+    const month = localDate.getMonth();
+    const day = localDate.getDate();
     
-    const utcTimestamp = localDate.getTime() - (offset * 60 * 1000);
+    // Create a new date with the desired time in the local timezone
+    const localDateTime = new Date(year, month, day, hours, minutes, 0, 0);
     
-    return utcTimestamp;
+    // Convert from local timezone to UTC
+    const utcDate = fromZonedTime(localDateTime, timezone);
+    
+    return utcDate.getTime();
   } catch (error) {
     throw new Error(`Invalid timezone: ${timezone}. Must be a valid IANA timezone.`);
   }
-}
-
-/**
- * Get the timezone offset in minutes for a given timezone at a specific date
- * Positive offset means timezone is ahead of UTC
- * @param timezone - IANA timezone
- * @param date - Date to check offset for (handles DST)
- * @returns Offset in minutes
- */
-function getTimezoneOffset(timezone: string, date: Date): number {
-  const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
-  const tzDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
-  
-  const offset = (tzDate.getTime() - utcDate.getTime()) / (60 * 1000);
-  
-  return offset;
 }
 
 /**
@@ -69,18 +60,7 @@ export function getLocalDate(timezone: string, referenceDate?: Date): Date {
   const now = referenceDate || new Date();
   
   try {
-    const localDateString = now.toLocaleString('en-US', { 
-      timeZone: timezone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    });
-    
-    return new Date(localDateString);
+    return toZonedTime(now, timezone);
   } catch (error) {
     throw new Error(`Invalid timezone: ${timezone}. Must be a valid IANA timezone.`);
   }
@@ -114,16 +94,6 @@ export function getUTCDayBounds(
 }
 
 /**
- * Validate E.164 phone number format
- * @param phone - Phone number to validate
- * @returns true if valid E.164 format
- */
-export function isValidE164(phone: string): boolean {
-  const e164Regex = /^\+[1-9]\d{1,14}$/;
-  return e164Regex.test(phone);
-}
-
-/**
  * Validate HH:MM time format
  * @param time - Time string to validate
  * @returns true if valid HH:MM format
@@ -139,8 +109,27 @@ export function isValidTimeOfDay(time: string): boolean {
  * @returns true if valid IANA timezone
  */
 export function isValidTimezone(timezone: string): boolean {
+  // Special case: UTC is valid
+  if (timezone === 'UTC' || timezone === 'Etc/UTC') {
+    return true;
+  }
+  
+  // Reject common non-IANA abbreviation formats (but not UTC)
+  if (/^(EST|EDT|CST|CDT|MST|MDT|PST|PDT)$/i.test(timezone)) {
+    return false;
+  }
+  
   try {
+    // Use Intl to validate the timezone
     Intl.DateTimeFormat(undefined, { timeZone: timezone });
+    
+    // Additional check: ensure it's in IANA format (Continent/City or Etc/*)
+    // Examples: America/New_York, Europe/London, Asia/Tokyo, Etc/UTC
+    const ianaPattern = /^([A-Za-z_]+\/[A-Za-z_]+|Etc\/[A-Za-z_]+)$/;
+    if (!ianaPattern.test(timezone)) {
+      return false;
+    }
+    
     return true;
   } catch (error) {
     return false;

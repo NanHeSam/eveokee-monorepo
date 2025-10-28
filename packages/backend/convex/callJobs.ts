@@ -43,19 +43,36 @@ export const getCallJobs = query({
 
 /**
  * Get call job statistics for current user
+ * Only analyzes the most recent jobs to avoid OOM on users with many jobs
  */
 export const getCallJobStats = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    limit: v.optional(v.number()), // Limit to most recent N jobs (default: 500)
+  },
+  returns: v.object({
+    total: v.number(),
+    queued: v.number(),
+    scheduled: v.number(),
+    started: v.number(),
+    completed: v.number(),
+    failed: v.number(),
+    canceled: v.number(),
+    lastError: v.optional(v.string()),
+    lastErrorAt: v.optional(v.number()),
+  }),
+  handler: async (ctx, args) => {
     const user = await getCurrentUserOrThrow(ctx);
     
-    const allJobs = await ctx.db
+    // Process only the most recent jobs to avoid OOM
+    // Use index on userId and updatedAt to get most recently updated jobs first
+    const recentJobs = await ctx.db
       .query("callJobs")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect();
+      .withIndex("by_userId_and_updatedAt", (q) => q.eq("userId", user._id))
+      .order("desc") // Order by updatedAt descending to get most recent
+      .take(args.limit || 500);
     
     const stats = {
-      total: allJobs.length,
+      total: recentJobs.length,
       queued: 0,
       scheduled: 0,
       started: 0,
@@ -64,11 +81,11 @@ export const getCallJobStats = query({
       canceled: 0,
     };
     
-    for (const job of allJobs) {
+    for (const job of recentJobs) {
       stats[job.status]++;
     }
     
-    const lastFailedJob = allJobs
+    const lastFailedJob = recentJobs
       .filter(j => j.status === "failed" && j.errorMessage)
       .sort((a, b) => b.updatedAt - a.updatedAt)[0];
     
@@ -148,6 +165,11 @@ export const updateCallJobStatus = internalMutation({
     errorMessage: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const job = await ctx.db.get(args.jobId);
+    if (!job) {
+      throw new Error("Call job not found");
+    }
+    
     const now = Date.now();
     
     const updateData: Partial<Doc<"callJobs">> = {
@@ -194,7 +216,7 @@ export const incrementCallJobAttempts = internalMutation({
 /**
  * Get call job by VAPI call ID (internal - used by webhooks)
  */
-export const getCallJobByVapiId = internalMutation({
+export const getCallJobByVapiId = internalQuery({
   args: {
     vapiCallId: v.string(),
   },
@@ -209,29 +231,6 @@ export const getCallJobByVapiId = internalMutation({
 });
 
 /**
- * Check if a call job exists for a user on a specific day (internal)
- */
-export const hasCallJobForDay = internalMutation({
-  args: {
-    userId: v.id("users"),
-    startOfDayUTC: v.number(),
-    endOfDayUTC: v.number(),
-  },
-  handler: async (ctx, args) => {
-    const existingJob = await ctx.db
-      .query("callJobs")
-      .withIndex("by_userId_and_scheduledForUTC", (q) => 
-        q.eq("userId", args.userId)
-          .gte("scheduledForUTC", args.startOfDayUTC)
-          .lte("scheduledForUTC", args.endOfDayUTC)
-      )
-      .first();
-    
-    return existingJob !== null;
-  },
-});
-
-/**
  * Get call job by ID (internal - used by VAPI integration)
  */
 export const getCallJobById = internalQuery({
@@ -241,39 +240,6 @@ export const getCallJobById = internalQuery({
   handler: async (ctx, args) => {
     const job = await ctx.db.get(args.jobId);
     return job;
-  },
-});
-
-/**
- * Cancel a call job (user-facing)
- */
-export const cancelCallJob = mutation({
-  args: {
-    jobId: v.id("callJobs"),
-  },
-  handler: async (ctx, args) => {
-    const user = await getCurrentUserOrThrow(ctx);
-    
-    const job = await ctx.db.get(args.jobId);
-    if (!job) {
-      throw new Error("Call job not found");
-    }
-    
-    if (job.userId !== user._id) {
-      throw new Error("Unauthorized: This call job does not belong to you");
-    }
-    
-    if (job.status === "completed" || job.status === "failed" || job.status === "canceled") {
-      throw new Error(`Cannot cancel job with status: ${job.status}`);
-    }
-    
-    await ctx.db.patch(args.jobId, {
-      status: "canceled",
-      updatedAt: Date.now(),
-    });
-    
-    
-    return { success: true };
   },
 });
 
@@ -294,37 +260,6 @@ export const getCallSessions = query({
       .take(args.limit || 50);
     
     return sessions;
-  },
-});
-
-/**
- * Create a call session (internal - used by webhooks)
- */
-export const createCallSession = internalMutation({
-  args: {
-    userId: v.id("users"),
-    callJobId: v.id("callJobs"),
-    vapiCallId: v.string(),
-    startedAt: v.number(),
-    endedAt: v.optional(v.number()),
-    durationSec: v.optional(v.number()),
-    disposition: v.optional(v.string()),
-    metadata: v.optional(v.any()),
-  },
-  handler: async (ctx, args) => {
-    
-    const sessionId = await ctx.db.insert("callSessions", {
-      userId: args.userId,
-      callJobId: args.callJobId,
-      vapiCallId: args.vapiCallId,
-      startedAt: args.startedAt,
-      endedAt: args.endedAt,
-      durationSec: args.durationSec,
-      disposition: args.disposition,
-      metadata: args.metadata,
-    });
-    
-    return sessionId;
   },
 });
 

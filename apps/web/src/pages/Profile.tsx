@@ -209,9 +209,9 @@ export default function Profile() {
                     <div>
                       <label className="text-sm font-medium text-gray-600">Music Generations</label>
                       <p className="text-gray-900">
-                        {profile.subscription.musicGenerationsUsed} / {profile.subscription.musicLimit === 9007199254740991 ? 'Unlimited' : profile.subscription.musicLimit}
+                        {profile.subscription.musicGenerationsUsed} / {profile.subscription.musicLimit}
                         <span className="text-sm text-gray-500 ml-2">
-                          ({profile.subscription.remainingQuota === 9007199254740991 ? 'Unlimited' : profile.subscription.remainingQuota} remaining)
+                          ({profile.subscription.remainingQuota} remaining)
                         </span>
                       </p>
                     </div>
@@ -287,10 +287,11 @@ export default function Profile() {
                 ) : (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="phoneE164" className="block text-sm font-medium text-gray-700 mb-1">
                         Phone Number (E.164 format) *
                       </label>
                       <input
+                        id="phoneE164"
                         type="tel"
                         value={phoneE164}
                         onChange={(e) => setPhoneE164(e.target.value)}
@@ -301,10 +302,11 @@ export default function Profile() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="timezone" className="block text-sm font-medium text-gray-700 mb-1">
                         Timezone *
                       </label>
                       <select
+                        id="timezone"
                         value={timezone}
                         onChange={(e) => setTimezone(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -322,10 +324,11 @@ export default function Profile() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="timeOfDay" className="block text-sm font-medium text-gray-700 mb-1">
                         Time of Day (24h format) *
                       </label>
                       <input
+                        id="timeOfDay"
                         type="time"
                         value={timeOfDay}
                         onChange={(e) => setTimeOfDay(e.target.value)}
@@ -334,10 +337,11 @@ export default function Profile() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="cadence" className="block text-sm font-medium text-gray-700 mb-1">
                         Cadence *
                       </label>
                       <select
+                        id="cadence"
                         value={cadence}
                         onChange={(e) => setCadence(e.target.value as 'daily' | 'weekdays' | 'weekends' | 'custom')}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"

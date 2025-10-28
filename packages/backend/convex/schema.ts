@@ -182,6 +182,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_userId", ["userId"])
+    .index("by_userId_and_updatedAt", ["userId", "updatedAt"])
     .index("by_callSettingsId", ["callSettingsId"])
     .index("by_callSettingsId_and_scheduledForUTC", ["callSettingsId", "scheduledForUTC"])
     .index("by_userId_and_scheduledForUTC", ["userId", "scheduledForUTC"])

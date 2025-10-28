@@ -17,18 +17,24 @@ const DEFAULT_VOICE_ID = "d46abd1d-2d02-43e8-819f-51fb652c1c61";
 export function formatLocalTime(timestamp: number, timezone: string): string {
   const date = new Date(timestamp);
   
-  // Use Intl.DateTimeFormat for proper timezone-aware formatting
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone,
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
-  
-  return formatter.format(date);
+  try {
+    // Use Intl.DateTimeFormat for proper timezone-aware formatting
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+    
+    return formatter.format(date);
+  } catch (error) {
+    // Fallback to UTC if timezone is invalid
+    console.error(`Invalid timezone: ${timezone}`, error);
+    throw new Error(`Invalid timezone: ${timezone}`);
+  }
 }
 
 /**
@@ -40,11 +46,20 @@ export function formatLocalTime(timestamp: number, timezone: string): string {
 export function getDayOfWeekLabel(timestamp: number, timezone: string): string {
   const date = new Date(timestamp);
   
-  // Get the local day name using toLocaleString with 'long' format
-  const dayName = date.toLocaleString('en-US', {
-    timeZone: timezone,
-    weekday: 'long'
-  });
+  let dayName: string;
+  try {
+    // Get the local day name using toLocaleString with 'long' format
+    dayName = date.toLocaleString('en-US', {
+      timeZone: timezone,
+      weekday: 'long'
+    });
+  } catch (error) {
+    // Fallback to timezone-agnostic approach using UTC day
+    console.error(`Invalid timezone or error in toLocaleString: ${timezone}`, error);
+    const utcDay = date.getUTCDay();
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    dayName = days[utcDay];
+  }
   
   // Check if it's a weekend
   if (dayName === 'Saturday' || dayName === 'Sunday') {
@@ -76,12 +91,14 @@ export function buildSystemPrompt(
  * @param user - User document
  * @param callSettings - Call settings document
  * @param scheduledForUTC - UTC timestamp when call is scheduled
+ * @param webhookUrl - Webhook URL for call events
  * @returns VAPI assistant object
  */
 export function buildVapiAssistant(
   user: Doc<"users">,
   callSettings: Doc<"callSettings">,
-  scheduledForUTC: number
+  scheduledForUTC: number,
+  webhookUrl: string
 ): object {
   // Format local time and day
   const localTime = formatLocalTime(scheduledForUTC, callSettings.timezone);
@@ -121,7 +138,7 @@ export function buildVapiAssistant(
     voicemailMessage: "Please call back when you're available.",
     endCallMessage: "Goodbye.",
     server: {
-      url: process.env.VAPI_WEBHOOK_URL,
+      url: webhookUrl,
     },
   };
 }

@@ -94,21 +94,23 @@ export function SubscriptionStatus({
         )}
       </View>
 
-      <View className="mb-2">
-        <View className="flex-row justify-between items-center mb-1">
-          <Text className="text-sm text-gray-600">Music Generations</Text>
-          <Text className="text-sm font-medium">{usageText}</Text>
+      {tier === 'free' && (
+        <View className="mb-2">
+          <View className="flex-row justify-between items-center mb-1">
+            <Text className="text-sm text-gray-600">Music Generations</Text>
+            <Text className="text-sm font-medium">{usageText}</Text>
+          </View>
+          <View className="bg-gray-200 rounded-full h-2">
+            <View
+              className="bg-blue-500 h-2 rounded-full"
+              style={{ width: `${usagePercentage}%` }}
+            />
+          </View>
+          <Text className="text-xs text-gray-500 mt-1">
+            {remainingText}
+          </Text>
         </View>
-        <View className="bg-gray-200 rounded-full h-2">
-          <View 
-            className="bg-blue-500 h-2 rounded-full"
-            style={{ width: `${usagePercentage}%` }}
-          />
-        </View>
-        <Text className="text-xs text-gray-500 mt-1">
-          {remainingText}
-        </Text>
-      </View>
+      )}
 
       <Text className="text-xs text-gray-500 mt-2">
         {new Date(periodEnd).toLocaleDateString()} • {isActive ? 'Active' : 'Expired'}
