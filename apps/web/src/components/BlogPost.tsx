@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { BlogPost as BlogPostType } from '../lib/blog-service';
-import { parseMusicShortcodes, processMusicComponents } from './MarkdownComponents';
+import { parseMusicShortcodes, processMusicComponents } from '../utils/markdownUtils';
 
 interface BlogPostProps {
   post: BlogPostType;

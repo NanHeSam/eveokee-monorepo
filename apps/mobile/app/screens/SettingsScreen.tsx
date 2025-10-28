@@ -1,30 +1,23 @@
-import { Image, Text, TouchableOpacity, View, ScrollView, Alert } from 'react-native';
+import { Image, Text, TouchableOpacity, View, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 
 import { useAuth, useUser } from '@clerk/clerk-expo';
-import { useMutation } from 'convex/react';
 
 import { useThemeColors } from '../theme/useThemeColors';
 import { useSubscription, useSubscriptionUIStore } from '../store/useSubscriptionStore';
-import { SubscriptionStatus } from '../components/billing/SubscriptionStatus';
 import { PaywallModal } from '../components/billing/PaywallModal';
-import { api } from '@backend/convex';
+import { UsageProgress } from '../components/billing/UsageProgress';
 
 export const SettingsScreen = () => {
   const { user } = useUser();
   const { signOut } = useAuth();
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
-  const [isProcessing, setIsProcessing] = useState(false);
-  
+
   // Billing hooks
-  const { subscriptionStatus, ensureCurrentUser } = useSubscription();
+  const { subscriptionStatus } = useSubscription();
   const { showPaywall, paywallReason, setShowPaywall } = useSubscriptionUIStore();
-  
-  // Test mutations for subscription simulation
-  const testSubscriptionSuccess = useMutation(api.billing.testSubscriptionSuccess);
-  const testSubscriptionFailure = useMutation(api.billing.testSubscriptionFailure);
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -33,34 +26,6 @@ export const SettingsScreen = () => {
       console.error('Sign out failed', err);
     }
   }, [signOut]);
-
-  const handleTestSubscriptionSuccess = useCallback(async () => {
-    setIsProcessing(true);
-    try {
-      const { userId } = await ensureCurrentUser();
-      await testSubscriptionSuccess({ userId, tier: 'monthly' });
-      Alert.alert('Success!', 'Test subscription activated successfully');
-    } catch (error) {
-      console.error('Test subscription success failed:', error);
-      Alert.alert('Error', 'Failed to activate test subscription');
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [ensureCurrentUser, testSubscriptionSuccess]);
-
-  const handleTestSubscriptionFailure = useCallback(async () => {
-    setIsProcessing(true);
-    try {
-      const { userId } = await ensureCurrentUser();
-      await testSubscriptionFailure({ userId });
-      Alert.alert('Test Complete', 'Subscription failure scenario simulated');
-    } catch (error) {
-      console.error('Test subscription failure failed:', error);
-      Alert.alert('Error', 'Failed to simulate subscription failure');
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [ensureCurrentUser, testSubscriptionFailure]);
 
   const displayName = user?.fullName || user?.primaryEmailAddress?.emailAddress || 'Friend';
   const email = user?.primaryEmailAddress?.emailAddress;
@@ -101,53 +66,83 @@ export const SettingsScreen = () => {
           {/* Subscription Status */}
           <View className="mt-6">
             <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
-              Subscription Type:{' '}
-              <Text style={{ color: colors.textPrimary, fontWeight: 'bold' }}>
-                {subscriptionStatus?.tier
-                  ? subscriptionStatus.tier.charAt(0).toUpperCase() + subscriptionStatus.tier.slice(1)
-                  : '—'}
-              </Text>
+              Subscription
             </Text>
-            <SubscriptionStatus 
-              onPress={() => setShowPaywall(true, 'settings')}
-              showUpgradeButton={true}
-            />
+            <View className="rounded-3xl p-5" style={{ backgroundColor: colors.surface }}>
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="text-sm" style={{ color: colors.textSecondary }}>
+                  Plan
+                </Text>
+                <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
+                  {subscriptionStatus?.tier === 'free' && 'Free'}
+                  {subscriptionStatus?.tier === 'monthly' && 'Monthly Pro'}
+                  {subscriptionStatus?.tier === 'yearly' && 'Yearly Pro'}
+                  {!subscriptionStatus?.tier && '—'}
+                </Text>
+              </View>
+
+              {(() => {
+                if (!subscriptionStatus?.periodEnd) return null;
+                
+                const date = new Date(subscriptionStatus.periodEnd);
+                const isValidDate = !isNaN(date.getTime());
+                
+                return (
+                  <View className="flex-row items-center justify-between mb-3">
+                    <Text className="text-sm" style={{ color: colors.textSecondary }}>
+                      {subscriptionStatus?.tier === 'free' ? 'Period Ends' : 'Renews On'}
+                    </Text>
+                    <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
+                      {isValidDate
+                        ? date.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                          })
+                        : '—'}
+                    </Text>
+                  </View>
+                );
+              })()}
+
+              <View className="flex-row items-center justify-between">
+                <Text className="text-sm" style={{ color: colors.textSecondary }}>
+                  Status
+                </Text>
+                <Text
+                  className="text-base font-semibold"
+                  style={{ color: subscriptionStatus?.isActive ? colors.accentMint : colors.accentApricot }}
+                >
+                  {subscriptionStatus?.isActive ? 'Active' : 'Expired'}
+                </Text>
+              </View>
+
+              {subscriptionStatus?.tier === 'free' && (
+                <TouchableOpacity
+                  className="mt-4 items-center rounded-[20px] py-3"
+                  style={{ backgroundColor: colors.accentMint }}
+                  activeOpacity={0.85}
+                  onPress={() => setShowPaywall(true, 'settings')}
+                >
+                  <Text className="text-sm font-semibold" style={{ color: colors.background }}>
+                    Upgrade to Pro
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
-          {/* Test Buttons (only show for free tier) */}
+          {/* Usage Information - Only show for free tier */}
           {subscriptionStatus?.tier === 'free' && (
             <View className="mt-6">
               <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
-                Test Subscription Flow
+              Free Tier Usage
               </Text>
-              <Text className="text-sm mb-4" style={{ color: colors.textSecondary }}>
-                Use these buttons to test the subscription flow without payment processing
-              </Text>
-              
-              <View className="gap-3">
-                <TouchableOpacity
-                  className="items-center rounded-[26px] py-4"
-                  style={{ backgroundColor: colors.accentMint, opacity: isProcessing ? 0.7 : 1 }}
-                  activeOpacity={0.85}
-                  onPress={handleTestSubscriptionSuccess}
-                  disabled={isProcessing}
-                >
-                  <Text className="text-base font-semibold" style={{ color: colors.background }}>
-                    {isProcessing ? 'Processing...' : 'Test: Activate Monthly Pro'}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  className="items-center rounded-[26px] py-4"
-                  style={{ backgroundColor: colors.accentApricot, opacity: isProcessing ? 0.7 : 1 }}
-                  activeOpacity={0.85}
-                  onPress={handleTestSubscriptionFailure}
-                  disabled={isProcessing}
-                >
-                  <Text className="text-base font-semibold" style={{ color: colors.background }}>
-                    {isProcessing ? 'Processing...' : 'Test: Simulate Payment Failure'}
-                  </Text>
-                </TouchableOpacity>
+              <View className="rounded-3xl p-5" style={{ backgroundColor: colors.surface }}>
+                <UsageProgress
+                  onUpgradePress={() => setShowPaywall(true, 'settings')}
+                  showUpgradeButton={true}
+                />
               </View>
             </View>
           )}

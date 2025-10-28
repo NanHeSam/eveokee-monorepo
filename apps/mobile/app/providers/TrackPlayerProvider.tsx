@@ -69,7 +69,7 @@ export const TrackPlayerProvider = ({ children }: PropsWithChildren) => {
               if (queue.length > 0) {
                 await TrackPlayer.reset();
               }
-            } catch (_resetError) {
+            } catch {
               // Ignore reset errors on reload
             }
           } else {

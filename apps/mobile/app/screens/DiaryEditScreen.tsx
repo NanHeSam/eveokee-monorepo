@@ -13,8 +13,9 @@ import { DiaryEditNavigationProp, DiaryEditRouteProp } from '../navigation/types
 import { api } from '@backend/convex';
 import { useTrackPlayerStore } from '../store/useTrackPlayerStore';
 import { PaywallModal } from '../components/billing/PaywallModal';
+import { useSubscriptionUIStore, useSubscription } from '../store/useSubscriptionStore';
+import { useMusicGenerationStatus } from '../store/useMusicGenerationStatus';
 import { UsageProgress } from '../components/billing/UsageProgress';
-import { useSubscriptionUIStore } from '../store/useSubscriptionStore';
 
 export const DiaryEditScreen = () => {
   const colors = useThemeColors();
@@ -32,6 +33,8 @@ export const DiaryEditScreen = () => {
   
   // Billing integration
   const { showPaywall, paywallReason, setShowPaywall } = useSubscriptionUIStore();
+  const { subscriptionStatus } = useSubscription();
+  const addPendingGeneration = useMusicGenerationStatus((state) => state.addPendingGeneration);
 
   const diaryDocs = useQuery(api.diaries.listDiaries);
   const currentDiary = useMemo(
@@ -69,7 +72,7 @@ export const DiaryEditScreen = () => {
         await createDiary({ content: trimmed });
       }
       navigation.goBack();
-    } catch (error) {
+    } catch {
       Alert.alert('Unable to save entry', 'Please try again.');
     } finally {
       setIsSaving(false);
@@ -94,7 +97,7 @@ export const DiaryEditScreen = () => {
         const result = await createDiary({ content: trimmed });
         diaryId = result._id;
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Unable to save entry', 'Please try again.');
       setIsSaving(false);
       return;
@@ -133,10 +136,13 @@ export const DiaryEditScreen = () => {
         }
       } else {
         // Success - navigate back and go to playlist
+        if (diaryId) {
+          addPendingGeneration(diaryId);
+        }
         navigation.goBack();
         navigation.getParent()?.navigate('Playlist' as never);
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Unable to start music generation', 'Please try again.');
     } finally {
       setIsGenerating(false);
@@ -286,13 +292,15 @@ export const DiaryEditScreen = () => {
             />
           </View>
 
-          {/* Usage Progress */}
-          <View className="mt-4">
-            <UsageProgress 
-              onUpgradePress={() => setShowPaywall(true, 'limit_reached')}
-              showUpgradeButton={true}
-            />
-          </View>
+          {/* Usage Progress - Only show for free tier */}
+          {subscriptionStatus?.tier === 'free' && (
+            <View className="mt-4">
+              <UsageProgress
+                onUpgradePress={() => setShowPaywall(true, 'limit_reached')}
+                showUpgradeButton={true}
+              />
+            </View>
+          )}
         </ScrollView>
 
         <View
@@ -334,4 +342,3 @@ export const DiaryEditScreen = () => {
     </SafeAreaView>
   );
 };
-

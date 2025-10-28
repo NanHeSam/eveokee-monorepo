@@ -4,9 +4,23 @@ import type {
   LOG_LEVEL as LogLevelEnum,
   PurchasesError,
   PurchasesOffering,
+  PurchasesOfferings,
   PurchasesPackage,
+  MakePurchaseResult,
   PURCHASES_ERROR_CODE as PurchaseErrorCode,
 } from 'react-native-purchases';
+import { Platform } from 'react-native';
+import Purchases, { LOG_LEVEL, PURCHASES_ERROR_CODE } from 'react-native-purchases';
+import {
+  configureRevenueCat,
+  getCustomerInfo,
+  getOfferings,
+  purchasePackage,
+  restorePurchases,
+  checkSubscriptionStatus,
+  identifyUser,
+  logoutUser,
+} from '../revenueCat';
 
 jest.mock('react-native', () => ({
   Platform: { OS: 'ios' },
@@ -44,43 +58,8 @@ jest.mock('react-native-purchases', () => {
   };
 });
 
-type MockPurchases = {
-  setLogLevel: jest.Mock;
-  configure: jest.Mock;
-  getCustomerInfo: jest.Mock;
-  getOfferings: jest.Mock;
-  purchasePackage: jest.Mock;
-  restorePurchases: jest.Mock;
-  logIn: jest.Mock;
-  logOut: jest.Mock;
-};
-
-const { Platform } = require('react-native') as { Platform: { OS: string } };
-const purchasesModule = require('react-native-purchases') as {
-  default: MockPurchases;
-  LOG_LEVEL: { DEBUG: LogLevelEnum; INFO: LogLevelEnum };
-  PURCHASES_ERROR_CODE: {
-    UNKNOWN_ERROR: PurchaseErrorCode;
-    PURCHASE_CANCELLED_ERROR: PurchaseErrorCode;
-    STORE_PROBLEM_ERROR: PurchaseErrorCode;
-    CUSTOMER_INFO_ERROR: PurchaseErrorCode;
-  };
-};
-const mockPurchases: MockPurchases = purchasesModule.default;
-const { LOG_LEVEL, PURCHASES_ERROR_CODE } = purchasesModule;
-
+const mockPurchases = Purchases as jest.Mocked<typeof Purchases>;
 const globalWithDev = globalThis as typeof globalThis & { __DEV__?: boolean };
-
-const {
-  configureRevenueCat,
-  getCustomerInfo,
-  getOfferings,
-  purchasePackage,
-  restorePurchases,
-  checkSubscriptionStatus,
-  identifyUser,
-  logoutUser,
-} = require('../revenueCat') as typeof import('../revenueCat');
 
 describe('revenueCat utils', () => {
   beforeEach(() => {
@@ -187,7 +166,8 @@ describe('revenueCat utils', () => {
       const currentOffering = { identifier: 'premium' } as unknown as PurchasesOffering;
       mockPurchases.getOfferings.mockResolvedValueOnce({
         current: currentOffering,
-      });
+        all: {},
+      } as PurchasesOfferings);
 
       const offering = await getOfferings();
 
@@ -196,7 +176,10 @@ describe('revenueCat utils', () => {
     });
 
     it('returns null when no current offering exists', async () => {
-      mockPurchases.getOfferings.mockResolvedValueOnce({ current: null });
+      mockPurchases.getOfferings.mockResolvedValueOnce({
+        current: null,
+        all: {},
+      } as PurchasesOfferings);
 
       await expect(getOfferings()).resolves.toBeNull();
     });
@@ -218,7 +201,11 @@ describe('revenueCat utils', () => {
     const customerInfo = { id: 'user-1' } as unknown as CustomerInfo;
 
     it('returns success when purchase completes', async () => {
-      mockPurchases.purchasePackage.mockResolvedValueOnce({ customerInfo });
+      mockPurchases.purchasePackage.mockResolvedValueOnce({
+        customerInfo,
+        productIdentifier: 'test-product',
+        transaction: null,
+      } as MakePurchaseResult);
 
       const result = await purchasePackage(packageMock);
 
