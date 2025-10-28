@@ -74,6 +74,7 @@ export const SignInScreen = () => {
   const [password, setPassword] = useState('');
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
 
   const { ensureConvexUser } = useAuthSetup();
 
@@ -172,6 +173,39 @@ export const SignInScreen = () => {
     }
   }, [finalizeSession, setActive, startSSOFlow]);
 
+  const handleAppleSignIn = useCallback(async () => {
+    try {
+      setIsAppleLoading(true);
+      const { createdSessionId, setActive: setActiveFromSSO, signIn, signUp } = await startSSOFlow({ strategy: 'oauth_apple', redirectUrl });
+
+      const applySession = setActiveFromSSO ?? setActive;
+
+      if (createdSessionId) {
+        await finalizeSession(applySession, createdSessionId);
+        return;
+      }
+
+      if (signIn?.status === 'complete') {
+        await finalizeSession(applySession, signIn.createdSessionId);
+        return;
+      }
+
+      if (signUp?.status === 'complete') {
+        await finalizeSession(applySession, signUp.createdSessionId);
+        return;
+      }
+    } catch (err) {
+      console.error('Apple sign in failed', err);
+      if (`${err}`.includes("already signed in")) {
+        Alert.alert('Already signed in', 'You are already authenticated.');
+      } else {
+        Alert.alert('Sign in failed', 'Please try again.');
+      }
+    } finally {
+      setIsAppleLoading(false);
+    }
+  }, [finalizeSession, redirectUrl, setActive, startSSOFlow]);
+
   const handleSignUp = useCallback(() => {
     navigation.navigate('SignUp');
   }, [navigation]);
@@ -252,6 +286,22 @@ export const SignInScreen = () => {
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.googleButtonText}>Continue with Google</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.appleButton, isAppleLoading && styles.appleButtonDisabled]}
+            onPress={handleAppleSignIn}
+            activeOpacity={0.9}
+            disabled={isAppleLoading}
+          >
+            <View style={styles.appleIconWrapper}>
+              <Text style={styles.appleIcon}></Text>
+            </View>
+            {isAppleLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.appleButtonText}>Continue with Apple</Text>
             )}
           </TouchableOpacity>
 
@@ -378,6 +428,38 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   googleButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  appleButton: {
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#000',
+    borderWidth: 0,
+    borderColor: 'transparent',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  appleButtonDisabled: {
+    opacity: 0.75,
+  },
+  appleIconWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  appleIcon: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  appleButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
