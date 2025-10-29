@@ -17,12 +17,9 @@ export default defineSchema({
   subscriptionStatuses: defineTable({
     userId: v.id("users"),
     platform: v.optional(v.union(
-      v.literal("app_store"),      // Apple App Store
-      v.literal("play_store"),      // Google Play Store
-      v.literal("stripe"),          // Stripe
-      v.literal("amazon"),          // Amazon Appstore
-      v.literal("mac_app_store"),   // Mac App Store
-      v.literal("promotional"),     // Promotional/free
+      v.literal("app_store"),      // Apple App Store (iOS)
+      v.literal("play_store"),      // Google Play Store (Android)
+      v.literal("stripe"),          // Stripe (Web)
       v.literal("clerk")            // Clerk-managed (free users)
     )),
     productId: v.string(),
@@ -229,15 +226,10 @@ export default defineSchema({
     ),
     productId: v.string(),
     platform: v.optional(v.union(
-      v.literal("app_store"),
-      v.literal("play_store"),
-      v.literal("stripe"),
-      v.literal("amazon"),
-      v.literal("mac_app_store"),
-      v.literal("promotional"),
-      v.literal("roku"),
-      v.literal("web"),
-      v.literal("clerk")
+      v.literal("app_store"),      // Apple App Store (iOS)
+      v.literal("play_store"),      // Google Play Store (Android)
+      v.literal("stripe"),          // Stripe (Web)
+      v.literal("clerk")            // Clerk-managed (free users)
     )),
     subscriptionTier: v.string(),
     status: v.union(
