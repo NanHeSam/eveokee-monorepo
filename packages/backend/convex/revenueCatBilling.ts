@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { Doc } from "./_generated/dataModel";
 
 const REVENUECAT_PRODUCT_TO_TIER: Record<string, string> = {
   "eveokee_premium_weekly": "monthly",
@@ -382,10 +383,16 @@ export const reconcileStaleSubscriptions = internalMutation({
         }
 
         // Get user and subscription
-        const user = await ctx.db.get(subscription.userId);
+        const user: Doc<"users"> | null = await ctx.db
+          .query("users")
+          .filter((q) => q.eq(q.field("_id"), subscription.userId))
+          .first();
         if (!user || !user.activeSubscriptionId) continue;
 
-        const backendSubscription = await ctx.db.get(user.activeSubscriptionId);
+        const backendSubscription: Doc<"subscriptionStatuses"> | null = await ctx.db
+          .query("subscriptionStatuses")
+          .filter((q) => q.eq(q.field("_id"), user.activeSubscriptionId))
+          .first();
         if (!backendSubscription) continue;
 
         // Check RC entitlements
