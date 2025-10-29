@@ -3,6 +3,7 @@ import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { MUSIC_GENERATION_CALLBACK_PATH, CLERK_WEBHOOK_PATH, REVENUECAT_WEBHOOK_PATH, VAPI_WEBHOOK_PATH } from "./constant";
 import { verifyWebhook } from "@clerk/backend/webhooks";
+import type { Id } from "./_generated/dataModel";
 
 type RawSunoCallback = {
   code?: unknown;
@@ -19,15 +20,26 @@ const jsonHeaders = {
   "Content-Type": "application/json",
 };
 
-// Map RevenueCat store names to our platform enum
-const getPlatformFromStore = (store: string | undefined): string | undefined => {
-  const platformMap: Record<string, string> = {
+/**
+ * Type guard to validate if a string is a valid Convex ID format.
+ * Convex IDs are base64-encoded strings with a specific pattern.
+ */
+function isValidConvexId(id: string): id is Id<"users"> {
+  // Convex IDs are non-empty strings with alphanumeric characters, underscores, and hyphens
+  // They typically follow a pattern but we'll do a basic validation
+  return typeof id === "string" && id.length > 0 && /^[a-zA-Z0-9_-]+$/.test(id);
+}
+
+/**
+ * Map RevenueCat store names to our platform enum.
+ * Only supports: Apple App Store, Google Play Store, and Stripe (web).
+ * Returns undefined for unsupported platforms.
+ */
+const getPlatformFromStore = (store: string | undefined): "app_store" | "play_store" | "stripe" | undefined => {
+  const platformMap: Record<string, "app_store" | "play_store" | "stripe"> = {
     "APP_STORE": "app_store",
     "PLAY_STORE": "play_store",
     "STRIPE": "stripe",
-    "AMAZON": "amazon",
-    "MAC_APP_STORE": "mac_app_store",
-    "PROMOTIONAL": "promotional",
   };
   return store ? platformMap[store] : undefined;
 };
@@ -443,6 +455,46 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
     return new Response("Method Not Allowed", { status: 405 });
   }
 
+  // 2. Security verification
+  // 2.1 Verify webhook authorization header (Bearer token)
+  const authHeader = req.headers.get("Authorization");
+  const expectedToken = process.env.REVENUECAT_WEBHOOK_SECRET;
+
+  if (!expectedToken) {
+    console.error("REVENUECAT_WEBHOOK_SECRET not configured in environment variables");
+    return new Response(
+      JSON.stringify({ error: "Server configuration error" }),
+      {
+        status: 500,
+        headers: jsonHeaders,
+      },
+    );
+  }
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    console.error("RevenueCat webhook missing or invalid Authorization header");
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      {
+        status: 401,
+        headers: jsonHeaders,
+      },
+    );
+  }
+
+  const receivedToken = authHeader.substring(7); // Remove "Bearer " prefix
+  if (receivedToken !== expectedToken) {
+    console.error("RevenueCat webhook authorization token mismatch");
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      {
+        status: 401,
+        headers: jsonHeaders,
+      },
+    );
+  }
+
+  // 3. Parse webhook payload
   let event: any;
   try {
     event = await req.json();
@@ -457,14 +509,14 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
     );
   }
 
+  // 4. Extract and validate webhook data
   const eventType = event.event?.type;
-  
-  // Handle all RC webhook event types
   const appUserId = event.event?.app_user_id;
   const productId = event.event?.product_id;
-  
+
+  // 4.1 Validate required fields
   if (!appUserId || !productId) {
-    console.warn("RevenueCat webhook missing required fields", event);
+    console.warn("RevenueCat webhook missing required fields", { eventType, appUserId, productId });
     return new Response(
       JSON.stringify({ status: "ignored", reason: "Missing required fields" }),
       {
@@ -474,18 +526,33 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
     );
   }
 
-  // Extract webhook event fields
+  // 4.2 Validate user ID format (app_user_id should equal Convex users._id)
+  if (!isValidConvexId(appUserId)) {
+    console.error("RevenueCat webhook invalid user ID format", { appUserId });
+    return new Response(
+      JSON.stringify({ status: "error", reason: "Invalid user ID format" }),
+      {
+        status: 400,
+        headers: jsonHeaders,
+      },
+    );
+  }
+
+  // 5. Extract webhook event fields
   const expirationAtMs = event.event?.expiration_at_ms;
   const purchasedAtMs = event.event?.purchased_at_ms;
   const store = event.event?.store;
   const isTrialConversion = event.event?.is_trial_conversion;
-  const entitlements = event.event?.entitlements || {};
-  const entitlementIds = entitlements.keys ? Object.keys(entitlements) : [];
+
+  // 5.1 Fix entitlementIds extraction (CodeRabbit fix: use Object.keys for plain objects)
+  const entitlements = (event.event?.entitlements ?? {}) as Record<string, unknown>;
+  const entitlementIds = Object.keys(entitlements);
 
   try {
-    // Use the new webhook handler that updates snapshot and logs conditionally
+    // 6. Process webhook - update subscription in database
+    // Note: appUserId is validated as Id<"users"> by isValidConvexId() type guard above
     await ctx.runMutation(internal.revenueCatBilling.updateSubscriptionFromWebhook, {
-      userId: appUserId as any,
+      userId: appUserId, // Type-safe: validated by isValidConvexId()
       eventType,
       productId,
       store,
@@ -506,7 +573,7 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
     );
   }
 
-  // Always return success (idempotent processing)
+  // 7. Return success response (idempotent processing)
   return new Response(
     JSON.stringify({ status: "ok" }),
     {
