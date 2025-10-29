@@ -2,6 +2,13 @@ import { Heart, Twitter, Mail } from 'lucide-react';
 import { SiDiscord } from 'react-icons/si';
 import { Link } from 'react-router-dom';
 
+/**
+ * Renders the eveokee site footer with branding, social links, quick navigation, and legal links.
+ *
+ * Displays the product title and tagline, social icons for Discord, X (Twitter), and email, quick links to Demo, How it works, and FAQ, and a bottom bar that shows the current year, a heart attribution, and links to Privacy Policy and Terms and Conditions.
+ *
+ * @returns The footer JSX element containing the complete site footer layout.
+ */
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
@@ -38,7 +45,7 @@ export default function Footer() {
                 <Twitter className="w-5 h-5" />
               </a>
               <a 
-                href="mailto:hello@eveokee.com" 
+                href="mailto:hello@eveoky.com" 
                 className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-accent-mint transition-colors"
                 aria-label="Email"
               >

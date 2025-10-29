@@ -333,8 +333,18 @@ describe("Sharing System", () => {
         musicId,
       });
 
-      await asUser.mutation(api.sharing.deactivateShareLink, {
-        musicId,
+      // Manually mark share as inactive (simulating deactivation)
+      await t.run(async (ctx) => {
+        const share = await ctx.db
+          .query("sharedMusic")
+          .withIndex("by_shareId", (q) => q.eq("shareId", shareId))
+          .first();
+        if (share) {
+          await ctx.db.patch(share._id, {
+            isActive: false,
+            updatedAt: Date.now(),
+          });
+        }
       });
 
       const result = await t.query(api.sharing.getSharedMusic, {
@@ -429,116 +439,6 @@ describe("Sharing System", () => {
     });
   });
 
-  describe("deactivateShareLink", () => {
-    it("should deactivate an active share link", async () => {
-      const t = createTestEnvironment();
-      const { clerkId, email, name } = await createTestUser(t);
-      const asUser = withAuth(t, clerkId, email, name);
-
-      const userId = await t.run(async (ctx) => {
-        const user = await ctx.db
-          .query("users")
-          .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
-          .first();
-        return user!._id;
-      });
-
-      const musicId = await t.run(async (ctx) => {
-        return await ctx.db.insert("music", {
-          userId,
-          title: "Test Track",
-          status: "ready",
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        });
-      });
-
-      const { shareId } = await asUser.mutation(api.sharing.createShareLink, {
-        musicId,
-      });
-
-      await asUser.mutation(api.sharing.deactivateShareLink, {
-        musicId,
-      });
-
-      const result = await t.query(api.sharing.getSharedMusic, {
-        shareId,
-      });
-
-      expect(result.found).toBe(false);
-    });
-
-    it("should throw error for unauthorized user", async () => {
-      const t = createTestEnvironment();
-      const { clerkId: clerkId1, email: email1, name: name1 } = await createTestUser(t);
-      const { clerkId: clerkId2, email: email2, name: name2 } = await createTestUser(t, {
-        clerkId: "different-user",
-        email: "different@example.com",
-        name: "Different User",
-      });
-      const asUser1 = withAuth(t, clerkId1, email1, name1);
-      const asUser2 = withAuth(t, clerkId2, email2, name2);
-
-      const userId1 = await t.run(async (ctx) => {
-        const user = await ctx.db
-          .query("users")
-          .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId1))
-          .first();
-        return user!._id;
-      });
-
-      const musicId = await t.run(async (ctx) => {
-        return await ctx.db.insert("music", {
-          userId: userId1,
-          title: "Test Track",
-          status: "ready",
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        });
-      });
-
-      await asUser1.mutation(api.sharing.createShareLink, {
-        musicId,
-      });
-
-      await expect(
-        asUser2.mutation(api.sharing.deactivateShareLink, {
-          musicId,
-        })
-      ).rejects.toThrow("Not authorized to deactivate this share link");
-    });
-
-    it("should succeed even if no active share exists", async () => {
-      const t = createTestEnvironment();
-      const { clerkId, email, name } = await createTestUser(t);
-      const asUser = withAuth(t, clerkId, email, name);
-
-      const userId = await t.run(async (ctx) => {
-        const user = await ctx.db
-          .query("users")
-          .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
-          .first();
-        return user!._id;
-      });
-
-      const musicId = await t.run(async (ctx) => {
-        return await ctx.db.insert("music", {
-          userId,
-          title: "Test Track",
-          status: "ready",
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        });
-      });
-
-      await expect(
-        asUser.mutation(api.sharing.deactivateShareLink, {
-          musicId,
-        })
-      ).resolves.toBeNull();
-    });
-  });
-
   describe("recordShareView", () => {
     // Note: The client-side Share page implements session storage to prevent
     // duplicate view recording within the same browser session, which mitigates
@@ -575,19 +475,31 @@ describe("Sharing System", () => {
         shareId,
       });
 
-      // Check view count
-      const shares = await asUser.query(api.sharing.getMySharedMusic, {});
+      // Check view count directly from DB
+      const viewCount1 = await t.run(async (ctx) => {
+        const share = await ctx.db
+          .query("sharedMusic")
+          .withIndex("by_shareId", (q) => q.eq("shareId", shareId))
+          .first();
+        return share?.viewCount ?? 0;
+      });
 
-      expect(shares[0].viewCount).toBe(1);
+      expect(viewCount1).toBe(1);
 
       // Record another view
       await t.mutation(api.sharing.recordShareView, {
         shareId,
       });
 
-      const sharesAfter = await asUser.query(api.sharing.getMySharedMusic, {});
+      const viewCount2 = await t.run(async (ctx) => {
+        const share = await ctx.db
+          .query("sharedMusic")
+          .withIndex("by_shareId", (q) => q.eq("shareId", shareId))
+          .first();
+        return share?.viewCount ?? 0;
+      });
 
-      expect(sharesAfter[0].viewCount).toBe(2);
+      expect(viewCount2).toBe(2);
     });
 
     it("should not increment view count for non-existent share", async () => {
@@ -627,149 +539,34 @@ describe("Sharing System", () => {
         musicId,
       });
 
-      await asUser.mutation(api.sharing.deactivateShareLink, {
-        musicId,
+      // Manually mark share as inactive
+      await t.run(async (ctx) => {
+        const share = await ctx.db
+          .query("sharedMusic")
+          .withIndex("by_shareId", (q) => q.eq("shareId", shareId))
+          .first();
+        if (share) {
+          await ctx.db.patch(share._id, {
+            isActive: false,
+            updatedAt: Date.now(),
+          });
+        }
       });
 
       await t.mutation(api.sharing.recordShareView, {
         shareId,
       });
 
-      // Since share is inactive, it won't appear in getMySharedMusic
-      const shares = await asUser.query(api.sharing.getMySharedMusic, {});
-
-      expect(shares.length).toBe(0);
-    });
-  });
-
-  describe("getMySharedMusic", () => {
-    it("should return all active shares for current user", async () => {
-      const t = createTestEnvironment();
-      const { clerkId, email, name } = await createTestUser(t);
-      const asUser = withAuth(t, clerkId, email, name);
-
-      const userId = await t.run(async (ctx) => {
-        const user = await ctx.db
-          .query("users")
-          .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
+      // Verify view count was not incremented for inactive share
+      const viewCount = await t.run(async (ctx) => {
+        const share = await ctx.db
+          .query("sharedMusic")
+          .withIndex("by_shareId", (q) => q.eq("shareId", shareId))
           .first();
-        return user!._id;
+        return share?.viewCount ?? 0;
       });
 
-      const [musicId1, musicId2] = await t.run(async (ctx) => {
-        const id1 = await ctx.db.insert("music", {
-          userId,
-          title: "Test Track 1",
-          status: "ready",
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        });
-        const id2 = await ctx.db.insert("music", {
-          userId,
-          title: "Test Track 2",
-          status: "ready",
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        });
-        return [id1, id2];
-      });
-
-      await asUser.mutation(api.sharing.createShareLink, {
-        musicId: musicId1,
-      });
-
-      await asUser.mutation(api.sharing.createShareLink, {
-        musicId: musicId2,
-      });
-
-      const shares = await asUser.query(api.sharing.getMySharedMusic, {});
-
-      expect(shares).toHaveLength(2);
-      expect(shares[0].title).toBeDefined();
-      expect(shares[0].shareUrl).toBeDefined();
-      expect(shares[0].viewCount).toBe(0);
-    });
-
-    it("should not include inactive shares", async () => {
-      const t = createTestEnvironment();
-      const { clerkId, email, name } = await createTestUser(t);
-      const asUser = withAuth(t, clerkId, email, name);
-
-      const userId = await t.run(async (ctx) => {
-        const user = await ctx.db
-          .query("users")
-          .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
-          .first();
-        return user!._id;
-      });
-
-      const musicId = await t.run(async (ctx) => {
-        return await ctx.db.insert("music", {
-          userId,
-          title: "Test Track",
-          status: "ready",
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        });
-      });
-
-      await asUser.mutation(api.sharing.createShareLink, {
-        musicId,
-      });
-
-      await asUser.mutation(api.sharing.deactivateShareLink, {
-        musicId,
-      });
-
-      const shares = await asUser.query(api.sharing.getMySharedMusic, {});
-
-      expect(shares).toHaveLength(0);
-    });
-
-    it("should not include shares with deleted music", async () => {
-      const t = createTestEnvironment();
-      const { clerkId, email, name } = await createTestUser(t);
-      const asUser = withAuth(t, clerkId, email, name);
-
-      const userId = await t.run(async (ctx) => {
-        const user = await ctx.db
-          .query("users")
-          .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
-          .first();
-        return user!._id;
-      });
-
-      const musicId = await t.run(async (ctx) => {
-        return await ctx.db.insert("music", {
-          userId,
-          title: "Test Track",
-          status: "ready",
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        });
-      });
-
-      await asUser.mutation(api.sharing.createShareLink, {
-        musicId,
-      });
-
-      await t.run(async (ctx) => {
-        await ctx.db.patch(musicId, { deletedAt: Date.now() });
-      });
-
-      const shares = await asUser.query(api.sharing.getMySharedMusic, {});
-
-      expect(shares).toHaveLength(0);
-    });
-
-    it("should return empty array for user with no shares", async () => {
-      const t = createTestEnvironment();
-      const { clerkId, email, name } = await createTestUser(t);
-      const asUser = withAuth(t, clerkId, email, name);
-
-      const shares = await asUser.query(api.sharing.getMySharedMusic, {});
-
-      expect(shares).toEqual([]);
+      expect(viewCount).toBe(0);
     });
   });
 

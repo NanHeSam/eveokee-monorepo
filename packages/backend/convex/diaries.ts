@@ -61,42 +61,6 @@ export const updateDiary = mutation({
   },
 });
 
-export const updatePrimaryMusicId = mutation({
-  args: {
-    diaryId: v.id("diaries"),
-    primaryMusicId: v.id("music"),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const { userId } = await ensureCurrentUser(ctx);
-
-    const diary = await ctx.db.get(args.diaryId);
-    if (!diary) {
-      throw new Error("Diary not found");
-    }
-
-    if (userId !== diary.userId) {
-      throw new Error("Forbidden");
-    }
-
-    const music = await ctx.db.get(args.primaryMusicId);
-    if (!music) {
-      throw new Error("Music not found");
-    }
-
-    if (music.diaryId !== args.diaryId) {
-      throw new Error("Music does not belong to this diary");
-    }
-
-    await ctx.db.patch(args.diaryId, {
-      primaryMusicId: args.primaryMusicId,
-      updatedAt: Date.now(),
-    });
-
-    return null;
-  },
-});
-
 export const deleteDiary = mutation({
   args: {
     diaryId: v.id("diaries"),

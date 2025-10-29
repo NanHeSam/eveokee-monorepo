@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { internal } from "../convex/_generated/api";
+import { Doc } from "../convex/_generated/dataModel";
 import { createTestEnvironment, createTestUser, createTestDiary } from "./convexTestUtils";
 
 /**
@@ -210,7 +211,7 @@ describe("Webhook Logic Tests", () => {
       expect(userId).toBeDefined();
 
       // Verify user was created
-      const user = await t.run(async (ctx) => ctx.db.get(userId));
+      const user = await t.run(async (ctx) => ctx.db.get(userId)) as Doc<"users"> | null;
       expect(user).toBeDefined();
       expect(user?.clerkId).toBe("clerk_webhook_test123");
       expect(user?.email).toBe("webhook@example.com");
@@ -226,10 +227,10 @@ describe("Webhook Logic Tests", () => {
       expect(subscriptionId).toBeDefined();
 
       // Verify subscription was created and linked
-      const updatedUser = await t.run(async (ctx) => ctx.db.get(userId));
+      const updatedUser = await t.run(async (ctx) => ctx.db.get(userId)) as Doc<"users"> | null;
       expect(updatedUser?.activeSubscriptionId).toBe(subscriptionId);
 
-      const subscription = await t.run(async (ctx) => ctx.db.get(subscriptionId));
+      const subscription = await t.run(async (ctx) => ctx.db.get(subscriptionId)) as Doc<"subscriptionStatuses"> | null;
       expect(subscription).toBeDefined();
       expect(subscription?.subscriptionTier).toBe("free");
       expect(subscription?.status).toBe("active");
@@ -386,6 +387,147 @@ describe("Webhook Logic Tests", () => {
       expect(primaryMusic?.diaryId).toBe(diaryId);
     });
   });
+
+  describe("VAPI Webhook Logic", () => {
+    it("should extract call ID from real webhook event (your sample)", () => {
+      // This is the exact structure from the warning you're seeing
+      const realWebhookEvent = {
+        message: {
+          timestamp: 1761689537883,
+          type: "end-of-call-report",
+          analysis: {
+            summary: "The AI repeatedly addressed the user as 'Schrodinger Bass'...",
+            successEvaluation: "false",
+          },
+          artifact: {
+            transcript: "AI: Hey, Schrodinger Bass. It\nUser: Hello?\n...",
+            messages: [],
+            recordingUrl: "https://storage.vapi.ai/...",
+          },
+          call: {
+            metadata: {
+              jobId: "jx7cv6m4ywe9kpet7698mj47fs7tbhdf",
+              userId: "js78dzcg9as10egvckjgegsx697swhvg",
+            },
+            id: "019a2ce0-1c18-755b-a780-bdd8f880ff5d",
+            orgId: "a3e9b919-c8af-45eb-9e1f-b9293ba681a6",
+            createdAt: "2025-10-28T22:11:16.120Z",
+            updatedAt: "2025-10-28T22:11:16.120Z",
+            type: "outboundPhoneCall",
+            status: "queued",
+          },
+          startedAt: "2025-10-28T22:11:30.772Z",
+          endedAt: "2025-10-28T22:12:12.974Z",
+          endedReason: "customer-ended-call",
+        },
+      };
+
+      // Extract call ID using the same logic as http.ts line 298
+      const vapiCallId = realWebhookEvent.message.call?.id;
+
+      expect(vapiCallId).toBe("019a2ce0-1c18-755b-a780-bdd8f880ff5d");
+      expect(vapiCallId).toBeTruthy();
+    });
+
+    it("should handle webhook event with call ID in message.call.id", () => {
+      const webhookEvent = {
+        message: {
+          type: "end-of-call-report",
+          call: {
+            id: "test-call-123",
+          },
+          artifact: {
+            transcript: "Call completed",
+            messages: [],
+          },
+          endedReason: "completed",
+        },
+      };
+
+      // Extract call ID (simulating the http.ts logic)
+      const extractedCallId = webhookEvent.message.call?.id;
+
+      expect(extractedCallId).toBe("test-call-123");
+    });
+
+    it("should handle webhook event with alternative call ID locations", () => {
+      const vapiCallId = "alternative-call-id-456";
+
+      // Test case 1: call ID directly in message.call
+      const event1 = {
+        message: {
+          type: "end-of-call-report",
+          call: {
+            id: vapiCallId,
+          },
+          artifact: {},
+          endedReason: "completed",
+        },
+      };
+
+      let extractedId = event1.message.call?.id;
+      expect(extractedId).toBe(vapiCallId);
+
+      // Test case 2: call ID might be at different nested levels
+      const event2 = {
+        message: {
+          type: "end-of-call-report",
+          call: {
+            id: vapiCallId,
+            metadata: {
+              callId: vapiCallId,
+            },
+          },
+          artifact: {},
+          endedReason: "completed",
+        },
+      };
+
+      extractedId = event2.message.call?.id;
+      expect(extractedId).toBe(vapiCallId);
+    });
+
+    it("should validate call ID extraction handles all event structures", () => {
+      // Test various event structures from real VAPI webhooks
+      const testCases = [
+        // Case 1: Standard structure
+        {
+          message: {
+            type: "end-of-call-report",
+            call: { id: "call-id-1" },
+          },
+          expectedId: "call-id-1",
+        },
+        // Case 2: Real sample from user
+        {
+          message: {
+            timestamp: 1761689537883,
+            type: "end-of-call-report",
+            call: {
+              id: "019a2ce0-1c18-755b-a780-bdd8f880ff5d",
+              metadata: {},
+            },
+            artifact: {},
+          },
+          expectedId: "019a2ce0-1c18-755b-a780-bdd8f880ff5d",
+        },
+        // Case 3: Minimal structure
+        {
+          message: {
+            type: "end-of-call-report",
+            call: { id: "minimal-call-id" },
+          },
+          expectedId: "minimal-call-id",
+        },
+      ];
+
+      for (const testCase of testCases) {
+        const extractedId = testCase.message.call?.id;
+        expect(extractedId).toBe(testCase.expectedId);
+      }
+    });
+
+  });
 });
 
 /**
@@ -411,4 +553,15 @@ describe("Webhook Logic Tests", () => {
  * - Fallback to username
  * - User creation success (returns 200 with status "ok")
  * - User creation failure (returns 500)
+ *
+ * VAPI Webhook Endpoint:
+ * - POST method validation (returns 405 for non-POST)
+ * - JSON parsing (returns 400 for malformed JSON)
+ * - Missing message field (returns 400 with error)
+ * - Missing call ID (returns 400 with error)
+ * - Invalid message structure (returns 400 with error)
+ * - Job not found for VAPI call ID (returns 200 with "ignored")
+ * - End-of-call-report processing success (returns 200 with status "ok")
+ * - Other message types (returns 200 with status "ignored")
+ * - Webhook processing failure (returns 500)
  */

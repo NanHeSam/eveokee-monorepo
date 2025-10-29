@@ -8,19 +8,30 @@ interface UsageProgressProps {
   compact?: boolean;
 }
 
-export function UsageProgress({ 
-  onUpgradePress, 
-  showUpgradeButton = true, 
-  compact = false 
+/**
+ * Render a usage progress indicator for free-tier users with an optional upgrade prompt.
+ *
+ * Renders nothing when usage data is unavailable or the user is not on the free tier.
+ *
+ * @param onUpgradePress - Optional callback invoked when the Upgrade button is pressed
+ * @param showUpgradeButton - Whether to show the Upgrade button when the user needs to upgrade (default: true)
+ * @param compact - When true, render a compact inline progress bar instead of the full card layout (default: false)
+ * @returns The component UI as a React element, or `null` when no UI should be rendered
+ */
+export function UsageProgress({
+  onUpgradePress,
+  showUpgradeButton = true,
+  compact = false
 }: UsageProgressProps) {
   const { usage } = useUsage();
 
   if (!usage) {
-    return (
-      <View className="bg-gray-100 p-3 rounded-lg">
-        <Text className="text-gray-600 text-sm">Loading usage...</Text>
-      </View>
-    );
+    return null;
+  }
+
+  // Only show usage information for free tier users
+  if (usage.tier !== 'free') {
+    return null;
   }
 
   const usageText = formatUsageText(usage);

@@ -8,6 +8,19 @@ interface SubscriptionStatusProps {
   compact?: boolean;
 }
 
+/**
+ * Renders a subscription status UI that reflects the current subscription and usage.
+ *
+ * Displays a compact tier pill when `compact` is true, otherwise renders a full card with tier badge,
+ * optional upgrade action, usage progress for the Free tier, and the billing period end plus active state.
+ * The component reads subscription state from the subscription store; while that data is loading it shows
+ * a small "Loading subscription…" placeholder.
+ *
+ * @param onPress - Optional handler invoked when the component is pressed.
+ * @param showUpgradeButton - Whether to show the "Upgrade" label for the Free tier (default: `true`).
+ * @param compact - When `true`, renders a compact pill-style badge instead of the full card (default: `false`).
+ * @returns The rendered SubscriptionStatus React element.
+ */
 export function SubscriptionStatus({ 
   onPress, 
   showUpgradeButton = true, 
@@ -94,21 +107,23 @@ export function SubscriptionStatus({
         )}
       </View>
 
-      <View className="mb-2">
-        <View className="flex-row justify-between items-center mb-1">
-          <Text className="text-sm text-gray-600">Music Generations</Text>
-          <Text className="text-sm font-medium">{usageText}</Text>
+      {tier === 'free' && (
+        <View className="mb-2">
+          <View className="flex-row justify-between items-center mb-1">
+            <Text className="text-sm text-gray-600">Music Generations</Text>
+            <Text className="text-sm font-medium">{usageText}</Text>
+          </View>
+          <View className="bg-gray-200 rounded-full h-2">
+            <View
+              className="bg-blue-500 h-2 rounded-full"
+              style={{ width: `${usagePercentage}%` }}
+            />
+          </View>
+          <Text className="text-xs text-gray-500 mt-1">
+            {remainingText}
+          </Text>
         </View>
-        <View className="bg-gray-200 rounded-full h-2">
-          <View 
-            className="bg-blue-500 h-2 rounded-full"
-            style={{ width: `${usagePercentage}%` }}
-          />
-        </View>
-        <Text className="text-xs text-gray-500 mt-1">
-          {remainingText}
-        </Text>
-      </View>
+      )}
 
       <Text className="text-xs text-gray-500 mt-2">
         {new Date(periodEnd).toLocaleDateString()} • {isActive ? 'Active' : 'Expired'}

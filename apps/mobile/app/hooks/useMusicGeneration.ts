@@ -9,6 +9,20 @@ interface UseMusicGenerationOptions {
   showPaywallOnLimit?: boolean;
 }
 
+/**
+ * Provides helpers to check generation quota, initiate a music generation, and read usage state.
+ *
+ * @param options - Optional callbacks and behavior flags:
+ *   - onGenerationStart: called when a generation begins.
+ *   - onGenerationComplete: called with the generation result when recording succeeds.
+ *   - onGenerationError: called with the thrown error when generation fails.
+ *   - showPaywallOnLimit: when true (default), automatically opens the paywall on usage limit.
+ * @returns An object with:
+ *   - generateMusic: starts a music generation and returns the recording result or `null` on failure.
+ *   - checkCanGenerate: returns `true` if the current usage allows a generation, `false` otherwise.
+ *   - getUsageInfo: returns current usage details (`canGenerate`, `currentUsage`, `limit`, optional `remainingQuota`, and `tier`) or `null` if unavailable.
+ *   - isGenerating: `true` while a generation is in progress, `false` otherwise.
+ */
 export function useMusicGeneration(options: UseMusicGenerationOptions = {}) {
   const { recordGeneration, canGenerate } = useUsage();
   const { setShowPaywall } = useSubscriptionUIStore();
@@ -21,17 +35,17 @@ export function useMusicGeneration(options: UseMusicGenerationOptions = {}) {
     showPaywallOnLimit = true,
   } = options;
 
-  const checkCanGenerate = async (): Promise<boolean> => {
+  const checkCanGenerate = (): boolean => {
     try {
-      const result = await canGenerate();
+      const result = canGenerate.data;
       
-      if (!result.canGenerate) {
+      if (!result?.canGenerate) {
         if (showPaywallOnLimit) {
           setShowPaywall(true, 'limit_reached');
         } else {
           Alert.alert(
             'Limit Reached',
-            `You've used all your music generations (${result.currentUsage}/${result.limit}). Upgrade to continue creating music.`,
+            `You've used all your music generations (${result?.currentUsage || 0}/${result?.limit || 0}). Upgrade to continue creating music.`,
             [
               { text: 'Cancel', style: 'cancel' },
               { 
@@ -59,7 +73,7 @@ export function useMusicGeneration(options: UseMusicGenerationOptions = {}) {
     }
 
     // Check if user can generate music
-    const canGenerateMusic = await checkCanGenerate();
+    const canGenerateMusic = checkCanGenerate();
     if (!canGenerateMusic) {
       return null;
     }
@@ -106,9 +120,12 @@ export function useMusicGeneration(options: UseMusicGenerationOptions = {}) {
     }
   };
 
-  const getUsageInfo = async () => {
+  const getUsageInfo = () => {
     try {
-      const result = await canGenerate();
+      const result = canGenerate.data;
+      if (!result) {
+        return null;
+      }
       return {
         canGenerate: result.canGenerate,
         currentUsage: result.currentUsage,

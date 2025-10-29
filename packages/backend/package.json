@@ -14,6 +14,8 @@
   "dependencies": {
     "@clerk/backend": "^2.17.2",
     "convex": "^1.28.0",
+    "date-fns": "^3.6.0",
+    "date-fns-tz": "^3.2.0",
     "openai": "^4.79.0",
     "svix": "^1.76.1"
   },

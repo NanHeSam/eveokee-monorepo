@@ -94,9 +94,7 @@ export const getPlans = query({
     ]>;
     return entries.map(([tier, config]) => ({
       tier,
-      musicLimit: isFinite(config.musicLimit)
-        ? config.musicLimit
-        : 9007199254740991,
+      musicLimit: config.musicLimit,
       periodDays: config.periodDays,
       price: config.price,
     }));
@@ -124,25 +122,32 @@ export const getCurrentUserStatus = query({
     }
     const { userId } = authResult;
 
-    const snapshot = await ctx.runQuery(internal.usage.getUsageSnapshot, {
-      userId,
-    });
-
-    if (!snapshot) {
+    // Fetch the subscription directly
+    const user = await ctx.db.get(userId);
+    if (!user || !user.activeSubscriptionId) {
       return null;
     }
 
-    const isActive = snapshot.status === "active" || snapshot.status === "in_grace";
+    const subscription = await ctx.db.get(user.activeSubscriptionId);
+    if (!subscription) {
+      return null;
+    }
+
+    const musicLimit = getEffectiveMusicLimit(
+      subscription.subscriptionTier as SubscriptionTier,
+      subscription.customMusicLimit ?? undefined
+    );
+    const isActive = subscription.status === "active" || subscription.status === "in_grace";
 
     return {
-      tier: snapshot.tier,
-      status: snapshot.status,
-      musicGenerationsUsed: snapshot.musicGenerationsUsed,
-      musicLimit: snapshot.musicLimit,
-      periodStart: snapshot.periodStart,
-      periodEnd: snapshot.periodEnd,
+      tier: subscription.subscriptionTier,
+      status: subscription.status,
+      musicGenerationsUsed: subscription.musicGenerationsUsed,
+      musicLimit,
+      periodStart: subscription.lastResetAt,
+      periodEnd: subscription.lastResetAt + getPeriodDurationMs(subscription.subscriptionTier as SubscriptionTier),
       isActive,
-      remainingQuota: snapshot.remainingQuota,
+      remainingQuota: Math.max(0, musicLimit - subscription.musicGenerationsUsed),
     };
   },
 });

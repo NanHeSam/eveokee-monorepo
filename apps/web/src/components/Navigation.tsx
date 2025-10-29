@@ -4,6 +4,13 @@ import { SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '@/hooks/useTheme';
 
+/**
+ * Top-level navigation bar component that adapts layout and available links based on viewport size, theme, and authentication state.
+ *
+ * Renders the site logo, anchor and route links (Demo, How it works, FAQ, Blog, Dashboard), a theme toggle, authentication controls (Log in / Sign up or user avatar), and a responsive mobile menu that mirrors desktop actions.
+ *
+ * @returns The navigation JSX element described above.
+ */
 export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
@@ -60,6 +67,11 @@ export default function Navigation() {
               <Link to="/blog" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
                 Blog
               </Link>
+              <SignedIn>
+                <Link to="/dashboard" className="bg-accent-mint/10 text-accent-mint dark:bg-accent-mint/20 px-3 py-2 rounded-md text-sm font-medium hover:bg-accent-mint/20 dark:hover:bg-accent-mint/30 transition-colors">
+                  Dashboard
+                </Link>
+              </SignedIn>
             </div>
           </div>
 
@@ -164,6 +176,15 @@ export default function Navigation() {
             >
               Blog
             </Link>
+            <SignedIn>
+              <Link 
+                to="/dashboard" 
+                className="bg-accent-mint/10 text-accent-mint dark:bg-accent-mint/20 px-3 py-2 rounded-md text-base font-medium hover:bg-accent-mint/20 dark:hover:bg-accent-mint/30 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Dashboard
+              </Link>
+            </SignedIn>
             <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-600">
               <SignedOut>
                 <div className="flex items-center px-3 space-x-3">
