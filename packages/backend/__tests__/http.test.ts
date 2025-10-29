@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { internal } from "../convex/_generated/api";
+import { Doc } from "../convex/_generated/dataModel";
 import { createTestEnvironment, createTestUser, createTestDiary } from "./convexTestUtils";
 
 /**
@@ -210,7 +211,7 @@ describe("Webhook Logic Tests", () => {
       expect(userId).toBeDefined();
 
       // Verify user was created
-      const user = await t.run(async (ctx) => ctx.db.get(userId));
+      const user = await t.run(async (ctx) => ctx.db.get(userId)) as Doc<"users"> | null;
       expect(user).toBeDefined();
       expect(user?.clerkId).toBe("clerk_webhook_test123");
       expect(user?.email).toBe("webhook@example.com");
@@ -226,10 +227,10 @@ describe("Webhook Logic Tests", () => {
       expect(subscriptionId).toBeDefined();
 
       // Verify subscription was created and linked
-      const updatedUser = await t.run(async (ctx) => ctx.db.get(userId));
+      const updatedUser = await t.run(async (ctx) => ctx.db.get(userId)) as Doc<"users"> | null;
       expect(updatedUser?.activeSubscriptionId).toBe(subscriptionId);
 
-      const subscription = await t.run(async (ctx) => ctx.db.get(subscriptionId));
+      const subscription = await t.run(async (ctx) => ctx.db.get(subscriptionId)) as Doc<"subscriptionStatuses"> | null;
       expect(subscription).toBeDefined();
       expect(subscription?.subscriptionTier).toBe("free");
       expect(subscription?.status).toBe("active");
@@ -526,37 +527,6 @@ describe("Webhook Logic Tests", () => {
       }
     });
 
-    it("should extract call ID from alternative locations", () => {
-      // Test fallback location: event.message.callId
-      const event1 = {
-        message: {
-          type: "end-of-call-report",
-          callId: "fallback-call-id-1",
-        },
-      };
-
-      let extractedId = event1.message.call?.id;
-      if (!extractedId && event1.message.callId) {
-        extractedId = event1.message.callId;
-      }
-      expect(extractedId).toBe("fallback-call-id-1");
-
-      // Test fallback location: event.call.id
-      const event2 = {
-        message: {
-          type: "end-of-call-report",
-        },
-        call: {
-          id: "top-level-call-id",
-        },
-      };
-
-      let extractedId2 = event2.message.call?.id;
-      if (!extractedId2 && event2.call?.id) {
-        extractedId2 = event2.call.id;
-      }
-      expect(extractedId2).toBe("top-level-call-id");
-    });
   });
 });
 

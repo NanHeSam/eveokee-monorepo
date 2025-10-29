@@ -274,32 +274,29 @@ export const getDashboardStats = query({
   }),
   handler: async (ctx) => {
     const user = await getCurrentUserOrThrow(ctx);
-    
-    // Get all call sessions
-    const allSessions = await ctx.db
+
+    // Get recent call sessions (limit to avoid OOM)
+    const recentSessions = await ctx.db
       .query("callSessions")
       .withIndex("by_userId_and_startedAt", (q) => q.eq("userId", user._id))
-      .collect();
-    
-    const totalCalls = allSessions.length;
-    
+      .order("desc")
+      .take(1000);
+
+    const totalCalls = recentSessions.length;
+
     // Calculate active days this month from diary entries
     const now = Date.now();
     const startOfMonth = new Date(now);
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
     const startOfMonthTimestamp = startOfMonth.getTime();
-    
-    // Get all diary entries
-    const allDiaries = await ctx.db
+
+    // Get diary entries from this month (filter at query time)
+    const diariesThisMonth = await ctx.db
       .query("diaries")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .collect();
-    
-    // Get unique days from diary entries this month
-    const diariesThisMonth = allDiaries.filter(
-      (diary) => diary.date >= startOfMonthTimestamp
-    );
+      .filter((q) => q.gte(q.field("date"), startOfMonthTimestamp))
+      .take(1000);
     
     const uniqueDays = new Set<string>();
     for (const diary of diariesThisMonth) {
