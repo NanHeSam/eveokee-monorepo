@@ -149,11 +149,11 @@ export const SettingsScreen = () => {
           {/* Logout Button */}
           <TouchableOpacity
             className="mt-8 items-center rounded-[26px] py-4"
-            style={{ backgroundColor: colors.accentApricot }}
+            style={{ backgroundColor: '#FF4444' }}
             activeOpacity={0.85}
             onPress={handleSignOut}
           >
-            <Text className="text-base font-semibold" style={{ color: colors.background }}>
+            <Text className="text-base font-semibold" style={{ color: '#FFFFFF' }}>
               Log out
             </Text>
           </TouchableOpacity>

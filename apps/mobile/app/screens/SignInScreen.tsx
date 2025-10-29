@@ -1,13 +1,9 @@
 import { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,8 +14,15 @@ import * as WebBrowser from 'expo-web-browser';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { palette } from '../theme/colors';
 import { useAuthSetup } from '../hooks/useAuthSetup';
+import { AuthHeader } from '../components/auth/AuthHeader';
+import { AuthForm } from '../components/auth/AuthForm';
+import { PrimaryButton } from '../components/auth/PrimaryButton';
+import { AuthDivider } from '../components/auth/AuthDivider';
+import { SocialAuthButtons } from '../components/auth/SocialAuthButtons';
+import { AuthNavigationLink } from '../components/auth/AuthNavigationLink';
+import { AuthFooter } from '../components/auth/AuthFooter';
+import { useThemeColors } from '../theme/useThemeColors';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -69,11 +72,13 @@ export const SignInScreen = () => {
   const { signIn } = useSignIn();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
 
   const { ensureConvexUser } = useAuthSetup();
 
@@ -172,101 +177,91 @@ export const SignInScreen = () => {
     }
   }, [finalizeSession, setActive, startSSOFlow]);
 
+  const handleAppleSignIn = useCallback(async () => {
+    try {
+      setIsAppleLoading(true);
+      const { createdSessionId, setActive: setActiveFromSSO, signIn, signUp } = await startSSOFlow({ strategy: 'oauth_apple', redirectUrl });
+
+      const applySession = setActiveFromSSO ?? setActive;
+
+      if (createdSessionId) {
+        await finalizeSession(applySession, createdSessionId);
+        return;
+      }
+
+      if (signIn?.status === 'complete') {
+        await finalizeSession(applySession, signIn.createdSessionId);
+        return;
+      }
+
+      if (signUp?.status === 'complete') {
+        await finalizeSession(applySession, signUp.createdSessionId);
+        return;
+      }
+    } catch (err) {
+      console.error('Apple sign in failed', err);
+      if (`${err}`.includes("already signed in")) {
+        Alert.alert('Already signed in', 'You are already authenticated.');
+      } else {
+        Alert.alert('Sign in failed', 'Please try again.');
+      }
+    } finally {
+      setIsAppleLoading(false);
+    }
+  }, [finalizeSession, setActive, startSSOFlow]);
+
   const handleSignUp = useCallback(() => {
     navigation.navigate('SignUp');
   }, [navigation]);
 
   return (
-    <SafeAreaView style={[styles.safeArea, { paddingTop: insets.top }]}>
+    <SafeAreaView style={[styles.safeArea, { paddingTop: insets.top, backgroundColor: colors.background }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.container}
       >
         <View style={styles.content}>
-          <View style={styles.logoWrapper}>
-            <Text style={styles.logoIcon}>♪</Text>
-            <Text style={styles.logoText}>Music Diary</Text>
-          </View>
+          <AuthHeader 
+            subtitle="Login to" 
+            title="eveokee"
+            subtitleColor={colors.textPrimary}
+            titleColor={colors.accentMint}
+          />
 
-          <View style={styles.form}>
-            <View>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email"
-                placeholderTextColor="#999"
-                value={identifier}
-                onChangeText={setIdentifier}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                editable={!isPasswordLoading}
-              />
-            </View>
+          <AuthForm
+            email={identifier}
+            password={password}
+            onEmailChange={setIdentifier}
+            onPasswordChange={setPassword}
+            showPassword={true}
+            emailPlaceholder="Enter your email"
+            passwordPlaceholder="Enter your password"
+            disabled={isPasswordLoading}
+          />
 
-            <View>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your password"
-                placeholderTextColor="#999"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!isPasswordLoading}
-              />
-            </View>
+          <PrimaryButton
+            onPress={handlePasswordSignIn}
+            text="Sign In"
+            isLoading={isPasswordLoading}
+          />
 
-            <TouchableOpacity
-              style={[styles.primaryButton, isPasswordLoading && styles.primaryButtonDisabled]}
-              onPress={handlePasswordSignIn}
-              activeOpacity={0.8}
-              disabled={isPasswordLoading}
-            >
-              {isPasswordLoading ? (
-                <ActivityIndicator color="#000" />
-              ) : (
-                <Text style={styles.primaryButtonText}>Sign In</Text>
-              )}
-            </TouchableOpacity>
-          </View>
+          <AuthDivider />
 
-          <View style={styles.dividerWrapper}>
-            <View style={styles.divider} />
-            <Text style={styles.dividerText}>OR</Text>
-            <View style={styles.divider} />
-          </View>
+          <SocialAuthButtons
+            onGooglePress={handleGoogleSignIn}
+            onApplePress={handleAppleSignIn}
+            isGoogleLoading={isGoogleLoading}
+            isAppleLoading={isAppleLoading}
+          />
 
-          <TouchableOpacity
-            style={[styles.googleButton, isGoogleLoading && styles.googleButtonDisabled]}
-            onPress={handleGoogleSignIn}
-            activeOpacity={0.9}
-            disabled={isGoogleLoading}
-          >
-            <View style={styles.googleIconWrapper}>
-              <Text style={styles.googleIcon}>G</Text>
-            </View>
-            {isGoogleLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.signupWrapper}>
-            <Text style={styles.signupHint}>Don&apos;t have an account?</Text>
-            <TouchableOpacity onPress={handleSignUp} hitSlop={8}>
-              <Text style={styles.signupLink}>Sign up</Text>
-            </TouchableOpacity>
-          </View>
+          <AuthNavigationLink
+            hint="Don't have an account?"
+            linkText="Sign up"
+            onPress={handleSignUp}
+          />
         </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerIcon}>♪</Text>
-          <Text style={styles.footerText}>Music Diary</Text>
-        </View>
+        <AuthFooter showIcon={true} />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -275,7 +270,6 @@ export const SignInScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: palette.backgroundLight,
   },
   container: {
     flex: 1,
@@ -286,127 +280,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     gap: 32,
-  },
-  logoWrapper: {
-    gap: 8,
-  },
-  logoIcon: {
-    fontSize: 48,
-    color: palette.textPrimaryLight,
-  },
-  logoText: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: palette.textPrimaryLight,
-  },
-  form: {
-    gap: 20,
-  },
-  disabledLegend: {
-    fontSize: 16,
-    color: palette.textSecondaryLight,
-  },
-  label: {
-    fontSize: 14,
-    color: palette.textPrimaryLight,
-    marginBottom: 4,
-    fontWeight: '500',
-  },
-  input: {
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#D1D1D6',
-    paddingHorizontal: 16,
-    color: palette.textPrimaryLight,
-    backgroundColor: '#F2F2F7',
-  },
-  primaryButton: {
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#E5E5EA',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 12,
-  },
-  primaryButtonDisabled: {
-    opacity: 0.7,
-  },
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-  },
-  dividerWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#2C2C2E',
-  },
-  dividerText: {
-    color: '#8E8E93',
-    fontSize: 14,
-  },
-  googleButton: {
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#4285F4',
-    borderWidth: 0,
-    borderColor: 'transparent',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  googleButtonDisabled: {
-    opacity: 0.75,
-  },
-  googleIconWrapper: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  googleIcon: {
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  googleButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  signupWrapper: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  signupHint: {
-    color: palette.textSecondaryLight,
-  },
-  signupLink: {
-    color: '#4285F4',
-    fontWeight: '600',
-  },
-  footer: {
-    alignItems: 'center',
-    gap: 6,
-    paddingBottom: 16,
-  },
-  footerIcon: {
-    fontSize: 16,
-    color: palette.textSecondaryLight,
-  },
-  footerText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: palette.textPrimaryLight,
   },
 });
 

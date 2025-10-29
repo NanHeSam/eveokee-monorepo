@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -14,10 +13,26 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useSignUp } from '@clerk/clerk-expo';
+import { useSignUp, useSSO, useClerk } from '@clerk/clerk-expo';
+import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
 
-import { palette } from '../theme/colors';
 import { useAuthSetup } from '../hooks/useAuthSetup';
+import { AuthHeader } from '../components/auth/AuthHeader';
+import { AuthForm } from '../components/auth/AuthForm';
+import { PrimaryButton } from '../components/auth/PrimaryButton';
+import { AuthDivider } from '../components/auth/AuthDivider';
+import { SocialAuthButtons } from '../components/auth/SocialAuthButtons';
+import { AuthNavigationLink } from '../components/auth/AuthNavigationLink';
+import { AuthFooter } from '../components/auth/AuthFooter';
+import { useThemeColors } from '../theme/useThemeColors';
+
+WebBrowser.maybeCompleteAuthSession();
+
+const redirectUrl = AuthSession.makeRedirectUri({
+  scheme: "eveokee",
+  path: "oauth-native-callback",
+});
 
 // Error handling helpers
 type SignUpErrorType = 'duplicate_verified' | 'duplicate_unverified' | 'generic_error';
@@ -47,6 +62,9 @@ export const SignUpScreen = ({ route }: SignUpScreenProps) => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   const { isLoaded, signUp, setActive } = useSignUp();
+  const { startSSOFlow } = useSSO();
+  const { setActive: setActiveFromClerk } = useClerk();
+  const colors = useThemeColors();
   
   const { prefillEmail, isVerificationOnly = false } = route.params || {};
   
@@ -55,6 +73,8 @@ export const SignUpScreen = ({ route }: SignUpScreenProps) => {
   const [pendingVerification, setPendingVerification] = useState(false);
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
 
   const { ensureConvexUser } = useAuthSetup();
 
@@ -66,6 +86,93 @@ export const SignUpScreen = ({ route }: SignUpScreenProps) => {
   const handleSignIn = useCallback(() => {
     navigation.navigate('SignIn');
   }, [navigation]);
+
+  const finalizeSession = useCallback(
+    async (
+      applySession: ReturnType<typeof useClerk>['setActive'] | null,
+      sessionId: string | null | undefined,
+    ) => {
+      if (!sessionId) {
+        return false;
+      }
+
+      await applySession?.({ session: sessionId });
+
+      // Wait for Clerk JWT token to propagate to Convex
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      await ensureConvexUser();
+
+      return true;
+    },
+    [ensureConvexUser],
+  );
+
+  const handleGoogleSignUp = useCallback(async () => {
+    try {
+      setIsGoogleLoading(true);
+      const { createdSessionId, setActive: setActiveFromSSO, signIn, signUp } = await startSSOFlow({ strategy: 'oauth_google', redirectUrl });
+
+      const applySession = setActiveFromSSO ?? setActiveFromClerk;
+
+      if (createdSessionId) {
+        await finalizeSession(applySession, createdSessionId);
+        return;
+      }
+
+      if (signIn?.status === 'complete') {
+        await finalizeSession(applySession, signIn.createdSessionId);
+        return;
+      }
+
+      if (signUp?.status === 'complete') {
+        await finalizeSession(applySession, signUp.createdSessionId);
+        return;
+      }
+    } catch (err) {
+      console.error('Google sign up failed', err);
+      if (`${err}`.includes("already signed in")) {
+        Alert.alert('Already signed in', 'You are already authenticated.');
+      } else {
+        Alert.alert('Sign up failed', 'Please try again.');
+      }
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  }, [finalizeSession, setActiveFromClerk, startSSOFlow]);
+
+  const handleAppleSignUp = useCallback(async () => {
+    try {
+      setIsAppleLoading(true);
+      const { createdSessionId, setActive: setActiveFromSSO, signIn, signUp } = await startSSOFlow({ strategy: 'oauth_apple', redirectUrl });
+
+      const applySession = setActiveFromSSO ?? setActiveFromClerk;
+
+      if (createdSessionId) {
+        await finalizeSession(applySession, createdSessionId);
+        return;
+      }
+
+      if (signIn?.status === 'complete') {
+        await finalizeSession(applySession, signIn.createdSessionId);
+        return;
+      }
+
+      if (signUp?.status === 'complete') {
+        await finalizeSession(applySession, signUp.createdSessionId);
+        return;
+      }
+    } catch (err) {
+      console.error('Apple sign up failed', err);
+      if (`${err}`.includes("already signed in")) {
+        Alert.alert('Already signed in', 'You are already authenticated.');
+      } else {
+        Alert.alert('Sign up failed', 'Please try again.');
+      }
+    } finally {
+      setIsAppleLoading(false);
+    }
+  }, [finalizeSession, setActiveFromClerk, startSSOFlow]);
 
   const handleResendCode = useCallback(async () => {
     if (!isLoaded || !signUp) return;
@@ -239,27 +346,28 @@ export const SignUpScreen = ({ route }: SignUpScreenProps) => {
   // Show verification form if pending verification
   if (pendingVerification) {
     return (
-      <SafeAreaView style={[styles.safeArea, { paddingTop: insets.top }]}>
+      <SafeAreaView style={[styles.safeArea, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.container}
         >
           <View style={styles.content}>
-            <View style={styles.logoWrapper}>
-              <Text style={styles.logoIcon}>♪</Text>
-              <Text style={styles.logoText}>Verify Your Email</Text>
-              <Text style={styles.logoSubtext}>
-                We sent a verification code to {emailAddress}
-              </Text>
-            </View>
+            <AuthHeader subtitle={`We sent a verification code to ${emailAddress}`} />
 
             <View style={styles.form}>
               <View>
-                <Text style={styles.label}>Verification Code</Text>
+                <Text style={[styles.label, { color: colors.textPrimary }]}>Verification Code</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[
+                    styles.input,
+                    { 
+                      backgroundColor: colors.surface,
+                      borderColor: colors.border,
+                      color: colors.textPrimary,
+                    }
+                  ]}
                   placeholder="Enter 6-digit code"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={colors.textMuted}
                   value={code}
                   onChangeText={setCode}
                   keyboardType="number-pad"
@@ -270,18 +378,11 @@ export const SignUpScreen = ({ route }: SignUpScreenProps) => {
                 />
               </View>
 
-              <TouchableOpacity
-                style={[styles.primaryButton, isLoading && styles.primaryButtonDisabled]}
+              <PrimaryButton
                 onPress={handleVerify}
-                activeOpacity={0.8}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#000" />
-                ) : (
-                  <Text style={styles.primaryButtonText}>Verify Email</Text>
-                )}
-              </TouchableOpacity>
+                text="Verify Email"
+                isLoading={isLoading}
+              />
             </View>
 
             <View style={styles.verificationActions}>
@@ -290,7 +391,7 @@ export const SignUpScreen = ({ route }: SignUpScreenProps) => {
                 hitSlop={8}
                 disabled={isLoading}
               >
-                <Text style={[styles.resendLink, isLoading && styles.linkDisabled]}>
+                <Text style={[styles.resendLink, { color: colors.accentMint }, isLoading && styles.linkDisabled]}>
                   Didn&apos;t receive code? Resend
                 </Text>
               </TouchableOpacity>
@@ -300,17 +401,14 @@ export const SignUpScreen = ({ route }: SignUpScreenProps) => {
                 hitSlop={8}
                 disabled={isLoading}
               >
-                <Text style={[styles.backLink, isLoading && styles.linkDisabled]}>
+                <Text style={[styles.backLink, { color: colors.accentMint }, isLoading && styles.linkDisabled]}>
                   ← Back to sign up
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          <View style={styles.footer}>
-            <Text style={styles.footerIcon}>♪</Text>
-            <Text style={styles.footerText}>Music Diary</Text>
-          </View>
+          <AuthFooter showIcon={true} />
         </KeyboardAvoidingView>
       </SafeAreaView>
     );
@@ -318,85 +416,53 @@ export const SignUpScreen = ({ route }: SignUpScreenProps) => {
 
   // Show sign-up form
   return (
-    <SafeAreaView style={[styles.safeArea, { paddingTop: insets.top }]}>
+    <SafeAreaView style={[styles.safeArea, { paddingTop: insets.top, backgroundColor: colors.background }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.container}
       >
         <View style={styles.content}>
-          <View style={styles.logoWrapper}>
-            <Text style={styles.logoIcon}>♪</Text>
-            <Text style={styles.logoText}>
-              {isVerificationOnly ? 'Verify Your Account' : 'Create Account'}
-            </Text>
-            {isVerificationOnly && (
-              <Text style={styles.logoSubtext}>
-                Complete verification for {emailAddress}
-              </Text>
-            )}
-          </View>
+          <AuthHeader 
+            subtitle={isVerificationOnly ? `Complete verification for ${emailAddress}` : "Create an Account"} 
+            title="eveokee"
+            subtitleColor={colors.textPrimary}
+            titleColor={colors.accentMint}
+          />
 
-          <View style={styles.form}>
-            <View>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={[styles.input, isVerificationOnly && styles.inputDisabled]}
-                placeholder="Enter your email"
-                placeholderTextColor="#999"
-                value={emailAddress}
-                onChangeText={setEmailAddress}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                editable={!isLoading && !isVerificationOnly}
-              />
-            </View>
+          <AuthForm
+            email={emailAddress}
+            password={password}
+            onEmailChange={setEmailAddress}
+            onPasswordChange={setPassword}
+            showPassword={!isVerificationOnly}
+            emailPlaceholder="Enter your email"
+            passwordPlaceholder="Create a password"
+            disabled={isLoading || isVerificationOnly}
+          />
 
-            {!isVerificationOnly && (
-              <View>
-                <Text style={styles.label}>Password</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Create a password"
-                  placeholderTextColor="#999"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!isLoading}
-                />
-              </View>
-            )}
+          <PrimaryButton
+            onPress={handleSignUp}
+            text={isVerificationOnly ? 'Send Verification Code' : 'Continue'}
+            isLoading={isLoading}
+          />
 
-            <TouchableOpacity
-              style={[styles.primaryButton, isLoading && styles.primaryButtonDisabled]}
-              onPress={handleSignUp}
-              activeOpacity={0.8}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#000" />
-              ) : (
-                <Text style={styles.primaryButtonText}>
-                  {isVerificationOnly ? 'Send Verification Code' : 'Continue'}
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
+          <AuthDivider />
 
-          <View style={styles.signInWrapper}>
-            <Text style={styles.signInHint}>Already have an account?</Text>
-            <TouchableOpacity onPress={handleSignIn} hitSlop={8}>
-              <Text style={styles.signInLink}>Sign in</Text>
-            </TouchableOpacity>
-          </View>
+          <SocialAuthButtons
+            onGooglePress={handleGoogleSignUp}
+            onApplePress={handleAppleSignUp}
+            isGoogleLoading={isGoogleLoading}
+            isAppleLoading={isAppleLoading}
+          />
+
+          <AuthNavigationLink
+            hint="Already have an account?"
+            linkText="Sign in"
+            onPress={handleSignIn}
+          />
         </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerIcon}>♪</Text>
-          <Text style={styles.footerText}>Music Diary</Text>
-        </View>
+        <AuthFooter showIcon={true} />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -405,7 +471,6 @@ export const SignUpScreen = ({ route }: SignUpScreenProps) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: palette.backgroundLight,
   },
   container: {
     flex: 1,
@@ -417,29 +482,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 32,
   },
-  logoWrapper: {
-    gap: 8,
-  },
-  logoIcon: {
-    fontSize: 48,
-    color: palette.textPrimaryLight,
-  },
-  logoText: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: palette.textPrimaryLight,
-  },
-  logoSubtext: {
-    fontSize: 14,
-    color: palette.textSecondaryLight,
-    marginTop: 4,
-  },
   form: {
     gap: 20,
   },
   label: {
     fontSize: 14,
-    color: palette.textPrimaryLight,
     marginBottom: 4,
     fontWeight: '500',
   },
@@ -447,56 +494,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#D1D1D6',
     paddingHorizontal: 16,
-    color: palette.textPrimaryLight,
-    backgroundColor: '#F2F2F7',
-  },
-  inputDisabled: {
-    backgroundColor: '#E5E5EA',
-    color: '#8E8E93',
-  },
-  primaryButton: {
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#E5E5EA',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 12,
-  },
-  primaryButtonDisabled: {
-    opacity: 0.7,
-  },
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-  },
-  signInWrapper: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  signInHint: {
-    color: palette.textSecondaryLight,
-  },
-  signInLink: {
-    color: '#4285F4',
-    fontWeight: '600',
-  },
-  footer: {
-    alignItems: 'center',
-    gap: 6,
-    paddingBottom: 16,
-  },
-  footerIcon: {
-    fontSize: 16,
-    color: palette.textSecondaryLight,
-  },
-  footerText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: palette.textPrimaryLight,
   },
   verificationActions: {
     gap: 16,
@@ -504,13 +502,11 @@ const styles = StyleSheet.create({
   },
   resendLink: {
     fontSize: 14,
-    color: '#4285F4',
     fontWeight: '500',
     textAlign: 'center',
   },
   backLink: {
     fontSize: 14,
-    color: '#4285F4',
     fontWeight: '600',
     textAlign: 'center',
   },
