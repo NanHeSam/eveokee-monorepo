@@ -29,18 +29,22 @@ crons.interval(
 
 /**
  * Daily RevenueCat Subscription Reconciliation
- * 
+ *
  * Runs daily at midnight UTC to:
- * 1. Find subscription statuses not updated in 24+ hours
- * 2. Call RevenueCat REST API to fetch latest customer info
- * 3. Compare with Convex snapshot and update if different
- * 
+ * 1. Find subscription statuses not updated in 24+ hours (via query)
+ * 2. Call RevenueCat REST API to fetch latest customer info (HTTP in action)
+ * 3. Compare with Convex snapshot and update if different (via mutation)
+ *
+ * Note: Calls an ACTION (not mutation) to follow Convex best practices:
+ * - I/O operations (HTTP calls) in actions
+ * - Database writes in mutations
+ *
  * This ensures backend stays in sync with RevenueCat for edge cases.
  */
 crons.daily(
   "revenuecat-reconciliation",
   { hourUTC: 0, minuteUTC: 0 },
-  internal.revenueCatBilling.reconcileStaleSubscriptions,
+  internal.revenueCatBilling.reconcileStaleSubscriptions, // ACTION: orchestrates HTTP + DB updates
   {}
 );
 

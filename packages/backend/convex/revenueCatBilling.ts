@@ -1,7 +1,6 @@
 import { v } from "convex/values";
-import { internalMutation, internalQuery } from "./_generated/server";
+import { internalMutation, internalQuery, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { Doc } from "./_generated/dataModel";
 
 const REVENUECAT_PRODUCT_TO_TIER: Record<string, string> = {
   "eveokee_premium_weekly": "monthly",
@@ -54,12 +53,9 @@ export const syncRevenueCatSubscription = internalMutation({
       v.literal("in_grace")
     ),
     platform: v.optional(v.union(
-      v.literal("app_store"),
-      v.literal("play_store"),
-      v.literal("stripe"),
-      v.literal("amazon"),
-      v.literal("mac_app_store"),
-      v.literal("promotional")
+      v.literal("app_store"),   // Apple App Store (iOS)
+      v.literal("play_store"),   // Google Play Store (Android)
+      v.literal("stripe")        // Stripe (Web)
     )),
     expiresAt: v.optional(v.number()),
   },
@@ -148,12 +144,13 @@ export const syncRevenueCatSubscription = internalMutation({
  */
 export const updateSubscriptionFromWebhook = internalMutation({
   args: {
-    userId: v.id("users"),
+    userId: v.id("users"), // Validated by isValidConvexId() in http.ts before calling this mutation
     eventType: v.string(),
     productId: v.string(),
     store: v.optional(v.string()),
-    expirationAtMs: v.optional(v.string()),
-    purchasedAtMs: v.optional(v.string()),
+    // RevenueCat may send timestamps as string or number, normalize to number
+    expirationAtMs: v.optional(v.union(v.string(), v.number())),
+    purchasedAtMs: v.optional(v.union(v.string(), v.number())),
     isTrialConversion: v.optional(v.boolean()),
     entitlementIds: v.optional(v.array(v.string())),
     rawEvent: v.optional(v.any()),
@@ -166,21 +163,31 @@ export const updateSubscriptionFromWebhook = internalMutation({
 
     const platform = getPlatformFromStore(args.store);
     const mappedTier = REVENUECAT_PRODUCT_TO_TIER[args.productId] || "free";
-    const expiresAt = args.expirationAtMs ? parseInt(args.expirationAtMs) : undefined;
-    const purchasedAt = args.purchasedAtMs ? parseInt(args.purchasedAtMs) : undefined;
-    
+
+    // Normalize timestamps to numbers
+    const expiresAt = args.expirationAtMs
+      ? typeof args.expirationAtMs === 'number'
+        ? args.expirationAtMs
+        : parseInt(args.expirationAtMs)
+      : undefined;
+    const purchasedAt = args.purchasedAtMs
+      ? typeof args.purchasedAtMs === 'number'
+        ? args.purchasedAtMs
+        : parseInt(args.purchasedAtMs)
+      : undefined;
+
     // Determine if this is an active subscription
     const isActive = ["INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION", "SUBSCRIPTION_UNPAUSED", "SUBSCRIPTION_RESUMED"].includes(args.eventType);
     const status = getStatusFromEventType(args.eventType, isActive);
-    
+
     const effectiveTier = status === "active" || status === "in_grace" ? mappedTier : "free";
 
     // Get current subscription state to detect changes
-    const currentSubscription = user.activeSubscriptionId 
-      ? await ctx.db.get(user.activeSubscriptionId) 
+    const currentSubscription = user.activeSubscriptionId
+      ? await ctx.db.get(user.activeSubscriptionId)
       : null;
 
-    const stateChanged = !currentSubscription || 
+    const stateChanged = !currentSubscription ||
       currentSubscription.status !== status ||
       currentSubscription.productId !== args.productId ||
       currentSubscription.subscriptionTier !== effectiveTier;
@@ -188,7 +195,7 @@ export const updateSubscriptionFromWebhook = internalMutation({
     // Update snapshot
     if (user.activeSubscriptionId && currentSubscription) {
       await ctx.db.patch(user.activeSubscriptionId, {
-        ...(platform && { platform: platform as any }),
+        ...(platform && { platform: platform as "app_store" | "play_store" | "stripe" }),
         productId: args.productId,
         status,
         subscriptionTier: effectiveTier,
@@ -198,7 +205,7 @@ export const updateSubscriptionFromWebhook = internalMutation({
     } else {
       const subscriptionId = await ctx.db.insert("subscriptionStatuses", {
         userId: user._id,
-        ...(platform && { platform: platform as any }),
+        ...(platform && { platform: platform as "app_store" | "play_store" | "stripe" }),
         productId: args.productId,
         status,
         subscriptionTier: effectiveTier,
@@ -218,9 +225,9 @@ export const updateSubscriptionFromWebhook = internalMutation({
     if (stateChanged) {
       await ctx.db.insert("subscriptionLog", {
         userId: user._id,
-        eventType: args.eventType as any,
+        eventType: args.eventType as any, // eventType is validated string, safe cast
         productId: args.productId,
-        platform: platform as any,
+        platform: platform as "app_store" | "play_store" | "stripe" | undefined,
         subscriptionTier: effectiveTier,
         status,
         expiresAt,
@@ -281,7 +288,7 @@ export const reconcileSubscription = internalMutation({
         userId: user._id,
         eventType: "RECONCILIATION",
         productId: backendSubscription.productId,
-        platform: backendSubscription.platform as any,
+        platform: backendSubscription.platform, // Type-safe: platform is validated in schema
         subscriptionTier: backendSubscription.subscriptionTier,
         status: rcStatus,
         expiresAt: backendSubscription.expiresAt,
@@ -360,69 +367,46 @@ async function fetchRevenueCatCustomer(appUserId: string): Promise<any> {
 
 /**
  * Daily reconciliation cron: Reconcile stale subscriptions
+ * ACTION: Orchestrates HTTP calls to RevenueCat and database updates via mutations
+ * This follows Convex best practice: I/O operations in actions, database writes in mutations
  */
-export const reconcileStaleSubscriptions = internalMutation({
+export const reconcileStaleSubscriptions = internalAction({
   args: {},
   returns: v.object({
     checked: v.number(),
     updated: v.number(),
   }),
   handler: async (ctx) => {
+    // Get list of stale subscriptions from database
     const staleSubscriptions = await ctx.runQuery(internal.revenueCatBilling.getStaleSubscriptions, {});
-    
+
     let updated = 0;
     let checked = 0;
 
     for (const subscription of staleSubscriptions) {
       checked++;
-      
+
       try {
+        // Call RevenueCat API with app_user_id (which equals userId)
         const rcCustomerInfo = await fetchRevenueCatCustomer(subscription.userId);
         if (!rcCustomerInfo) {
+          console.warn(`Failed to fetch RC customer info for user ${subscription.userId}`);
           continue;
         }
 
-        // Get user and subscription
-        const user: Doc<"users"> | null = await ctx.db
-          .query("users")
-          .filter((q) => q.eq(q.field("_id"), subscription.userId))
-          .first();
-        if (!user || !user.activeSubscriptionId) continue;
+        // Call mutation to update database based on RC data
+        const result = await ctx.runMutation(
+          internal.revenueCatBilling.reconcileSingleSubscription,
+          {
+            subscriptionStatusId: subscription.subscriptionStatusId,
+            userId: subscription.userId,
+            rcCustomerInfo,
+          }
+        );
 
-        const backendSubscription: Doc<"subscriptionStatuses"> | null = await ctx.db
-          .query("subscriptionStatuses")
-          .filter((q) => q.eq(q.field("_id"), user.activeSubscriptionId))
-          .first();
-        if (!backendSubscription) continue;
-
-        // Check RC entitlements
-        const rcEntitlements = rcCustomerInfo.subscriber?.entitlements?.active || {};
-        const hasActiveSubscription = Object.keys(rcEntitlements).length > 0;
-        const rcStatus = hasActiveSubscription ? "active" : "expired";
-
-        // Only update if different
-        if (backendSubscription.status !== rcStatus && backendSubscription.status !== "in_grace") {
-          const now = Date.now();
-          await ctx.db.patch(user.activeSubscriptionId, {
-            status: rcStatus,
-            lastVerifiedAt: now,
-          });
-
-          // Log reconciliation
-          await ctx.db.insert("subscriptionLog", {
-            userId: user._id,
-            eventType: "RECONCILIATION",
-            productId: backendSubscription.productId,
-            platform: backendSubscription.platform as any,
-            subscriptionTier: backendSubscription.subscriptionTier,
-            status: rcStatus,
-            expiresAt: backendSubscription.expiresAt,
-            rawEvent: rcCustomerInfo,
-            recordedAt: now,
-          });
-
+        if (result.updated) {
           updated++;
-          console.log(`Reconciled stale subscription for user ${user._id}: ${backendSubscription.status} → ${rcStatus}`);
+          console.log(`Reconciled stale subscription for user ${subscription.userId}: ${result.oldStatus} → ${result.newStatus}`);
         }
       } catch (error) {
         console.error(`Failed to reconcile subscription for user ${subscription.userId}:`, error);
@@ -432,5 +416,71 @@ export const reconcileStaleSubscriptions = internalMutation({
     console.log(`Reconciliation completed: ${checked} checked, ${updated} updated`);
 
     return { checked, updated };
+  },
+});
+
+/**
+ * MUTATION: Update a single subscription based on RevenueCat customer info
+ * Separated from action to follow Convex best practice
+ */
+export const reconcileSingleSubscription = internalMutation({
+  args: {
+    subscriptionStatusId: v.id("subscriptionStatuses"),
+    userId: v.id("users"),
+    rcCustomerInfo: v.any(), // RevenueCat customer info from API
+  },
+  returns: v.object({
+    updated: v.boolean(),
+    oldStatus: v.optional(v.string()),
+    newStatus: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    // Get the subscription record from database
+    const backendSubscription = await ctx.db.get(args.subscriptionStatusId);
+    if (!backendSubscription) {
+      console.warn(`Subscription ${args.subscriptionStatusId} not found during reconciliation`);
+      return { updated: false };
+    }
+
+    // Check RC entitlements to determine subscription status
+    const rcEntitlements = args.rcCustomerInfo?.subscriber?.entitlements?.active || {};
+    const hasActiveSubscription = Object.keys(rcEntitlements).length > 0;
+    const rcStatus = hasActiveSubscription ? "active" : "expired";
+
+    // Only update if status changed (and not in grace period)
+    if (backendSubscription.status !== rcStatus && backendSubscription.status !== "in_grace") {
+      const now = Date.now();
+
+      // Patch the subscription record
+      await ctx.db.patch(args.subscriptionStatusId, {
+        status: rcStatus,
+        lastVerifiedAt: now,
+      });
+
+      // Log reconciliation event
+      await ctx.db.insert("subscriptionLog", {
+        userId: args.userId,
+        eventType: "RECONCILIATION",
+        productId: backendSubscription.productId,
+        platform: backendSubscription.platform, // Type-safe: platform is validated in schema
+        subscriptionTier: backendSubscription.subscriptionTier,
+        status: rcStatus,
+        expiresAt: backendSubscription.expiresAt,
+        rawEvent: args.rcCustomerInfo,
+        recordedAt: now,
+      });
+
+      return {
+        updated: true,
+        oldStatus: backendSubscription.status,
+        newStatus: rcStatus,
+      };
+    }
+
+    return {
+      updated: false,
+      oldStatus: backendSubscription.status,
+      newStatus: rcStatus,
+    };
   },
 });
