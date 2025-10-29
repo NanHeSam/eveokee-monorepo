@@ -9,6 +9,7 @@ import {
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { Id, Doc } from "./_generated/dataModel";
+import { deleteUserData } from "./deleteAccount";
 import { getEffectiveMusicLimit, getPeriodDurationMs, type SubscriptionTier } from "./billing";
 
 export const createUser = internalMutation({
@@ -264,6 +265,20 @@ export const getUserProfile = query({
       subscription,
       callSettings,
     };
+  },
+});
+
+export const deleteAccount = mutation({
+  args: {},
+  returns: v.object({ success: v.boolean() }),
+  handler: async (ctx) => {
+    // Ensure authenticated user and fetch full user doc
+    const user = await getCurrentUserOrThrow(ctx);
+
+    // Purge all user-associated data across tables (hard delete)
+    await deleteUserData(ctx, user);
+
+    return { success: true };
   },
 });
 

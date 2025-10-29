@@ -16,6 +16,7 @@ import { DiaryScreen } from './app/screens/DiaryScreen';
 import { DiaryEditScreen } from './app/screens/DiaryEditScreen';
 import { PlaylistScreen } from './app/screens/PlaylistScreen';
 import { SettingsScreen } from './app/screens/SettingsScreen';
+import { AccountScreen } from './app/screens/AccountScreen';
 import { SignInScreen } from './app/screens/SignInScreen';
 import { SignUpScreen } from './app/screens/SignUpScreen';
 import { tokenCache } from './app/utils/tokenCache';
@@ -65,6 +66,7 @@ type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const DiaryStack = createNativeStackNavigator<DiaryStackParamList>();
+const SettingsStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 const DiaryStackNavigator = () => (
@@ -72,6 +74,13 @@ const DiaryStackNavigator = () => (
     <DiaryStack.Screen name="DiaryHome" component={DiaryScreen} />
     <DiaryStack.Screen name="DiaryEdit" component={DiaryEditScreen} />
   </DiaryStack.Navigator>
+);
+
+const SettingsStackNavigator = () => (
+  <SettingsStack.Navigator screenOptions={{ headerShown: false }}>
+    <SettingsStack.Screen name="SettingsHome" component={SettingsScreen} />
+    <SettingsStack.Screen name="Account" component={AccountScreen} />
+  </SettingsStack.Navigator>
 );
 
 const MainTabs = () => {
@@ -103,7 +112,7 @@ const MainTabs = () => {
     >
       <Tab.Screen name="Diary" component={DiaryStackNavigator} />
       <Tab.Screen name="Playlist" component={PlaylistScreen} />
-      <Tab.Screen name="Settings" component={SettingsScreen} />
+      <Tab.Screen name="Settings" component={SettingsStackNavigator} />
     </Tab.Navigator>
   );
 };

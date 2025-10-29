@@ -1,6 +1,7 @@
 import { Image, Text, TouchableOpacity, View, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCallback } from 'react';
+import { useNavigation } from '@react-navigation/native';
 
 import { useAuth, useUser } from '@clerk/clerk-expo';
 
@@ -14,6 +15,7 @@ export const SettingsScreen = () => {
   const { signOut } = useAuth();
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
 
   // Billing hooks
   const { subscriptionStatus } = useSubscription();
@@ -157,6 +159,31 @@ export const SettingsScreen = () => {
               Log out
             </Text>
           </TouchableOpacity>
+
+          {/* Account Management */}
+          <View className="mt-6">
+            <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
+              Account
+            </Text>
+            <TouchableOpacity
+              className="rounded-3xl p-5"
+              style={{ backgroundColor: colors.surface }}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('Account' as never)}
+            >
+              <View className="flex-row items-center justify-between">
+                <Text className="text-base font-medium" style={{ color: colors.textPrimary }}>
+                  Delete Account
+                </Text>
+                <Text className="text-base" style={{ color: colors.textSecondary }}>
+                  >
+                </Text>
+              </View>
+              <Text className="mt-2 text-sm" style={{ color: colors.textSecondary }}>
+                Permanently delete your account and all journal entries.
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
 
