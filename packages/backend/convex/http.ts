@@ -228,8 +228,43 @@ const vapiWebhookHandler = httpAction(async (ctx, req) => {
     return new Response("Method Not Allowed", { status: 405 });
   }
 
-  // TODO: Implement webhook authentication (Bearer token, HMAC, or X-Vapi-Secret signature verification)
-  // to prevent spoofing attacks. See Clerk webhook handler for reference implementation.
+  // 2. Security verification - Verify VAPI webhook authentication
+  const authHeader = req.headers.get("Authorization");
+  const vapiWebhookSecret = process.env.VAPI_WEBHOOK_SECRET;
+
+  if (!vapiWebhookSecret) {
+    console.error("VAPI_WEBHOOK_SECRET environment variable is not configured");
+    return new Response(
+      JSON.stringify({ error: "Webhook authentication not configured" }),
+      {
+        status: 500,
+        headers: jsonHeaders,
+      },
+    );
+  }
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    console.error("VAPI webhook: Missing or invalid Authorization header");
+    return new Response(
+      JSON.stringify({ error: "Unauthorized: Missing or invalid Authorization header" }),
+      {
+        status: 401,
+        headers: jsonHeaders,
+      },
+    );
+  }
+
+  const token = authHeader.substring(7); // Remove "Bearer " prefix
+  if (token !== vapiWebhookSecret) {
+    console.error("VAPI webhook: Invalid authentication token");
+    return new Response(
+      JSON.stringify({ error: "Unauthorized: Invalid authentication token" }),
+      {
+        status: 401,
+        headers: jsonHeaders,
+      },
+    );
+  }
 
   let event: any;
   try {

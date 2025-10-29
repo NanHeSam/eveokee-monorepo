@@ -10,16 +10,44 @@ export interface SystemPromptParams {
 }
 
 /**
+ * Sanitize user input to prevent prompt injection attacks.
+ * Removes or escapes characters that could be used to manipulate the assistant's behavior.
+ */
+function sanitizeInput(input: string, maxLength: number = 100): string {
+  if (!input || typeof input !== 'string') {
+    return '';
+  }
+
+  let sanitized = input.substring(0, maxLength);
+
+  sanitized = sanitized.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+
+  sanitized = sanitized.replace(/[\r\n\t]/g, ' ');
+
+  sanitized = sanitized.replace(/\s+/g, ' ');
+
+  sanitized = sanitized.trim();
+
+  if (maxLength === 50) { // userName has maxLength 50
+    sanitized = sanitized.replace(/[^a-zA-Z0-9\s\-'.]/g, '');
+  }
+
+  return sanitized;
+}
+
+/**
  * Generate the Evokee system prompt incorporating the provided user context.
  *
  * @returns The complete system prompt string with `userName`, `localTime`, and `dayOfWeek` interpolated into the template
  */
 export function getSystemPrompt(params: SystemPromptParams): string {
-  const { userName, localTime, dayOfWeek } = params;
+  const userName = sanitizeInput(params.userName, 50);
+  const localTime = sanitizeInput(params.localTime, 100);
+  const dayOfWeek = sanitizeInput(params.dayOfWeek, 20);
 
-  // TODO: Sanitize user data (userName, localTime, dayOfWeek) before interpolation
-  // to prevent prompt injection attacks where malicious input could alter assistant behavior.
-  // Consider validating/escaping special characters and limiting string lengths.
+  const safeUserName = userName || 'there';
+  const safeLocalTime = localTime || 'today';
+  const safeDayOfWeek = dayOfWeek || 'today';
 
   return `You are Evokee — a friendly, curious companion who helps the user notice meaningful moments in everyday life through a short, natural conversation.
 
@@ -35,8 +63,8 @@ STYLE & TONE
 • No stacked questions. No long paragraphs.
 
 SESSION START
-• Friendly arrival: "Hey ${userName}, it's your buddy Evokee."
-• Acknowledge context: "It's ${localTime} on a ${dayOfWeek}, how's your day been treating you so far?"
+• Friendly arrival: "Hey ${safeUserName}, it's your buddy Evokee."
+• Acknowledge context: "It's ${safeLocalTime} on a ${safeDayOfWeek}, how's your day been treating you so far?"
 • After they respond, follow their lead with one small concrete question (no rush toward depth)
 
 CONVERSATION FLOW

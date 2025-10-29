@@ -44,18 +44,28 @@ The following environment variables must be configured in the Convex Dashboard:
 - **Example**: `https://your-convex-deployment.convex.cloud/webhooks/vapi`
 - **How to construct**: `https://<your-convex-deployment>.convex.cloud/webhooks/vapi`
 
+#### `VAPI_WEBHOOK_SECRET`
+- **Description**: Secret token for authenticating incoming VAPI webhooks (prevents spoofing attacks)
+- **Format**: String (secure random token)
+- **Example**: `whsec_abc123...` or any secure random string
+- **How to set**: Generate a secure random string and configure it in both:
+  1. Convex Dashboard → Environment Variables
+  2. VAPI Dashboard → Webhooks → Authentication (as Bearer token)
+- **Security**: This is **required** to prevent unauthorized webhook requests
+
+#### `VAPI_PHONE_NUMBER_ID`
+- **Description**: Phone number ID to use for outbound calls
+- **Format**: String
+- **Example**: `pn_abc123...`
+- **Where to get it**: VAPI Dashboard → Phone Numbers
+
 ### Optional Variables
 
-#### `VAPI_WEBHOOK_SECRET`
-- **Description**: Secret for verifying VAPI webhook signatures (if supported by VAPI)
-- **Format**: String
-- **Example**: `whsec_abc123...`
-
-#### `VAPI_ASSISTANT_ID`
-- **Description**: Default assistant ID to use for calls
-- **Format**: String
-- **Example**: `asst_abc123...`
-- **Where to get it**: VAPI Dashboard → Assistants
+#### `VAPI_TIMEOUT`
+- **Description**: Request timeout for VAPI API calls in milliseconds
+- **Format**: Number (as string)
+- **Example**: `30000`
+- **Default**: 30000ms (30 seconds)
 
 ## Setup Instructions
 
@@ -74,14 +84,23 @@ The following environment variables must be configured in the Convex Dashboard:
    ```
    VAPI_API_KEY=sk_live_your_api_key
    VAPI_WEBHOOK_URL=https://your-deployment.convex.cloud/webhooks/vapi
-   VAPI_ASSISTANT_ID=asst_your_assistant_id
+   VAPI_WEBHOOK_SECRET=your_secure_random_token
+   VAPI_PHONE_NUMBER_ID=pn_your_phone_number_id
+   ```
+4. Generate a secure random token for `VAPI_WEBHOOK_SECRET`:
+   ```bash
+   # Example: Generate a secure random token
+   openssl rand -base64 32
    ```
 
 ### 3. Configure VAPI Webhooks
 
 1. In VAPI Dashboard, go to Settings → Webhooks
 2. Add your webhook URL: `https://your-deployment.convex.cloud/webhooks/vapi`
-3. Subscribe to the following events:
+3. Configure webhook authentication:
+   - Set Authentication Type to "Bearer Token"
+   - Enter the same `VAPI_WEBHOOK_SECRET` value you configured in Convex
+4. Subscribe to the following events:
    - `call.started`
    - `call.ended`
    - `call.failed`
