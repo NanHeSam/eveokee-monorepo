@@ -330,3 +330,63 @@ export const canCurrentUserGenerateMusic = query({
     };
   },
 });
+
+/**
+ * Check usage with reconciliation
+ * Mobile provides RC customerInfo to compare with backend and reconcile if different
+ */
+export const checkUsageWithReconciliation = mutation({
+  args: { 
+    rcCustomerInfo: v.optional(v.any()) // From RevenueCat SDK on mobile
+  },
+  returns: v.object({
+    canGenerate: v.boolean(),
+    tier: v.string(),
+    currentUsage: v.number(),
+    limit: v.number(),
+    remainingQuota: v.number(),
+    reconciled: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const { userId } = await ensureCurrentUser(ctx);
+
+    // If RC customer info provided, check if reconciliation needed
+    if (args.rcCustomerInfo) {
+      const reconcileResult = await ctx.runMutation(internal.revenueCatBilling.reconcileSubscription, {
+        userId,
+        rcCustomerInfo: args.rcCustomerInfo,
+      });
+
+      if (reconcileResult.updated) {
+        console.log(`Reconciled subscription: ${reconcileResult.backendStatus} → ${reconcileResult.rcStatus}`);
+      }
+    }
+
+    // Get usage after potential reconciliation
+    const snapshot = await ctx.runQuery(internal.usage.getUsageSnapshot, {
+      userId,
+    });
+
+    if (!snapshot) {
+      return {
+        canGenerate: false,
+        tier: "free",
+        currentUsage: 0,
+        limit: 0,
+        remainingQuota: 0,
+        reconciled: false,
+      };
+    }
+
+    const canGenerate = snapshot.remainingQuota > 0;
+
+    return {
+      canGenerate,
+      tier: snapshot.tier,
+      currentUsage: snapshot.musicGenerationsUsed,
+      limit: snapshot.musicLimit,
+      remainingQuota: snapshot.remainingQuota,
+      reconciled: args.rcCustomerInfo ? true : false,
+    };
+  },
+});

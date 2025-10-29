@@ -27,4 +27,21 @@ crons.interval(
   {}
 );
 
+/**
+ * Daily RevenueCat Subscription Reconciliation
+ * 
+ * Runs daily at midnight UTC to:
+ * 1. Find subscription statuses not updated in 24+ hours
+ * 2. Call RevenueCat REST API to fetch latest customer info
+ * 3. Compare with Convex snapshot and update if different
+ * 
+ * This ensures backend stays in sync with RevenueCat for edge cases.
+ */
+crons.daily(
+  "revenuecat-reconciliation",
+  { hourUTC: 0, minuteUTC: 0 },
+  internal.revenueCatBilling.reconcileStaleSubscriptions,
+  {}
+);
+
 export default crons;

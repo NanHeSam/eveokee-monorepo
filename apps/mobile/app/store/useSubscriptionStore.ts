@@ -69,16 +69,19 @@ export function useSubscription() {
  * - `usage` — Query result containing the current user's `UsageState` (or `undefined` while loading).
  * - `recordGeneration` — Mutation function to record a music generation for the current user.
  * - `canGenerate` — Query result indicating whether the current user may generate music (`true` or `false`, or `undefined` while loading).
+ * - `checkUsageWithReconciliation` — Mutation function to check usage with RevenueCat reconciliation.
  */
 export function useUsage() {
   const usage = useQuery(api.usage.getCurrentUserUsage);
   const recordGeneration = useMutation(api.usage.recordCurrentUserMusicGeneration);
   const canGenerate = useQuery(api.usage.canCurrentUserGenerateMusic);
+  const checkUsageWithReconciliation = useMutation(api.usage.checkUsageWithReconciliation);
 
   return {
     usage,
     recordGeneration,
     canGenerate,
+    checkUsageWithReconciliation,
   };
 }
 

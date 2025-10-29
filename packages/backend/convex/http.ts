@@ -459,87 +459,54 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
 
   const eventType = event.event?.type;
   
-  if (eventType === "INITIAL_PURCHASE" || eventType === "RENEWAL" || eventType === "NON_RENEWING_PURCHASE") {
-    const appUserId = event.event?.app_user_id; // This is the Convex user._id
-    const productId = event.event?.product_id;
-    const expiresAt = event.event?.expiration_at_ms;
-    const store = event.event?.store; // e.g., "APP_STORE", "PLAY_STORE", "STRIPE", etc.
-
-    if (!appUserId || !productId) {
-      console.warn("RevenueCat webhook missing required fields", event);
-      return new Response(
-        JSON.stringify({ error: "Missing required fields" }),
-        {
-          status: 400,
-          headers: jsonHeaders,
-        },
-      );
-    }
-
-    // Map RevenueCat store names to our platform enum
-    const platform = getPlatformFromStore(store);
-
-    try {
-      // app_user_id is the Convex user._id (set via Purchases.logIn)
-      await ctx.runMutation(internal.revenueCatBilling.syncRevenueCatSubscription, {
-        userId: appUserId as any, // Cast to Id<"users"> - validated in mutation
-        productId,
-        status: "active",
-        platform: platform as any,
-        expiresAt: expiresAt ? parseInt(expiresAt) : undefined,
-      });
-    } catch (error) {
-      console.error("Failed to sync RevenueCat subscription", error);
-      return new Response(
-        JSON.stringify({ error: "Failed to sync subscription" }),
-        {
-          status: 500,
-          headers: jsonHeaders,
-        },
-      );
-    }
-  } else if (eventType === "CANCELLATION" || eventType === "EXPIRATION") {
-    const appUserId = event.event?.app_user_id; // This is the Convex user._id
-    const productId = event.event?.product_id;
-    const store = event.event?.store;
-
-    if (!appUserId || !productId) {
-      console.warn("RevenueCat webhook missing required fields", event);
-      return new Response(
-        JSON.stringify({ error: "Missing required fields" }),
-        {
-          status: 400,
-          headers: jsonHeaders,
-        },
-      );
-    }
-
-    // Map RevenueCat store names to our platform enum
-    const platform = getPlatformFromStore(store);
-
-    try {
-      // app_user_id is the Convex user._id (set via Purchases.logIn)
-      await ctx.runMutation(internal.revenueCatBilling.syncRevenueCatSubscription, {
-        userId: appUserId as any, // Cast to Id<"users"> - validated in mutation
-        productId,
-        status: eventType === "CANCELLATION" ? "canceled" : "expired",
-        platform: platform as any,
-      });
-    } catch (error) {
-      console.error("Failed to sync RevenueCat subscription", error);
-      return new Response(
-        JSON.stringify({ error: "Failed to sync subscription" }),
-        {
-          status: 500,
-          headers: jsonHeaders,
-        },
-      );
-    }
-  } else {
-    console.log(`Ignoring RevenueCat webhook event type: ${eventType}`, event);
+  // Handle all RC webhook event types
+  const appUserId = event.event?.app_user_id;
+  const productId = event.event?.product_id;
+  
+  if (!appUserId || !productId) {
+    console.warn("RevenueCat webhook missing required fields", event);
+    return new Response(
+      JSON.stringify({ status: "ignored", reason: "Missing required fields" }),
+      {
+        status: 200,
+        headers: jsonHeaders,
+      },
+    );
   }
 
-  // 3. Return response
+  // Extract webhook event fields
+  const expirationAtMs = event.event?.expiration_at_ms;
+  const purchasedAtMs = event.event?.purchased_at_ms;
+  const store = event.event?.store;
+  const isTrialConversion = event.event?.is_trial_conversion;
+  const entitlements = event.event?.entitlements || {};
+  const entitlementIds = entitlements.keys ? Object.keys(entitlements) : [];
+
+  try {
+    // Use the new webhook handler that updates snapshot and logs conditionally
+    await ctx.runMutation(internal.revenueCatBilling.updateSubscriptionFromWebhook, {
+      userId: appUserId as any,
+      eventType,
+      productId,
+      store,
+      expirationAtMs,
+      purchasedAtMs,
+      isTrialConversion,
+      entitlementIds,
+      rawEvent: event,
+    });
+  } catch (error) {
+    console.error("Failed to process RevenueCat webhook", error);
+    return new Response(
+      JSON.stringify({ error: "Failed to process webhook" }),
+      {
+        status: 500,
+        headers: jsonHeaders,
+      },
+    );
+  }
+
+  // Always return success (idempotent processing)
   return new Response(
     JSON.stringify({ status: "ok" }),
     {
