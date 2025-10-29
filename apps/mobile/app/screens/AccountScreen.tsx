@@ -10,7 +10,8 @@ export const AccountScreen = () => {
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
   const { signOut } = useAuth();
-  const deleteAccountMutation = useMutation(api.users.deleteAccount);
+  // Cast to any to avoid transient type mismatch if Convex codegen is stale
+  const deleteAccountMutation = useMutation((api as any).users.deleteAccount);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const confirmAndDelete = useCallback(() => {

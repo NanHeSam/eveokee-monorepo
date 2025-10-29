@@ -176,7 +176,7 @@ export const SettingsScreen = () => {
                   Delete Account
                 </Text>
                 <Text className="text-base" style={{ color: colors.textSecondary }}>
-                  >
+                  {'>'}
                 </Text>
               </View>
               <Text className="mt-2 text-sm" style={{ color: colors.textSecondary }}>
