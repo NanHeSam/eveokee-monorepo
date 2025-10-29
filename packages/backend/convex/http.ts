@@ -4,7 +4,7 @@ import { internal } from "./_generated/api";
 import { MUSIC_GENERATION_CALLBACK_PATH, CLERK_WEBHOOK_PATH, REVENUECAT_WEBHOOK_PATH, VAPI_WEBHOOK_PATH } from "./constant";
 import { verifyWebhook } from "@clerk/backend/webhooks";
 import type { Id } from "./_generated/dataModel";
-import { createLogger, generateCorrelationId, sanitizeForLogging } from "./lib/logger";
+import { createLogger, generateCorrelationId, sanitizeForLogging, sanitizeForConvex } from "./lib/logger";
 
 type RawSunoCallback = {
   code?: unknown;
@@ -592,6 +592,9 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
   try {
     // 6. Process webhook - update subscription in database
     // Note: appUserId is validated as Id<"users"> by isValidConvexId() type guard above
+    // Sanitize rawEvent to remove Convex-incompatible field names (starting with $ or _)
+    const sanitizedEvent = sanitizeForConvex(event);
+
     await ctx.runMutation(internal.revenueCatBilling.updateSubscriptionFromWebhook, {
       userId: appUserId, // Type-safe: validated by isValidConvexId()
       eventType,
@@ -601,7 +604,7 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
       purchasedAtMs,
       isTrialConversion,
       entitlementIds,
-      rawEvent: event,
+      rawEvent: sanitizedEvent,
     });
 
     eventLogger.info("Webhook processed successfully");

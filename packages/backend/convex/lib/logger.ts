@@ -197,6 +197,39 @@ export function sanitizeForLogging(data: Record<string, unknown>): Record<string
 }
 
 /**
+ * Sanitize object for Convex storage by removing/renaming invalid field names
+ * Convex doesn't allow field names starting with '$' or '_' (reserved)
+ */
+export function sanitizeForConvex(data: unknown): unknown {
+  if (data === null || data === undefined) {
+    return data;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeForConvex(item));
+  }
+
+  if (typeof data === 'object') {
+    const sanitized: Record<string, unknown> = {};
+
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+      // Remove/rename fields starting with $ or _ (Convex reserved characters)
+      if (key.startsWith('$') || key.startsWith('_')) {
+        // Rename by prefixing with 'x_' to preserve the data
+        const newKey = `x_${key}`;
+        sanitized[newKey] = sanitizeForConvex(value);
+      } else {
+        sanitized[key] = sanitizeForConvex(value);
+      }
+    }
+
+    return sanitized;
+  }
+
+  return data;
+}
+
+/**
  * Log a webhook event with standard fields
  */
 export function logWebhookEvent(

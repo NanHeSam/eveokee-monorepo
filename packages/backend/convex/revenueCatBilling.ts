@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { createLogger, generateCorrelationId, logReconciliation } from "./lib/logger";
+import { createLogger, generateCorrelationId, logReconciliation, sanitizeForConvex } from "./lib/logger";
 
 const REVENUECAT_PRODUCT_TO_TIER: Record<string, string> = {
   "eveokee_premium_weekly": "monthly",
@@ -293,7 +293,7 @@ export const reconcileSubscription = internalMutation({
         subscriptionTier: backendSubscription.subscriptionTier,
         status: rcStatus,
         expiresAt: backendSubscription.expiresAt,
-        rawEvent: args.rcCustomerInfo,
+        rawEvent: sanitizeForConvex(args.rcCustomerInfo),
         recordedAt: now,
       });
 
@@ -510,7 +510,7 @@ export const reconcileSingleSubscription = internalMutation({
         subscriptionTier: backendSubscription.subscriptionTier,
         status: rcStatus,
         expiresAt: backendSubscription.expiresAt,
-        rawEvent: args.rcCustomerInfo,
+        rawEvent: sanitizeForConvex(args.rcCustomerInfo),
         recordedAt: now,
       });
 
