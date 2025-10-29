@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useUsage } from '../../store/useSubscriptionStore';
+import { useUsage, type ReconciledUsageData } from '../../store/useSubscriptionStore';
 import { getCustomerInfo } from '../../utils/revenueCat';
 
 interface UsageWithReconciliationProps {
@@ -18,7 +18,7 @@ export function UsageWithReconciliation({
 }: UsageWithReconciliationProps) {
   const { checkUsageWithReconciliation } = useUsage();
   const [isReconciling, setIsReconciling] = useState(false);
-  const [reconciledUsage, setReconciledUsage] = useState<any>(null);
+  const [reconciledUsage, setReconciledUsage] = useState<ReconciledUsageData | null>(null);
 
   const handleReconcileUsage = async () => {
     setIsReconciling(true);
@@ -74,11 +74,14 @@ export function UsageWithReconciliation({
       </View>
 
       <View className="bg-gray-200 rounded-full h-3 mb-2">
-        <View 
+        <View
           className={`h-3 rounded-full ${
             usage.remainingQuota === 0 ? 'bg-red-500' : 'bg-blue-500'
           }`}
-          style={{ width: `${(usage.currentUsage / usage.limit) * 100}%` }}
+          style={{
+            // Guard against divide-by-zero when limit is 0
+            width: `${usage.limit > 0 ? Math.min(100, (usage.currentUsage / usage.limit) * 100) : 0}%`
+          }}
         />
       </View>
 
