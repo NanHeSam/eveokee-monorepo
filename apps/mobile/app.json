@@ -8,6 +8,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "plugins": [
+      "expo-apple-authentication",
       "./plugins/with-folly-no-coroutines",
       "./plugins/with-revenuecat",
       "expo-dev-client",

@@ -53,6 +53,9 @@ importers:
       expo:
         specifier: 54.0.13
         version: 54.0.13(@babel/core@7.28.5)(react-native@0.81.4)(react@19.1.0)
+      expo-apple-authentication:
+        specifier: ~8.0.7
+        version: 8.0.7(expo@54.0.13)(react-native@0.81.4)
       expo-auth-session:
         specifier: ~7.0.8
         version: 7.0.8(expo@54.0.13)(react-native@0.81.4)(react@19.1.0)
@@ -7238,6 +7241,16 @@ packages:
       jest-message-util: 29.7.0
       jest-util: 29.7.0
     dev: true
+
+  /expo-apple-authentication@8.0.7(expo@54.0.13)(react-native@0.81.4):
+    resolution: {integrity: sha512-KHLKecxwlPm42W/JYEefcFcXu5BW88wlgKSoikOFwRoWpzzryJxsNacMJRqrzAP3lFecPAK+ATgyJYvFkp10kw==}
+    peerDependencies:
+      expo: '*'
+      react-native: '*'
+    dependencies:
+      expo: 54.0.13(@babel/core@7.28.5)(react-native@0.81.4)(react@19.1.0)
+      react-native: 0.81.4(@babel/core@7.28.5)(@types/react@19.2.2)(react@19.1.0)
+    dev: false
 
   /expo-application@7.0.7(expo@54.0.13):
     resolution: {integrity: sha512-Jt1/qqnoDUbZ+bK91+dHaZ1vrPDtRBOltRa681EeedkisqguuEeUx4UHqwVyDK2oHWsK6lO3ojetoA4h8OmNcg==}
