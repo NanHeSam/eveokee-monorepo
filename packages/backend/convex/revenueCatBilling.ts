@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { createLogger, generateCorrelationId, logReconciliation } from "./lib/logger";
 
 const REVENUECAT_PRODUCT_TO_TIER: Record<string, string> = {
   "eveokee_premium_weekly": "monthly",
@@ -377,20 +378,41 @@ export const reconcileStaleSubscriptions = internalAction({
     updated: v.number(),
   }),
   handler: async (ctx) => {
+    const correlationId = generateCorrelationId();
+    const logger = createLogger({
+      functionName: 'reconcileStaleSubscriptions',
+      correlationId,
+    });
+
+    logger.startTimer();
+    logger.info('Starting subscription reconciliation cron');
+
     // Get list of stale subscriptions from database
     const staleSubscriptions = await ctx.runQuery(internal.revenueCatBilling.getStaleSubscriptions, {});
 
+    logger.info('Retrieved stale subscriptions', {
+      staleCount: staleSubscriptions.length,
+    });
+
     let updated = 0;
     let checked = 0;
+    const errors: Array<{ userId: string; error: string }> = [];
 
     for (const subscription of staleSubscriptions) {
       checked++;
 
+      const subLogger = logger.child({
+        userId: subscription.userId,
+        subscriptionStatusId: subscription.subscriptionStatusId,
+      });
+
       try {
         // Call RevenueCat API with app_user_id (which equals userId)
+        subLogger.debug('Fetching RevenueCat customer info');
         const rcCustomerInfo = await fetchRevenueCatCustomer(subscription.userId);
+
         if (!rcCustomerInfo) {
-          console.warn(`Failed to fetch RC customer info for user ${subscription.userId}`);
+          subLogger.warn('Failed to fetch RC customer info - no data returned');
           continue;
         }
 
@@ -406,14 +428,36 @@ export const reconcileStaleSubscriptions = internalAction({
 
         if (result.updated) {
           updated++;
-          console.log(`Reconciled stale subscription for user ${subscription.userId}: ${result.oldStatus} → ${result.newStatus}`);
+          logReconciliation(
+            subLogger,
+            subscription.userId,
+            result.oldStatus || 'unknown',
+            result.newStatus || 'unknown'
+          );
+        } else {
+          subLogger.debug('Subscription status unchanged');
         }
       } catch (error) {
-        console.error(`Failed to reconcile subscription for user ${subscription.userId}:`, error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        errors.push({ userId: subscription.userId, error: errorMsg });
+        subLogger.error('Failed to reconcile subscription', error);
       }
     }
 
-    console.log(`Reconciliation completed: ${checked} checked, ${updated} updated`);
+    logger.info('Reconciliation completed', {
+      checked,
+      updated,
+      unchanged: checked - updated,
+      errorCount: errors.length,
+      successRate: checked > 0 ? ((checked - errors.length) / checked * 100).toFixed(2) + '%' : '0%',
+    });
+
+    if (errors.length > 0) {
+      logger.warn('Reconciliation errors encountered', {
+        errors: errors.slice(0, 10), // Log first 10 errors
+        totalErrors: errors.length,
+      });
+    }
 
     return { checked, updated };
   },

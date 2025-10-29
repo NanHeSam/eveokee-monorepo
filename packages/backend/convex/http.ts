@@ -4,6 +4,7 @@ import { internal } from "./_generated/api";
 import { MUSIC_GENERATION_CALLBACK_PATH, CLERK_WEBHOOK_PATH, REVENUECAT_WEBHOOK_PATH, VAPI_WEBHOOK_PATH } from "./constant";
 import { verifyWebhook } from "@clerk/backend/webhooks";
 import type { Id } from "./_generated/dataModel";
+import { createLogger, generateCorrelationId, sanitizeForLogging } from "./lib/logger";
 
 type RawSunoCallback = {
   code?: unknown;
@@ -450,8 +451,19 @@ const vapiWebhookHandler = httpAction(async (ctx, req) => {
 });
 
 const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
+  // Initialize structured logger with correlation ID
+  const correlationId = generateCorrelationId();
+  const logger = createLogger({
+    functionName: 'revenueCatWebhookHandler',
+    correlationId,
+  });
+
+  logger.startTimer();
+  logger.info('RevenueCat webhook received');
+
   // 1. Validate request
   if (req.method !== "POST") {
+    logger.warn('Invalid HTTP method', { method: req.method });
     return new Response("Method Not Allowed", { status: 405 });
   }
 
@@ -461,7 +473,7 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
   const expectedToken = process.env.REVENUECAT_WEBHOOK_SECRET;
 
   if (!expectedToken) {
-    console.error("REVENUECAT_WEBHOOK_SECRET not configured in environment variables");
+    logger.error("REVENUECAT_WEBHOOK_SECRET not configured in environment variables");
     return new Response(
       JSON.stringify({ error: "Server configuration error" }),
       {
@@ -472,7 +484,7 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
   }
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    console.error("RevenueCat webhook missing or invalid Authorization header");
+    logger.warn("Webhook authentication failed: missing or invalid Authorization header");
     return new Response(
       JSON.stringify({ error: "Unauthorized" }),
       {
@@ -484,7 +496,7 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
 
   const receivedToken = authHeader.substring(7); // Remove "Bearer " prefix
   if (receivedToken !== expectedToken) {
-    console.error("RevenueCat webhook authorization token mismatch");
+    logger.warn("Webhook authentication failed: token mismatch");
     return new Response(
       JSON.stringify({ error: "Unauthorized" }),
       {
@@ -494,12 +506,14 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
     );
   }
 
+  logger.debug("Webhook authentication successful");
+
   // 3. Parse webhook payload
   let event: any;
   try {
     event = await req.json();
   } catch (error) {
-    console.error("Failed to parse RevenueCat webhook JSON", error);
+    logger.error("Failed to parse webhook JSON payload", error);
     return new Response(
       JSON.stringify({ error: "Invalid JSON" }),
       {
@@ -513,10 +527,27 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
   const eventType = event.event?.type;
   const appUserId = event.event?.app_user_id;
   const productId = event.event?.product_id;
+  const store = event.event?.store;
+
+  // Add event context to logger
+  const eventLogger = logger.child({
+    eventType,
+    userId: appUserId,
+    productId,
+    store,
+  });
+
+  eventLogger.info('Webhook payload parsed', {
+    hasEntitlements: !!event.event?.entitlements,
+    hasExpirationDate: !!event.event?.expiration_at_ms,
+  });
 
   // 4.1 Validate required fields
   if (!appUserId || !productId) {
-    console.warn("RevenueCat webhook missing required fields", { eventType, appUserId, productId });
+    eventLogger.warn("Webhook ignored: missing required fields", {
+      hasUserId: !!appUserId,
+      hasProductId: !!productId,
+    });
     return new Response(
       JSON.stringify({ status: "ignored", reason: "Missing required fields" }),
       {
@@ -528,7 +559,10 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
 
   // 4.2 Validate user ID format (app_user_id should equal Convex users._id)
   if (!isValidConvexId(appUserId)) {
-    console.error("RevenueCat webhook invalid user ID format", { appUserId });
+    eventLogger.error("Invalid user ID format", undefined, {
+      userIdLength: appUserId.length,
+      userIdPattern: /^[a-zA-Z0-9_-]+$/.test(appUserId),
+    });
     return new Response(
       JSON.stringify({ status: "error", reason: "Invalid user ID format" }),
       {
@@ -538,15 +572,22 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
     );
   }
 
+  eventLogger.debug("Webhook validation passed");
+
   // 5. Extract webhook event fields
   const expirationAtMs = event.event?.expiration_at_ms;
   const purchasedAtMs = event.event?.purchased_at_ms;
-  const store = event.event?.store;
   const isTrialConversion = event.event?.is_trial_conversion;
 
   // 5.1 Fix entitlementIds extraction (CodeRabbit fix: use Object.keys for plain objects)
   const entitlements = (event.event?.entitlements ?? {}) as Record<string, unknown>;
   const entitlementIds = Object.keys(entitlements);
+
+  eventLogger.debug("Webhook data extracted", {
+    entitlementCount: entitlementIds.length,
+    hasExpiration: !!expirationAtMs,
+    isTrialConversion,
+  });
 
   try {
     // 6. Process webhook - update subscription in database
@@ -562,8 +603,12 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
       entitlementIds,
       rawEvent: event,
     });
+
+    eventLogger.info("Webhook processed successfully");
   } catch (error) {
-    console.error("Failed to process RevenueCat webhook", error);
+    eventLogger.error("Failed to process webhook mutation", error, {
+      mutationName: 'updateSubscriptionFromWebhook',
+    });
     return new Response(
       JSON.stringify({ error: "Failed to process webhook" }),
       {
@@ -574,8 +619,13 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
   }
 
   // 7. Return success response (idempotent processing)
+  eventLogger.info("Webhook completed", {
+    status: 'success',
+    correlationId,
+  });
+
   return new Response(
-    JSON.stringify({ status: "ok" }),
+    JSON.stringify({ status: "ok", correlationId }),
     {
       status: 200,
       headers: jsonHeaders,
