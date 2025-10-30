@@ -3,6 +3,8 @@ import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { MUSIC_GENERATION_CALLBACK_PATH, CLERK_WEBHOOK_PATH, REVENUECAT_WEBHOOK_PATH, VAPI_WEBHOOK_PATH } from "./constant";
 import { verifyWebhook } from "@clerk/backend/webhooks";
+import type { Id } from "./_generated/dataModel";
+import { createLogger, generateCorrelationId, sanitizeForLogging, sanitizeForConvex } from "./lib/logger";
 
 type RawSunoCallback = {
   code?: unknown;
@@ -19,15 +21,26 @@ const jsonHeaders = {
   "Content-Type": "application/json",
 };
 
-// Map RevenueCat store names to our platform enum
-const getPlatformFromStore = (store: string | undefined): string | undefined => {
-  const platformMap: Record<string, string> = {
+/**
+ * Type guard to validate if a string is a valid Convex ID format.
+ * Convex IDs are base64-encoded strings with a specific pattern.
+ */
+function isValidConvexId(id: string): id is Id<"users"> {
+  // Convex IDs are non-empty strings with alphanumeric characters, underscores, and hyphens
+  // They typically follow a pattern but we'll do a basic validation
+  return typeof id === "string" && id.length > 0 && /^[a-zA-Z0-9_-]+$/.test(id);
+}
+
+/**
+ * Map RevenueCat store names to our platform enum.
+ * Only supports: Apple App Store, Google Play Store, and Stripe (web).
+ * Returns undefined for unsupported platforms.
+ */
+const getPlatformFromStore = (store: string | undefined): "app_store" | "play_store" | "stripe" | undefined => {
+  const platformMap: Record<string, "app_store" | "play_store" | "stripe"> = {
     "APP_STORE": "app_store",
     "PLAY_STORE": "play_store",
     "STRIPE": "stripe",
-    "AMAZON": "amazon",
-    "MAC_APP_STORE": "mac_app_store",
-    "PROMOTIONAL": "promotional",
   };
   return store ? platformMap[store] : undefined;
 };
@@ -438,16 +451,69 @@ const vapiWebhookHandler = httpAction(async (ctx, req) => {
 });
 
 const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
+  // Initialize structured logger with correlation ID
+  const correlationId = generateCorrelationId();
+  const logger = createLogger({
+    functionName: 'revenueCatWebhookHandler',
+    correlationId,
+  });
+
+  logger.startTimer();
+  logger.info('RevenueCat webhook received');
+
   // 1. Validate request
   if (req.method !== "POST") {
+    logger.warn('Invalid HTTP method', { method: req.method });
     return new Response("Method Not Allowed", { status: 405 });
   }
 
+  // 2. Security verification
+  // 2.1 Verify webhook authorization header (Bearer token)
+  const authHeader = req.headers.get("Authorization");
+  const expectedToken = process.env.REVENUECAT_WEBHOOK_SECRET;
+
+  if (!expectedToken) {
+    logger.error("REVENUECAT_WEBHOOK_SECRET not configured in environment variables");
+    return new Response(
+      JSON.stringify({ error: "Server configuration error" }),
+      {
+        status: 500,
+        headers: jsonHeaders,
+      },
+    );
+  }
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    logger.warn("Webhook authentication failed: missing or invalid Authorization header");
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      {
+        status: 401,
+        headers: jsonHeaders,
+      },
+    );
+  }
+
+  const receivedToken = authHeader.substring(7); // Remove "Bearer " prefix
+  if (receivedToken !== expectedToken) {
+    logger.warn("Webhook authentication failed: token mismatch");
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      {
+        status: 401,
+        headers: jsonHeaders,
+      },
+    );
+  }
+
+  logger.debug("Webhook authentication successful");
+
+  // 3. Parse webhook payload
   let event: any;
   try {
     event = await req.json();
   } catch (error) {
-    console.error("Failed to parse RevenueCat webhook JSON", error);
+    logger.error("Failed to parse webhook JSON payload", error);
     return new Response(
       JSON.stringify({ error: "Invalid JSON" }),
       {
@@ -457,91 +523,112 @@ const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
     );
   }
 
+  // 4. Extract and validate webhook data
   const eventType = event.event?.type;
-  
-  if (eventType === "INITIAL_PURCHASE" || eventType === "RENEWAL" || eventType === "NON_RENEWING_PURCHASE") {
-    const appUserId = event.event?.app_user_id; // This is the Convex user._id
-    const productId = event.event?.product_id;
-    const expiresAt = event.event?.expiration_at_ms;
-    const store = event.event?.store; // e.g., "APP_STORE", "PLAY_STORE", "STRIPE", etc.
+  const appUserId = event.event?.app_user_id;
+  const productId = event.event?.product_id;
+  const store = event.event?.store;
 
-    if (!appUserId || !productId) {
-      console.warn("RevenueCat webhook missing required fields", event);
-      return new Response(
-        JSON.stringify({ error: "Missing required fields" }),
-        {
-          status: 400,
-          headers: jsonHeaders,
-        },
-      );
-    }
+  // Add event context to logger
+  const eventLogger = logger.child({
+    eventType,
+    userId: appUserId,
+    productId,
+    store,
+  });
 
-    // Map RevenueCat store names to our platform enum
-    const platform = getPlatformFromStore(store);
+  eventLogger.info('Webhook payload parsed', {
+    hasEntitlements: !!event.event?.entitlements,
+    hasExpirationDate: !!event.event?.expiration_at_ms,
+  });
 
-    try {
-      // app_user_id is the Convex user._id (set via Purchases.logIn)
-      await ctx.runMutation(internal.revenueCatBilling.syncRevenueCatSubscription, {
-        userId: appUserId as any, // Cast to Id<"users"> - validated in mutation
-        productId,
-        status: "active",
-        platform: platform as any,
-        expiresAt: expiresAt ? parseInt(expiresAt) : undefined,
-      });
-    } catch (error) {
-      console.error("Failed to sync RevenueCat subscription", error);
-      return new Response(
-        JSON.stringify({ error: "Failed to sync subscription" }),
-        {
-          status: 500,
-          headers: jsonHeaders,
-        },
-      );
-    }
-  } else if (eventType === "CANCELLATION" || eventType === "EXPIRATION") {
-    const appUserId = event.event?.app_user_id; // This is the Convex user._id
-    const productId = event.event?.product_id;
-    const store = event.event?.store;
-
-    if (!appUserId || !productId) {
-      console.warn("RevenueCat webhook missing required fields", event);
-      return new Response(
-        JSON.stringify({ error: "Missing required fields" }),
-        {
-          status: 400,
-          headers: jsonHeaders,
-        },
-      );
-    }
-
-    // Map RevenueCat store names to our platform enum
-    const platform = getPlatformFromStore(store);
-
-    try {
-      // app_user_id is the Convex user._id (set via Purchases.logIn)
-      await ctx.runMutation(internal.revenueCatBilling.syncRevenueCatSubscription, {
-        userId: appUserId as any, // Cast to Id<"users"> - validated in mutation
-        productId,
-        status: eventType === "CANCELLATION" ? "canceled" : "expired",
-        platform: platform as any,
-      });
-    } catch (error) {
-      console.error("Failed to sync RevenueCat subscription", error);
-      return new Response(
-        JSON.stringify({ error: "Failed to sync subscription" }),
-        {
-          status: 500,
-          headers: jsonHeaders,
-        },
-      );
-    }
-  } else {
-    console.log(`Ignoring RevenueCat webhook event type: ${eventType}`, event);
+  // 4.1 Validate required fields
+  if (!appUserId || !productId) {
+    eventLogger.warn("Webhook ignored: missing required fields", {
+      hasUserId: !!appUserId,
+      hasProductId: !!productId,
+    });
+    return new Response(
+      JSON.stringify({ status: "ignored", reason: "Missing required fields" }),
+      {
+        status: 200,
+        headers: jsonHeaders,
+      },
+    );
   }
 
-  // 3. Return response
+  // 4.2 Validate user ID format (app_user_id should equal Convex users._id)
+  if (!isValidConvexId(appUserId)) {
+    eventLogger.error("Invalid user ID format", undefined, {
+      userIdLength: appUserId.length,
+      userIdPattern: /^[a-zA-Z0-9_-]+$/.test(appUserId),
+    });
+    return new Response(
+      JSON.stringify({ status: "error", reason: "Invalid user ID format" }),
+      {
+        status: 400,
+        headers: jsonHeaders,
+      },
+    );
+  }
+
+  eventLogger.debug("Webhook validation passed");
+
+  // 5. Extract webhook event fields
+  const expirationAtMs = event.event?.expiration_at_ms;
+  const purchasedAtMs = event.event?.purchased_at_ms;
+  const isTrialConversion = event.event?.is_trial_conversion;
+
+  // 5.1 Fix entitlementIds extraction (CodeRabbit fix: use Object.keys for plain objects)
+  const entitlements = (event.event?.entitlements ?? {}) as Record<string, unknown>;
+  const entitlementIds = Object.keys(entitlements);
+
+  eventLogger.debug("Webhook data extracted", {
+    entitlementCount: entitlementIds.length,
+    hasExpiration: !!expirationAtMs,
+    isTrialConversion,
+  });
+
+  try {
+    // 6. Process webhook - update subscription in database
+    // Note: appUserId is validated as Id<"users"> by isValidConvexId() type guard above
+    // Sanitize rawEvent to remove Convex-incompatible field names (starting with $ or _)
+    const sanitizedEvent = sanitizeForConvex(event);
+
+    await ctx.runMutation(internal.revenueCatBilling.updateSubscriptionFromWebhook, {
+      userId: appUserId, // Type-safe: validated by isValidConvexId()
+      eventType,
+      productId,
+      store,
+      expirationAtMs,
+      purchasedAtMs,
+      isTrialConversion,
+      entitlementIds,
+      rawEvent: sanitizedEvent,
+    });
+
+    eventLogger.info("Webhook processed successfully");
+  } catch (error) {
+    eventLogger.error("Failed to process webhook mutation", error, {
+      mutationName: 'updateSubscriptionFromWebhook',
+    });
+    return new Response(
+      JSON.stringify({ error: "Failed to process webhook" }),
+      {
+        status: 500,
+        headers: jsonHeaders,
+      },
+    );
+  }
+
+  // 7. Return success response (idempotent processing)
+  eventLogger.info("Webhook completed", {
+    status: 'success',
+    correlationId,
+  });
+
   return new Response(
-    JSON.stringify({ status: "ok" }),
+    JSON.stringify({ status: "ok", correlationId }),
     {
       status: 200,
       headers: jsonHeaders,

@@ -4,6 +4,7 @@ import {
   internalQuery,
   mutation,
   query,
+  action,
 } from "./_generated/server";
 import {
   getPeriodDurationMs,
@@ -327,6 +328,79 @@ export const canCurrentUserGenerateMusic = query({
       currentUsage: snapshot.musicGenerationsUsed,
       limit: snapshot.musicLimit,
       remainingQuota: snapshot.remainingQuota,
+    };
+  },
+});
+
+/**
+ * Check usage with reconciliation
+ * ACTION: Fetches canonical subscription data from RevenueCat API and reconciles if needed
+ * Server-side reconciliation ensures we use the authoritative RevenueCat data
+ */
+export const checkUsageWithReconciliation = action({
+  args: {},
+  returns: v.object({
+    canGenerate: v.boolean(),
+    tier: v.string(),
+    currentUsage: v.number(),
+    limit: v.number(),
+    remainingQuota: v.number(),
+    reconciled: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    // Get user identity from auth
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Unauthorized");
+    }
+
+    // Get userId via internal query
+    const userId = await ctx.runQuery(internal.users.getUserIdByClerkId, {
+      clerkId: identity.subject,
+    });
+
+    if (!userId) {
+      throw new Error("User not found");
+    }
+
+    // Always reconcile with canonical RevenueCat data server-side
+    const reconcileResult = await ctx.runAction(internal.revenueCatBilling.reconcileSubscription, {
+      userId,
+    });
+
+    let reconciled = false;
+    if (reconcileResult.success && reconcileResult.updated) {
+      reconciled = true;
+      console.log(`Reconciled subscription: ${reconcileResult.backendStatus} → ${reconcileResult.rcStatus}`);
+    } else if (!reconcileResult.success) {
+      console.error(`Failed to reconcile subscription: userId=${userId}`);
+    }
+
+    // Get usage after potential reconciliation
+    const snapshot = await ctx.runQuery(internal.usage.getUsageSnapshot, {
+      userId,
+    });
+
+    if (!snapshot) {
+      return {
+        canGenerate: false,
+        tier: "free",
+        currentUsage: 0,
+        limit: 0,
+        remainingQuota: 0,
+        reconciled,
+      };
+    }
+
+    const canGenerate = snapshot.remainingQuota > 0;
+
+    return {
+      canGenerate,
+      tier: snapshot.tier,
+      currentUsage: snapshot.musicGenerationsUsed,
+      limit: snapshot.musicLimit,
+      remainingQuota: snapshot.remainingQuota,
+      reconciled,
     };
   },
 });

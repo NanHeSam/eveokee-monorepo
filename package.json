@@ -23,7 +23,8 @@
     "test:backend": "pnpm --filter @backend/convex test",
     "test:web": "pnpm --filter web test",
     "test:mobile": "pnpm --filter mobile test",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "clean": "turbo run clean && rm -rf node_modules",
+    "verify": "pnpm lint && pnpm type-check && pnpm test"
   },
   "devDependencies": {
     "turbo": "^2.0.0",

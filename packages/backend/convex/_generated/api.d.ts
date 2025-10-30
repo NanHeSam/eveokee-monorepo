@@ -19,6 +19,7 @@ import type * as diaries from "../diaries.js";
 import type * as emailNotify from "../emailNotify.js";
 import type * as http from "../http.js";
 import type * as index from "../index.js";
+import type * as lib_logger from "../lib/logger.js";
 import type * as music from "../music.js";
 import type * as musicActions from "../musicActions.js";
 import type * as phoneHelpers from "../phoneHelpers.js";
@@ -59,6 +60,7 @@ declare const fullApi: ApiFromModules<{
   emailNotify: typeof emailNotify;
   http: typeof http;
   index: typeof index;
+  "lib/logger": typeof lib_logger;
   music: typeof music;
   musicActions: typeof musicActions;
   phoneHelpers: typeof phoneHelpers;

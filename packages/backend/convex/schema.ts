@@ -17,12 +17,9 @@ export default defineSchema({
   subscriptionStatuses: defineTable({
     userId: v.id("users"),
     platform: v.optional(v.union(
-      v.literal("app_store"),      // Apple App Store
-      v.literal("play_store"),      // Google Play Store
-      v.literal("stripe"),          // Stripe
-      v.literal("amazon"),          // Amazon Appstore
-      v.literal("mac_app_store"),   // Mac App Store
-      v.literal("promotional"),     // Promotional/free
+      v.literal("app_store"),      // Apple App Store (iOS)
+      v.literal("play_store"),      // Google Play Store (Android)
+      v.literal("stripe"),          // Stripe (Web)
       v.literal("clerk")            // Clerk-managed (free users)
     )),
     productId: v.string(),
@@ -45,7 +42,8 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_status", ["status"])
-    .index("by_subscriptionTier", ["subscriptionTier"]),
+    .index("by_subscriptionTier", ["subscriptionTier"])
+    .index("by_lastVerifiedAt", ["lastVerifiedAt"]),
 
   diaries: defineTable({
     userId: v.id("users"),
@@ -204,4 +202,50 @@ export default defineSchema({
     .index("by_callJobId", ["callJobId"])
     .index("by_vapiCallId", ["vapiCallId"])
     .index("by_userId_and_startedAt", ["userId", "startedAt"]),
+
+  subscriptionLog: defineTable({
+    userId: v.id("users"),
+    eventType: v.union(
+      v.literal("INITIAL_PURCHASE"),
+      v.literal("RENEWAL"),
+      v.literal("CANCELLATION"),
+      v.literal("UNCANCELLATION"),
+      v.literal("NON_RENEWING_PURCHASE"),
+      v.literal("SUBSCRIPTION_PAUSED"),
+      v.literal("EXPIRATION"),
+      v.literal("BILLING_ISSUE"),
+      v.literal("PRODUCT_CHANGE"),
+      v.literal("TRANSFER"),
+      v.literal("SUBSCRIPTION_EXTENDED"),
+      v.literal("SUBSCRIPTION_EXTENSION_REVOKED"),
+      v.literal("SUBSCRIPTION_UNPAUSED"),
+      v.literal("SUBSCRIPTION_RESUMED"),
+      v.literal("SUBSCRIPTION_REFUNDED"),
+      v.literal("TEST"),
+      v.literal("RECONCILIATION")
+    ),
+    productId: v.string(),
+    platform: v.optional(v.union(
+      v.literal("app_store"),      // Apple App Store (iOS)
+      v.literal("play_store"),      // Google Play Store (Android)
+      v.literal("stripe"),          // Stripe (Web)
+      v.literal("clerk")            // Clerk-managed (free users)
+    )),
+    subscriptionTier: v.string(),
+    status: v.union(
+      v.literal("active"),
+      v.literal("canceled"),
+      v.literal("expired"),
+      v.literal("in_grace")
+    ),
+    expiresAt: v.optional(v.number()),
+    purchasedAt: v.optional(v.number()), // From webhook purchased_at_ms
+    isTrialConversion: v.optional(v.boolean()), // From webhook is_trial_conversion
+    entitlementIds: v.optional(v.array(v.string())), // Array of entitlement IDs
+    store: v.optional(v.string()), // Original store from webhook
+    rawEvent: v.optional(v.any()), // Full RC webhook payload for debugging
+    recordedAt: v.number(),
+  })
+    .index("by_userId_and_recordedAt", ["userId", "recordedAt"])
+    .index("by_userId", ["userId"]),
 });

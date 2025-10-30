@@ -313,5 +313,22 @@ export const getUserById = internalQuery({
   },
 });
 
+/**
+ * Get userId by Clerk ID (internal - used by actions)
+ */
+export const getUserIdByClerkId = internalQuery({
+  args: {
+    clerkId: v.string(),
+  },
+  returns: v.union(v.id("users"), v.null()),
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+    return user?._id ?? null;
+  },
+});
+
 export default ensureCurrentUserHandler;
 
