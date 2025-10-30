@@ -188,10 +188,25 @@ export const updateSubscriptionFromWebhook = internalMutation({
       ? await ctx.db.get(user.activeSubscriptionId)
       : null;
 
+    // Determine if we should log this event:
+    // 1. Always log if state changed (status, productId, or tier)
+    // 2. Always log renewal events (user was charged) even if state unchanged
+    // 3. Always log initial purchases and cancellations
     const stateChanged = !currentSubscription ||
       currentSubscription.status !== status ||
       currentSubscription.productId !== args.productId ||
       currentSubscription.subscriptionTier !== effectiveTier;
+
+    const isSignificantEvent = [
+      "INITIAL_PURCHASE",
+      "RENEWAL",
+      "CANCELLATION",
+      "UNCANCELLATION",
+      "PRODUCT_CHANGE",
+      "EXPIRATION",
+    ].includes(args.eventType);
+
+    const shouldLogToAudit = stateChanged || isSignificantEvent;
 
     // Update snapshot
     if (user.activeSubscriptionId && currentSubscription) {
@@ -222,8 +237,9 @@ export const updateSubscriptionFromWebhook = internalMutation({
       });
     }
 
-    // Append to audit log only if state changed
-    if (stateChanged) {
+    // Append to audit log for significant events or state changes
+    // This ensures we capture all renewals (when user is charged) even if state unchanged
+    if (shouldLogToAudit) {
       await ctx.db.insert("subscriptionLog", {
         userId: user._id,
         eventType: args.eventType as any, // eventType is validated string, safe cast
