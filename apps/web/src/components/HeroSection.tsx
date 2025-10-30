@@ -86,11 +86,24 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
 
             </div>
             
-            {/* App Coming Soon Badge */}
-            <div className="mt-6">
-              <div className="inline-flex items-center px-4 py-2 bg-accent-apricot/20 text-accent-apricot rounded-full text-sm font-medium">
-                📱 iOS/Android app coming soon
-              </div>
+            {/* App Beta Links */}
+            <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+              <a
+                href="https://testflight.apple.com/join/aGT4PMED"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-4 py-2 bg-accent-apricot/20 text-accent-apricot rounded-full text-sm font-medium hover:bg-accent-apricot/30 transition-colors"
+              >
+                📱 iOS TestFlight
+              </a>
+              <a
+                href="https://play.google.com/store/apps/details?id=com.eveokee.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-4 py-2 bg-accent-apricot/20 text-accent-apricot rounded-full text-sm font-medium hover:bg-accent-apricot/30 transition-colors"
+              >
+                📱 Android Beta
+              </a>
             </div>
           </div>
           

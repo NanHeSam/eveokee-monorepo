@@ -1,5 +1,6 @@
-import { Heart, Twitter, Mail } from 'lucide-react';
+import { Heart, Twitter, Mail, Smartphone } from 'lucide-react';
 import { SiDiscord } from 'react-icons/si';
+import { FaInstagram } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 /**
@@ -45,6 +46,15 @@ export default function Footer() {
                 <Twitter className="w-5 h-5" />
               </a>
               <a 
+                href="https://www.instagram.com/myeveokee/" 
+                className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-accent-mint transition-colors"
+                aria-label="Instagram"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <FaInstagram className="w-5 h-5" />
+              </a>
+              <a 
                 href="mailto:hello@eveoky.com" 
                 className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-accent-mint transition-colors"
                 aria-label="Email"
@@ -71,6 +81,32 @@ export default function Footer() {
               <li>
                 <a href="#faq" className="hover:text-gray-900 dark:hover:text-white transition-colors">
                   FAQ
+                </a>
+              </li>
+            </ul>
+            
+            <h4 className="font-semibold mb-4 mt-6">Beta Testing</h4>
+            <ul className="space-y-2 text-gray-400 dark:text-gray-500">
+              <li>
+                <a 
+                  href="https://testflight.apple.com/join/aGT4PMED" 
+                  className="hover:text-gray-900 dark:hover:text-white transition-colors inline-flex items-center gap-2"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  iOS TestFlight
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="https://play.google.com/store/apps/details?id=com.eveokee.app" 
+                  className="hover:text-gray-900 dark:hover:text-white transition-colors inline-flex items-center gap-2"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  Android Beta
                 </a>
               </li>
             </ul>

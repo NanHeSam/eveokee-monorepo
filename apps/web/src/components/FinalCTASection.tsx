@@ -125,12 +125,26 @@ export default function FinalCTASection() {
             </div>
           </div>
           
-          {/* App Coming Soon Badge */}
-          <div className="mt-8">
-            <div className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-full text-sm text-gray-600 dark:text-gray-300">
+          {/* App Beta Links */}
+          <div className="mt-8 flex flex-wrap gap-3 justify-center">
+            <a
+              href="https://testflight.apple.com/join/aGT4PMED"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-full text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            >
               <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-              iOS/Android app coming soon
-            </div>
+              📱 iOS TestFlight
+            </a>
+            <a
+              href="https://play.google.com/store/apps/details?id=com.eveokee.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-full text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            >
+              <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+              📱 Android Beta
+            </a>
           </div>
         </div>
       </div>
