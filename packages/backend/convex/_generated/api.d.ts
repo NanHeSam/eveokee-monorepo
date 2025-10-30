@@ -10,6 +10,7 @@
 
 import type * as billing from "../billing.js";
 import type * as cadenceHelpers from "../cadenceHelpers.js";
+import type * as callDiaryWorkflow from "../callDiaryWorkflow.js";
 import type * as callJobs from "../callJobs.js";
 import type * as callSettings from "../callSettings.js";
 import type * as constant from "../constant.js";
@@ -51,6 +52,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   billing: typeof billing;
   cadenceHelpers: typeof cadenceHelpers;
+  callDiaryWorkflow: typeof callDiaryWorkflow;
   callJobs: typeof callJobs;
   callSettings: typeof callSettings;
   constant: typeof constant;
