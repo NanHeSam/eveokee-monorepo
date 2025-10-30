@@ -426,7 +426,35 @@ const vapiWebhookHandler = httpAction(async (ctx, req) => {
         },
       });
 
-      console.log(`Call completed with transcript for job ${job._id}, VAPI call ID: ${vapiCallId}, duration: ${durationSeconds}s`, JSON.stringify(event));
+      console.log(`Call completed for job ${job._id}, VAPI call ID: ${vapiCallId}, duration: ${durationSeconds}s, disposition: ${disposition}`);
+
+      if (artifact.transcript || artifact.messages) {
+        try {
+          const callSession = await ctx.runQuery(internal.callJobs.getCallSessionByVapiId, {
+            vapiCallId,
+          });
+
+          if (callSession) {
+            const existingDiaryId = callSession.metadata?.diaryId;
+            if (existingDiaryId) {
+              console.log(`Diary already exists for call session ${callSession._id}, skipping workflow (diaryId: ${existingDiaryId})`);
+            } else {
+              await ctx.scheduler.runAfter(0, internal.callDiaryWorkflow.generateDiaryFromCall, {
+                userId: job.userId,
+                callSessionId: callSession._id,
+                endedAt: callSession.endedAt,
+                transcript: artifact.transcript,
+                messages: artifact.messages,
+              });
+              console.log(`Scheduled diary generation workflow for call session ${callSession._id}`);
+            }
+          } else {
+            console.warn(`Could not find call session for VAPI call ID ${vapiCallId} to trigger diary workflow`);
+          }
+        } catch (workflowError) {
+          console.error("Failed to schedule diary generation workflow:", workflowError);
+        }
+      }
     } else {
       console.log(`Ignoring VAPI webhook event type: ${messageType}`);
     }

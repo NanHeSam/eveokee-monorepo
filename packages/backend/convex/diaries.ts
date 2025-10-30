@@ -1,5 +1,5 @@
 
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import ensureCurrentUser, { getOptionalCurrentUser } from "./users";
@@ -90,6 +90,29 @@ export const deleteDiary = mutation({
 
     await ctx.db.delete(args.diaryId);
     return null;
+  },
+});
+
+export const createDiaryInternal = internalMutation({
+  args: {
+    userId: v.id("users"),
+    content: v.string(),
+    date: v.optional(v.number()),
+  },
+  returns: v.object({
+    _id: v.id("diaries"),
+  }),
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const diaryDate = args.date ?? now;
+    const _id: Id<"diaries"> = await ctx.db.insert("diaries", {
+      userId: args.userId,
+      content: args.content,
+      date: diaryDate,
+      updatedAt: now,
+    });
+
+    return { _id };
   },
 });
 
