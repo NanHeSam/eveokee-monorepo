@@ -118,6 +118,9 @@ export default defineSchema({
 
   emailNotify: defineTable({
     email: v.string(),
+    isAndroidInvite: v.optional(v.boolean()),
+    source: v.optional(v.string()),
+    androidRequestedAt: v.optional(v.number()),
   })
     .index("by_email", ["email"]),
 

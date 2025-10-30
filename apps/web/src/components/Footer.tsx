@@ -1,6 +1,9 @@
-import { Heart, Twitter, Mail } from 'lucide-react';
+import { Heart, Twitter, Mail, Smartphone } from 'lucide-react';
 import { SiDiscord } from 'react-icons/si';
+import { FaInstagram } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+import { getAndroidBetaLink } from '../utils/deviceUtils';
+import AndroidInviteForm from './AndroidInviteForm';
 
 /**
  * Renders the eveokee site footer with branding, social links, quick navigation, and legal links.
@@ -11,12 +14,13 @@ import { Link } from 'react-router-dom';
  */
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const androidBetaLink = getAndroidBetaLink();
 
   return (
     <footer className="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Footer Content */}
-        <div className="py-12 grid md:grid-cols-3 gap-8">
+        <div className="py-12 grid md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-2">
             <h3 className="text-2xl font-bold mb-4">eveokee</h3>
@@ -45,6 +49,15 @@ export default function Footer() {
                 <Twitter className="w-5 h-5" />
               </a>
               <a 
+                href="https://www.instagram.com/myeveokee/" 
+                className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-accent-mint transition-colors"
+                aria-label="Instagram"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <FaInstagram className="w-5 h-5" />
+              </a>
+              <a 
                 href="mailto:hello@eveoky.com" 
                 className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-accent-mint transition-colors"
                 aria-label="Email"
@@ -54,8 +67,8 @@ export default function Footer() {
             </div>
           </div>
           
-          {/* Quick Links */}
-          <div className="md:text-right">
+          {/* Product Links */}
+          <div>
             <h4 className="font-semibold mb-4">Product</h4>
             <ul className="space-y-2 text-gray-400 dark:text-gray-500">
               <li>
@@ -76,7 +89,38 @@ export default function Footer() {
             </ul>
           </div>
           
-          
+          {/* Beta Testing */}
+          <div>
+            <h4 className="font-semibold mb-4">Beta Testing</h4>
+            <ul className="space-y-2 text-gray-400 dark:text-gray-500">
+              <li>
+                <a 
+                  href="https://testflight.apple.com/join/aGT4PMED" 
+                  className="hover:text-gray-900 dark:hover:text-white transition-colors inline-flex items-center gap-2"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  iOS TestFlight
+                </a>
+              </li>
+              <li>
+                <a 
+                  href={androidBetaLink} 
+                  className="hover:text-gray-900 dark:hover:text-white transition-colors inline-flex items-center gap-2"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  Android Beta
+                </a>
+                <p className="text-xs text-gray-500 dark:text-gray-600 mt-2 mb-2">
+                  Internal test — enter your Google Play email to request access
+                </p>
+                <AndroidInviteForm source="footer" className="mt-2" />
+              </li>
+            </ul>
+          </div>
         </div>
         
         {/* Bottom Bar */}
@@ -87,8 +131,7 @@ export default function Footer() {
               <span>&copy; {currentYear} eveokee.</span>
               <span className="flex items-center">
                 Made with
-                <Heart className="w-4 h-4 text-red-500 mx-1" />
-                for journaling enthusiasts.
+                <Heart className="w-4 h-4 text-accent-mint mx-1" />
               </span>
             </div>
             
