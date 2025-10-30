@@ -5,7 +5,21 @@
 
 import { Doc } from "../../_generated/dataModel";
 import { getSystemPrompt, SystemPromptParams } from "./systemPrompt";
-import { DEFAULT_VOICE_ID } from "../../constant";
+import {
+  DEFAULT_VOICE_ID,
+  VAPI_TRANSCRIBER_MODEL,
+  VAPI_TRANSCRIBER_LANGUAGE,
+  VAPI_TRANSCRIBER_PROVIDER,
+  VAPI_MODEL_NAME,
+  VAPI_MODEL_PROVIDER,
+  VAPI_VOICE_MODEL,
+  VAPI_VOICE_PROVIDER,
+  VAPI_FIRST_MESSAGE_MODE,
+  VAPI_ASSISTANT_NAME,
+  VAPI_VOICEMAIL_MESSAGE,
+  VAPI_END_CALL_MESSAGE,
+  VAPI_USER_NAME_FALLBACK,
+} from "../../utils/constants";
 
 /**
  * Format UTC timestamp to local time string
@@ -109,16 +123,16 @@ export function buildVapiAssistant(
   
   // Build system prompt with user context
   const systemPrompt = buildSystemPrompt(
-    user.name || 'there',
+    user.name || VAPI_USER_NAME_FALLBACK,
     localTime,
     dayOfWeek
   );
   
   return {
     transcriber: {
-      model: "nova-2",
-      language: "en",
-      provider: "deepgram"
+      model: VAPI_TRANSCRIBER_MODEL,
+      language: VAPI_TRANSCRIBER_LANGUAGE,
+      provider: VAPI_TRANSCRIBER_PROVIDER
     },
     model: {
       messages: [
@@ -127,21 +141,22 @@ export function buildVapiAssistant(
           role: "system"
         }
       ],
-      model: "gpt-4.1",
-      provider: "openai"
+      model: VAPI_MODEL_NAME,
+      provider: VAPI_MODEL_PROVIDER
     },
     voice: {
       voiceId: DEFAULT_VOICE_ID,
-      model: "sonic-3",
-      provider: "cartesia"
+      model: VAPI_VOICE_MODEL,
+      provider: VAPI_VOICE_PROVIDER
     },
     firstMessage: "",
-    firstMessageMode: "assistant-speaks-first-with-model-generated-message",
-    name: "eveokee",
-    voicemailMessage: "Please call back when you're available.",
-    endCallMessage: "Goodbye.",
+    firstMessageMode: VAPI_FIRST_MESSAGE_MODE,
+    name: VAPI_ASSISTANT_NAME,
+    voicemailMessage: VAPI_VOICEMAIL_MESSAGE,
+    endCallMessage: VAPI_END_CALL_MESSAGE,
     server: {
       url: webhookUrl,
     },
   };
 }
+

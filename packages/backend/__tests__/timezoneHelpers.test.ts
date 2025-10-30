@@ -6,7 +6,7 @@ import {
   getUTCDayBounds,
   isValidTimeOfDay,
   isValidTimezone,
-} from '../convex/timezoneHelpers';
+} from '../convex/utils/timezoneHelpers';
 
 describe('timezoneHelpers', () => {
   describe('isValidTimeOfDay', () => {

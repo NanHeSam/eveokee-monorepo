@@ -18,7 +18,7 @@ The VAPI integration enables daily outbound calls to users based on their config
 2. **Backend Modules**:
    - `callSettings.ts`: CRUD operations for call settings
    - `callJobs.ts`: Call job lifecycle management
-   - `vapiIntegration.ts`: VAPI API client
+   - `integrations/vapi/integration.ts`: VAPI API client
    - `dailyPlanner.ts`: Daily scheduling job
    - `timezoneHelpers.ts`: IANA timezone utilities
    - `cadenceHelpers.ts`: Cadence matching logic
@@ -158,8 +158,7 @@ npx convex deploy
 #### Internal Functions
 
 - `internal.dailyPlanner.runDailyPlanner()`: Daily scheduling job
-- `internal.vapiIntegration.scheduleVapiCall({ jobId, phoneNumber, scheduledForUTC, userId })`: Schedule call with VAPI
-- `internal.vapiIntegration.cancelVapiCall({ vapiCallId })`: Cancel VAPI call
+- `internal.integrations.vapi.integration.scheduleVapiCall({ jobId, phoneNumber, userId })`: Schedule call with VAPI
 
 ## Data Model
 
@@ -271,7 +270,7 @@ Check Convex logs for:
 1. Verify timezone is valid IANA timezone (e.g., "America/New_York", not "EST")
 2. Test timezone conversion:
    ```typescript
-   import { localTimeToUTC } from "./timezoneHelpers";
+   import { localTimeToUTC } from "./utils/timezoneHelpers";
    const utc = localTimeToUTC("09:00", "America/New_York");
    console.log(new Date(utc).toISOString());
    ```

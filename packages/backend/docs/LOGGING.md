@@ -31,7 +31,7 @@ This document describes the structured logging system implemented in the Convex 
 ### Basic Usage
 
 ```typescript
-import { createLogger } from "./lib/logger";
+import { createLogger } from "./utils/logger";
 
 export const myFunction = internalMutation({
   handler: async (ctx, args) => {
@@ -62,7 +62,7 @@ export const myFunction = internalMutation({
 ### With Correlation IDs
 
 ```typescript
-import { createLogger, generateCorrelationId } from "./lib/logger";
+import { createLogger, generateCorrelationId } from "./utils/logger";
 
 export const myAction = internalAction({
   handler: async (ctx) => {

@@ -4,6 +4,7 @@
  */
 
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
+import { CADENCE_DAILY_MASK, MAX_DAYS_SEARCH_FORWARD } from './constants';
 
 export type Cadence = 'daily' | 'weekdays' | 'weekends' | 'custom';
 
@@ -147,7 +148,7 @@ export function calculateBydayMask(
   switch (cadence) {
     case 'daily':
       // All days: 0b1111111 = 127
-      mask = 127;
+      mask = CADENCE_DAILY_MASK;
       break;
     
     case 'weekdays':
@@ -201,8 +202,8 @@ export function calculateNextRunAtUTC(
   // Start from current time and look forward
   const currentUTC = new Date(currentTime);
   
-  // Check up to 7 days ahead for the next matching day
-  for (let daysAhead = 0; daysAhead < 7; daysAhead++) {
+  // Check up to MAX_DAYS_SEARCH_FORWARD days ahead for the next matching day
+  for (let daysAhead = 0; daysAhead < MAX_DAYS_SEARCH_FORWARD; daysAhead++) {
     const testUTC = new Date(currentUTC.getTime() + daysAhead * 24 * 60 * 60 * 1000);
     
     // Convert UTC to the user's timezone to get local date components
@@ -233,6 +234,7 @@ export function calculateNextRunAtUTC(
     }
   }
   
-  // If we get here, no match found in the next 7 days (shouldn't happen)
-  throw new Error('Could not find next run time within 7 days');
+  // If we get here, no match found in the search window (shouldn't happen)
+  throw new Error(`Could not find next run time within ${MAX_DAYS_SEARCH_FORWARD} days`);
 }
+

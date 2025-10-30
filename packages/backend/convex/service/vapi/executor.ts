@@ -6,7 +6,7 @@
 import { internalAction, internalMutation } from "../../_generated/server";
 import { v } from "convex/values";
 import { internal } from "../../_generated/api";
-import { calculateNextRunAtUTC, calculateLocalMinutes, calculateBydayMask } from "../../cadenceHelpers";
+import { calculateNextRunAtUTC, calculateLocalMinutes, calculateBydayMask } from "../../utils/cadenceHelpers";
 
 /**
  * Main executor - scans for settings that are ready to fire
@@ -134,7 +134,7 @@ export const processCallJob = internalAction({
       console.log(`Created call job ${jobId}`);
       
       // Schedule the VAPI call (immediate, no scheduledFor field)
-      const scheduleResult = await ctx.runAction(internal.vapiIntegration.scheduleVapiCall, {
+      const scheduleResult = await ctx.runAction(internal.integrations.vapi.integration.scheduleVapiCall, {
         jobId,
         phoneNumber: args.phoneE164,
         userId: args.userId,

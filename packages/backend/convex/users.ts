@@ -147,6 +147,18 @@ export const ensureCurrentUser = mutation({
   handler: ensureCurrentUserHandler,
 });
 
+/**
+ * Get current user's complete profile with subscription and call settings
+ * 
+ * Steps:
+ * 1. Authenticate user (optional - returns null if not authenticated)
+ * 2. Fetch user record from database
+ * 3. Fetch active subscription with computed usage/quota metrics
+ * 4. Fetch call settings if configured
+ * 5. Return combined profile data
+ * 
+ * Returns user profile with subscription status and call settings, or null if not authenticated.
+ */
 export const getUserProfile = query({
   args: {},
   returns: v.union(
@@ -196,18 +208,20 @@ export const getUserProfile = query({
     v.null()
   ),
   handler: async (ctx) => {
+    // Step 1: Authenticate user (optional)
     const authResult = await getOptionalCurrentUser(ctx);
     if (!authResult) {
       return null;
     }
     const { userId } = authResult;
 
+    // Step 2: Fetch user record
     const user = await ctx.db.get(userId);
     if (!user) {
       return null;
     }
 
-    // Fetch subscription
+    // Step 3: Fetch subscription with computed metrics
     let subscription = null;
     if (user.activeSubscriptionId) {
       const sub = await ctx.db.get(user.activeSubscriptionId);
@@ -237,7 +251,7 @@ export const getUserProfile = query({
       }
     }
 
-    // Fetch call settings
+    // Step 4: Fetch call settings
     let callSettings = null;
     const settings = await ctx.db
       .query("callSettings")
@@ -256,6 +270,7 @@ export const getUserProfile = query({
       };
     }
 
+    // Step 5: Return combined profile
     return {
       user: {
         _id: user._id,
@@ -268,6 +283,18 @@ export const getUserProfile = query({
   },
 });
 
+/**
+ * Delete current user's account and all associated data
+ * 
+ * Steps:
+ * 1. Authenticate user and fetch full user document
+ * 2. Store clerkId for client-side Clerk deletion
+ * 3. Log account deletion for monitoring/audit
+ * 4. Purge all user-associated data across all tables (hard delete)
+ * 
+ * Returns success status and clerkId (needed for client-side Clerk cleanup).
+ * WARNING: This is a destructive operation that cannot be undone.
+ */
 export const deleteAccount = mutation({
   args: {},
   returns: v.object({ 
@@ -275,13 +302,13 @@ export const deleteAccount = mutation({
     clerkId: v.optional(v.string()),
   }),
   handler: async (ctx) => {
-    // Ensure authenticated user and fetch full user doc
+    // Step 1: Authenticate and fetch user
     const user = await getCurrentUserOrThrow(ctx);
 
-    // Store clerkId before deletion (needed for client-side Clerk deletion)
+    // Step 2: Store clerkId before deletion
     const clerkId = user.clerkId;
 
-    // Log account deletion for monitoring and manual cleanup
+    // Step 3: Log deletion for monitoring
     console.log(
       "[ACCOUNT_DELETION] User account deleted",
       JSON.stringify({
@@ -293,7 +320,7 @@ export const deleteAccount = mutation({
       })
     );
 
-    // Purge all user-associated data across tables (hard delete)
+    // Step 4: Purge all user data (hard delete)
     await deleteUserData(ctx, user);
 
     return { success: true, clerkId };

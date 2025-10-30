@@ -3,7 +3,7 @@ import {
   isTodayInCadence,
   isValidCadenceConfig,
   getCadenceDescription,
-} from '../convex/cadenceHelpers';
+} from '../convex/utils/cadenceHelpers';
 
 describe('cadenceHelpers', () => {
   describe('isTodayInCadence', () => {

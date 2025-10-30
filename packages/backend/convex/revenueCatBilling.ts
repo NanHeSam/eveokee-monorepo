@@ -1,22 +1,19 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { createLogger, generateCorrelationId, logReconciliation, sanitizeForConvex } from "./lib/logger";
-
-const REVENUECAT_PRODUCT_TO_TIER: Record<string, string> = {
-  "eveokee_premium_weekly": "weekly",
-  "eveokee_premium_monthly": "monthly",
-  "eveokee_premium_annual": "yearly",
-  "free-tier": "free",
-};
+import { createLogger, generateCorrelationId, logReconciliation, sanitizeForConvex } from "./utils/logger";
+import {
+  REVENUECAT_PRODUCT_TO_TIER,
+  REVENUECAT_STORE_TO_PLATFORM,
+  REVENUECAT_ACTIVE_EVENT_TYPES,
+  REVENUECAT_SIGNIFICANT_EVENT_TYPES,
+  REVENUECAT_RECONCILIATION_WINDOW_MS,
+  MAX_RECONCILIATION_ERRORS_TO_LOG,
+} from "./utils/constants";
+import { createRevenueCatClientFromEnv } from "./integrations/revenuecat/client";
 
 const getPlatformFromStore = (store: string | undefined): "app_store" | "play_store" | "stripe" | undefined => {
-  const platformMap: Record<string, "app_store" | "play_store" | "stripe"> = {
-    "APP_STORE": "app_store",
-    "PLAY_STORE": "play_store",
-    "STRIPE": "stripe",
-  };
-  return store ? platformMap[store] : undefined;
+  return store ? REVENUECAT_STORE_TO_PLATFORM[store] : undefined;
 };
 
 const getStatusFromEventType = (eventType: string, isActive: boolean): "active" | "canceled" | "expired" | "in_grace" => {
@@ -77,7 +74,7 @@ export const updateSubscriptionFromWebhook = internalMutation({
       : undefined;
 
     // Determine if this is an active subscription
-    const isActive = ["INITIAL_PURCHASE", "RENEWAL", "UNCANCELLATION", "SUBSCRIPTION_UNPAUSED", "SUBSCRIPTION_RESUMED"].includes(args.eventType);
+    const isActive = REVENUECAT_ACTIVE_EVENT_TYPES.includes(args.eventType as any);
     const status = getStatusFromEventType(args.eventType, isActive);
 
     const effectiveTier = status === "active" || status === "in_grace" ? mappedTier : "free";
@@ -96,14 +93,7 @@ export const updateSubscriptionFromWebhook = internalMutation({
       currentSubscription.productId !== args.productId ||
       currentSubscription.subscriptionTier !== effectiveTier;
 
-    const isSignificantEvent = [
-      "INITIAL_PURCHASE",
-      "RENEWAL",
-      "CANCELLATION",
-      "UNCANCELLATION",
-      "PRODUCT_CHANGE",
-      "EXPIRATION",
-    ].includes(args.eventType);
+    const isSignificantEvent = REVENUECAT_SIGNIFICANT_EVENT_TYPES.includes(args.eventType as any);
 
     const shouldLogToAudit = stateChanged || isSignificantEvent;
 
@@ -321,7 +311,7 @@ export const getStaleSubscriptions = internalQuery({
     lastVerifiedAt: v.number(),
   })),
   handler: async (ctx) => {
-    const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
+    const twentyFourHoursAgo = Date.now() - REVENUECAT_RECONCILIATION_WINDOW_MS;
     
     // Get all subscription statuses with lastVerifiedAt > 24h ago
     const staleSubscriptions = await ctx.db
@@ -339,43 +329,15 @@ export const getStaleSubscriptions = internalQuery({
 
 /**
  * Fetch customer info from RevenueCat REST API
+ * Uses the RevenueCat client for consistent error handling
  */
 async function fetchRevenueCatCustomer(appUserId: string): Promise<any> {
-  const apiKey = process.env.REVENUECAT_API_KEY;
-  if (!apiKey) {
-    throw new Error("REVENUECAT_API_KEY not configured");
-  }
+  const revenueCatClient = createRevenueCatClientFromEnv({
+    REVENUECAT_API_KEY: process.env.REVENUECAT_API_KEY,
+    REVENUECAT_TIMEOUT: process.env.REVENUECAT_TIMEOUT,
+  });
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
-
-  try {
-    const encodedUserId = encodeURIComponent(appUserId);
-    const response = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodedUserId}`, {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeout);
-
-    if (!response.ok) {
-      console.error(`Failed to fetch RC customer: ${response.status} ${response.statusText}`);
-      return null;
-    }
-
-    return await response.json();
-  } catch (error) {
-    clearTimeout(timeout);
-    if (error instanceof Error && error.name === "AbortError") {
-      console.error("Request to RevenueCat API timed out");
-      return null;
-    }
-    throw error;
-  }
+  return await revenueCatClient.getCustomerInfo(appUserId);
 }
 
 /**
@@ -466,7 +428,7 @@ export const reconcileStaleSubscriptions = internalAction({
 
     if (errors.length > 0) {
       logger.warn('Reconciliation errors encountered', {
-        errors: errors.slice(0, 10), // Log first 10 errors
+        errors: errors.slice(0, MAX_RECONCILIATION_ERRORS_TO_LOG),
         totalErrors: errors.length,
       });
     }

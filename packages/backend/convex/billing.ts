@@ -3,9 +3,8 @@ import {
   query,
   internalMutation,
 } from "./_generated/server";
-import { internal } from "./_generated/api";
 import { getOptionalCurrentUser } from "./users";
-import { PLAN_CONFIG } from "./constant";
+import { PLAN_CONFIG } from "./utils/constants";
 
 export const subscriptionStatusValidator = v.union(
   v.literal("active"),

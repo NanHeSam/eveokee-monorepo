@@ -7,6 +7,12 @@ import { v } from "convex/values";
 import { mutation, query, internalMutation, internalQuery } from "./_generated/server";
 import { getCurrentUserOrThrow } from "./users";
 import { Doc, Id } from "./_generated/dataModel";
+import {
+  DEFAULT_CALL_JOBS_LIMIT,
+  DEFAULT_CALL_JOBS_STATS_LIMIT,
+  DEFAULT_CALL_SESSIONS_LIMIT,
+  DEFAULT_DASHBOARD_STATS_LIMIT,
+} from "./utils/constants";
 
 /**
  * Get call jobs for current user
@@ -35,7 +41,7 @@ export const getCallJobs = query({
       jobsQuery = jobsQuery.filter((q) => q.eq(q.field("status"), args.status));
     }
     
-    const jobs = await jobsQuery.take(args.limit || 50);
+    const jobs = await jobsQuery.take(args.limit || DEFAULT_CALL_JOBS_LIMIT);
     
     return jobs;
   },
@@ -69,7 +75,7 @@ export const getCallJobStats = query({
       .query("callJobs")
       .withIndex("by_userId_and_updatedAt", (q) => q.eq("userId", user._id))
       .order("desc") // Order by updatedAt descending to get most recent
-      .take(args.limit || 500);
+      .take(args.limit || DEFAULT_CALL_JOBS_STATS_LIMIT);
     
     const stats = {
       total: recentJobs.length,
@@ -257,7 +263,7 @@ export const getCallSessions = query({
       .query("callSessions")
       .withIndex("by_userId_and_startedAt", (q) => q.eq("userId", user._id))
       .order("desc")
-      .take(args.limit || 50);
+      .take(args.limit || DEFAULT_CALL_SESSIONS_LIMIT);
     
     return sessions;
   },
@@ -280,7 +286,7 @@ export const getDashboardStats = query({
       .query("callSessions")
       .withIndex("by_userId_and_startedAt", (q) => q.eq("userId", user._id))
       .order("desc")
-      .take(1000);
+      .take(DEFAULT_DASHBOARD_STATS_LIMIT);
 
     const totalCalls = recentSessions.length;
 
@@ -296,7 +302,7 @@ export const getDashboardStats = query({
       .query("diaries")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .filter((q) => q.gte(q.field("date"), startOfMonthTimestamp))
-      .take(1000);
+      .take(DEFAULT_DASHBOARD_STATS_LIMIT);
     
     const uniqueDays = new Set<string>();
     for (const diary of diariesThisMonth) {
