@@ -2,6 +2,7 @@ import { Heart, Twitter, Mail, Smartphone } from 'lucide-react';
 import { SiDiscord } from 'react-icons/si';
 import { FaInstagram } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+import { getAndroidBetaLink } from '../utils/deviceUtils';
 
 /**
  * Renders the eveokee site footer with branding, social links, quick navigation, and legal links.
@@ -12,6 +13,7 @@ import { Link } from 'react-router-dom';
  */
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const androidBetaLink = getAndroidBetaLink();
 
   return (
     <footer className="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
@@ -100,7 +102,7 @@ export default function Footer() {
               </li>
               <li>
                 <a 
-                  href="https://play.google.com/store/apps/details?id=com.eveokee.app" 
+                  href={androidBetaLink} 
                   className="hover:text-gray-900 dark:hover:text-white transition-colors inline-flex items-center gap-2"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -123,7 +125,7 @@ export default function Footer() {
               <span>&copy; {currentYear} eveokee.</span>
               <span className="flex items-center">
                 Made with
-                <Heart className="w-4 h-4 text-red-500 mx-1" />
+                <Heart className="w-4 h-4 text-accent-mint mx-1" />
                 for journaling enthusiasts.
               </span>
             </div>

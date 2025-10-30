@@ -1,6 +1,7 @@
 import { Play, Music, Pause, Book, Settings } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
 import { useAudioManager } from '../hooks/useAudioManager';
+import { getAndroidBetaLink } from '../utils/deviceUtils';
 
 interface HeroSectionProps {
   onHearDemo?: () => void;
@@ -9,6 +10,7 @@ interface HeroSectionProps {
 export default function HeroSection({ onHearDemo }: HeroSectionProps) {
   const audioManager = useAudioManager();
   const posthog = usePostHog();
+  const androidBetaLink = getAndroidBetaLink();
   
   const demoAudioUrl = 'https://cdn1.suno.ai/b28aad1b-2d89-44f9-9f06-0e4fe429f98e.mp3';
   const heroAudioId = 'hero-demo';
@@ -97,7 +99,7 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
                 📱 iOS TestFlight
               </a>
               <a
-                href="https://play.google.com/store/apps/details?id=com.eveokee.app"
+                href={androidBetaLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center px-4 py-2 bg-accent-apricot/20 text-accent-apricot rounded-full text-sm font-medium hover:bg-accent-apricot/30 transition-colors"

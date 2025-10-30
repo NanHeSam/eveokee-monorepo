@@ -4,6 +4,7 @@ import { useMutation } from 'convex/react';
 import { api } from '@backend/convex';
 import { isValidEmail } from '@/lib/utils';
 import { ArrowRight, CheckCircle } from 'lucide-react';
+import { getAndroidBetaLink } from '../utils/deviceUtils';
 
 export default function FinalCTASection() {
   const [email, setEmail] = useState('');
@@ -11,6 +12,7 @@ export default function FinalCTASection() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const posthog = usePostHog();
+  const androidBetaLink = getAndroidBetaLink();
 
   const addEmailNotification = useMutation(api.emailNotify.addEmailNotification);
 
@@ -137,7 +139,7 @@ export default function FinalCTASection() {
               📱 iOS TestFlight
             </a>
             <a
-              href="https://play.google.com/store/apps/details?id=com.eveokee.app"
+              href={androidBetaLink}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-full text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
