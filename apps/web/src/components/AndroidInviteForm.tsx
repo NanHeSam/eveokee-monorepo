@@ -65,6 +65,9 @@ export default function AndroidInviteForm({ source, className = '' }: AndroidInv
     );
   }
 
+  // Use compact sizing for footer, regular for other sources
+  const isCompact = source === 'footer';
+  
   return (
     <form onSubmit={handleSubmit} className={`flex flex-col sm:flex-row gap-2 ${className}`}>
       <div className="flex-1">
@@ -76,7 +79,11 @@ export default function AndroidInviteForm({ source, className = '' }: AndroidInv
             if (error) setError(null);
           }}
           placeholder="Enter your Google Play email"
-          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-mint focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+          className={`w-full ${
+            isCompact 
+              ? 'px-2 py-1.5 text-xs rounded-md' 
+              : 'px-3 py-2 text-sm rounded-lg'
+          } border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-accent-mint focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400`}
           disabled={isLoading}
         />
         {error && (
@@ -86,7 +93,11 @@ export default function AndroidInviteForm({ source, className = '' }: AndroidInv
       <button
         type="submit"
         disabled={isLoading || !email || !isValidEmail(email)}
-        className="px-4 py-2 text-sm font-medium bg-accent-mint text-white rounded-lg hover:bg-accent-mint/90 focus:outline-none focus:ring-2 focus:ring-accent-mint focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+        className={`${
+          isCompact 
+            ? 'px-3 py-1.5 text-xs rounded-md' 
+            : 'px-4 py-2 text-sm rounded-lg'
+        } font-medium bg-accent-mint text-white hover:bg-accent-mint/90 focus:outline-none focus:ring-2 focus:ring-accent-mint focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap`}
       >
         {isLoading ? 'Sending...' : 'Request Invite'}
       </button>

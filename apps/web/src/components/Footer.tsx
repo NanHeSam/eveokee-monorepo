@@ -20,7 +20,7 @@ export default function Footer() {
     <footer className="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Footer Content */}
-        <div className="py-12 grid md:grid-cols-3 gap-8">
+        <div className="py-12 grid md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-2">
             <h3 className="text-2xl font-bold mb-4">eveokee</h3>
@@ -67,8 +67,8 @@ export default function Footer() {
             </div>
           </div>
           
-          {/* Quick Links */}
-          <div className="md:text-right">
+          {/* Product Links */}
+          <div>
             <h4 className="font-semibold mb-4">Product</h4>
             <ul className="space-y-2 text-gray-400 dark:text-gray-500">
               <li>
@@ -87,8 +87,11 @@ export default function Footer() {
                 </a>
               </li>
             </ul>
-            
-            <h4 className="font-semibold mb-4 mt-6">Beta Testing</h4>
+          </div>
+          
+          {/* Beta Testing */}
+          <div>
+            <h4 className="font-semibold mb-4">Beta Testing</h4>
             <ul className="space-y-2 text-gray-400 dark:text-gray-500">
               <li>
                 <a 
@@ -118,8 +121,6 @@ export default function Footer() {
               </li>
             </ul>
           </div>
-          
-          
         </div>
         
         {/* Bottom Bar */}
@@ -131,7 +132,6 @@ export default function Footer() {
               <span className="flex items-center">
                 Made with
                 <Heart className="w-4 h-4 text-accent-mint mx-1" />
-                for journaling enthusiasts.
               </span>
             </div>
             
