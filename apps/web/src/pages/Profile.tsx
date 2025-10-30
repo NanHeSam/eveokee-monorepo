@@ -144,14 +144,14 @@ export default function Profile() {
   const getSubscriptionStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-        return 'text-green-600 bg-green-50 border-green-200';
+        return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800';
       case 'in_grace':
-        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+        return 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800';
       case 'canceled':
       case 'expired':
-        return 'text-red-600 bg-red-50 border-red-200';
+        return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800';
       default:
-        return 'text-gray-600 bg-gray-50 border-gray-200';
+        return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600';
     }
   };
 
@@ -196,9 +196,9 @@ export default function Profile() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
           Profile & Settings
         </h1>
         
@@ -206,40 +206,40 @@ export default function Profile() {
           queries={[{ data: profile }]}
           loadingFallback={
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-              <span className="ml-3 text-gray-600">Loading profile...</span>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
+              <span className="ml-3 text-gray-600 dark:text-gray-400">Loading profile...</span>
             </div>
           }
         >
           {profile && (
             <div className="space-y-6">
               {/* User Information Card */}
-              <div className="bg-white shadow rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                   User Information
                 </h2>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Name</label>
-                    <p className="text-gray-900">{profile.user.name || 'Not set'}</p>
+                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Name</label>
+                    <p className="text-gray-900 dark:text-white">{profile.user.name || 'Not set'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">Email</label>
-                    <p className="text-gray-900">{profile.user.email || 'Not set'}</p>
+                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Email</label>
+                    <p className="text-gray-900 dark:text-white">{profile.user.email || 'Not set'}</p>
                   </div>
                 </div>
               </div>
 
               {/* Subscription Information Card */}
-              <div className="bg-white shadow rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                   Subscription Status
                 </h2>
                 {profile.subscription ? (
                   <div className="space-y-3">
                     <div>
-                      <label className="text-sm font-medium text-gray-600">Plan</label>
-                      <p className="text-gray-900 font-semibold">
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Plan</label>
+                      <p className="text-gray-900 dark:text-white font-semibold">
                         {profile.subscription.tier === 'monthly' && 'Premium Monthly'}
                         {profile.subscription.tier === 'yearly' && 'Premium Yearly'}
                         {profile.subscription.tier === 'free' && 'Free'}
@@ -247,7 +247,7 @@ export default function Profile() {
                       </p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-600">Product</label>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Product</label>
                       <p>
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getSubscriptionStatusColor(profile.subscription.status)}`}>
                           {formatProductName(profile.subscription.productId)} - {getSubscriptionStatusLabel(profile.subscription.status)}
@@ -256,37 +256,37 @@ export default function Profile() {
                     </div>
                     {profile.subscription.tier === 'free' && (
                       <div>
-                        <label className="text-sm font-medium text-gray-600">Music Generations</label>
-                        <p className="text-gray-900">
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Music Generations</label>
+                        <p className="text-gray-900 dark:text-white">
                           {profile.subscription.musicGenerationsUsed} / {profile.subscription.musicLimit}
-                          <span className="text-sm text-gray-500 ml-2">
+                          <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
                             ({profile.subscription.remainingQuota} remaining)
                           </span>
                         </p>
                       </div>
                     )}
                     <div>
-                      <label className="text-sm font-medium text-gray-600">Current Period</label>
-                      <p className="text-gray-900">
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Current Period</label>
+                      <p className="text-gray-900 dark:text-white">
                         {formatDate(profile.subscription.periodStart)} - {formatDate(profile.subscription.periodEnd)}
                       </p>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-gray-500">No active subscription</p>
+                  <p className="text-gray-500 dark:text-gray-400">No active subscription</p>
                 )}
               </div>
 
               {/* Call Settings Card */}
-              <div className="bg-white shadow rounded-lg p-6">
+              <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                     Call Settings
                   </h2>
                   {!isEditing && (
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                     >
                       Edit Settings
                     </button>
@@ -296,28 +296,28 @@ export default function Profile() {
                 {!isEditing && profile.callSettings ? (
                   <div className="space-y-3">
                     <div>
-                      <label className="text-sm font-medium text-gray-600">Phone Number</label>
-                      <p className="text-gray-900">{profile.callSettings.phoneE164}</p>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Phone Number</label>
+                      <p className="text-gray-900 dark:text-white">{profile.callSettings.phoneE164}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-600">Timezone</label>
-                      <p className="text-gray-900">{profile.callSettings.timezone}</p>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Timezone</label>
+                      <p className="text-gray-900 dark:text-white">{profile.callSettings.timezone}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-600">Time of Day</label>
-                      <p className="text-gray-900">{profile.callSettings.timeOfDay}</p>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Time of Day</label>
+                      <p className="text-gray-900 dark:text-white">{profile.callSettings.timeOfDay}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-600">Cadence</label>
-                      <p className="text-gray-900">{getCadenceDisplay(profile.callSettings.cadence, profile.callSettings.daysOfWeek)}</p>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Cadence</label>
+                      <p className="text-gray-900 dark:text-white">{getCadenceDisplay(profile.callSettings.cadence, profile.callSettings.daysOfWeek)}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-600">Status</label>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Status</label>
                       <p>
                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${
                           profile.callSettings.active
-                            ? 'text-green-600 bg-green-50 border-green-200'
-                            : 'text-gray-600 bg-gray-50 border-gray-200'
+                            ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800'
+                            : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600'
                         }`}>
                           {profile.callSettings.active ? 'Active' : 'Inactive'}
                         </span>
@@ -326,10 +326,10 @@ export default function Profile() {
                   </div>
                 ) : !isEditing ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-500 mb-4">No call settings configured</p>
+                    <p className="text-gray-500 dark:text-gray-400 mb-4">No call settings configured</p>
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                     >
                       Set Up Call Settings
                     </button>
@@ -337,7 +337,7 @@ export default function Profile() {
                 ) : (
                   <div className="space-y-4">
                     <div>
-                      <label htmlFor="phoneE164" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="phoneE164" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Phone Number (E.164 format) *
                       </label>
                       <input
@@ -346,20 +346,20 @@ export default function Profile() {
                         value={phoneE164}
                         onChange={(e) => setPhoneE164(e.target.value)}
                         placeholder="+12125551234"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                       />
-                      <p className="text-xs text-gray-500 mt-1">Format: +[country code][number]</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Format: +[country code][number]</p>
                     </div>
 
                     <div>
-                      <label htmlFor="timezone" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="timezone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Timezone *
                       </label>
                       <select
                         id="timezone"
                         value={timezone}
                         onChange={(e) => setTimezone(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
                       >
                         <option value="">Select timezone...</option>
                         {availableTimezones.map((tz) => (
@@ -368,13 +368,13 @@ export default function Profile() {
                           </option>
                         ))}
                       </select>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         Browser detected: {getBrowserTimezone()}
                       </p>
                     </div>
 
                     <div>
-                      <label htmlFor="timeOfDay" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="timeOfDay" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Time of Day (24h format) *
                       </label>
                       <input
@@ -382,19 +382,19 @@ export default function Profile() {
                         type="time"
                         value={timeOfDay}
                         onChange={(e) => setTimeOfDay(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
                       />
                     </div>
 
                     <div>
-                      <label htmlFor="cadence" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="cadence" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Cadence *
                       </label>
                       <select
                         id="cadence"
                         value={cadence}
                         onChange={(e) => setCadence(e.target.value as 'daily' | 'weekdays' | 'weekends' | 'custom')}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white"
                       >
                         <option value="daily">Every day</option>
                         <option value="weekdays">Weekdays (Mon-Fri)</option>
@@ -405,7 +405,7 @@ export default function Profile() {
 
                     {cadence === 'custom' && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Select Days
                         </label>
                         <div className="grid grid-cols-7 gap-2">
@@ -416,8 +416,8 @@ export default function Profile() {
                               onClick={() => toggleDayOfWeek(index)}
                               className={`px-2 py-2 rounded text-sm font-medium transition-colors ${
                                 daysOfWeek.includes(index)
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                  ? 'bg-blue-600 dark:bg-blue-500 text-white'
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                               }`}
                             >
                               {day.slice(0, 3)}
@@ -433,25 +433,25 @@ export default function Profile() {
                         id="active"
                         checked={active}
                         onChange={(e) => setActive(e.target.checked)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        className="h-4 w-4 text-blue-600 dark:text-blue-500 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
                       />
-                      <label htmlFor="active" className="ml-2 block text-sm text-gray-700">
+                      <label htmlFor="active" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
                         Enable call scheduling
                       </label>
                     </div>
 
-                    <div className="flex items-center justify-end space-x-3 pt-4 border-t">
+                    <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                       <button
                         onClick={handleCancel}
                         disabled={isSaving}
-                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center"
+                        className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 flex items-center"
                       >
                         {isSaving && (
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
