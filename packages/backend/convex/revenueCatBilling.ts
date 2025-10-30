@@ -10,16 +10,11 @@ const REVENUECAT_PRODUCT_TO_TIER: Record<string, string> = {
   "free-tier": "free",
 };
 
-const getPlatformFromStore = (store: string | undefined): string | undefined => {
-  const platformMap: Record<string, string> = {
+const getPlatformFromStore = (store: string | undefined): "app_store" | "play_store" | "stripe" | undefined => {
+  const platformMap: Record<string, "app_store" | "play_store" | "stripe"> = {
     "APP_STORE": "app_store",
     "PLAY_STORE": "play_store",
     "STRIPE": "stripe",
-    "AMAZON": "amazon",
-    "MAC_APP_STORE": "mac_app_store",
-    "PROMOTIONAL": "promotional",
-    "ROKU": "roku",
-    "WEB": "web",
   };
   return store ? platformMap[store] : undefined;
 };
@@ -119,7 +114,7 @@ export const updateSubscriptionFromWebhook = internalMutation({
         productId: args.productId,
         status,
         subscriptionTier: effectiveTier,
-        ...(expiresAt && { expiresAt }),
+        ...(typeof expiresAt === "number" && !isNaN(expiresAt) ? { expiresAt } : {}),
         lastVerifiedAt: now,
       });
     } else {
@@ -132,7 +127,7 @@ export const updateSubscriptionFromWebhook = internalMutation({
         lastResetAt: now,
         musicGenerationsUsed: 0,
         lastVerifiedAt: now,
-        ...(expiresAt && { expiresAt }),
+        ...(typeof expiresAt === "number" && !isNaN(expiresAt) ? { expiresAt } : {}),
       });
 
       await ctx.db.patch(user._id, {
@@ -351,20 +346,36 @@ async function fetchRevenueCatCustomer(appUserId: string): Promise<any> {
     throw new Error("REVENUECAT_API_KEY not configured");
   }
 
-  const response = await fetch(`https://api.revenuecat.com/v1/subscribers/${appUserId}`, {
-    method: "GET",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-  if (!response.ok) {
-    console.error(`Failed to fetch RC customer: ${response.status} ${response.statusText}`);
-    return null;
+  try {
+    const encodedUserId = encodeURIComponent(appUserId);
+    const response = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodedUserId}`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      console.error(`Failed to fetch RC customer: ${response.status} ${response.statusText}`);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    clearTimeout(timeout);
+    if (error instanceof Error && error.name === "AbortError") {
+      console.error("Request to RevenueCat API timed out");
+      return null;
+    }
+    throw error;
   }
-
-  return await response.json();
 }
 
 /**
