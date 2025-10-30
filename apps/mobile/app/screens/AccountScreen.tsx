@@ -12,7 +12,7 @@ export const AccountScreen = () => {
   const insets = useSafeAreaInsets();
   const { signOut } = useAuth();
   // Cast to any to avoid transient type mismatch if Convex codegen is stale
-  const deleteAccountMutation = useMutation((api as any).users.deleteAccount);
+  const deleteAccountMutation = useMutation(api.users.deleteAccount);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const confirmAndDelete = useCallback(() => {
@@ -28,7 +28,7 @@ export const AccountScreen = () => {
             setIsDeleting(true);
             try {
               // Delete from Convex database
-              const result = await deleteAccountMutation();
+              await deleteAccountMutation();
               
               // Logout from RevenueCat (clears subscription state)
               try {
