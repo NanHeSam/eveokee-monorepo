@@ -411,7 +411,7 @@ const vapiWebhookHandler = httpAction(async (ctx, req) => {
         status: "completed",
       });
 
-      const sessionResult = await ctx.runMutation(internal.callJobs.updateCallSession, {
+      await ctx.runMutation(internal.callJobs.updateCallSession, {
         vapiCallId,
         jobId: job._id,
         userId: job.userId,
