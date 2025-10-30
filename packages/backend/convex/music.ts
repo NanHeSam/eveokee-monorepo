@@ -2,7 +2,7 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import { internal, api } from "./_generated/api";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
-import ensureCurrentUser from "./users";
+import ensureCurrentUser, { getOptionalCurrentUser } from "./users";
 
 const sunoTrackValidator = v.object({
   id: v.optional(v.string()),
@@ -374,7 +374,12 @@ export const listPlaylistMusic = query({
     }),
   ),
   handler: async (ctx) => {
-    const { userId } = await ensureCurrentUser(ctx);
+    const authResult = await getOptionalCurrentUser(ctx);
+    if (!authResult) {
+      // User deleted or not authenticated - return empty array gracefully
+      return [];
+    }
+    const { userId } = authResult;
 
     const docs = await ctx.db
       .query("music")

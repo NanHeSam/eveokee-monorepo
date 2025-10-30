@@ -5,6 +5,7 @@ import { useAuth } from '@clerk/clerk-expo';
 import { useMutation } from 'convex/react';
 import { api } from '@backend/convex';
 import { useThemeColors } from '../theme/useThemeColors';
+import { logoutUser } from '../utils/revenueCat';
 
 export const AccountScreen = () => {
   const colors = useThemeColors();
@@ -26,17 +27,37 @@ export const AccountScreen = () => {
           onPress: async () => {
             setIsDeleting(true);
             try {
-              await deleteAccountMutation();
-              Alert.alert('Account deleted', 'Your account and data have been permanently deleted.');
-              // Sign out to clear authentication and local session
+              // Delete from Convex database
+              const result = await deleteAccountMutation();
+              
+              // Logout from RevenueCat (clears subscription state)
+              try {
+                await logoutUser();
+              } catch (revenueCatError) {
+                // Non-critical - log but continue
+                console.warn('Failed to logout from RevenueCat:', revenueCatError);
+              }
+
+              // Sign out from Clerk (clears authentication session)
+              // Note: The user still exists in Clerk but cannot log back in without the session
+              // To fully delete from Clerk, you would need to use Clerk Backend API with CLERK_SECRET_KEY
               await signOut();
+              
+              // Success alert is not needed since user will be signed out and redirected
             } catch (err) {
               const message = err instanceof Error ? err.message : 'Something went wrong';
+              
               // If account is already deleted or unauthorized, force logout
               if (message.includes('Unauthorized') || message.includes('User not found')) {
+                try {
+                  await logoutUser();
+                } catch (revenueCatError) {
+                  console.warn('Failed to logout from RevenueCat:', revenueCatError);
+                }
                 await signOut();
                 return;
               }
+              
               Alert.alert(
                 'Deletion failed',
                 'We could not delete your account. Please check your connection and try again.',

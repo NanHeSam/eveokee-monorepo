@@ -14,6 +14,7 @@ import type * as callJobs from "../callJobs.js";
 import type * as callSettings from "../callSettings.js";
 import type * as constant from "../constant.js";
 import type * as crons from "../crons.js";
+import type * as deleteAccount from "../deleteAccount.js";
 import type * as diaries from "../diaries.js";
 import type * as emailNotify from "../emailNotify.js";
 import type * as http from "../http.js";
@@ -53,6 +54,7 @@ declare const fullApi: ApiFromModules<{
   callSettings: typeof callSettings;
   constant: typeof constant;
   crons: typeof crons;
+  deleteAccount: typeof deleteAccount;
   diaries: typeof diaries;
   emailNotify: typeof emailNotify;
   http: typeof http;
