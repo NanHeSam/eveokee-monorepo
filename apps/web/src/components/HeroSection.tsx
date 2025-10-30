@@ -2,6 +2,7 @@ import { Play, Music, Pause, Book, Settings } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
 import { useAudioManager } from '../hooks/useAudioManager';
 import { getAndroidBetaLink } from '../utils/deviceUtils';
+import AndroidInviteForm from './AndroidInviteForm';
 
 interface HeroSectionProps {
   onHearDemo?: () => void;
@@ -89,23 +90,31 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
             </div>
             
             {/* App Beta Links */}
-            <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-              <a
-                href="https://testflight.apple.com/join/aGT4PMED"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center px-4 py-2 bg-accent-apricot/20 text-accent-apricot rounded-full text-sm font-medium hover:bg-accent-apricot/30 transition-colors"
-              >
-                📱 iOS TestFlight
-              </a>
-              <a
-                href={androidBetaLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center px-4 py-2 bg-accent-apricot/20 text-accent-apricot rounded-full text-sm font-medium hover:bg-accent-apricot/30 transition-colors"
-              >
-                📱 Android Beta
-              </a>
+            <div className="mt-6 space-y-4">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+                <a
+                  href="https://testflight.apple.com/join/aGT4PMED"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-4 py-2 bg-accent-apricot/20 text-accent-apricot rounded-full text-sm font-medium hover:bg-accent-apricot/30 transition-colors"
+                >
+                  📱 iOS TestFlight
+                </a>
+                <a
+                  href={androidBetaLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-4 py-2 bg-accent-apricot/20 text-accent-apricot rounded-full text-sm font-medium hover:bg-accent-apricot/30 transition-colors"
+                >
+                  📱 Android Beta
+                </a>
+              </div>
+              <div className="text-center lg:text-left">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  Internal test — enter your Google Play email to request access
+                </p>
+                <AndroidInviteForm source="hero" />
+              </div>
             </div>
           </div>
           

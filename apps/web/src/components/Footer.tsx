@@ -3,6 +3,7 @@ import { SiDiscord } from 'react-icons/si';
 import { FaInstagram } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { getAndroidBetaLink } from '../utils/deviceUtils';
+import AndroidInviteForm from './AndroidInviteForm';
 
 /**
  * Renders the eveokee site footer with branding, social links, quick navigation, and legal links.
@@ -110,6 +111,10 @@ export default function Footer() {
                   <Smartphone className="w-4 h-4" />
                   Android Beta
                 </a>
+                <p className="text-xs text-gray-500 dark:text-gray-600 mt-2 mb-2">
+                  Internal test — enter your Google Play email to request access
+                </p>
+                <AndroidInviteForm source="footer" className="mt-2" />
               </li>
             </ul>
           </div>

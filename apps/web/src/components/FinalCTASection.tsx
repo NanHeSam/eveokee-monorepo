@@ -5,6 +5,7 @@ import { api } from '@backend/convex';
 import { isValidEmail } from '@/lib/utils';
 import { ArrowRight, CheckCircle } from 'lucide-react';
 import { getAndroidBetaLink } from '../utils/deviceUtils';
+import AndroidInviteForm from './AndroidInviteForm';
 
 export default function FinalCTASection() {
   const [email, setEmail] = useState('');
@@ -128,25 +129,35 @@ export default function FinalCTASection() {
           </div>
           
           {/* App Beta Links */}
-          <div className="mt-8 flex flex-wrap gap-3 justify-center">
-            <a
-              href="https://testflight.apple.com/join/aGT4PMED"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-full text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-              📱 iOS TestFlight
-            </a>
-            <a
-              href={androidBetaLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-full text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-              📱 Android Beta
-            </a>
+          <div className="mt-8 space-y-4">
+            <div className="flex flex-wrap gap-3 justify-center">
+              <a
+                href="https://testflight.apple.com/join/aGT4PMED"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-full text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                📱 iOS TestFlight
+              </a>
+              <a
+                href={androidBetaLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-full text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                📱 Android Beta
+              </a>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                Internal test — enter your Google Play email to request access
+              </p>
+              <div className="max-w-md mx-auto">
+                <AndroidInviteForm source="finalCTA" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
