@@ -313,6 +313,23 @@ export const getDashboardStats = query({
 });
 
 /**
+ * Get call session by VAPI call ID (internal - used by webhooks)
+ */
+export const getCallSessionByVapiId = internalQuery({
+  args: {
+    vapiCallId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db
+      .query("callSessions")
+      .withIndex("by_vapiCallId", (q) => q.eq("vapiCallId", args.vapiCallId))
+      .first();
+    
+    return session;
+  },
+});
+
+/**
  * Update a call session (internal - used by webhooks)
  * Creates the session if it doesn't exist (handles out-of-order webhooks)
  */
