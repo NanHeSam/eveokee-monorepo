@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Alert } from 'react-native';
 import { useUsage, useSubscriptionUIStore, RecordGenerationResult } from '../store/useSubscriptionStore';
-import { getCustomerInfo } from '../utils/revenueCat';
 
 interface UseMusicGenerationOptions {
   onGenerationStart?: () => void;
@@ -71,13 +70,8 @@ export function useMusicGeneration(options: UseMusicGenerationOptions = {}) {
 
   const checkCanGenerateWithReconciliation = async (): Promise<boolean> => {
     try {
-      // Get RevenueCat customer info for reconciliation
-      const rcCustomerInfo = await getCustomerInfo();
-      
-      // Check usage with reconciliation
-      const result = await checkUsageWithReconciliation({ 
-        rcCustomerInfo: rcCustomerInfo || undefined 
-      });
+      // Check usage with reconciliation (server-side fetches canonical RevenueCat data)
+      const result = await checkUsageWithReconciliation({});
       
       if (!result.canGenerate) {
         if (showPaywallOnLimit) {

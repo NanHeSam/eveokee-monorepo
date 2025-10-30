@@ -4,7 +4,7 @@ import { internal } from "./_generated/api";
 import { createLogger, generateCorrelationId, logReconciliation, sanitizeForConvex } from "./lib/logger";
 
 const REVENUECAT_PRODUCT_TO_TIER: Record<string, string> = {
-  "eveokee_premium_weekly": "monthly",
+  "eveokee_premium_weekly": "weekly",
   "eveokee_premium_monthly": "monthly",
   "eveokee_premium_annual": "yearly",
   "free-tier": "free",
@@ -42,102 +42,6 @@ const getStatusFromEventType = (eventType: string, isActive: boolean): "active" 
       return isActive ? "active" : "expired";
   }
 };
-
-export const syncRevenueCatSubscription = internalMutation({
-  args: {
-    userId: v.id("users"),
-    productId: v.string(),
-    status: v.union(
-      v.literal("active"),
-      v.literal("canceled"),
-      v.literal("expired"),
-      v.literal("in_grace")
-    ),
-    platform: v.optional(v.union(
-      v.literal("app_store"),   // Apple App Store (iOS)
-      v.literal("play_store"),   // Google Play Store (Android)
-      v.literal("stripe")        // Stripe (Web)
-    )),
-    expiresAt: v.optional(v.number()),
-  },
-  returns: v.object({
-    success: v.boolean(),
-    userId: v.optional(v.id("users")),
-  }),
-  handler: async (ctx, args) => {
-    const now = Date.now();
-
-    const user = await ctx.db.get(args.userId);
-
-    if (!user) {
-      console.error(
-        `User not found for ID: ${args.userId}`
-      );
-      return { success: false };
-    }
-
-    // Validate product ID mapping
-    const mappedTier = REVENUECAT_PRODUCT_TO_TIER[args.productId];
-    if (!mappedTier) {
-      console.error(
-        `Unknown RevenueCat product ID: ${args.productId}. Valid products: ${Object.keys(REVENUECAT_PRODUCT_TO_TIER).join(", ")}`
-      );
-      return { success: false };
-    }
-    const effectiveTier =
-      args.status === "active" || args.status === "in_grace" ? mappedTier : "free";
-
-    if (user.activeSubscriptionId) {
-      const existingSubscription = await ctx.db.get(user.activeSubscriptionId);
-
-      // Determine canceledAt based on status
-      let canceledAtUpdate: { canceledAt: number } | { canceledAt: undefined } | {} = {};
-      if (args.status === "canceled" || args.status === "expired") {
-        // Set canceledAt when subscription is canceled or expired
-        canceledAtUpdate = { canceledAt: now };
-      } else if (args.status === "active" || args.status === "in_grace") {
-        // Clear canceledAt when subscription is active or in grace period
-        canceledAtUpdate = { canceledAt: undefined };
-      }
-
-      await ctx.db.patch(user.activeSubscriptionId, {
-        ...(args.platform && { platform: args.platform }),
-        productId: args.productId,
-        status: args.status,
-        subscriptionTier: effectiveTier,
-        ...(typeof args.expiresAt === "number" && { expiresAt: args.expiresAt }),
-        lastVerifiedAt: now,
-        ...canceledAtUpdate,
-      });
-    } else {
-      // For new subscriptions, only set canceledAt if status is canceled or expired
-      const subscriptionId = await ctx.db.insert("subscriptionStatuses", {
-        userId: user._id,
-        ...(args.platform && { platform: args.platform }),
-        productId: args.productId,
-        status: args.status,
-        subscriptionTier: effectiveTier,
-        lastResetAt: now,
-        musicGenerationsUsed: 0,
-        lastVerifiedAt: now,
-        ...(typeof args.expiresAt === "number" && { expiresAt: args.expiresAt }),
-        ...((args.status === "canceled" || args.status === "expired") && { canceledAt: now }),
-      });
-
-      // Update user with active subscription
-      await ctx.db.patch(user._id, {
-        activeSubscriptionId: subscriptionId,
-        updatedAt: now,
-      });
-    }
-
-    console.log(
-      `Successfully synced RevenueCat subscription for user ${user._id}: ${effectiveTier} (${args.status})`
-    );
-
-    return { success: true, userId: user._id };
-  },
-});
 
 /**
  * Update subscription from RevenueCat webhook event
@@ -262,13 +166,13 @@ export const updateSubscriptionFromWebhook = internalMutation({
 });
 
 /**
- * Reconcile subscription status with RevenueCat
- * Called from usage checks when mobile and backend disagree
+ * Internal mutation: Reconcile subscription status with RevenueCat customer data
+ * This mutation updates the database based on RevenueCat customer info fetched server-side
  */
-export const reconcileSubscription = internalMutation({
+export const reconcileSubscriptionWithData = internalMutation({
   args: {
     userId: v.id("users"),
-    rcCustomerInfo: v.any(), // From RevenueCat SDK
+    rcCustomerInfo: v.any(), // From RevenueCat API (subscriber format)
   },
   returns: v.object({ 
     success: v.boolean(),
@@ -288,7 +192,8 @@ export const reconcileSubscription = internalMutation({
     }
 
     // Check RC entitlements to determine if user has active subscription
-    const rcEntitlements = args.rcCustomerInfo?.entitlements?.active || {};
+    // RevenueCat API format: subscriber.entitlements.active
+    const rcEntitlements = args.rcCustomerInfo?.subscriber?.entitlements?.active || {};
     const hasActiveSubscription = Object.keys(rcEntitlements).length > 0;
     const rcStatus = hasActiveSubscription ? "active" : "expired";
 
@@ -327,6 +232,86 @@ export const reconcileSubscription = internalMutation({
       backendStatus: backendSubscription.status, 
       rcStatus 
     };
+  },
+});
+
+/**
+ * Reconcile subscription status with RevenueCat
+ * ACTION: Fetches canonical customer data from RevenueCat API and reconciles subscription
+ * Called from usage checks when reconciliation is needed
+ */
+export const reconcileSubscription = internalAction({
+  args: {
+    userId: v.id("users"),
+  },
+  returns: v.object({ 
+    success: v.boolean(),
+    updated: v.boolean(),
+    backendStatus: v.string(),
+    rcStatus: v.string(),
+  }),
+  handler: async (ctx, args) => {
+    const correlationId = generateCorrelationId();
+    const logger = createLogger({
+      functionName: 'reconcileSubscription',
+      correlationId,
+      userId: args.userId,
+    });
+
+    logger.startTimer();
+    logger.info('Starting subscription reconciliation');
+
+    try {
+      // Fetch canonical customer data from RevenueCat API
+      logger.debug('Fetching RevenueCat customer info');
+      const rcCustomerInfo = await fetchRevenueCatCustomer(args.userId);
+
+      if (!rcCustomerInfo) {
+        logger.warn('Failed to fetch RevenueCat customer info - no data returned');
+        return { 
+          success: false, 
+          updated: false, 
+          backendStatus: "unknown", 
+          rcStatus: "unknown" 
+        };
+      }
+
+      logger.debug('Successfully fetched RevenueCat customer info');
+
+      // Call mutation to update database based on canonical RC data
+      const result = await ctx.runMutation(
+        internal.revenueCatBilling.reconcileSubscriptionWithData,
+        {
+          userId: args.userId,
+          rcCustomerInfo,
+        }
+      );
+
+      if (result.updated) {
+        logReconciliation(
+          logger,
+          args.userId,
+          result.backendStatus,
+          result.rcStatus
+        );
+      } else {
+        logger.debug('Subscription status unchanged', {
+          backendStatus: result.backendStatus,
+          rcStatus: result.rcStatus,
+        });
+      }
+
+      return result;
+    } catch (error) {
+      logger.error('Failed to reconcile subscription', error);
+      
+      return { 
+        success: false, 
+        updated: false, 
+        backendStatus: "error", 
+        rcStatus: "error" 
+      };
+    }
   },
 });
 

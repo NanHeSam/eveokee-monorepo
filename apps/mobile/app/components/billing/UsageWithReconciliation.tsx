@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useUsage, type ReconciledUsageData } from '../../store/useSubscriptionStore';
-import { getCustomerInfo } from '../../utils/revenueCat';
 
 interface UsageWithReconciliationProps {
   onUpgradePress?: () => void;
@@ -23,13 +22,8 @@ export function UsageWithReconciliation({
   const handleReconcileUsage = async () => {
     setIsReconciling(true);
     try {
-      // Get RevenueCat customer info for reconciliation
-      const rcCustomerInfo = await getCustomerInfo();
-      
-      // Check usage with reconciliation
-      const result = await checkUsageWithReconciliation({ 
-        rcCustomerInfo: rcCustomerInfo || undefined 
-      });
+      // Check usage with reconciliation (server-side fetches canonical RevenueCat data)
+      const result = await checkUsageWithReconciliation({});
       
       setReconciledUsage(result);
       

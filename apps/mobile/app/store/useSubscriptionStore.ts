@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { api } from '@backend/convex';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 
 export type SubscriptionTier = 'free' | 'monthly' | 'yearly';
 export type SubscriptionStatus = 'active' | 'canceled' | 'expired' | 'in_grace';
@@ -50,7 +50,7 @@ export interface RecordGenerationResult {
 }
 
 /**
- * Type for reconciled usage data returned from checkUsageWithReconciliation mutation
+ * Type for reconciled usage data returned from checkUsageWithReconciliation action
  */
 export interface ReconciledUsageData {
   canGenerate: boolean;
@@ -81,13 +81,13 @@ export function useSubscription() {
  * - `usage` — Query result containing the current user's `UsageState` (or `undefined` while loading).
  * - `recordGeneration` — Mutation function to record a music generation for the current user.
  * - `canGenerate` — Query result indicating whether the current user may generate music (`true` or `false`, or `undefined` while loading).
- * - `checkUsageWithReconciliation` — Mutation function to check usage with RevenueCat reconciliation, returns ReconciledUsageData.
+ * - `checkUsageWithReconciliation` — Action function to check usage with RevenueCat reconciliation (fetches canonical data server-side), returns ReconciledUsageData.
  */
 export function useUsage() {
   const usage = useQuery(api.usage.getCurrentUserUsage);
   const recordGeneration = useMutation(api.usage.recordCurrentUserMusicGeneration);
   const canGenerate = useQuery(api.usage.canCurrentUserGenerateMusic);
-  const checkUsageWithReconciliation = useMutation(api.usage.checkUsageWithReconciliation);
+  const checkUsageWithReconciliation = useAction(api.usage.checkUsageWithReconciliation);
 
   return {
     usage,

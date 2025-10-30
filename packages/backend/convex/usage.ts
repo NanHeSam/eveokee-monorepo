@@ -4,6 +4,7 @@ import {
   internalQuery,
   mutation,
   query,
+  action,
 } from "./_generated/server";
 import {
   getPeriodDurationMs,
@@ -333,12 +334,11 @@ export const canCurrentUserGenerateMusic = query({
 
 /**
  * Check usage with reconciliation
- * Mobile provides RC customerInfo to compare with backend and reconcile if different
+ * ACTION: Fetches canonical subscription data from RevenueCat API and reconciles if needed
+ * Server-side reconciliation ensures we use the authoritative RevenueCat data
  */
-export const checkUsageWithReconciliation = mutation({
-  args: { 
-    rcCustomerInfo: v.optional(v.any()) // From RevenueCat SDK on mobile
-  },
+export const checkUsageWithReconciliation = action({
+  args: {},
   returns: v.object({
     canGenerate: v.boolean(),
     tier: v.string(),
@@ -348,18 +348,32 @@ export const checkUsageWithReconciliation = mutation({
     reconciled: v.boolean(),
   }),
   handler: async (ctx, args) => {
-    const { userId } = await ensureCurrentUser(ctx);
+    // Get user identity from auth
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Unauthorized");
+    }
 
-    // If RC customer info provided, check if reconciliation needed
-    if (args.rcCustomerInfo) {
-      const reconcileResult = await ctx.runMutation(internal.revenueCatBilling.reconcileSubscription, {
-        userId,
-        rcCustomerInfo: args.rcCustomerInfo,
-      });
+    // Get userId via internal query
+    const userId = await ctx.runQuery(internal.users.getUserIdByClerkId, {
+      clerkId: identity.subject,
+    });
 
-      if (reconcileResult.updated) {
-        console.log(`Reconciled subscription: ${reconcileResult.backendStatus} → ${reconcileResult.rcStatus}`);
-      }
+    if (!userId) {
+      throw new Error("User not found");
+    }
+
+    // Always reconcile with canonical RevenueCat data server-side
+    const reconcileResult = await ctx.runAction(internal.revenueCatBilling.reconcileSubscription, {
+      userId,
+    });
+
+    let reconciled = false;
+    if (reconcileResult.success && reconcileResult.updated) {
+      reconciled = true;
+      console.log(`Reconciled subscription: ${reconcileResult.backendStatus} → ${reconcileResult.rcStatus}`);
+    } else if (!reconcileResult.success) {
+      console.error(`Failed to reconcile subscription: userId=${userId}`);
     }
 
     // Get usage after potential reconciliation
@@ -374,7 +388,7 @@ export const checkUsageWithReconciliation = mutation({
         currentUsage: 0,
         limit: 0,
         remainingQuota: 0,
-        reconciled: false,
+        reconciled,
       };
     }
 
@@ -386,7 +400,7 @@ export const checkUsageWithReconciliation = mutation({
       currentUsage: snapshot.musicGenerationsUsed,
       limit: snapshot.musicLimit,
       remainingQuota: snapshot.remainingQuota,
-      reconciled: args.rcCustomerInfo ? true : false,
+      reconciled,
     };
   },
 });

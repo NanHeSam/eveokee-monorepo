@@ -333,17 +333,14 @@ For components that need real-time accuracy, use the reconciliation endpoint dir
 
 ```typescript
 import { useUsage } from './app/store/useSubscriptionStore';
-import { getCustomerInfo } from './app/utils/revenueCat';
 
 function UsageComponent() {
   const { checkUsageWithReconciliation } = useUsage();
 
   const handleRefreshUsage = async () => {
     try {
-      const rcCustomerInfo = await getCustomerInfo();
-      const result = await checkUsageWithReconciliation({ 
-        rcCustomerInfo: rcCustomerInfo || undefined 
-      });
+      // Server-side fetches canonical RevenueCat data automatically
+      const result = await checkUsageWithReconciliation({});
       
       if (result.reconciled) {
         console.log('Usage reconciled with RevenueCat');
