@@ -97,16 +97,18 @@ export const createDiaryInternal = internalMutation({
   args: {
     userId: v.id("users"),
     content: v.string(),
+    date: v.optional(v.number()),
   },
   returns: v.object({
     _id: v.id("diaries"),
   }),
   handler: async (ctx, args) => {
     const now = Date.now();
+    const diaryDate = args.date ?? now;
     const _id: Id<"diaries"> = await ctx.db.insert("diaries", {
       userId: args.userId,
       content: args.content,
-      date: now,
+      date: diaryDate,
       updatedAt: now,
     });
 

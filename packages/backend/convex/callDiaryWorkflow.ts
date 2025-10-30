@@ -13,6 +13,7 @@ export const generateDiaryFromCall = internalAction({
   args: {
     userId: v.id("users"),
     callSessionId: v.id("callSessions"),
+    endedAt: v.optional(v.number()),
     transcript: v.optional(v.string()),
     messages: v.optional(v.any()),
   },
@@ -25,6 +26,10 @@ export const generateDiaryFromCall = internalAction({
     const openaiApiKey = process.env.OPENAI_API_KEY;
     if (!openaiApiKey) {
       console.error("OPENAI_API_KEY secret is not set");
+      await ctx.runMutation(internal.callJobs.updateCallSessionMetadata, {
+        callSessionId: args.callSessionId,
+        metadata: { diaryError: "OPENAI_API_KEY not configured" },
+      });
       return {
         success: false,
         error: "OPENAI_API_KEY not configured",
@@ -37,8 +42,30 @@ export const generateDiaryFromCall = internalAction({
       try {
         if (Array.isArray(args.messages)) {
           transcriptText = args.messages
-            .filter((msg: any) => msg?.role === "user" && msg?.content)
-            .map((msg: any) => msg.content)
+            .filter((msg: any) => {
+              if (!msg || typeof msg !== "object") return false;
+              const hasUserRole = msg.role === "user" || msg.role === "assistant";
+              const content = msg.content;
+              if (typeof content === "string") return hasUserRole && content;
+              if (Array.isArray(content)) {
+                return hasUserRole && content.some((c: any) => 
+                  typeof c === "object" && c.type === "text" && c.text
+                );
+              }
+              return false;
+            })
+            .map((msg: any) => {
+              const content = msg.content;
+              if (typeof content === "string") return content;
+              if (Array.isArray(content)) {
+                return content
+                  .filter((c: any) => typeof c === "object" && c.type === "text")
+                  .map((c: any) => c.text)
+                  .join(" ");
+              }
+              return "";
+            })
+            .filter((text: string) => text.trim().length > 0)
             .join("\n");
         }
       } catch (error) {
@@ -48,10 +75,20 @@ export const generateDiaryFromCall = internalAction({
 
     if (!transcriptText || transcriptText.trim().length === 0) {
       console.warn("No transcript available for diary generation");
+      await ctx.runMutation(internal.callJobs.updateCallSessionMetadata, {
+        callSessionId: args.callSessionId,
+        metadata: { diaryError: "No transcript available" },
+      });
       return {
         success: false,
         error: "No transcript available",
       };
+    }
+
+    const MAX_TRANSCRIPT_LENGTH = 12000;
+    if (transcriptText.length > MAX_TRANSCRIPT_LENGTH) {
+      console.warn(`Transcript too long (${transcriptText.length} chars), truncating to ${MAX_TRANSCRIPT_LENGTH}`);
+      transcriptText = transcriptText.substring(0, MAX_TRANSCRIPT_LENGTH) + "\n\n[Transcript truncated due to length]";
     }
 
     const openai = new OpenAI({ apiKey: openaiApiKey });
@@ -94,9 +131,14 @@ Do not mention that this is from a call or conversation. Write as if the user is
       console.log("Generated diary content from call transcript");
     } catch (error) {
       console.error("OpenAI API error during diary generation:", error);
+      const errorMsg = `Failed to generate diary: ${error instanceof Error ? error.message : String(error)}`;
+      await ctx.runMutation(internal.callJobs.updateCallSessionMetadata, {
+        callSessionId: args.callSessionId,
+        metadata: { diaryError: errorMsg },
+      });
       return {
         success: false,
-        error: `Failed to generate diary: ${error instanceof Error ? error.message : String(error)}`,
+        error: errorMsg,
       };
     }
 
@@ -105,14 +147,25 @@ Do not mention that this is from a call or conversation. Write as if the user is
       const result = await ctx.runMutation(internal.diaries.createDiaryInternal, {
         userId: args.userId,
         content: diaryContent,
+        date: args.endedAt,
       });
       diaryId = result._id;
       console.log(`Created diary ${diaryId} from call session ${args.callSessionId}`);
+      
+      await ctx.runMutation(internal.callJobs.updateCallSessionMetadata, {
+        callSessionId: args.callSessionId,
+        metadata: { diaryId: diaryId },
+      });
     } catch (error) {
       console.error("Failed to create diary:", error);
+      const errorMsg = `Failed to create diary: ${error instanceof Error ? error.message : String(error)}`;
+      await ctx.runMutation(internal.callJobs.updateCallSessionMetadata, {
+        callSessionId: args.callSessionId,
+        metadata: { diaryError: errorMsg },
+      });
       return {
         success: false,
-        error: `Failed to create diary: ${error instanceof Error ? error.message : String(error)}`,
+        error: errorMsg,
       };
     }
 

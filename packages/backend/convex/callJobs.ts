@@ -330,6 +330,31 @@ export const getCallSessionByVapiId = internalQuery({
 });
 
 /**
+ * Update call session metadata (internal - used by workflows)
+ * Merges new metadata with existing metadata
+ */
+export const updateCallSessionMetadata = internalMutation({
+  args: {
+    callSessionId: v.id("callSessions"),
+    metadata: v.any(),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db.get(args.callSessionId);
+    if (!session) {
+      console.warn(`Call session ${args.callSessionId} not found, cannot update metadata`);
+      return;
+    }
+    
+    const existingMetadata = session.metadata || {};
+    const mergedMetadata = { ...existingMetadata, ...args.metadata };
+    
+    await ctx.db.patch(args.callSessionId, {
+      metadata: mergedMetadata,
+    });
+  },
+});
+
+/**
  * Update a call session (internal - used by webhooks)
  * Creates the session if it doesn't exist (handles out-of-order webhooks)
  */

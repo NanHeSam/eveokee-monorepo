@@ -53,7 +53,7 @@ export const requestSunoGeneration = internalAction({
     let songData: { lyric: string; style: string; title: string };
     try {
       const completion = await openai.chat.completions.create({
-        model: "gpt-5-mini",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
