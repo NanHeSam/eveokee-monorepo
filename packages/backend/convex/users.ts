@@ -9,6 +9,7 @@ import {
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { Id, Doc } from "./_generated/dataModel";
+import { deleteUserData } from "./deleteAccount";
 import { getEffectiveMusicLimit, getPeriodDurationMs, type SubscriptionTier } from "./billing";
 
 export const createUser = internalMutation({
@@ -264,6 +265,38 @@ export const getUserProfile = query({
       subscription,
       callSettings,
     };
+  },
+});
+
+export const deleteAccount = mutation({
+  args: {},
+  returns: v.object({ 
+    success: v.boolean(),
+    clerkId: v.optional(v.string()),
+  }),
+  handler: async (ctx) => {
+    // Ensure authenticated user and fetch full user doc
+    const user = await getCurrentUserOrThrow(ctx);
+
+    // Store clerkId before deletion (needed for client-side Clerk deletion)
+    const clerkId = user.clerkId;
+
+    // Log account deletion for monitoring and manual cleanup
+    console.log(
+      "[ACCOUNT_DELETION] User account deleted",
+      JSON.stringify({
+        userId: user._id,
+        clerkId: user.clerkId,
+        email: user.email ?? null,
+        name: user.name ?? null,
+        timestamp: new Date().toISOString(),
+      })
+    );
+
+    // Purge all user-associated data across tables (hard delete)
+    await deleteUserData(ctx, user);
+
+    return { success: true, clerkId };
   },
 });
 

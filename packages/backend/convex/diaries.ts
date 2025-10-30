@@ -2,7 +2,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
-import ensureCurrentUser from "./users";
+import ensureCurrentUser, { getOptionalCurrentUser } from "./users";
 
 export const createDiary = mutation({
   args: {
@@ -122,7 +122,12 @@ export const listDiaries = query({
     }),
   ),
   handler: async (ctx) => {
-    const { userId } = await ensureCurrentUser(ctx);
+    const authResult = await getOptionalCurrentUser(ctx);
+    if (!authResult) {
+      // User deleted or not authenticated - return empty array gracefully
+      return [];
+    }
+    const { userId } = authResult;
 
     const diaries = await ctx.db
       .query("diaries")
