@@ -96,7 +96,7 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
                   href="https://testflight.apple.com/join/aGT4PMED"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center px-4 py-2 bg-accent-apricot/20 text-accent-apricot rounded-full text-sm font-medium hover:bg-accent-apricot/30 transition-colors"
+                  className="inline-flex items-center px-4 py-2 bg-orange-100 text-orange-600 rounded-full text-sm font-medium hover:bg-orange-200/60 dark:bg-orange-900/30 dark:text-orange-300 dark:hover:bg-orange-900/50 transition-colors"
                 >
                   📱 iOS TestFlight
                 </a>
@@ -104,7 +104,7 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
                   href={androidBetaLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center px-4 py-2 bg-accent-apricot/20 text-accent-apricot rounded-full text-sm font-medium hover:bg-accent-apricot/30 transition-colors"
+                  className="inline-flex items-center px-4 py-2 bg-orange-100 text-orange-600 rounded-full text-sm font-medium hover:bg-orange-200/60 dark:bg-orange-900/30 dark:text-orange-300 dark:hover:bg-orange-900/50 transition-colors"
                 >
                   📱 Android Beta
                 </a>
