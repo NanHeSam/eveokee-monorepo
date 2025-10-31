@@ -50,6 +50,15 @@ export interface VapiCallMetadata {
 }
 
 /**
+ * VAPI analysis structure (from end-of-call-report)
+ * Contains summary and success evaluation results
+ */
+export interface VapiAnalysis {
+  summary?: string;
+  successEvaluation?: string; // "true"/"false" for Binary, or numeric string for NumericScale
+}
+
+/**
  * VAPI webhook event structure
  */
 export interface VapiWebhookEvent {
@@ -65,6 +74,7 @@ export interface VapiWebhookEvent {
     };
     durationSeconds?: number;
     artifact?: VapiArtifact;
+    analysis?: VapiAnalysis;
     endedReason?: string;
     startedAt?: string;
     endedAt?: string;
@@ -176,6 +186,20 @@ export function extractArtifact(event: VapiWebhookEvent): VapiArtifact {
 
   if (artifact !== undefined && artifact !== null && typeof artifact === "object" && !Array.isArray(artifact)) {
     return artifact as VapiArtifact;
+  }
+
+  return {};
+}
+
+/**
+ * Extract analysis data from VAPI webhook event
+ * @returns The analysis object, or empty object if invalid
+ */
+export function extractAnalysis(event: VapiWebhookEvent): VapiAnalysis {
+  const analysis = event.message.analysis;
+
+  if (analysis !== undefined && analysis !== null && typeof analysis === "object" && !Array.isArray(analysis)) {
+    return analysis as VapiAnalysis;
   }
 
   return {};

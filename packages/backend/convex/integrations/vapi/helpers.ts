@@ -130,6 +130,12 @@ type VapiAssistant = {
     url: string;
   };
   credentialIds?: string[];
+  successEvaluationPlan?: {
+    rubric: "Binary" | "NumericScale" | string;
+    messages: Array<{ role: string; content: string }>;
+    enabled: boolean;
+    timeoutSeconds?: number;
+  };
 };
 
 /**
@@ -188,6 +194,31 @@ export function buildVapiAssistant(
     endCallMessage: VAPI_END_CALL_MESSAGE,
     server: {
       url: webhookUrl,
+    },
+    successEvaluationPlan: {
+      rubric: "Binary",
+      messages: [
+        {
+          role: "system",
+          content: `Evaluate whether this call should generate a diary entry and music. 
+The call should NOT generate diary/music if:
+- It's a voicemail (no real conversation)
+- Very brief (< 15 seconds of actual conversation)
+- User explicitly says they're "just testing" or testing the system
+- Hurried pickup with no meaningful content
+- Technical test calls with no personal content
+
+The call SHOULD generate diary/music if:
+- Actual conversation about the user's day
+- Meaningful moments or experiences shared
+- Substantive dialogue beyond greetings
+- Personal reflections or events discussed
+
+Respond with "true" if the call should generate diary/music, "false" otherwise.`
+        }
+      ],
+      enabled: true,
+      timeoutSeconds: 30,
     },
   };
 
