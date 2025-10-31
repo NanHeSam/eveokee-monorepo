@@ -20,7 +20,7 @@ export const REVENUECAT_STORE_TO_PLATFORM: Record<string, "app_store" | "play_st
   "APP_STORE": "app_store",
   "PLAY_STORE": "play_store",
   "STRIPE": "stripe",
-} as const;
+};
 
 // API Configuration
 export const REVENUECAT_API_TIMEOUT_MS = 10000; // 10 seconds

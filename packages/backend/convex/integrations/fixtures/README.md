@@ -7,26 +7,20 @@ This directory contains sample JSON payloads for different webhook providers and
 ```
 fixtures/
 ├── clerk/
-│   ├── user.created.json
+│   ├── sample-user-create.json
 │   └── failed-cases/
-│       ├── missing-email.json
-│       └── invalid-structure.json
 ├── revenuecat/
-│   ├── INITIAL_PURCHASE.json
-│   ├── RENEWAL.json
+│   ├── sub-initial-purchase.json
+│   ├── sub-renew.json
 │   └── failed-cases/
-│       ├── invalid-user-id.json
-│       └── missing-product-id.json
 ├── suno/
-│   ├── complete.json
+│   ├── complete-event.json
+│   ├── first-event.json
+│   ├── text-event.json
 │   └── failed-cases/
-│       ├── missing-task-id.json
-│       └── error-callback.json
 └── vapi/
     ├── end-of-call-report.json
     └── failed-cases/
-        ├── missing-call-id.json
-        └── missing-artifact.json
 ```
 
 ## Guidelines

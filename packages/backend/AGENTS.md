@@ -41,8 +41,8 @@ Public queries/mutations/actions are organized by domain:
 - `convex/deleteAccount.ts` — Account deletion
 
 ### HTTP Endpoints
-- `convex/http.ts` — Re-exports the webhook router from `convex/webhooks/index.ts`.
-- HTTP routes are defined in `convex/webhooks/index.ts` and route to handlers in `convex/webhooks/handlers/`:
+- `convex/http.ts` — HTTP router definition and route registration (must be at top level per Convex guidelines).
+- HTTP routes are defined in `convex/http.ts` and route to handlers in `convex/webhooks/handlers/`:
   - Clerk webhooks (`clerk.ts`)
   - RevenueCat webhooks (`revenuecat.ts`)
   - Suno callbacks (`suno.ts`)
@@ -87,7 +87,7 @@ Shared utilities in `convex/utils/`:
 - `convex/index.ts` exports `api`, `internal`, and type helpers (`Doc`, `Id`) from generated files.
 - When adding new functions, they are automatically discovered by Convex's file-based routing. No manual registration needed.
 - Keep handlers pure where possible; surface I/O through injected clients passed via context or use actions for external API calls.
-- HTTP endpoints (`convex/webhooks/index.ts`) should validate payloads defensively; mirror changes in clients and tests.
+- HTTP endpoints (`convex/http.ts`) should validate payloads defensively; mirror changes in clients and tests.
 - Actions (e.g., `musicActions.ts`) handle external API calls; mutations/queries handle database operations.
 - Use `internal` functions for private operations that shouldn't be exposed to clients.
 
