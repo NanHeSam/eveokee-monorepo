@@ -9,6 +9,87 @@ import {
 import { createOpenAIClientFromEnv } from "./integrations/openai/client";
 
 /**
+ * Quality check helper to determine if diary/music should be generated from a call
+ * Uses heuristic checks and VAPI's success evaluation
+ * 
+ * @param durationSeconds - Call duration in seconds
+ * @param endedReason - Reason the call ended (may indicate voicemail, etc.)
+ * @param successEvaluation - VAPI's success evaluation result ("true"/"false" for Binary, or numeric string)
+ * @returns Object with shouldGenerate flag and reason string
+ */
+export function shouldGenerateDiaryFromCall(
+  durationSeconds: number | undefined,
+  endedReason: string | undefined,
+  successEvaluation: string | undefined
+): { shouldGenerate: boolean; reason: string } {
+  // Heuristic check 1: Reject calls < 15 seconds
+  if (durationSeconds !== undefined && durationSeconds < 15) {
+    return {
+      shouldGenerate: false,
+      reason: `Call too short (${durationSeconds}s < 15s)`,
+    };
+  }
+
+  // Heuristic check 2: Reject voicemail/no-answer/busy calls
+  if (endedReason) {
+    const lowerReason = endedReason.toLowerCase();
+    if (
+      lowerReason.includes("voicemail") ||
+      lowerReason.includes("no-answer") ||
+      lowerReason.includes("busy") ||
+      lowerReason.includes("no answer")
+    ) {
+      return {
+        shouldGenerate: false,
+        reason: `Call ended with reason: ${endedReason}`,
+      };
+    }
+  }
+
+  // Use VAPI's success evaluation if available
+  if (successEvaluation !== undefined && successEvaluation !== null) {
+    const evalStr = String(successEvaluation).trim().toLowerCase();
+
+    // Binary rubric: "true" = generate, "false" = skip
+    if (evalStr === "true") {
+      return {
+        shouldGenerate: true,
+        reason: "VAPI evaluation: true",
+      };
+    }
+    if (evalStr === "false") {
+      return {
+        shouldGenerate: false,
+        reason: "VAPI evaluation: false",
+      };
+    }
+
+    // NumericScale: threshold-based (e.g., >= 6/10 = generate)
+    const numericValue = parseFloat(evalStr);
+    if (!isNaN(numericValue)) {
+      const threshold = 6; // 6 out of 10 or higher
+      if (numericValue >= threshold) {
+        return {
+          shouldGenerate: true,
+          reason: `VAPI evaluation score: ${numericValue} (>= ${threshold})`,
+        };
+      } else {
+        return {
+          shouldGenerate: false,
+          reason: `VAPI evaluation score: ${numericValue} (< ${threshold})`,
+        };
+      }
+    }
+  }
+
+  // Default: generate if evaluation unavailable (conservative - don't miss legitimate calls)
+  return {
+    shouldGenerate: true,
+    reason: "No evaluation available, defaulting to generate",
+  };
+}
+
+/**
  * Generate a diary entry from call transcript and trigger music generation
  * This is triggered after a call ends via the VAPI webhook
  */
