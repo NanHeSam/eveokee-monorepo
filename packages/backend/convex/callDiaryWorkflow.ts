@@ -3,7 +3,10 @@
 import { internalAction } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import OpenAI from "openai";
+import {
+  MAX_TRANSCRIPT_LENGTH,
+} from "./utils/constants";
+import { createOpenAIClientFromEnv } from "./integrations/openai/client";
 
 /**
  * Generate a diary entry from call transcript and trigger music generation
@@ -23,9 +26,15 @@ export const generateDiaryFromCall = internalAction({
     error: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
-    const openaiApiKey = process.env.OPENAI_API_KEY;
-    if (!openaiApiKey) {
-      console.error("OPENAI_API_KEY secret is not set");
+    // Create OpenAI client for generating diary content
+    let openaiClient;
+    try {
+      openaiClient = createOpenAIClientFromEnv({
+        OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+        OPENAI_TIMEOUT: process.env.OPENAI_TIMEOUT,
+      });
+    } catch (error) {
+      console.error("Failed to create OpenAI client:", error);
       await ctx.runMutation(internal.callJobs.updateCallSessionMetadata, {
         callSessionId: args.callSessionId,
         metadata: { diaryError: "OPENAI_API_KEY not configured" },
@@ -85,49 +94,17 @@ export const generateDiaryFromCall = internalAction({
       };
     }
 
-    const MAX_TRANSCRIPT_LENGTH = 12000;
     if (transcriptText.length > MAX_TRANSCRIPT_LENGTH) {
       console.warn(`Transcript too long (${transcriptText.length} chars), truncating to ${MAX_TRANSCRIPT_LENGTH}`);
       transcriptText = transcriptText.substring(0, MAX_TRANSCRIPT_LENGTH) + "\n\n[Transcript truncated due to length]";
     }
 
-    const openai = new OpenAI({ apiKey: openaiApiKey });
+    // Generate diary content using OpenAI client
     let diaryContent: string;
-    
     try {
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: `You are a thoughtful diary writer. Based on the conversation transcript from a wellness check-in call, create a personal diary entry that:
-- Captures the main thoughts, feelings, and experiences shared
-- Writes in first person as if the user is writing their own diary
-- Maintains an authentic, personal tone
-- Focuses on emotional insights and meaningful moments
-- Is concise but meaningful (200-400 words)
-- Uses the same language as the conversation
-
-Do not mention that this is from a call or conversation. Write as if the user is naturally reflecting on their day.`
-          },
-          {
-            role: "user",
-            content: `Conversation transcript:\n\n${transcriptText}`
-          }
-        ],
-        max_completion_tokens: 600,
+      diaryContent = await openaiClient.generateDiary({
+        transcript: transcriptText,
       });
-
-      const content = completion.choices[0]?.message?.content;
-      if (!content) {
-        console.error("OpenAI response:", JSON.stringify(completion, null, 2));
-        return {
-          success: false,
-          error: "Failed to generate diary content: Empty response",
-        };
-      }
-      
-      diaryContent = content.trim();
       console.log("Generated diary content from call transcript");
     } catch (error) {
       console.error("OpenAI API error during diary generation:", error);

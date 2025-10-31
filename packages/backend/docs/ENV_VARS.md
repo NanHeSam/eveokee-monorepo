@@ -115,16 +115,177 @@ SUNO_CALLBACK_URL=https://your-convex-deployment.convex.cloud/http/suno-webhook
 SUNO_CALLBACK_URL=https://your-tunnel.ngrok.io/http/suno-webhook
 ```
 
+---
+
+### VAPI_API_KEY
+**Purpose:** VAPI API key for scheduling and managing voice calls
+
+**Used in:** `convex/integrations/vapi/integration.ts`
+
+**Where to find:** VAPI Dashboard → API Keys
+
+**Example:**
+```bash
+VAPI_API_KEY=xxxxxxxxxxxxxxxxxxxxx
+```
+
+---
+
+### VAPI_WEBHOOK_URL
+**Purpose:** Webhook callback URL for VAPI to send call status updates
+
+**Used in:** `convex/integrations/vapi/integration.ts`
+
+**Format:** Should point to your Convex HTTP endpoint for VAPI webhooks
+
+**Example:**
+```bash
+# Production
+VAPI_WEBHOOK_URL=https://your-convex-deployment.convex.cloud/http/vapi-webhook
+
+# Local development (using ngrok or similar)
+VAPI_WEBHOOK_URL=https://your-tunnel.ngrok.io/http/vapi-webhook
+```
+
+---
+
+### VAPI_PHONE_NUMBER_ID
+**Purpose:** VAPI phone number identifier to use for outbound calls
+
+**Used in:** `convex/integrations/vapi/integration.ts`
+
+**Where to find:** VAPI Dashboard → Phone Numbers
+
+**Example:**
+```bash
+VAPI_PHONE_NUMBER_ID=xxxxxxxxxxxxxxxxxxxxx
+```
+
+---
+
+### VAPI_WEBHOOK_SECRET
+**Purpose:** Authentication secret for validating VAPI webhook requests
+
+**Used in:** `convex/webhooks/handlers/vapi.ts`
+
+**Where to find:** Configured in VAPI webhook settings
+
+**Example:**
+```bash
+VAPI_WEBHOOK_SECRET=xxxxxxxxxxxxxxxxxxxxx
+```
+
+---
+
+### REVENUECAT_API_KEY
+**Purpose:** RevenueCat API key for subscription management
+
+**Used in:** `convex/revenueCatBilling.ts`
+
+**Where to find:** RevenueCat Dashboard → API Keys
+
+**Example:**
+```bash
+REVENUECAT_API_KEY=xxxxxxxxxxxxxxxxxxxxx
+```
+
+---
+
+### REVENUECAT_WEBHOOK_SECRET
+**Purpose:** Authentication secret for validating RevenueCat webhook requests
+
+**Used in:** `convex/webhooks/handlers/revenuecat.ts`
+
+**Where to find:** RevenueCat Dashboard → Webhooks → Secret
+
+**Example:**
+```bash
+REVENUECAT_WEBHOOK_SECRET=xxxxxxxxxxxxxxxxxxxxx
+```
+
+---
+
+## Optional Environment Variables
+
+These variables have defaults or are only used for fine-tuning:
+
+### OPENAI_TIMEOUT
+**Purpose:** Timeout in milliseconds for OpenAI API requests (optional)
+
+**Default:** No timeout
+
+**Example:**
+```bash
+OPENAI_TIMEOUT=30000
+```
+
+---
+
+### SUNO_TIMEOUT
+**Purpose:** Timeout in milliseconds for Suno API requests (optional)
+
+**Default:** No timeout
+
+**Example:**
+```bash
+SUNO_TIMEOUT=60000
+```
+
+---
+
+### VAPI_TIMEOUT
+**Purpose:** Timeout in milliseconds for VAPI API requests (optional)
+
+**Default:** No timeout
+
+**Example:**
+```bash
+VAPI_TIMEOUT=30000
+```
+
+---
+
+### VAPI_CREDENTIAL_ID
+**Purpose:** Credential ID to use for assistant calls (optional)
+
+**Used in:** `convex/integrations/vapi/integration.ts`
+
+**Description:** This is the credential that will be used for the assistant calls. By default, all credentials are available for use in the call, but you can provide a specific credential ID using this variable. The credential ID will be wrapped in an array when passed to the assistant configuration.
+
+**Example:**
+```bash
+VAPI_CREDENTIAL_ID=your-credential-id-here
+```
+
+---
+
+### REVENUECAT_TIMEOUT
+**Purpose:** Timeout in milliseconds for RevenueCat API requests (optional)
+
+**Default:** No timeout
+
+**Example:**
+```bash
+REVENUECAT_TIMEOUT=30000
+```
+
+---
+
 ## Verification
+
+The Convex backend automatically validates all required environment variables at startup. If any required variables are missing, the service will fail to start with a clear error message listing which variables are missing.
 
 To verify all environment variables are set correctly:
 
 1. **Local:** Check that your `.env.local` contains all required variables
 2. **Production:** Review the Environment Variables section in your Convex dashboard
-3. **Code:** Check for `process.env.*` usage across the codebase:
+3. **Startup:** The service will automatically fail on startup if required variables are missing
+4. **Code:** Check for `process.env.*` usage across the codebase:
    ```bash
    grep -r "process\.env\." packages/backend/convex/
    ```
+
+**Note:** The validation runs automatically when the Convex backend starts, so missing environment variables will be caught immediately rather than at runtime.
 
 ## Security Notes
 

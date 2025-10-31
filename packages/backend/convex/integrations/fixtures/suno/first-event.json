@@ -1,0 +1,50 @@
+{
+    "timestamp": "2025-10-31T03:30:21.721Z",
+    "level": "info",
+    "message": "Suno webhook payload received",
+    "context": {
+        "functionName": "sunoMusicGenerationCallback",
+        "correlationId": "1761881421719-lw467wx7l"
+    },
+    "duration": 2,
+    "metadata": {
+        "payload": {
+            "code": 200,
+            "data": {
+                "callbackType": "first",
+                "data": [
+                    {
+                        "audio_url": "https://musicfile.api.box/ODI0Y2RiODYtNWY1Yi00ZmI3LTgxNzktZmUyYTg4YzM5ODZj.mp3",
+                        "createTime": 1761881352137,
+                        "duration": 164.24,
+                        "id": "824cdb86-5f5b-4fb7-8179-fe2a88c3986c",
+                        "image_url": "https://musicfile.api.box/ODI0Y2RiODYtNWY1Yi00ZmI3LTgxNzktZmUyYTg4YzM5ODZj.jpeg",
+                        "model_name": "chirp-crow",
+                        "prompt": "[Verse 1]\\nWoke up to the dim, soft dawn\\nRoutine whispering me along\\nStillness hollowed out my mind\\nA gentle drift, nothing to find\\n\\n[Chorus]\\nFloating on the quiet, letting go of noise\\nTuning into softer songs, muted but poised\\nIn this gentle pause, I finally see\\nThe silent art of being, the peace in just to be\\n\\n[Verse 2]\\nOverwhelmed by normal days\\nSo I step back, let it fade\\nTesting out my fleeting thoughts\\nCalm in spaces silence brought\\n\\n[Chorus]\\nFloating on the quiet, letting go of noise\\nTuning into softer songs, muted but poised\\nIn this gentle pause, I finally see\\nThe silent art of being, the peace in just to be\\n\\n[Outro]\\nFeel a little lighter, closing out the day\\nCarry the hush with me, in my own way\\nEverything doesn’t have to shout to be real\\nIn the hush, I heal",
+                        "source_audio_url": "https://cdn1.suno.ai/824cdb86-5f5b-4fb7-8179-fe2a88c3986c.mp3",
+                        "source_image_url": "https://cdn2.suno.ai/image_824cdb86-5f5b-4fb7-8179-fe2a88c3986c.jpeg",
+                        "source_stream_audio_url": "https://audiopipe.suno.ai/?item_id=824cdb86-5f5b-4fb7-8179-fe2a88c3986c",
+                        "stream_audio_url": "https://musicfile.api.box/ODI0Y2RiODYtNWY1Yi00ZmI3LTgxNzktZmUyYTg4YzM5ODZj",
+                        "tags": "indie pop, acoustic, introspective",
+                        "title": "The Silent Art of Being"
+                    },
+                    {
+                        "audio_url": "",
+                        "createTime": 1761881352137,
+                        "id": "681d648b-2f30-4eeb-b233-3b1ca6be48a6",
+                        "image_url": "https://musicfile.api.box/NjgxZDY0OGItMmYzMC00ZWViLWIyMzMtM2IxY2E2YmU0OGE2.jpeg",
+                        "model_name": "chirp-crow",
+                        "prompt": "[Verse 1]\\nWoke up to the dim, soft dawn\\nRoutine whispering me along\\nStillness hollowed out my mind\\nA gentle drift, nothing to find\\n\\n[Chorus]\\nFloating on the quiet, letting go of noise\\nTuning into softer songs, muted but poised\\nIn this gentle pause, I finally see\\nThe silent art of being, the peace in just to be\\n\\n[Verse 2]\\nOverwhelmed by normal days\\nSo I step back, let it fade\\nTesting out my fleeting thoughts\\nCalm in spaces silence brought\\n\\n[Chorus]\\nFloating on the quiet, letting go of noise\\nTuning into softer songs, muted but poised\\nIn this gentle pause, I finally see\\nThe silent art of being, the peace in just to be\\n\\n[Outro]\\nFeel a little lighter, closing out the day\\nCarry the hush with me, in my own way\\nEverything doesn’t have to shout to be real\\nIn the hush, I heal",
+                        "source_image_url": "https://cdn2.suno.ai/image_681d648b-2f30-4eeb-b233-3b1ca6be48a6.jpeg",
+                        "source_stream_audio_url": "https://audiopipe.suno.ai/?item_id=681d648b-2f30-4eeb-b233-3b1ca6be48a6",
+                        "stream_audio_url": "https://musicfile.api.box/NjgxZDY0OGItMmYzMC00ZWViLWIyMzMtM2IxY2E2YmU0OGE2",
+                        "tags": "indie pop, acoustic, introspective",
+                        "title": "The Silent Art of Being"
+                    }
+                ],
+                "task_id": "5be9316c0255873b21af74716969dad5"
+            },
+            "msg": "First audio generated successfully."
+        }
+    }
+}

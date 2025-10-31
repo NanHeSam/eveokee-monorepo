@@ -2,11 +2,12 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import type { MutationCtx } from "./_generated/server";
 import ensureCurrentUser from "./users";
-
-const SHARE_ID_ALPHABET =
-  "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-const SHARE_ID_LENGTH = 10;
-const MAX_COLLISION_ATTEMPTS = 5;
+import {
+  SHARE_ID_ALPHABET,
+  SHARE_ID_LENGTH,
+  MAX_COLLISION_ATTEMPTS,
+  DEFAULT_SHARE_BASE_URL,
+} from "./utils/constants";
 
 /**
  * Generates a unique share ID with collision detection.
@@ -73,7 +74,7 @@ export const createShareLink = mutation({
       // SHARE_BASE_URL should be set in Convex dashboard (Settings → Environment Variables)
       // Fallback to eveokee.com is for development only
       // See packages/backend/ENV_VARS.md for setup instructions
-      const baseUrl = process.env.SHARE_BASE_URL || "https://eveokee.com";
+      const baseUrl = process.env.SHARE_BASE_URL || DEFAULT_SHARE_BASE_URL;
       return {
         shareId: existing.shareId,
         shareUrl: `${baseUrl}/share/${existing.shareId}`,
@@ -96,7 +97,7 @@ export const createShareLink = mutation({
     // SHARE_BASE_URL should be set in Convex dashboard (Settings → Environment Variables)
     // Fallback to eveokee.com is for development only
     // See packages/backend/ENV_VARS.md for setup instructions
-    const baseUrl = process.env.SHARE_BASE_URL || "https://eveokee.com";
+    const baseUrl = process.env.SHARE_BASE_URL || DEFAULT_SHARE_BASE_URL;
 
     return {
       shareId,

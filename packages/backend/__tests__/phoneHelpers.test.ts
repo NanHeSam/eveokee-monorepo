@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isValidE164 } from '../convex/phoneHelpers';
+import { isValidE164 } from '../convex/utils/phoneHelpers';
 
 describe('phoneHelpers', () => {
   describe('isValidE164', () => {

@@ -1,0 +1,44 @@
+{
+    "api_version": "1.0",
+    "event": {
+        "aliases": [
+            "user_34OVcbdBBfQsrsckxNiFiLkZCyp"
+        ],
+        "app_id": "app26c5c12e56",
+        "app_user_id": "user_34OVcbdBBfQsrsckxNiFiLkZCyp",
+        "commission_percentage": null,
+        "country_code": "US",
+        "currency": "USD",
+        "entitlement_id": null,
+        "entitlement_ids": [
+            "Premium"
+        ],
+        "environment": "SANDBOX",
+        "event_timestamp_ms": 1761805415850,
+        "expiration_at_ms": 1761805715672,
+        "id": "1D2A4531-7843-403E-BF47-01E998FC6DF5",
+        "is_family_share": false,
+        "metadata": {},
+        "offer_code": null,
+        "original_app_user_id": "user_34OVcbdBBfQsrsckxNiFiLkZCyp",
+        "original_transaction_id": "txRcbb615150676bd958589dfaa7a0708eded",
+        "period_type": "NORMAL",
+        "presented_offering_id": "default",
+        "price": 9.99,
+        "price_in_purchased_currency": 9.99,
+        "product_id": "eveokee_premium_monthly",
+        "purchased_at_ms": 1761805415672,
+        "renewal_number": 1,
+        "store": "RC_BILLING",
+        "subscriber_attributes": {
+            "$email": {
+                "updated_at_ms": 1761805413488,
+                "value": "lildunkeyman@gmail.com"
+            }
+        },
+        "takehome_percentage": null,
+        "tax_percentage": 0,
+        "transaction_id": "txRcbb615150676bd958589dfaa7a0708eded",
+        "type": "INITIAL_PURCHASE"
+    }
+}

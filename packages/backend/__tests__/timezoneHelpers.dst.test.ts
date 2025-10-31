@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { localTimeToUTC, getLocalDayOfWeek } from '../convex/timezoneHelpers';
+import { localTimeToUTC, getLocalDayOfWeek } from '../convex/utils/timezoneHelpers';
 
 describe('timezoneHelpers - DST Boundary Cases', () => {
   describe('Spring Forward (DST begins)', () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sanitizeForConvex } from "../convex/lib/logger";
+import { sanitizeForConvex } from "../convex/utils/logger";
 
 describe("sanitizeForConvex", () => {
   it("should rename fields starting with $ to x_$", () => {

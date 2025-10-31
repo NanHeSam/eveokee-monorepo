@@ -5,7 +5,21 @@
 
 import { Doc } from "../../_generated/dataModel";
 import { getSystemPrompt, SystemPromptParams } from "./systemPrompt";
-import { DEFAULT_VOICE_ID } from "../../constant";
+import {
+  DEFAULT_VOICE_ID,
+  VAPI_TRANSCRIBER_MODEL,
+  VAPI_TRANSCRIBER_LANGUAGE,
+  VAPI_TRANSCRIBER_PROVIDER,
+  VAPI_MODEL_NAME,
+  VAPI_MODEL_PROVIDER,
+  VAPI_VOICE_MODEL,
+  VAPI_VOICE_PROVIDER,
+  VAPI_FIRST_MESSAGE_MODE,
+  VAPI_ASSISTANT_NAME,
+  VAPI_VOICEMAIL_MESSAGE,
+  VAPI_END_CALL_MESSAGE,
+  VAPI_USER_NAME_FALLBACK,
+} from "../../utils/constants";
 
 /**
  * Format UTC timestamp to local time string
@@ -89,36 +103,68 @@ export function buildSystemPrompt(
 }
 
 /**
+ * VAPI assistant configuration type
+ */
+type VapiAssistant = {
+  transcriber: {
+    model: string;
+    language: string;
+    provider: string;
+  };
+  model: {
+    messages: Array<{ content: string; role: string }>;
+    model: string;
+    provider: string;
+  };
+  voice: {
+    voiceId: string;
+    model: string;
+    provider: string;
+  };
+  firstMessage: string;
+  firstMessageMode: string;
+  name: string;
+  voicemailMessage: string;
+  endCallMessage: string;
+  server: {
+    url: string;
+  };
+  credentialIds?: string[];
+};
+
+/**
  * Construct a VAPI assistant configuration object customized for a scheduled call.
  *
  * @param user - User document; `user.name` is used in the system prompt (falls back to "there" if absent)
  * @param callSettings - Call settings document; `callSettings.timezone` should be an IANA timezone identifier used to localize the scheduled time
  * @param scheduledForUTC - UTC timestamp (milliseconds since epoch) when the call is scheduled
  * @param webhookUrl - URL for the assistant's webhook server to receive call events
+ * @param credentialIds - Optional list of credential IDs to use for the assistant calls
  * @returns A VAPI assistant object containing transcriber, model (with system message), voice, messaging defaults, and server configuration (including `url`)
  */
 export function buildVapiAssistant(
   user: Doc<"users">,
   callSettings: Doc<"callSettings">,
   scheduledForUTC: number,
-  webhookUrl: string
-): object {
+  webhookUrl: string,
+  credentialIds?: string[]
+): VapiAssistant {
   // Format local time and day
   const localTime = formatLocalTime(scheduledForUTC, callSettings.timezone);
   const dayOfWeek = getDayOfWeekLabel(scheduledForUTC, callSettings.timezone);
   
   // Build system prompt with user context
   const systemPrompt = buildSystemPrompt(
-    user.name || 'there',
+    user.name || VAPI_USER_NAME_FALLBACK,
     localTime,
     dayOfWeek
   );
   
-  return {
+  const assistant: VapiAssistant = {
     transcriber: {
-      model: "nova-2",
-      language: "en",
-      provider: "deepgram"
+      model: VAPI_TRANSCRIBER_MODEL,
+      language: VAPI_TRANSCRIBER_LANGUAGE,
+      provider: VAPI_TRANSCRIBER_PROVIDER
     },
     model: {
       messages: [
@@ -127,21 +173,29 @@ export function buildVapiAssistant(
           role: "system"
         }
       ],
-      model: "gpt-4.1",
-      provider: "openai"
+      model: VAPI_MODEL_NAME,
+      provider: VAPI_MODEL_PROVIDER
     },
     voice: {
       voiceId: DEFAULT_VOICE_ID,
-      model: "sonic-3",
-      provider: "cartesia"
+      model: VAPI_VOICE_MODEL,
+      provider: VAPI_VOICE_PROVIDER
     },
     firstMessage: "",
-    firstMessageMode: "assistant-speaks-first-with-model-generated-message",
-    name: "eveokee",
-    voicemailMessage: "Please call back when you're available.",
-    endCallMessage: "Goodbye.",
+    firstMessageMode: VAPI_FIRST_MESSAGE_MODE,
+    name: VAPI_ASSISTANT_NAME,
+    voicemailMessage: VAPI_VOICEMAIL_MESSAGE,
+    endCallMessage: VAPI_END_CALL_MESSAGE,
     server: {
       url: webhookUrl,
     },
   };
+
+  // Add credentialIds if provided
+  if (credentialIds && credentialIds.length > 0) {
+    assistant.credentialIds = credentialIds;
+  }
+
+  return assistant;
 }
+

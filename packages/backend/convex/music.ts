@@ -3,6 +3,7 @@ import { internal, api } from "./_generated/api";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import ensureCurrentUser, { getOptionalCurrentUser } from "./users";
+import { MAX_SAFE_MUSIC_INDEX } from "./utils/constants";
 
 const sunoTrackValidator = v.object({
   id: v.optional(v.string()),
@@ -20,6 +21,19 @@ const sunoTrackValidator = v.object({
   createTime: v.optional(v.union(v.number(), v.string())),
 });
 
+/**
+ * Start music generation for a diary entry
+ * 
+ * Steps:
+ * 1. Validate and trim diary content
+ * 2. Authenticate user and get userId
+ * 3. Create or update diary entry (if diaryId provided, update; otherwise create new)
+ * 4. Check for existing pending music generation to prevent duplicates
+ * 5. Check usage limits and record music generation attempt
+ * 6. Schedule async music generation via Suno API
+ * 
+ * Returns success status with diaryId and remaining quota, or error code if limit reached or already in progress.
+ */
 export const startDiaryMusicGeneration = mutation({
   args: {
     content: v.string(),
@@ -37,14 +51,16 @@ export const startDiaryMusicGeneration = mutation({
     remainingQuota: v.optional(v.number()),
   }),
   handler: async (ctx, args) => {
+    // Step 1: Validate and trim content
     const trimmed = args.content.trim();
     if (trimmed.length === 0) {
       throw new Error("Content cannot be empty");
     }
 
+    // Step 2: Authenticate user
     const { userId } = await ensureCurrentUser(ctx);
 
-    // First, create or update the diary entry
+    // Step 3: Create or update diary entry
     let diaryId: Id<"diaries">;
 
     if (args.diaryId) {
@@ -60,7 +76,7 @@ export const startDiaryMusicGeneration = mutation({
       diaryId = _id;
     }
 
-    // Check if there's already a pending music generation for this diary
+    // Step 4: Check for existing pending music generation
     const pendingMusic = await ctx.db
       .query("music")
       .withIndex("by_diaryId", (q) => q.eq("diaryId", diaryId))
@@ -77,7 +93,7 @@ export const startDiaryMusicGeneration = mutation({
       };
     }
 
-    // Check usage limit and increment counter for music generation
+    // Step 5: Check usage limits and record attempt
     const usageResult = await ctx.runMutation(
       internal.usage.recordMusicGeneration,
       {
@@ -96,7 +112,7 @@ export const startDiaryMusicGeneration = mutation({
       };
     }
 
-    // Schedule music generation with usage tracking info
+    // Step 6: Schedule async music generation
     await ctx.scheduler.runAfter(0, internal.musicActions.requestSunoGeneration, {
       diary: {
         diaryId,
@@ -182,8 +198,8 @@ export const completeSunoTask = internalMutation({
     }
 
     const sortedPending = [...pending].sort((a, b) => {
-      const indexA = a.musicIndex ?? 9007199254740991;
-      const indexB = b.musicIndex ?? 9007199254740991;
+      const indexA = a.musicIndex ?? MAX_SAFE_MUSIC_INDEX;
+      const indexB = b.musicIndex ?? MAX_SAFE_MUSIC_INDEX;
       return indexA - indexB;
     });
 
@@ -320,14 +336,25 @@ export const completeSunoTask = internalMutation({
   },
 });
 
+/**
+ * Soft delete a music track (mark as deleted without removing from database)
+ * 
+ * Steps:
+ * 1. Authenticate user and get userId
+ * 2. Fetch music record and verify ownership
+ * 3. Check if already deleted
+ * 4. Update record with deletedAt timestamp
+ */
 export const softDeleteMusic = mutation({
   args: {
     musicId: v.id("music"),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    // Step 1: Authenticate user
     const { userId } = await ensureCurrentUser(ctx);
 
+    // Step 2: Fetch and verify ownership
     const music = await ctx.db.get(args.musicId);
     if (!music) {
       throw new Error("Music not found");
@@ -337,9 +364,12 @@ export const softDeleteMusic = mutation({
       throw new Error("Not authorized to delete this music");
     }
 
+    // Step 3: Check if already deleted
     if (music.deletedAt) {
       throw new Error("Music already deleted");
     }
+
+    // Step 4: Soft delete by setting deletedAt timestamp
     const now = Date.now();
     await ctx.db.patch(args.musicId, {
       deletedAt: now,
@@ -350,6 +380,18 @@ export const softDeleteMusic = mutation({
   },
 });
 
+/**
+ * List all music tracks for the current user's playlist
+ * 
+ * Steps:
+ * 1. Authenticate user (optional - returns empty array if not authenticated)
+ * 2. Query music records filtered by userId and musicIndex=0 (primary tracks only)
+ * 3. Filter out soft-deleted tracks
+ * 4. Collect unique diary IDs and fetch diary metadata
+ * 5. Map music records with enriched diary data and fallback URLs
+ * 
+ * Returns array of music tracks with associated diary information, ordered by creation date (newest first).
+ */
 export const listPlaylistMusic = query({
   args: {},
   returns: v.array(
@@ -374,6 +416,7 @@ export const listPlaylistMusic = query({
     }),
   ),
   handler: async (ctx) => {
+    // Step 1: Authenticate user (optional)
     const authResult = await getOptionalCurrentUser(ctx);
     if (!authResult) {
       // User deleted or not authenticated - return empty array gracefully
@@ -381,6 +424,7 @@ export const listPlaylistMusic = query({
     }
     const { userId } = authResult;
 
+    // Step 2: Query user's primary music tracks (musicIndex=0)
     const docs = await ctx.db
       .query("music")
       .withIndex("by_userId_and_musicIndex", (q) =>
@@ -389,8 +433,10 @@ export const listPlaylistMusic = query({
       .order("desc")
       .collect();
 
+    // Step 3: Filter out soft-deleted tracks
     const activeDocs = docs.filter((doc) => doc.deletedAt === undefined);
 
+    // Step 4: Collect unique diary IDs and fetch diary metadata
     const diaryIds = activeDocs
       .map((doc) => doc.diaryId)
       .filter((id): id is Id<"diaries"> => id !== undefined);
@@ -418,7 +464,9 @@ export const listPlaylistMusic = query({
       }),
     );
 
+    // Step 5: Map music records with enriched data
     return activeDocs.map((doc) => {
+      // Use primary URLs with fallback to metadata URLs
       const imageUrl = doc.imageUrl ?? doc.metadata?.source_image_url;
       const audioUrl =
         doc.audioUrl ??

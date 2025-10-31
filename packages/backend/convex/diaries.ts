@@ -4,6 +4,15 @@ import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import ensureCurrentUser, { getOptionalCurrentUser } from "./users";
 
+/**
+ * Create a new diary entry
+ * 
+ * Steps:
+ * 1. Authenticate user and get userId
+ * 2. Insert new diary record with current timestamp
+ * 
+ * Returns the created diary ID.
+ */
 export const createDiary = mutation({
   args: {
     content: v.string(),
@@ -12,8 +21,10 @@ export const createDiary = mutation({
     _id: v.id("diaries"),
   }),
   handler: async (ctx, args) => {
+    // Step 1: Authenticate user
     const { userId } = await ensureCurrentUser(ctx);
 
+    // Step 2: Create diary entry
     const now = Date.now();
     const _id: Id<"diaries"> = await ctx.db.insert("diaries", {
       userId,
@@ -26,6 +37,17 @@ export const createDiary = mutation({
   },
 });
 
+/**
+ * Update an existing diary entry
+ * 
+ * Steps:
+ * 1. Authenticate user and get userId
+ * 2. Fetch diary record and verify ownership
+ * 3. Update content and updatedAt timestamp
+ * 
+ * Returns updated diary ID and timestamp.
+ * Throws error if diary not found or user doesn't own it.
+ */
 export const updateDiary = mutation({
   args: {
     diaryId: v.id("diaries"),
@@ -36,8 +58,10 @@ export const updateDiary = mutation({
     updatedAt: v.number(),
   }),
   handler: async (ctx, args) => {
+    // Step 1: Authenticate user
     const { userId } = await ensureCurrentUser(ctx);
 
+    // Step 2: Verify ownership
     const diary = await ctx.db.get(args.diaryId);
     if (!diary) {
       throw new Error("Diary not found");
@@ -47,6 +71,7 @@ export const updateDiary = mutation({
       throw new Error("Forbidden");
     }
 
+    // Step 3: Update diary
     const updatedAt = Date.now();
 
     await ctx.db.patch(args.diaryId, {
@@ -61,14 +86,27 @@ export const updateDiary = mutation({
   },
 });
 
+/**
+ * Delete a diary entry and all associated music records
+ * 
+ * Steps:
+ * 1. Authenticate user and get userId
+ * 2. Fetch diary record and verify ownership
+ * 3. Find and delete all associated music records
+ * 4. Delete the diary entry
+ * 
+ * WARNING: This permanently deletes the diary and all associated music tracks.
+ */
 export const deleteDiary = mutation({
   args: {
     diaryId: v.id("diaries"),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    // Step 1: Authenticate user
     const { userId } = await ensureCurrentUser(ctx);
 
+    // Step 2: Verify ownership
     const diary = await ctx.db.get(args.diaryId);
     if (!diary) {
       throw new Error("Diary not found");
@@ -78,7 +116,7 @@ export const deleteDiary = mutation({
       throw new Error("Forbidden");
     }
 
-    // Delete associated music records
+    // Step 3: Delete associated music records
     const musicRecords = await ctx.db
       .query("music")
       .withIndex("by_diaryId", (q) => q.eq("diaryId", args.diaryId))
@@ -88,6 +126,7 @@ export const deleteDiary = mutation({
       musicRecords.map((music) => ctx.db.delete(music._id))
     );
 
+    // Step 4: Delete diary entry
     await ctx.db.delete(args.diaryId);
     return null;
   },

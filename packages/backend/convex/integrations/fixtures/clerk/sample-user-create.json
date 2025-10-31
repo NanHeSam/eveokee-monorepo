@@ -1,0 +1,103 @@
+{
+    "data": {
+        "backup_code_enabled": false,
+        "banned": false,
+        "create_organization_enabled": true,
+        "created_at": 1761693495183,
+        "delete_self_enabled": true,
+        "email_addresses": [
+            {
+                "created_at": 1761693494762,
+                "email_address": "8d7ghvjy42@privaterelay.appleid.com",
+                "id": "idn_34iPc0CUm3NTvyj7Dnb1gkZOp7X",
+                "linked_to": [
+                    {
+                        "id": "idn_34iPc2PArQZuK4b41hUehDyCJqN",
+                        "type": "oauth_apple"
+                    }
+                ],
+                "matches_sso_connection": false,
+                "object": "email_address",
+                "reserved": false,
+                "updated_at": 1761693495190,
+                "verification": {
+                    "attempts": null,
+                    "expire_at": null,
+                    "object": "verification_from_oauth",
+                    "status": "verified",
+                    "strategy": "from_oauth_apple"
+                }
+            }
+        ],
+        "enterprise_accounts": [],
+        "external_accounts": [
+            {
+                "approved_scopes": "email name",
+                "avatar_url": "",
+                "created_at": 1761693494756,
+                "email_address": "8d7ghvjy42@privaterelay.appleid.com",
+                "first_name": "Samantha",
+                "id": "eac_34iPbymsnPxwvii4wLds5E5QcAC",
+                "identification_id": "idn_34iPc2PArQZuK4b41hUehDyCJqN",
+                "label": null,
+                "last_name": "Smaith",
+                "object": "external_account",
+                "phone_number": null,
+                "provider": "oauth_apple",
+                "provider_user_id": "001197.7e3054adc03541808be670cc02bd3c91.2318",
+                "public_metadata": {},
+                "updated_at": 1761693494756,
+                "username": null,
+                "verification": {
+                    "attempts": null,
+                    "expire_at": 1761694083749,
+                    "object": "verification_oauth",
+                    "status": "verified",
+                    "strategy": "oauth_apple"
+                }
+            }
+        ],
+        "external_id": null,
+        "first_name": "Samantha",
+        "has_image": false,
+        "id": "user_34iPc5v1aE9OanXsjhqNatmqmrU",
+        "image_url": "https://img.clerk.com/eyJ0eXBlIjoiZGVmYXVsdCIsImlpZCI6Imluc18zNEVHSGNkdTJ5UW9VMTB2S1Y4aDcwUmNkOGgiLCJyaWQiOiJ1c2VyXzM0aVBjNXYxYUU5T2FuWHNqaHFOYXRtcW1yVSIsImluaXRpYWxzIjoiU0gifQ",
+        "last_active_at": 1761693495182,
+        "last_name": "Smaith",
+        "last_sign_in_at": null,
+        "legal_accepted_at": null,
+        "locale": null,
+        "locked": false,
+        "lockout_expires_in_seconds": null,
+        "mfa_disabled_at": null,
+        "mfa_enabled_at": null,
+        "object": "user",
+        "passkeys": [],
+        "password_enabled": false,
+        "phone_numbers": [],
+        "primary_email_address_id": "idn_34iPc0CUm3NTvyj7Dnb1gkZOp7X",
+        "primary_phone_number_id": null,
+        "primary_web3_wallet_id": null,
+        "private_metadata": {},
+        "profile_image_url": "https://www.gravatar.com/avatar?d=mp",
+        "public_metadata": {},
+        "saml_accounts": [],
+        "totp_enabled": false,
+        "two_factor_enabled": false,
+        "unsafe_metadata": {},
+        "updated_at": 1761693495206,
+        "username": null,
+        "verification_attempts_remaining": 100,
+        "web3_wallets": []
+    },
+    "event_attributes": {
+        "http_request": {
+            "client_ip": "45.28.142.23",
+            "user_agent": "eveokee/1 CFNetwork/3860.200.71 Darwin/25.1.0"
+        }
+    },
+    "instance_id": "ins_34EGHcdu2yQoU10vKV8h70Rcd8h",
+    "object": "event",
+    "timestamp": 1761693495232,
+    "type": "user.created"
+}

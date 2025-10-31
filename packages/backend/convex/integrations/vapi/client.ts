@@ -4,6 +4,8 @@
  * with proper error handling, timeout management, and type safety
  */
 
+import { VAPI_API_BASE_URL, VAPI_DEFAULT_TIMEOUT_MS } from "../../utils/constants";
+
 export interface VapiCallRequest {
   phoneNumberId: string;
   customer: {
@@ -32,14 +34,14 @@ export interface VapiClientConfig {
 
 export class VapiClient {
   private config: Required<VapiClientConfig>;
-  private readonly baseUrl = "https://api.vapi.ai";
+  private readonly baseUrl = VAPI_API_BASE_URL;
 
   constructor(config: VapiClientConfig) {
     this.config = {
       apiKey: config.apiKey,
       webhookUrl: config.webhookUrl,
       phoneNumberId: config.phoneNumberId,
-      timeout: config.timeout ?? 30000, // Default 30 seconds
+      timeout: config.timeout ?? VAPI_DEFAULT_TIMEOUT_MS,
     };
   }
 
@@ -140,7 +142,7 @@ export function createVapiClientFromEnv(env: {
     throw new Error("VAPI_PHONE_NUMBER_ID environment variable is not set");
   }
 
-  const timeout = env.VAPI_TIMEOUT ? parseInt(env.VAPI_TIMEOUT, 10) : undefined;
+  const timeout = env.VAPI_TIMEOUT ? parseInt(env.VAPI_TIMEOUT, 10) || undefined : undefined;
 
   return new VapiClient({
     apiKey,
@@ -149,3 +151,4 @@ export function createVapiClientFromEnv(env: {
     timeout,
   });
 }
+

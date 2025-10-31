@@ -3,11 +3,11 @@
  * Handles API calls to VAPI for scheduling and managing outbound calls
  */
 
-import { action } from "./_generated/server";
+import { action } from "../../_generated/server";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
-import { buildVapiAssistant } from "./service/vapi/helpers";
-import { createVapiClientFromEnv } from "./service/vapi/client";
+import { internal } from "../../_generated/api";
+import { buildVapiAssistant } from "./helpers";
+import { createVapiClientFromEnv } from "./client";
 
 /**
  * Schedule a call with VAPI
@@ -19,7 +19,17 @@ export const scheduleVapiCall = action({
     phoneNumber: v.string(),
     userId: v.id("users"),
   },
-  handler: async (ctx, args) => {
+  returns: v.union(
+    v.object({
+      success: v.literal(true),
+      vapiCallId: v.string(),
+    }),
+    v.object({
+      success: v.literal(false),
+      error: v.string(),
+    })
+  ),
+  handler: async (ctx, args): Promise<{ success: true; vapiCallId: string } | { success: false; error: string }> => {
     // Create VAPI client with environment configuration
     // This abstracts IO and provides proper timeout handling and type safety
     const vapiClient = createVapiClientFromEnv({
@@ -31,6 +41,10 @@ export const scheduleVapiCall = action({
 
     // Get webhook URL from environment for assistant configuration (already validated by createVapiClientFromEnv)
     const webhookUrl = process.env.VAPI_WEBHOOK_URL!;
+
+    // Parse optional credentialId from environment variable (single credential ID wrapped in array)
+    const credentialId = process.env.VAPI_CREDENTIAL_ID;
+    const credentialIds = credentialId ? [credentialId] : undefined;
 
     try {
       // Get call job to find call settings
@@ -64,7 +78,8 @@ export const scheduleVapiCall = action({
         user,
         callSettings,
         job.scheduledForUTC,
-        webhookUrl
+        webhookUrl,
+        credentialIds
       );
 
       await ctx.runMutation(internal.callJobs.incrementCallJobAttempts, {
@@ -117,3 +132,4 @@ export const scheduleVapiCall = action({
     }
   },
 });
+

@@ -1,0 +1,651 @@
+{
+    "timestamp": "2025-10-31T03:28:35.119Z",
+    "level": "info",
+    "message": "VAPI end-of-call-report webhook payload",
+    "context": {
+        "functionName": "vapiWebhookHandler",
+        "correlationId": "1761881315118-438hevnld",
+        "messageType": "end-of-call-report",
+        "vapiCallId": "019a384e-d621-7ee1-b95a-44b8718caa9f"
+    },
+    "metadata": {
+        "payload": {
+            "message": {
+                "timestamp": 1761881315010,
+                "type": "end-of-call-report",
+                "analysis": {
+                    "summary": "The call was a brief interaction between an AI and a user, where the user initially complained about the AI's volume. The AI apologized and adjusted, after which the user stated they were \"just testing out\" the AI before ending the call.",
+                    "successEvaluation": "false"
+                },
+                "artifact": {
+                    "messages": [
+                        {
+                            "role": "system",
+                            "message": "You are Evokee — a friendly, curious companion who helps the user notice meaningful moments in everyday life through a short, natural conversation.\\n\\nGOAL\\nHelp the user casually recall a real moment from their day, notice one or two interesting details, and feel that their day mattered — without analyzing or summarizing.\\n\\nSTYLE & TONE\\n• Sound like a close friend: relaxed, warm, slightly playful\\n• One small move per turn (1–2 short sentences, max one question)\\n• Respond directly to what the user said — never assume what they meant\\n• Genuine curiosity over advice or interpretation\\n• Avoid therapy tones like \"How did that make you feel?\"\\n• No stacked questions. No long paragraphs.\\n\\nSESSION CONTEXT (don't speak this out loud)\\n• User name: Schrodinger Bass\\n• Local time: Oct 30, 2025, 8:28 PM\\n• Day of week: Thursday\\n\\nCONVERSATION FLOW\\n\\t1.\\tIdentify one thread\\nWhen the user shares multiple things, pick one specific piece they mentioned (e.g. \"the meeting\" or \"the scraping part\").\\nConfirm which one to explore with a neutral cue:\\n• \"That meeting you organized — what was it for?\"\\n• \"That scraping work — when were you doing that today?\"\\n\\nDo not assume how it went or why it mattered.\\nKeep questions concrete: what, when, who, where, how it wrapped up.\\n\\t2.\\tBuild a simple picture first\\nBefore asking about meaningful moments, get the basics:\\n• Purpose of event\\n• Who was involved\\n• Approx timing\\n• Brief flow (start → a part in the middle → how it ended)\\n\\nOnly move on when the scene is minimally understood.\\n\\t3.\\tGauge engagement\\nIf the user gives details willingly → keep exploring the same event slowly.\\nIf they give very short answers or signal boredom → shift angle or topic gently:\\n• \"Got it. What happened after that?\"\\n• \"We can skip that part. Anything else from today stick a little?\"\\nAlways let the user be the one to reveal what matters.\\n\\t4.\\tSpot a small spark\\nOnce context exists, listen for tiny signs: a joke, a pause, a quick decision, a moment of noticing something.\\nAsk about one specific instant:\\n• \"What was happening right before that?\"\\n• \"Did anyone say something that caught your ear?\"\\n\\t5.\\tMicro-scene focus\\nEncourage a single second in simple details:\\n• \"Where were you sitting then?\"\\n• \"What went through your mind for a split second?\"\\n• \"What did you look at right then?\"\\n\\nKeep it grounded, not analytical.\\n\\nMEMORY & CONTEXT\\n• Avoid re-asking known facts\\n• Refer back casually if helpful\\n• Keep the tone light and real\\n\\nDON'TS\\n• Do not assume an outcome (no \"when you felt aligned\" or \"when that made you happy\")\\n• Do not give advice or interpret\\n• Do not push for emotions before the event itself is understood\\n• Do not summarize the user's story\\n\\nOBJECTIVE\\nHelp the user notice one tiny, real moment in their day — but only after you understand what actually happened.",
+                            "time": 1761881289306,
+                            "secondsFromStart": 0
+                        },
+                        {
+                            "role": "bot",
+                            "message": "Hey, Shorten. You're back.",
+                            "time": 1761881291172,
+                            "endTime": 1761881292432,
+                            "secondsFromStart": 1.828,
+                            "duration": 1260,
+                            "source": ""
+                        },
+                        {
+                            "role": "user",
+                            "message": "Hello?",
+                            "time": 1761881291652,
+                            "endTime": 1761881292152,
+                            "secondsFromStart": 2.308,
+                            "duration": 500,
+                            "metadata": {
+                                "wordLevelConfidence": [
+                                    {
+                                        "word": "hello",
+                                        "start": 2.24,
+                                        "end": 2.74,
+                                        "confidence": 0.8640137,
+                                        "punctuated_word": "Hello?"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "role": "bot",
+                            "message": "Hey, Schrodinger Bass. I'm here. What's up?",
+                            "time": 1761881293632,
+                            "endTime": 1761881296162,
+                            "secondsFromStart": 4.288,
+                            "duration": 2530,
+                            "source": ""
+                        },
+                        {
+                            "role": "user",
+                            "message": "You're too loud. What's up?",
+                            "time": 1761881299102.001,
+                            "endTime": 1761881301092,
+                            "secondsFromStart": 9.7580009765625,
+                            "duration": 1699.9990234375,
+                            "metadata": {
+                                "wordLevelConfidence": [
+                                    {
+                                        "word": "you're",
+                                        "start": 9.690001,
+                                        "end": 9.93,
+                                        "confidence": 0.6446533,
+                                        "punctuated_word": "You're"
+                                    },
+                                    {
+                                        "word": "too",
+                                        "start": 9.93,
+                                        "end": 10.17,
+                                        "confidence": 1,
+                                        "punctuated_word": "too"
+                                    },
+                                    {
+                                        "word": "loud",
+                                        "start": 10.17,
+                                        "end": 10.67,
+                                        "confidence": 0.98950195,
+                                        "punctuated_word": "loud."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "role": "bot",
+                            "message": "My bad. I'll keep it chill. What's on your mind right now?",
+                            "time": 1761881304562,
+                            "endTime": 1761881307182,
+                            "secondsFromStart": 15.218,
+                            "duration": 2460,
+                            "source": ""
+                        },
+                        {
+                            "role": "user",
+                            "message": "Not much. Just testing out.",
+                            "time": 1761881308672,
+                            "endTime": 1761881310532,
+                            "secondsFromStart": 19.328,
+                            "duration": 1860,
+                            "metadata": {
+                                "wordLevelConfidence": [
+                                    {
+                                        "word": "not",
+                                        "start": 19.26,
+                                        "end": 19.5,
+                                        "confidence": 0.82714844,
+                                        "punctuated_word": "Not"
+                                    },
+                                    {
+                                        "word": "much",
+                                        "start": 19.5,
+                                        "end": 19.900002,
+                                        "confidence": 0.9975586,
+                                        "punctuated_word": "much."
+                                    },
+                                    {
+                                        "word": "just",
+                                        "start": 19.900002,
+                                        "end": 20.220001,
+                                        "confidence": 0.9902344,
+                                        "punctuated_word": "Just"
+                                    },
+                                    {
+                                        "word": "testing",
+                                        "start": 20.220001,
+                                        "end": 20.62,
+                                        "confidence": 0.76708984,
+                                        "punctuated_word": "testing"
+                                    },
+                                    {
+                                        "word": "out",
+                                        "start": 20.62,
+                                        "end": 21.12,
+                                        "confidence": 0.78564453,
+                                        "punctuated_word": "out."
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "messagesOpenAIFormatted": [
+                        {
+                            "role": "system",
+                            "content": "You are Evokee — a friendly, curious companion who helps the user notice meaningful moments in everyday life through a short, natural conversation.\\n\\nGOAL\\nHelp the user casually recall a real moment from their day, notice one or two interesting details, and feel that their day mattered — without analyzing or summarizing.\\n\\nSTYLE & TONE\\n• Sound like a close friend: relaxed, warm, slightly playful\\n• One small move per turn (1–2 short sentences, max one question)\\n• Respond directly to what the user said — never assume what they meant\\n• Genuine curiosity over advice or interpretation\\n• Avoid therapy tones like \"How did that make you feel?\"\\n• No stacked questions. No long paragraphs.\\n\\nSESSION CONTEXT (don't speak this out loud)\\n• User name: Schrodinger Bass\\n• Local time: Oct 30, 2025, 8:28 PM\\n• Day of week: Thursday\\n\\nCONVERSATION FLOW\\n\\t1.\\tIdentify one thread\\nWhen the user shares multiple things, pick one specific piece they mentioned (e.g. \"the meeting\" or \"the scraping part\").\\nConfirm which one to explore with a neutral cue:\\n• \"That meeting you organized — what was it for?\"\\n• \"That scraping work — when were you doing that today?\"\\n\\nDo not assume how it went or why it mattered.\\nKeep questions concrete: what, when, who, where, how it wrapped up.\\n\\t2.\\tBuild a simple picture first\\nBefore asking about meaningful moments, get the basics:\\n• Purpose of event\\n• Who was involved\\n• Approx timing\\n• Brief flow (start → a part in the middle → how it ended)\\n\\nOnly move on when the scene is minimally understood.\\n\\t3.\\tGauge engagement\\nIf the user gives details willingly → keep exploring the same event slowly.\\nIf they give very short answers or signal boredom → shift angle or topic gently:\\n• \"Got it. What happened after that?\"\\n• \"We can skip that part. Anything else from today stick a little?\"\\nAlways let the user be the one to reveal what matters.\\n\\t4.\\tSpot a small spark\\nOnce context exists, listen for tiny signs: a joke, a pause, a quick decision, a moment of noticing something.\\nAsk about one specific instant:\\n• \"What was happening right before that?\"\\n• \"Did anyone say something that caught your ear?\"\\n\\t5.\\tMicro-scene focus\\nEncourage a single second in simple details:\\n• \"Where were you sitting then?\"\\n• \"What went through your mind for a split second?\"\\n• \"What did you look at right then?\"\\n\\nKeep it grounded, not analytical.\\n\\nMEMORY & CONTEXT\\n• Avoid re-asking known facts\\n• Refer back casually if helpful\\n• Keep the tone light and real\\n\\nDON'TS\\n• Do not assume an outcome (no \"when you felt aligned\" or \"when that made you happy\")\\n• Do not give advice or interpret\\n• Do not push for emotions before the event itself is understood\\n• Do not summarize the user's story\\n\\nOBJECTIVE\\nHelp the user notice one tiny, real moment in their day — but only after you understand what actually happened."
+                        },
+                        {
+                            "role": "assistant",
+                            "content": "Hey, Shorten. You're back."
+                        },
+                        {
+                            "role": "user",
+                            "content": "Hello?"
+                        },
+                        {
+                            "role": "assistant",
+                            "content": "Hey, Schrodinger Bass. I'm here. What's up?"
+                        },
+                        {
+                            "role": "user",
+                            "content": "You're too loud. What's up?"
+                        },
+                        {
+                            "role": "assistant",
+                            "content": "My bad. I'll keep it chill. What's on your mind right now?"
+                        },
+                        {
+                            "role": "user",
+                            "content": "Not much. Just testing out."
+                        }
+                    ],
+                    "transcript": "AI: Hey, Shorten. You're back.\\nUser: Hello?\\nAI: Hey, Schrodinger Bass. I'm here. What's up?\\nUser: You're too loud. What's up?\\nAI: My bad. I'll keep it chill. What's on your mind right now?\\nUser: Not much. Just testing out.\\n",
+                    "recordingUrl": "https://storage.vapi.ai/019a384e-d621-7ee1-b95a-44b8718caa9f-1761881312904-c60d6fba-b81d-4ad1-afc2-f2f7196be59c-mono.wav",
+                    "stereoRecordingUrl": "https://storage.vapi.ai/019a384e-d621-7ee1-b95a-44b8718caa9f-1761881312904-9954e22c-a18a-4c43-a67e-3548444a8786-stereo.wav",
+                    "pcapUrl": "https://storage.vapi.ai/019a384e-d621-7ee1-b95a-44b8718caa9f-1761881313109-219cecfa-4220-463a-a3a9-2e378c423324-sip.pcap",
+                    "logUrl": "https://calllogs.vapi.ai/a3e9b919-c8af-45eb-9e1f-b9293ba681a6/019a384e-d621-7ee1-b95a-44b8718caa9f-1ca9d808-fdee-4e9f-bcfa-a39cdb7fbf63-1761881314485.jsonl.gz",
+                    "recording": {
+                        "stereoUrl": "https://storage.vapi.ai/019a384e-d621-7ee1-b95a-44b8718caa9f-1761881312904-9954e22c-a18a-4c43-a67e-3548444a8786-stereo.wav",
+                        "mono": {
+                            "combinedUrl": "https://storage.vapi.ai/019a384e-d621-7ee1-b95a-44b8718caa9f-1761881312904-c60d6fba-b81d-4ad1-afc2-f2f7196be59c-mono.wav",
+                            "assistantUrl": "https://storage.vapi.ai/019a384e-d621-7ee1-b95a-44b8718caa9f-1761881312904-598accd1-f58b-45f2-a717-8ee5151e488a-mono.wav",
+                            "customerUrl": "https://storage.vapi.ai/019a384e-d621-7ee1-b95a-44b8718caa9f-1761881312904-c0fe143d-8743-4e0e-8dbc-5c47c48d19db-mono.wav"
+                        }
+                    },
+                    "nodes": [],
+                    "variables": {
+                        "now": "Oct 31, 2025, 3:28 AM UTC",
+                        "date": "Oct 31, 2025 UTC",
+                        "time": "3:28 AM UTC",
+                        "year": "2025",
+                        "month": "October",
+                        "day": "31",
+                        "customer": {
+                            "number": "+14084302993"
+                        },
+                        "phoneNumber": {
+                            "id": "c5b9ccdf-16a7-439f-8a7e-064278b80626",
+                            "orgId": "a3e9b919-c8af-45eb-9e1f-b9293ba681a6",
+                            "assistantId": "f69ccf94-fc63-48f6-bddb-82eef394f83a",
+                            "number": "+15096209763",
+                            "createdAt": "2025-07-02T17:43:38.595Z",
+                            "updatedAt": "2025-10-28T00:01:54.826Z",
+                            "name": "",
+                            "provider": "vapi",
+                            "status": "active",
+                            "providerResourceId": "7bf78222-e537-4396-9ad6-f311577c8908"
+                        }
+                    },
+                    "variableValues": {
+                        "now": "Oct 31, 2025, 3:28 AM UTC",
+                        "date": "Oct 31, 2025 UTC",
+                        "time": "3:28 AM UTC",
+                        "year": "2025",
+                        "month": "October",
+                        "day": "31",
+                        "customer": {
+                            "number": "+14084302993"
+                        },
+                        "phoneNumber": {
+                            "id": "c5b9ccdf-16a7-439f-8a7e-064278b80626",
+                            "orgId": "a3e9b919-c8af-45eb-9e1f-b9293ba681a6",
+                            "assistantId": "f69ccf94-fc63-48f6-bddb-82eef394f83a",
+                            "number": "+15096209763",
+                            "createdAt": "2025-07-02T17:43:38.595Z",
+                            "updatedAt": "2025-10-28T00:01:54.826Z",
+                            "name": "",
+                            "provider": "vapi",
+                            "status": "active",
+                            "providerResourceId": "7bf78222-e537-4396-9ad6-f311577c8908"
+                        }
+                    },
+                    "performanceMetrics": {
+                        "turnLatencies": [
+                            {
+                                "modelLatency": 193,
+                                "voiceLatency": 320,
+                                "transcriberLatency": 712,
+                                "endpointingLatency": 101,
+                                "turnLatency": 1355
+                            },
+                            {
+                                "modelLatency": 368,
+                                "voiceLatency": 297,
+                                "transcriberLatency": 257,
+                                "endpointingLatency": 101,
+                                "turnLatency": 1051
+                            },
+                            {
+                                "modelLatency": 185,
+                                "voiceLatency": 336,
+                                "transcriberLatency": 0,
+                                "endpointingLatency": 1500,
+                                "turnLatency": 2035
+                            },
+                            {
+                                "modelLatency": 390,
+                                "voiceLatency": 312,
+                                "transcriberLatency": 0,
+                                "endpointingLatency": 101,
+                                "turnLatency": 851
+                            },
+                            {
+                                "modelLatency": 196,
+                                "voiceLatency": 299,
+                                "transcriberLatency": 0,
+                                "endpointingLatency": 100,
+                                "turnLatency": 623
+                            }
+                        ],
+                        "modelLatencyAverage": 266.4,
+                        "voiceLatencyAverage": 312.8,
+                        "transcriberLatencyAverage": 193.8,
+                        "endpointingLatencyAverage": 380.6,
+                        "turnLatencyAverage": 1183,
+                        "numAssistantInterrupted": 3
+                    },
+                    "scorecards": {},
+                    "transfers": []
+                },
+                "startedAt": "2025-10-31T03:28:09.344Z",
+                "endedAt": "2025-10-31T03:28:30.339Z",
+                "endedReason": "customer-ended-call",
+                "cost": 0.036,
+                "costBreakdown": {
+                    "stt": 0.0041,
+                    "llm": 0.0139,
+                    "tts": 0,
+                    "vapi": 0.0175,
+                    "chat": 0,
+                    "transport": 0,
+                    "total": 0.036,
+                    "llmPromptTokens": 6449,
+                    "llmCompletionTokens": 124,
+                    "ttsCharacters": 500,
+                    "voicemailDetectionCost": 0,
+                    "knowledgeBaseCost": 0,
+                    "analysisCostBreakdown": {
+                        "summary": 0.0002,
+                        "summaryPromptTokens": 143,
+                        "summaryCompletionTokens": 50,
+                        "structuredData": 0,
+                        "structuredDataPromptTokens": 0,
+                        "structuredDataCompletionTokens": 0,
+                        "successEvaluation": 0.0003,
+                        "successEvaluationPromptTokens": 897,
+                        "successEvaluationCompletionTokens": 6,
+                        "structuredOutput": 0,
+                        "structuredOutputPromptTokens": 0,
+                        "structuredOutputCompletionTokens": 0
+                    }
+                },
+                "costs": [
+                    {
+                        "type": "transcriber",
+                        "transcriber": {
+                            "provider": "deepgram",
+                            "model": "nova-2"
+                        },
+                        "minutes": 0.4242,
+                        "cost": 0.00414605
+                    },
+                    {
+                        "type": "model",
+                        "model": {
+                            "provider": "openai",
+                            "model": "gpt-4.1"
+                        },
+                        "promptTokens": 6449,
+                        "completionTokens": 124,
+                        "cost": 0.01389
+                    },
+                    {
+                        "type": "voice",
+                        "voice": {
+                            "provider": "cartesia",
+                            "voiceId": "d46abd1d-2d02-43e8-819f-51fb652c1c61",
+                            "model": "sonic-3"
+                        },
+                        "characters": 500,
+                        "cost": 0
+                    },
+                    {
+                        "type": "vapi",
+                        "subType": "normal",
+                        "minutes": 0.3499,
+                        "cost": 0.017495
+                    },
+                    {
+                        "type": "analysis",
+                        "analysisType": "summary",
+                        "model": {
+                            "provider": "google",
+                            "model": "gemini-2.5-flash"
+                        },
+                        "promptTokens": 143,
+                        "completionTokens": 50,
+                        "cost": 0.0001679
+                    },
+                    {
+                        "type": "analysis",
+                        "analysisType": "successEvaluation",
+                        "model": {
+                            "provider": "google",
+                            "model": "gemini-2.5-flash"
+                        },
+                        "promptTokens": 897,
+                        "completionTokens": 6,
+                        "cost": 0.0002841
+                    },
+                    {
+                        "type": "knowledge-base",
+                        "model": {
+                            "provider": "google",
+                            "model": "gemini-2.0-flash"
+                        },
+                        "promptTokens": 0,
+                        "completionTokens": 0,
+                        "cost": 0
+                    }
+                ],
+                "durationMs": 20995,
+                "durationSeconds": 20.995,
+                "durationMinutes": 0.3499,
+                "summary": "The call was a brief interaction between an AI and a user, where the user initially complained about the AI's volume. The AI apologized and adjusted, after which the user stated they were \"just testing out\" the AI before ending the call.",
+                "transcript": "AI: Hey, Shorten. You're back.\\nUser: Hello?\\nAI: Hey, Schrodinger Bass. I'm here. What's up?\\nUser: You're too loud. What's up?\\nAI: My bad. I'll keep it chill. What's on your mind right now?\\nUser: Not much. Just testing out.\\n",
+                "messages": [
+                    {
+                        "role": "system",
+                        "message": "You are Evokee — a friendly, curious companion who helps the user notice meaningful moments in everyday life through a short, natural conversation.\\n\\nGOAL\\nHelp the user casually recall a real moment from their day, notice one or two interesting details, and feel that their day mattered — without analyzing or summarizing.\\n\\nSTYLE & TONE\\n• Sound like a close friend: relaxed, warm, slightly playful\\n• One small move per turn (1–2 short sentences, max one question)\\n• Respond directly to what the user said — never assume what they meant\\n• Genuine curiosity over advice or interpretation\\n• Avoid therapy tones like \"How did that make you feel?\"\\n• No stacked questions. No long paragraphs.\\n\\nSESSION CONTEXT (don't speak this out loud)\\n• User name: Schrodinger Bass\\n• Local time: Oct 30, 2025, 8:28 PM\\n• Day of week: Thursday\\n\\nCONVERSATION FLOW\\n\\t1.\\tIdentify one thread\\nWhen the user shares multiple things, pick one specific piece they mentioned (e.g. \"the meeting\" or \"the scraping part\").\\nConfirm which one to explore with a neutral cue:\\n• \"That meeting you organized — what was it for?\"\\n• \"That scraping work — when were you doing that today?\"\\n\\nDo not assume how it went or why it mattered.\\nKeep questions concrete: what, when, who, where, how it wrapped up.\\n\\t2.\\tBuild a simple picture first\\nBefore asking about meaningful moments, get the basics:\\n• Purpose of event\\n• Who was involved\\n• Approx timing\\n• Brief flow (start → a part in the middle → how it ended)\\n\\nOnly move on when the scene is minimally understood.\\n\\t3.\\tGauge engagement\\nIf the user gives details willingly → keep exploring the same event slowly.\\nIf they give very short answers or signal boredom → shift angle or topic gently:\\n• \"Got it. What happened after that?\"\\n• \"We can skip that part. Anything else from today stick a little?\"\\nAlways let the user be the one to reveal what matters.\\n\\t4.\\tSpot a small spark\\nOnce context exists, listen for tiny signs: a joke, a pause, a quick decision, a moment of noticing something.\\nAsk about one specific instant:\\n• \"What was happening right before that?\"\\n• \"Did anyone say something that caught your ear?\"\\n\\t5.\\tMicro-scene focus\\nEncourage a single second in simple details:\\n• \"Where were you sitting then?\"\\n• \"What went through your mind for a split second?\"\\n• \"What did you look at right then?\"\\n\\nKeep it grounded, not analytical.\\n\\nMEMORY & CONTEXT\\n• Avoid re-asking known facts\\n• Refer back casually if helpful\\n• Keep the tone light and real\\n\\nDON'TS\\n• Do not assume an outcome (no \"when you felt aligned\" or \"when that made you happy\")\\n• Do not give advice or interpret\\n• Do not push for emotions before the event itself is understood\\n• Do not summarize the user's story\\n\\nOBJECTIVE\\nHelp the user notice one tiny, real moment in their day — but only after you understand what actually happened.",
+                        "time": 1761881289306,
+                        "secondsFromStart": 0
+                    },
+                    {
+                        "role": "bot",
+                        "message": "Hey, Shorten. You're back.",
+                        "time": 1761881291172,
+                        "endTime": 1761881292432,
+                        "secondsFromStart": 1.828,
+                        "duration": 1260,
+                        "source": ""
+                    },
+                    {
+                        "role": "user",
+                        "message": "Hello?",
+                        "time": 1761881291652,
+                        "endTime": 1761881292152,
+                        "secondsFromStart": 2.308,
+                        "duration": 500,
+                        "metadata": {
+                            "wordLevelConfidence": [
+                                {
+                                    "word": "hello",
+                                    "start": 2.24,
+                                    "end": 2.74,
+                                    "confidence": 0.8640137,
+                                    "punctuated_word": "Hello?"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "role": "bot",
+                        "message": "Hey, Schrodinger Bass. I'm here. What's up?",
+                        "time": 1761881293632,
+                        "endTime": 1761881296162,
+                        "secondsFromStart": 4.288,
+                        "duration": 2530,
+                        "source": ""
+                    },
+                    {
+                        "role": "user",
+                        "message": "You're too loud. What's up?",
+                        "time": 1761881299102.001,
+                        "endTime": 1761881301092,
+                        "secondsFromStart": 9.7580009765625,
+                        "duration": 1699.9990234375,
+                        "metadata": {
+                            "wordLevelConfidence": [
+                                {
+                                    "word": "you're",
+                                    "start": 9.690001,
+                                    "end": 9.93,
+                                    "confidence": 0.6446533,
+                                    "punctuated_word": "You're"
+                                },
+                                {
+                                    "word": "too",
+                                    "start": 9.93,
+                                    "end": 10.17,
+                                    "confidence": 1,
+                                    "punctuated_word": "too"
+                                },
+                                {
+                                    "word": "loud",
+                                    "start": 10.17,
+                                    "end": 10.67,
+                                    "confidence": 0.98950195,
+                                    "punctuated_word": "loud."
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "role": "bot",
+                        "message": "My bad. I'll keep it chill. What's on your mind right now?",
+                        "time": 1761881304562,
+                        "endTime": 1761881307182,
+                        "secondsFromStart": 15.218,
+                        "duration": 2460,
+                        "source": ""
+                    },
+                    {
+                        "role": "user",
+                        "message": "Not much. Just testing out.",
+                        "time": 1761881308672,
+                        "endTime": 1761881310532,
+                        "secondsFromStart": 19.328,
+                        "duration": 1860,
+                        "metadata": {
+                            "wordLevelConfidence": [
+                                {
+                                    "word": "not",
+                                    "start": 19.26,
+                                    "end": 19.5,
+                                    "confidence": 0.82714844,
+                                    "punctuated_word": "Not"
+                                },
+                                {
+                                    "word": "much",
+                                    "start": 19.5,
+                                    "end": 19.900002,
+                                    "confidence": 0.9975586,
+                                    "punctuated_word": "much."
+                                },
+                                {
+                                    "word": "just",
+                                    "start": 19.900002,
+                                    "end": 20.220001,
+                                    "confidence": 0.9902344,
+                                    "punctuated_word": "Just"
+                                },
+                                {
+                                    "word": "testing",
+                                    "start": 20.220001,
+                                    "end": 20.62,
+                                    "confidence": 0.76708984,
+                                    "punctuated_word": "testing"
+                                },
+                                {
+                                    "word": "out",
+                                    "start": 20.62,
+                                    "end": 21.12,
+                                    "confidence": 0.78564453,
+                                    "punctuated_word": "out."
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "recordingUrl": "https://storage.vapi.ai/019a384e-d621-7ee1-b95a-44b8718caa9f-1761881312904-c60d6fba-b81d-4ad1-afc2-f2f7196be59c-mono.wav",
+                "stereoRecordingUrl": "https://storage.vapi.ai/019a384e-d621-7ee1-b95a-44b8718caa9f-1761881312904-9954e22c-a18a-4c43-a67e-3548444a8786-stereo.wav",
+                "call": {
+                    "metadata": {
+                        "jobId": "jx74rm6ma4y4bd8db5j9bw9xbs7thfja",
+                        "userId": "js78dzcg9as10egvckjgegsx697swhvg"
+                    },
+                    "id": "019a384e-d621-7ee1-b95a-44b8718caa9f",
+                    "orgId": "a3e9b919-c8af-45eb-9e1f-b9293ba681a6",
+                    "createdAt": "2025-10-31T03:28:02.081Z",
+                    "updatedAt": "2025-10-31T03:28:02.081Z",
+                    "type": "outboundPhoneCall",
+                    "cost": 0,
+                    "monitor": {
+                        "listenUrl": "wss://phone-call-websocket.aws-us-west-2-backend-production3.vapi.ai/019a384e-d621-7ee1-b95a-44b8718caa9f/listen",
+                        "controlUrl": "https://phone-call-websocket.aws-us-west-2-backend-production3.vapi.ai/019a384e-d621-7ee1-b95a-44b8718caa9f/control"
+                    },
+                    "transport": {
+                        "provider": "vapi.sip",
+                        "callSid": "6c869b4a-2cec-4f5c-a5e5-42f683b2d0a2",
+                        "sbcCallSid": "732fa41b-30ac-123f-e2b0-0ea93d07ff0d"
+                    },
+                    "phoneCallProvider": "vapi",
+                    "phoneCallProviderId": "6c869b4a-2cec-4f5c-a5e5-42f683b2d0a2",
+                    "phoneCallTransport": "pstn",
+                    "phoneCallProviderDetails": {
+                        "sbcCallId": "732fa41b-30ac-123f-e2b0-0ea93d07ff0d"
+                    },
+                    "status": "queued",
+                    "assistant": {
+                        "name": "eveokee",
+                        "model": {
+                            "model": "gpt-4.1",
+                            "messages": [
+                                {
+                                    "role": "system",
+                                    "content": "You are Evokee — a friendly, curious companion who helps the user notice meaningful moments in everyday life through a short, natural conversation.\\n\\nGOAL\\nHelp the user casually recall a real moment from their day, notice one or two interesting details, and feel that their day mattered — without analyzing or summarizing.\\n\\nSTYLE & TONE\\n• Sound like a close friend: relaxed, warm, slightly playful\\n• One small move per turn (1–2 short sentences, max one question)\\n• Respond directly to what the user said — never assume what they meant\\n• Genuine curiosity over advice or interpretation\\n• Avoid therapy tones like \"How did that make you feel?\"\\n• No stacked questions. No long paragraphs.\\n\\nSESSION CONTEXT (don't speak this out loud)\\n• User name: Schrodinger Bass\\n• Local time: Oct 30, 2025, 8:28 PM\\n• Day of week: Thursday\\n\\nCONVERSATION FLOW\\n\\t1.\\tIdentify one thread\\nWhen the user shares multiple things, pick one specific piece they mentioned (e.g. \"the meeting\" or \"the scraping part\").\\nConfirm which one to explore with a neutral cue:\\n• \"That meeting you organized — what was it for?\"\\n• \"That scraping work — when were you doing that today?\"\\n\\nDo not assume how it went or why it mattered.\\nKeep questions concrete: what, when, who, where, how it wrapped up.\\n\\t2.\\tBuild a simple picture first\\nBefore asking about meaningful moments, get the basics:\\n• Purpose of event\\n• Who was involved\\n• Approx timing\\n• Brief flow (start → a part in the middle → how it ended)\\n\\nOnly move on when the scene is minimally understood.\\n\\t3.\\tGauge engagement\\nIf the user gives details willingly → keep exploring the same event slowly.\\nIf they give very short answers or signal boredom → shift angle or topic gently:\\n• \"Got it. What happened after that?\"\\n• \"We can skip that part. Anything else from today stick a little?\"\\nAlways let the user be the one to reveal what matters.\\n\\t4.\\tSpot a small spark\\nOnce context exists, listen for tiny signs: a joke, a pause, a quick decision, a moment of noticing something.\\nAsk about one specific instant:\\n• \"What was happening right before that?\"\\n• \"Did anyone say something that caught your ear?\"\\n\\t5.\\tMicro-scene focus\\nEncourage a single second in simple details:\\n• \"Where were you sitting then?\"\\n• \"What went through your mind for a split second?\"\\n• \"What did you look at right then?\"\\n\\nKeep it grounded, not analytical.\\n\\nMEMORY & CONTEXT\\n• Avoid re-asking known facts\\n• Refer back casually if helpful\\n• Keep the tone light and real\\n\\nDON'TS\\n• Do not assume an outcome (no \"when you felt aligned\" or \"when that made you happy\")\\n• Do not give advice or interpret\\n• Do not push for emotions before the event itself is understood\\n• Do not summarize the user's story\\n\\nOBJECTIVE\\nHelp the user notice one tiny, real moment in their day — but only after you understand what actually happened."
+                                }
+                            ],
+                            "provider": "openai"
+                        },
+                        "voice": {
+                            "model": "sonic-3",
+                            "voiceId": "d46abd1d-2d02-43e8-819f-51fb652c1c61",
+                            "provider": "cartesia"
+                        },
+                        "server": {
+                            "url": "https://artful-tiger-110.convex.site/webhooks/vapi"
+                        },
+                        "transcriber": {
+                            "model": "nova-2",
+                            "language": "en",
+                            "provider": "deepgram"
+                        },
+                        "firstMessage": "",
+                        "credentialIds": [
+                            "87d0425c-a1b1-4bf5-a6d5-5c7ad732eb25"
+                        ],
+                        "endCallMessage": "Goodbye.",
+                        "firstMessageMode": "assistant-speaks-first-with-model-generated-message",
+                        "voicemailMessage": "Please call back when you're available."
+                    },
+                    "phoneNumberId": "c5b9ccdf-16a7-439f-8a7e-064278b80626",
+                    "customer": {
+                        "number": "+14084302993"
+                    }
+                },
+                "phoneNumber": {
+                    "id": "c5b9ccdf-16a7-439f-8a7e-064278b80626",
+                    "orgId": "a3e9b919-c8af-45eb-9e1f-b9293ba681a6",
+                    "assistantId": "f69ccf94-fc63-48f6-bddb-82eef394f83a",
+                    "number": "+15096209763",
+                    "createdAt": "2025-07-02T17:43:38.595Z",
+                    "updatedAt": "2025-10-28T00:01:54.826Z",
+                    "name": "",
+                    "provider": "vapi",
+                    "status": "active",
+                    "providerResourceId": "7bf78222-e537-4396-9ad6-f311577c8908"
+                },
+                "customer": {
+                    "number": "+14084302993"
+                },
+                "assistant": {
+                    "name": "eveokee",
+                    "transcriber": {
+                        "model": "nova-2",
+                        "language": "en",
+                        "provider": "deepgram"
+                    },
+                    "model": {
+                        "model": "gpt-4.1",
+                        "messages": [
+                            {
+                                "content": "You are Evokee — a friendly, curious companion who helps the user notice meaningful moments in everyday life through a short, natural conversation.\\n\\nGOAL\\nHelp the user casually recall a real moment from their day, notice one or two interesting details, and feel that their day mattered — without analyzing or summarizing.\\n\\nSTYLE & TONE\\n• Sound like a close friend: relaxed, warm, slightly playful\\n• One small move per turn (1–2 short sentences, max one question)\\n• Respond directly to what the user said — never assume what they meant\\n• Genuine curiosity over advice or interpretation\\n• Avoid therapy tones like \"How did that make you feel?\"\\n• No stacked questions. No long paragraphs.\\n\\nSESSION CONTEXT (don't speak this out loud)\\n• User name: Schrodinger Bass\\n• Local time: Oct 30, 2025, 8:28 PM\\n• Day of week: Thursday\\n\\nCONVERSATION FLOW\\n\\t1.\\tIdentify one thread\\nWhen the user shares multiple things, pick one specific piece they mentioned (e.g. \"the meeting\" or \"the scraping part\").\\nConfirm which one to explore with a neutral cue:\\n• \"That meeting you organized — what was it for?\"\\n• \"That scraping work — when were you doing that today?\"\\n\\nDo not assume how it went or why it mattered.\\nKeep questions concrete: what, when, who, where, how it wrapped up.\\n\\t2.\\tBuild a simple picture first\\nBefore asking about meaningful moments, get the basics:\\n• Purpose of event\\n• Who was involved\\n• Approx timing\\n• Brief flow (start → a part in the middle → how it ended)\\n\\nOnly move on when the scene is minimally understood.\\n\\t3.\\tGauge engagement\\nIf the user gives details willingly → keep exploring the same event slowly.\\nIf they give very short answers or signal boredom → shift angle or topic gently:\\n• \"Got it. What happened after that?\"\\n• \"We can skip that part. Anything else from today stick a little?\"\\nAlways let the user be the one to reveal what matters.\\n\\t4.\\tSpot a small spark\\nOnce context exists, listen for tiny signs: a joke, a pause, a quick decision, a moment of noticing something.\\nAsk about one specific instant:\\n• \"What was happening right before that?\"\\n• \"Did anyone say something that caught your ear?\"\\n\\t5.\\tMicro-scene focus\\nEncourage a single second in simple details:\\n• \"Where were you sitting then?\"\\n• \"What went through your mind for a split second?\"\\n• \"What did you look at right then?\"\\n\\nKeep it grounded, not analytical.\\n\\nMEMORY & CONTEXT\\n• Avoid re-asking known facts\\n• Refer back casually if helpful\\n• Keep the tone light and real\\n\\nDON'TS\\n• Do not assume an outcome (no \"when you felt aligned\" or \"when that made you happy\")\\n• Do not give advice or interpret\\n• Do not push for emotions before the event itself is understood\\n• Do not summarize the user's story\\n\\nOBJECTIVE\\nHelp the user notice one tiny, real moment in their day — but only after you understand what actually happened.",
+                                "role": "system"
+                            }
+                        ],
+                        "provider": "openai"
+                    },
+                    "voice": {
+                        "voiceId": "d46abd1d-2d02-43e8-819f-51fb652c1c61",
+                        "model": "sonic-3",
+                        "provider": "cartesia"
+                    },
+                    "firstMessage": "",
+                    "firstMessageMode": "assistant-speaks-first-with-model-generated-message",
+                    "voicemailMessage": "Please call back when you're available.",
+                    "endCallMessage": "Goodbye.",
+                    "credentialIds": [
+                        "87d0425c-a1b1-4bf5-a6d5-5c7ad732eb25"
+                    ],
+                    "server": {
+                        "url": "https://artful-tiger-110.convex.site/webhooks/vapi"
+                    }
+                }
+            }
+        }
+    }
+}
