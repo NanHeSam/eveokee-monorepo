@@ -8,6 +8,7 @@ import { internal } from "../../_generated/api";
 import type { VapiWebhookEvent } from "../../models/webhooks/vapi";
 import {
   isValidVapiWebhookEvent,
+  parseVapiPayload,
   extractVapiCallId,
   extractEndedAt,
   extractDurationSeconds,
@@ -71,12 +72,13 @@ export const vapiWebhookHandler = httpAction(async (ctx, req) => {
     return parseResult.error;
   }
 
-  // Step 4: Validate event structure using type guard
-  if (!isValidVapiWebhookEvent(parseResult.data)) {
-    logger.error("Invalid event structure");
-    return errorResponse("Invalid event structure", HTTP_STATUS_BAD_REQUEST);
+  // Step 4: Parse and validate payload
+  const parsedPayload = parseVapiPayload(parseResult.data);
+  if (parsedPayload.success === false) {
+    logger.error("Payload validation failed", { error: parsedPayload.error });
+    return errorResponse(parsedPayload.error, HTTP_STATUS_BAD_REQUEST);
   }
-  const event = parseResult.data;
+  const event = parsedPayload.data;
 
   // Step 5: Extract and validate call ID
   const vapiCallId = extractVapiCallId(event);

@@ -7,6 +7,7 @@ import { httpAction } from "../../_generated/server";
 import { internal } from "../../_generated/api";
 import { verifyWebhook } from "@clerk/backend/webhooks";
 import type { ClerkWebhookEvent } from "../../models/webhooks/clerk";
+import { isValidClerkEvent } from "../../models/webhooks/clerk";
 import {
   errorResponse,
   successResponse,
@@ -46,9 +47,17 @@ export const clerkWebhookHandler = httpAction(async (ctx, req) => {
   // Step 2: Verify webhook signature
   let event: ClerkWebhookEvent;
   try {
-    event = (await verifyWebhook(req, {
+    const verified = await verifyWebhook(req, {
       signingSecret: process.env.CLERK_WEBHOOK_SIGNING_SECRET,
-    })) as ClerkWebhookEvent;
+    });
+    
+    // Validate the structure matches our interface
+    if (!isValidClerkEvent(verified)) {
+      logger.error("Invalid event structure after verification");
+      return errorResponse("Invalid event structure", HTTP_STATUS_UNAUTHORIZED);
+    }
+    
+    event = verified;
   } catch (error) {
     logger.error("Failed to verify webhook signature", error);
     return errorResponse("Invalid webhook signature", HTTP_STATUS_UNAUTHORIZED);

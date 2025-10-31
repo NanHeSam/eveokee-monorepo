@@ -6,6 +6,7 @@
 import { httpAction } from "../../_generated/server";
 import { internal } from "../../_generated/api";
 import type { RevenueCatWebhookEvent } from "../../models/webhooks/revenuecat";
+import { parseRevenueCatPayload } from "../../models/webhooks/revenuecat";
 import {
   errorResponse,
   successResponse,
@@ -62,18 +63,25 @@ export const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
   logger.debug("Webhook authentication successful");
 
   // Step 4: Parse JSON payload
-  const parseResult = await parseJsonBody<RevenueCatWebhookEvent>(req);
+  const parseResult = await parseJsonBody<unknown>(req);
   if (parseResult.error) {
     logger.error("Failed to parse JSON payload");
     return parseResult.error;
   }
-  const event = parseResult.data;
 
-  // Step 5: Extract and validate required fields
-  const eventType = event.event?.type;
-  const appUserId = event.event?.app_user_id;
-  const productId = event.event?.product_id;
-  const store = event.event?.store;
+  // Step 5: Parse and validate payload
+  const parsedPayload = parseRevenueCatPayload(parseResult.data);
+  if (parsedPayload.success === false) {
+    logger.warn("Payload validation failed", { error: parsedPayload.error });
+    return errorResponse(parsedPayload.error, HTTP_STATUS_BAD_REQUEST);
+  }
+  const event = parsedPayload.data;
+
+  // Step 6: Extract and validate required fields
+  const eventType = event.event.type;
+  const appUserId = event.event.app_user_id;
+  const productId = event.event.product_id;
+  const store = event.event.store;
 
   // Add event context to logger
   const eventLogger = logger.child({
@@ -84,20 +92,11 @@ export const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
   });
 
   eventLogger.info("Webhook payload parsed", {
-    hasEntitlements: !!event.event?.entitlements,
-    hasExpirationDate: !!event.event?.expiration_at_ms,
+    hasEntitlements: !!event.event.entitlements,
+    hasExpirationDate: !!event.event.expiration_at_ms,
   });
 
-  // Step 5.1: Validate required fields
-  if (!appUserId || !productId) {
-    eventLogger.warn("Webhook ignored: missing required fields", {
-      hasUserId: !!appUserId,
-      hasProductId: !!productId,
-    });
-    return successResponse({ status: "ignored", reason: "Missing required fields" });
-  }
-
-  // Step 6: Validate user ID format
+  // Step 7: Validate user ID format
   if (!isValidConvexId(appUserId)) {
     eventLogger.error("Invalid user ID format", undefined, {
       userIdLength: appUserId.length,
@@ -108,14 +107,14 @@ export const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
 
   eventLogger.debug("Webhook validation passed");
 
-  // Step 7: Extract subscription metadata
-  const expirationAtMs = event.event?.expiration_at_ms;
-  const purchasedAtMs = event.event?.purchased_at_ms;
-  const isTrialConversion = event.event?.is_trial_conversion;
+  // Step 8: Extract subscription metadata
+  const expirationAtMs = event.event.expiration_at_ms;
+  const purchasedAtMs = event.event.purchased_at_ms;
+  const isTrialConversion = event.event.is_trial_conversion;
 
-  // Extract entitlement IDs (using Object.keys for plain objects)
-  const entitlements = (event.event?.entitlements ?? {}) as Record<string, unknown>;
-  const entitlementIds = Object.keys(entitlements);
+  // Extract entitlement IDs (use entitlement_ids if available, otherwise extract from entitlements object)
+  const entitlementIds = event.event.entitlement_ids ?? 
+    (event.event.entitlements ? Object.keys(event.event.entitlements) : []);
 
   eventLogger.debug("Webhook data extracted", {
     entitlementCount: entitlementIds.length,
@@ -123,7 +122,7 @@ export const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
     isTrialConversion,
   });
 
-  // Step 8: Update subscription in database
+  // Step 9: Update subscription in database
   try {
     // Note: appUserId is validated as Id<"users"> by isValidConvexId() type guard above
     // Sanitize rawEvent to remove Convex-incompatible field names (starting with $ or _)

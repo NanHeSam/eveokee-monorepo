@@ -5,12 +5,10 @@
 
 import { httpAction } from "../../_generated/server";
 import { internal } from "../../_generated/api";
-import type { RawSunoCallback } from "../../models/webhooks/suno";
+import type { SunoWebhookPayload } from "../../models/webhooks/suno";
 import {
   isValidSunoCallback,
-  extractSunoTaskId,
-  extractSunoTracks,
-  extractSunoCallbackType,
+  parseSunoPayload,
 } from "../../models/webhooks/suno";
 import {
   errorResponse,
@@ -50,7 +48,7 @@ export const sunoMusicGenerationCallback = httpAction(async (ctx, req) => {
   }
 
   // Step 2: Parse JSON payload
-  const parseResult = await parseJsonBody<unknown>(req);
+  const parseResult = await parseJsonBody<SunoWebhookPayload>(req);
   if (parseResult.error) {
     logger.error("Failed to parse JSON payload");
     return parseResult.error;
@@ -58,27 +56,19 @@ export const sunoMusicGenerationCallback = httpAction(async (ctx, req) => {
 
   // Step 3: Validate payload structure using type guard
   if (!isValidSunoCallback(parseResult.data)) {
-    logger.warn("Invalid payload structure");
+    logger.warn("Invalid payload structure", { payload: parseResult.data });
     return errorResponse("Invalid payload", HTTP_STATUS_BAD_REQUEST);
   }
   const body = parseResult.data;
 
-  // Step 4: Validate data field exists
-  if (!body.data || typeof body.data !== "object") {
-    logger.warn("Callback missing data field");
-    return successResponse({ status: "ignored" });
+  // Step 4: Parse and validate payload
+  const parsedPayload = parseSunoPayload(body);
+  if (parsedPayload.success === false) {
+    logger.warn("Payload validation failed", { error: parsedPayload.error });
+    return errorResponse(parsedPayload.error, HTTP_STATUS_BAD_REQUEST);
   }
 
-  // Step 5: Extract taskId, tracks, and callback type using helpers
-  const taskId = extractSunoTaskId(body);
-  if (!taskId) {
-    logger.warn("Callback missing taskId");
-    return errorResponse("Missing taskId", HTTP_STATUS_BAD_REQUEST);
-  }
-
-  const tracksRaw = extractSunoTracks(body);
-  const callbackType = extractSunoCallbackType(body);
-  const code = typeof body.code === "number" ? body.code : undefined;
+  const { taskId, tracks: tracksRaw, callbackType, code } = parsedPayload.data;
 
   // Add taskId to logger context
   const eventLogger = logger.child({ taskId, callbackType, code });

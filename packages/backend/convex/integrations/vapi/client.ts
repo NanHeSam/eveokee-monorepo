@@ -142,7 +142,7 @@ export function createVapiClientFromEnv(env: {
     throw new Error("VAPI_PHONE_NUMBER_ID environment variable is not set");
   }
 
-  const timeout = env.VAPI_TIMEOUT ? parseInt(env.VAPI_TIMEOUT, 10) : undefined;
+  const timeout = env.VAPI_TIMEOUT ? parseInt(env.VAPI_TIMEOUT, 10) || undefined : undefined;
 
   return new VapiClient({
     apiKey,

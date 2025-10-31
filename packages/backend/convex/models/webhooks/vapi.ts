@@ -6,6 +6,73 @@
 import { VAPI_SAMPLE_WEBHOOK_DURATION_SECONDS } from "../../utils/constants";
 
 /**
+ * VAPI message structure (from artifact)
+ * Based on fixtures: only fields we actually use
+ */
+export interface VapiMessage {
+  role: string;
+  message?: string;
+  content?: string;
+  time?: number;
+  endTime?: number;
+  secondsFromStart?: number;
+  duration?: number;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * VAPI artifact structure
+ * Based on fixtures: only fields we actually use
+ */
+export interface VapiArtifact {
+  transcript?: string;
+  messages?: VapiMessage[];
+  messagesOpenAIFormatted?: Array<{ role: string; content: string }>;
+  recording?: {
+    mono?: {
+      combinedUrl?: string;
+      assistantUrl?: string;
+      customerUrl?: string;
+    };
+    stereoUrl?: string;
+  };
+  recordingUrl?: string;
+  stereoRecordingUrl?: string;
+}
+
+/**
+ * VAPI call metadata
+ * Based on fixtures: only fields we actually use
+ */
+export interface VapiCallMetadata {
+  jobId?: string;
+  userId?: string;
+}
+
+/**
+ * VAPI webhook event structure
+ */
+export interface VapiWebhookEvent {
+  message: {
+    type: string;
+    timestamp?: number;
+    call?: {
+      id: string;
+      metadata?: VapiCallMetadata;
+      endedAt?: number | string;
+      disposition?: string;
+      status?: string;
+    };
+    durationSeconds?: number;
+    artifact?: VapiArtifact;
+    endedReason?: string;
+    startedAt?: string;
+    endedAt?: string;
+    cost?: number;
+  };
+}
+
+/**
  * Validation helpers for VAPI webhook events
  */
 
@@ -39,7 +106,8 @@ export function isValidVapiWebhookEvent(event: unknown): event is VapiWebhookEve
  * @returns The call ID if valid, undefined otherwise
  */
 export function extractVapiCallId(event: VapiWebhookEvent): string | undefined {
-  return event.message.call?.id;
+  const callId = event.message.call?.id;
+  return typeof callId === "string" ? callId : undefined;
 }
 
 /**
@@ -103,33 +171,35 @@ export function extractDisposition(event: VapiWebhookEvent): string {
  * Extract artifact data from VAPI webhook event
  * @returns The artifact object, or empty object if invalid
  */
-export function extractArtifact(event: VapiWebhookEvent): Record<string, unknown> {
+export function extractArtifact(event: VapiWebhookEvent): VapiArtifact {
   const artifact = event.message.artifact;
 
   if (artifact !== undefined && artifact !== null && typeof artifact === "object" && !Array.isArray(artifact)) {
-    return artifact as Record<string, unknown>;
+    return artifact as VapiArtifact;
   }
 
   return {};
 }
 
-export interface VapiWebhookEvent {
-  message: {
-    type: string;
-    call?: {
-      id: string;
-      endedAt?: number | string;
-      disposition?: string;
-    };
-    durationSeconds?: number;
-    artifact?: {
-      transcript?: string;
-      messages?: unknown[];
-      recording?: unknown;
-    };
-    endedReason?: string;
-  };
+/**
+ * Parse and validate VAPI webhook payload
+ * @returns Validated payload or error message
+ */
+export function parseVapiPayload(
+  event: unknown
+): { success: true; data: VapiWebhookEvent } | { success: false; error: string } {
+  if (!isValidVapiWebhookEvent(event)) {
+    return { success: false, error: "Invalid event structure" };
+  }
+
+  // Validate message type
+  if (!event.message.type) {
+    return { success: false, error: "Missing message type" };
+  }
+
+  return { success: true, data: event };
 }
+
 
 /**
  * Validated VAPI end-of-call-report payload

@@ -42,6 +42,10 @@ export const scheduleVapiCall = action({
     // Get webhook URL from environment for assistant configuration (already validated by createVapiClientFromEnv)
     const webhookUrl = process.env.VAPI_WEBHOOK_URL!;
 
+    // Parse optional credentialId from environment variable (single credential ID wrapped in array)
+    const credentialId = process.env.VAPI_CREDENTIAL_ID;
+    const credentialIds = credentialId ? [credentialId] : undefined;
+
     try {
       // Get call job to find call settings
       const job = await ctx.runQuery(internal.callJobs.getCallJobById, {
@@ -74,7 +78,8 @@ export const scheduleVapiCall = action({
         user,
         callSettings,
         job.scheduledForUTC,
-        webhookUrl
+        webhookUrl,
+        credentialIds
       );
 
       await ctx.runMutation(internal.callJobs.incrementCallJobAttempts, {

@@ -103,20 +103,52 @@ export function buildSystemPrompt(
 }
 
 /**
+ * VAPI assistant configuration type
+ */
+type VapiAssistant = {
+  transcriber: {
+    model: string;
+    language: string;
+    provider: string;
+  };
+  model: {
+    messages: Array<{ content: string; role: string }>;
+    model: string;
+    provider: string;
+  };
+  voice: {
+    voiceId: string;
+    model: string;
+    provider: string;
+  };
+  firstMessage: string;
+  firstMessageMode: string;
+  name: string;
+  voicemailMessage: string;
+  endCallMessage: string;
+  server: {
+    url: string;
+  };
+  credentialIds?: string[];
+};
+
+/**
  * Construct a VAPI assistant configuration object customized for a scheduled call.
  *
  * @param user - User document; `user.name` is used in the system prompt (falls back to "there" if absent)
  * @param callSettings - Call settings document; `callSettings.timezone` should be an IANA timezone identifier used to localize the scheduled time
  * @param scheduledForUTC - UTC timestamp (milliseconds since epoch) when the call is scheduled
  * @param webhookUrl - URL for the assistant's webhook server to receive call events
+ * @param credentialIds - Optional list of credential IDs to use for the assistant calls
  * @returns A VAPI assistant object containing transcriber, model (with system message), voice, messaging defaults, and server configuration (including `url`)
  */
 export function buildVapiAssistant(
   user: Doc<"users">,
   callSettings: Doc<"callSettings">,
   scheduledForUTC: number,
-  webhookUrl: string
-): object {
+  webhookUrl: string,
+  credentialIds?: string[]
+): VapiAssistant {
   // Format local time and day
   const localTime = formatLocalTime(scheduledForUTC, callSettings.timezone);
   const dayOfWeek = getDayOfWeekLabel(scheduledForUTC, callSettings.timezone);
@@ -128,7 +160,7 @@ export function buildVapiAssistant(
     dayOfWeek
   );
   
-  return {
+  const assistant: VapiAssistant = {
     transcriber: {
       model: VAPI_TRANSCRIBER_MODEL,
       language: VAPI_TRANSCRIBER_LANGUAGE,
@@ -158,5 +190,12 @@ export function buildVapiAssistant(
       url: webhookUrl,
     },
   };
+
+  // Add credentialIds if provided
+  if (credentialIds && credentialIds.length > 0) {
+    assistant.credentialIds = credentialIds;
+  }
+
+  return assistant;
 }
 

@@ -1,0 +1,46 @@
+{
+    "api_version": "1.0",
+    "event": {
+        "aliases": [
+            "$RCAnonymousID:202bcb0452dc40989517b73f110ae2e6",
+            "js7bfz5pz8phjxcp414c8vy5xh7sxmba"
+        ],
+        "app_id": "appfc3c250139",
+        "app_user_id": "js7bfz5pz8phjxcp414c8vy5xh7sxmba",
+        "commission_percentage": 0.3,
+        "country_code": "US",
+        "currency": "USD",
+        "entitlement_id": null,
+        "entitlement_ids": [
+            "Premium"
+        ],
+        "environment": "SANDBOX",
+        "event_timestamp_ms": 1761857472566,
+        "expiration_at_ms": 1761943901000,
+        "id": "6D001947-C432-44F1-B1AF-C8D1BC769C9A",
+        "is_family_share": false,
+        "is_trial_conversion": false,
+        "metadata": null,
+        "offer_code": null,
+        "original_app_user_id": "js7bfz5pz8phjxcp414c8vy5xh7sxmba",
+        "original_transaction_id": "2000001039381181",
+        "period_type": "NORMAL",
+        "presented_offering_id": "default",
+        "price": 9.99,
+        "price_in_purchased_currency": 9.99,
+        "product_id": "eveokee_premium_monthly",
+        "purchased_at_ms": 1761857501000,
+        "renewal_number": 10,
+        "store": "APP_STORE",
+        "subscriber_attributes": {
+            "$attConsentStatus": {
+                "updated_at_ms": 1761269371361,
+                "value": "denied"
+            }
+        },
+        "takehome_percentage": 0.7,
+        "tax_percentage": 0,
+        "transaction_id": "2000001046405346",
+        "type": "RENEWAL"
+    }
+}

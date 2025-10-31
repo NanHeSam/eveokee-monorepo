@@ -8,8 +8,8 @@ import OpenAI from "openai";
 import {
   OPENAI_DIARY_MODEL,
   OPENAI_DIARY_MAX_COMPLETION_TOKENS,
-  OPENAI_MUSIC_MODEL,
   OPENAI_MUSIC_MAX_COMPLETION_TOKENS,
+  OPENAI_LYRIC_GENERATION_MODEL,
 } from "../../utils/constants";
 
 export interface OpenAIClientConfig {
@@ -73,7 +73,7 @@ Do not mention that this is from a call or conversation. Write as if the user is
             content: `Conversation transcript:\n\n${params.transcript}`,
           },
         ],
-        max_completion_tokens: OPENAI_DIARY_MAX_COMPLETION_TOKENS,
+        max_tokens: OPENAI_DIARY_MAX_COMPLETION_TOKENS,
       });
 
       const content = completion.choices[0]?.message?.content;
@@ -103,7 +103,7 @@ Do not mention that this is from a call or conversation. Write as if the user is
   }> {
     try {
       const completion = await this.client.chat.completions.create({
-        model: OPENAI_MUSIC_MODEL,
+        model: OPENAI_LYRIC_GENERATION_MODEL,
         messages: [
           {
             role: "system",
@@ -118,8 +118,7 @@ Use the same language as the diary entry for lyrics and title.`,
             content: params.diaryContent,
           },
         ],
-        max_completion_tokens: OPENAI_MUSIC_MAX_COMPLETION_TOKENS,
-        reasoning_effort: "low",
+        max_tokens: OPENAI_MUSIC_MAX_COMPLETION_TOKENS,
         response_format: {
           type: "json_schema",
           json_schema: {

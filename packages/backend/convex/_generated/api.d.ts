@@ -47,6 +47,7 @@ import type * as utils_constants_revenuecat from "../utils/constants/revenuecat.
 import type * as utils_constants_sharing from "../utils/constants/sharing.js";
 import type * as utils_constants_vapi from "../utils/constants/vapi.js";
 import type * as utils_constants_webhooks from "../utils/constants/webhooks.js";
+import type * as utils_envValidation from "../utils/envValidation.js";
 import type * as utils_logger from "../utils/logger.js";
 import type * as utils_phoneHelpers from "../utils/phoneHelpers.js";
 import type * as utils_timezoneHelpers from "../utils/timezoneHelpers.js";
@@ -111,6 +112,7 @@ declare const fullApi: ApiFromModules<{
   "utils/constants/sharing": typeof utils_constants_sharing;
   "utils/constants/vapi": typeof utils_constants_vapi;
   "utils/constants/webhooks": typeof utils_constants_webhooks;
+  "utils/envValidation": typeof utils_envValidation;
   "utils/logger": typeof utils_logger;
   "utils/phoneHelpers": typeof utils_phoneHelpers;
   "utils/timezoneHelpers": typeof utils_timezoneHelpers;

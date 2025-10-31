@@ -10,7 +10,7 @@ export const SUNO_SONGS_PER_REQUEST = 2;
 export const SUNO_DEFAULT_MODEL = "V5" as const;
 
 // OpenAI Configuration for Music Generation
-export const OPENAI_MUSIC_MODEL = "gpt-4.1-2025-04-14";
+export const OPENAI_LYRIC_GENERATION_MODEL = "gpt-4.1-2025-04-14";
 export const OPENAI_MUSIC_MAX_COMPLETION_TOKENS = 1000;
 
 // OpenAI Configuration for Diary Generation
