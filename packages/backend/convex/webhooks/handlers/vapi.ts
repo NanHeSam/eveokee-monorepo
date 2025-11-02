@@ -149,6 +149,7 @@ export const vapiWebhookHandler = httpAction(async (ctx, req) => {
             successEvaluation: analysis.successEvaluation,
           },
         },
+        endOfCallReport: event.message,
       });
 
       jobLogger.info("Call completed", {
@@ -160,8 +161,8 @@ export const vapiWebhookHandler = httpAction(async (ctx, req) => {
         shouldGenerate: qualityCheck.shouldGenerate,
       });
 
-      // Step 11: Schedule diary generation workflow if transcript available AND quality check passes
-      if ((artifact.transcript || artifact.messages) && qualityCheck.shouldGenerate) {
+      // Step 11: Schedule diary generation workflow if transcript/summary available AND quality check passes
+      if ((artifact.transcript || artifact.messages || analysis.summary) && qualityCheck.shouldGenerate) {
         try {
           const callSession = await ctx.runQuery(internal.callJobs.getCallSessionByVapiId, {
             vapiCallId,
@@ -181,10 +182,12 @@ export const vapiWebhookHandler = httpAction(async (ctx, req) => {
                 endedAt: callSession.endedAt,
                 transcript: artifact.transcript as string | undefined,
                 messages: artifact.messages,
+                summary: analysis.summary,
               });
               jobLogger.info("Scheduled diary generation workflow", {
                 callSessionId: callSession._id,
                 qualityReason: qualityCheck.reason,
+                hasSummary: !!analysis.summary,
               });
             }
           } else {

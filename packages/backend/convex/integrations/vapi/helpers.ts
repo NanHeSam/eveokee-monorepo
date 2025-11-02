@@ -19,6 +19,7 @@ import {
   VAPI_VOICEMAIL_MESSAGE,
   VAPI_END_CALL_MESSAGE,
   VAPI_USER_NAME_FALLBACK,
+  HANGUP_TOOL_ID,
 } from "../../utils/constants";
 
 /**
@@ -115,6 +116,13 @@ type VapiAssistant = {
     messages: Array<{ content: string; role: string }>;
     model: string;
     provider: string;
+    toolIds?: string[];
+    tools?: Array<{
+      type: string;
+      function: {
+        name: string;
+      };
+    }>;
   };
   voice: {
     voiceId: string;
@@ -130,12 +138,18 @@ type VapiAssistant = {
     url: string;
   };
   credentialIds?: string[];
-  successEvaluationPlan?: {
-    rubric: "Binary" | "NumericScale" | string;
-    messages: Array<{ role: string; content: string }>;
-    enabled: boolean;
-    timeoutSeconds?: number;
+  analysisPlan?: {
+    successEvaluationPlan?: {
+      rubric: "PassFail";
+      messages: Array<{ role: string; content: string }>;
+      enabled: boolean;
+      timeoutSeconds?: number;
+    };
+    summaryPlan?: {
+      messages: Array<{ role: string; content: string }>;
+    };
   };
+  serverMessages?: Array<string>;
 };
 
 /**
@@ -180,7 +194,16 @@ export function buildVapiAssistant(
         }
       ],
       model: VAPI_MODEL_NAME,
-      provider: VAPI_MODEL_PROVIDER
+      provider: VAPI_MODEL_PROVIDER,
+      // toolIds: [HANGUP_TOOL_ID],
+      tools: [
+        {
+          type: "endCall",
+          function: {
+            name: "hang_up",
+          }
+        }
+      ]
     },
     voice: {
       voiceId: DEFAULT_VOICE_ID,
@@ -195,12 +218,14 @@ export function buildVapiAssistant(
     server: {
       url: webhookUrl,
     },
-    successEvaluationPlan: {
-      rubric: "Binary",
-      messages: [
-        {
-          role: "system",
-          content: `Evaluate whether this call should generate a diary entry and music. 
+    serverMessages: ["end-of-call-report"],
+    analysisPlan: {
+      successEvaluationPlan: {
+        rubric: "PassFail",
+        messages: [
+          {
+            role: "system",
+            content: `Evaluate whether this call should generate a diary entry and music. 
 The call should NOT generate diary/music if:
 - It's a voicemail (no real conversation)
 - Very brief (< 15 seconds of actual conversation)
@@ -215,10 +240,39 @@ The call SHOULD generate diary/music if:
 - Personal reflections or events discussed
 
 Respond with "true" if the call should generate diary/music, "false" otherwise.`
-        }
-      ],
-      enabled: true,
-      timeoutSeconds: 30,
+          },{
+            role: "user",
+            content: "Here is the transcript:\n\n{{transcript}}\n\n"
+          },{
+            role: "user",
+            content: "Here was the system prompt of the call:\n\n\{\{systemPrompt}}\n\n. Here is the ended reason of the call:\n\n\{\{endedReason}}\n\n"
+          }
+        ],
+        enabled: true,
+        timeoutSeconds: 30,
+      },
+      summaryPlan: {
+        messages: [
+          {
+            role: "system",
+            content: `Based on the conversation transcript from this wellness check-in call, create a personal diary entry that:
+- Captures the main thoughts, feelings, and experiences shared
+- Writes in first person as if the user is writing their own diary
+- Maintains an authentic, personal tone
+- Focuses on emotional insights and meaningful moments
+- Is concise but meaningful (200-400 words)
+- Uses the same language as the conversation
+
+Do not mention that this is from a call or conversation. Write as if the user is naturally reflecting on their day.
+
+Format the summary as a diary entry that flows naturally and captures the essence of what was discussed.
+Excepion if the call was a voicemail, then return "Voicemail" and nothing else.`
+          },{
+            role: "user",
+            content: "Here is the transcript:\n\n{{transcript}}\n\n"
+          }
+        ],
+      },
     },
   };
 

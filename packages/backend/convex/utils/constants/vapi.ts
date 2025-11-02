@@ -36,3 +36,5 @@ export const VAPI_DEFAULT_TIMEOUT_MS = 30000; // 30 seconds
 // Sample webhook data
 export const VAPI_SAMPLE_WEBHOOK_DURATION_SECONDS = 300; // 5 minutes
 
+// Tool Configuration
+export const HANGUP_TOOL_ID = "639ef417-c953-4f52-b256-2aee87a72452";

@@ -50,7 +50,7 @@ export function shouldGenerateDiaryFromCall(
   if (successEvaluation !== undefined && successEvaluation !== null) {
     const evalStr = String(successEvaluation).trim().toLowerCase();
 
-    // Binary rubric: "true" = generate, "false" = skip
+    // PassFail rubric: "true" = generate, "false" = skip
     if (evalStr === "true") {
       return {
         shouldGenerate: true,
@@ -84,8 +84,8 @@ export function shouldGenerateDiaryFromCall(
 
   // Default: generate if evaluation unavailable (conservative - don't miss legitimate calls)
   return {
-    shouldGenerate: true,
-    reason: "No evaluation available, defaulting to generate",
+    shouldGenerate: false,
+    reason: "No evaluation available, defaulting to not generate",
   };
 }
 
@@ -100,6 +100,7 @@ export const generateDiaryFromCall = internalAction({
     endedAt: v.optional(v.number()),
     transcript: v.optional(v.string()),
     messages: v.optional(v.any()),
+    summary: v.optional(v.string()),
   },
   returns: v.object({
     success: v.boolean(),
@@ -126,78 +127,85 @@ export const generateDiaryFromCall = internalAction({
       };
     }
 
-    let transcriptText = args.transcript || "";
-    
-    if (!transcriptText && args.messages) {
-      try {
-        if (Array.isArray(args.messages)) {
-          transcriptText = args.messages
-            .filter((msg: any) => {
-              if (!msg || typeof msg !== "object") return false;
-              const hasUserRole = msg.role === "user" || msg.role === "assistant";
-              const content = msg.content;
-              if (typeof content === "string") return hasUserRole && content;
-              if (Array.isArray(content)) {
-                return hasUserRole && content.some((c: any) => 
-                  typeof c === "object" && c.type === "text" && c.text
-                );
-              }
-              return false;
-            })
-            .map((msg: any) => {
-              const content = msg.content;
-              if (typeof content === "string") return content;
-              if (Array.isArray(content)) {
-                return content
-                  .filter((c: any) => typeof c === "object" && c.type === "text")
-                  .map((c: any) => c.text)
-                  .join(" ");
-              }
-              return "";
-            })
-            .filter((text: string) => text.trim().length > 0)
-            .join("\n");
-        }
-      } catch (error) {
-        console.error("Failed to extract transcript from messages:", error);
-      }
-    }
-
-    if (!transcriptText || transcriptText.trim().length === 0) {
-      console.warn("No transcript available for diary generation");
-      await ctx.runMutation(internal.callJobs.updateCallSessionMetadata, {
-        callSessionId: args.callSessionId,
-        metadata: { diaryError: "No transcript available" },
-      });
-      return {
-        success: false,
-        error: "No transcript available",
-      };
-    }
-
-    if (transcriptText.length > MAX_TRANSCRIPT_LENGTH) {
-      console.warn(`Transcript too long (${transcriptText.length} chars), truncating to ${MAX_TRANSCRIPT_LENGTH}`);
-      transcriptText = transcriptText.substring(0, MAX_TRANSCRIPT_LENGTH) + "\n\n[Transcript truncated due to length]";
-    }
-
-    // Generate diary content using OpenAI client
+    // Use VAPI summary if available, otherwise generate with OpenAI from transcript
     let diaryContent: string;
-    try {
-      diaryContent = await openaiClient.generateDiary({
-        transcript: transcriptText,
-      });
-      console.log("Generated diary content from call transcript");
-    } catch (error) {
-      console.error("OpenAI API error during diary generation:", error);
-      const errorMsg = `Failed to generate diary: ${error instanceof Error ? error.message : String(error)}`;
-      await ctx.runMutation(internal.callJobs.updateCallSessionMetadata, {
-        callSessionId: args.callSessionId,
-        metadata: { diaryError: errorMsg },
-      });
-      return {
-        success: false,
-        error: errorMsg,
-      };
+    if (args.summary && args.summary.trim().length > 0) {
+      // Use the summary from VAPI's analysisPlan.summaryPlan
+      diaryContent = args.summary.trim();
+      console.log("Using VAPI summary for diary content");
+    } else {
+      // Extract transcript text for OpenAI generation
+      let transcriptText = args.transcript || "";
+      
+      if (!transcriptText && args.messages) {
+        try {
+          if (Array.isArray(args.messages)) {
+            transcriptText = args.messages
+              .filter((msg: any) => {
+                if (!msg || typeof msg !== "object") return false;
+                const hasUserRole = msg.role === "user" || msg.role === "assistant";
+                const content = msg.content;
+                if (typeof content === "string") return hasUserRole && content;
+                if (Array.isArray(content)) {
+                  return hasUserRole && content.some((c: any) => 
+                    typeof c === "object" && c.type === "text" && c.text
+                  );
+                }
+                return false;
+              })
+              .map((msg: any) => {
+                const content = msg.content;
+                if (typeof content === "string") return content;
+                if (Array.isArray(content)) {
+                  return content
+                    .filter((c: any) => typeof c === "object" && c.type === "text")
+                    .map((c: any) => c.text)
+                    .join(" ");
+                }
+                return "";
+              })
+              .filter((text: string) => text.trim().length > 0)
+              .join("\n");
+          }
+        } catch (error) {
+          console.error("Failed to extract transcript from messages:", error);
+        }
+      }
+
+      if (!transcriptText || transcriptText.trim().length === 0) {
+        console.warn("No transcript or summary available for diary generation");
+        await ctx.runMutation(internal.callJobs.updateCallSessionMetadata, {
+          callSessionId: args.callSessionId,
+          metadata: { diaryError: "No transcript or summary available" },
+        });
+        return {
+          success: false,
+          error: "No transcript or summary available",
+        };
+      }
+
+      if (transcriptText.length > MAX_TRANSCRIPT_LENGTH) {
+        console.warn(`Transcript too long (${transcriptText.length} chars), truncating to ${MAX_TRANSCRIPT_LENGTH}`);
+        transcriptText = transcriptText.substring(0, MAX_TRANSCRIPT_LENGTH) + "\n\n[Transcript truncated due to length]";
+      }
+      // Fall back to OpenAI generation if no summary available
+      try {
+        diaryContent = await openaiClient.generateDiary({
+          transcript: transcriptText,
+        });
+        console.log("Generated diary content from call transcript using OpenAI");
+      } catch (error) {
+        console.error("OpenAI API error during diary generation:", error);
+        const errorMsg = `Failed to generate diary: ${error instanceof Error ? error.message : String(error)}`;
+        await ctx.runMutation(internal.callJobs.updateCallSessionMetadata, {
+          callSessionId: args.callSessionId,
+          metadata: { diaryError: errorMsg },
+        });
+        return {
+          success: false,
+          error: errorMsg,
+        };
+      }
     }
 
     let diaryId;
