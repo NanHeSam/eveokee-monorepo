@@ -55,6 +55,7 @@ import type * as webhooks_handlers_clerk from "../webhooks/handlers/clerk.js";
 import type * as webhooks_handlers_revenuecat from "../webhooks/handlers/revenuecat.js";
 import type * as webhooks_handlers_suno from "../webhooks/handlers/suno.js";
 import type * as webhooks_handlers_vapi from "../webhooks/handlers/vapi.js";
+import type * as webhooks_handlers_vapiAssistantRequest from "../webhooks/handlers/vapiAssistantRequest.js";
 import type * as webhooks_shared from "../webhooks/shared.js";
 
 import type {
@@ -119,6 +120,7 @@ declare const fullApi: ApiFromModules<{
   "webhooks/handlers/revenuecat": typeof webhooks_handlers_revenuecat;
   "webhooks/handlers/suno": typeof webhooks_handlers_suno;
   "webhooks/handlers/vapi": typeof webhooks_handlers_vapi;
+  "webhooks/handlers/vapiAssistantRequest": typeof webhooks_handlers_vapiAssistantRequest;
   "webhooks/shared": typeof webhooks_shared;
 }>;
 declare const fullApiWithMounts: typeof fullApi;

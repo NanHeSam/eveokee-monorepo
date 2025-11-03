@@ -141,3 +141,19 @@ export const getCallSettingsById = internalQuery({
     return settings;
   },
 });
+
+/**
+ * Get call settings by phone number (internal - used by VAPI assistant-request endpoint)
+ */
+export const getCallSettingsByPhoneE164 = internalQuery({
+  args: {
+    phoneE164: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const settings = await ctx.db
+      .query("callSettings")
+      .withIndex("by_phoneE164", (q) => q.eq("phoneE164", args.phoneE164))
+      .first();
+    return settings;
+  },
+});

@@ -118,7 +118,7 @@ export function buildVapiAssistant(
   
   // Build system prompt with user context
   const systemPrompt = buildSystemPrompt(
-    user.name ?? "",
+    user.name ?? "there",
     localTime,
     dayOfWeek
   );

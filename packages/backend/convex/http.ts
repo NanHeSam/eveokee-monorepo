@@ -9,11 +9,13 @@ import {
   CLERK_WEBHOOK_PATH,
   REVENUECAT_WEBHOOK_PATH,
   VAPI_WEBHOOK_PATH,
+  VAPI_ASSISTANT_REQUEST_PATH,
 } from "./utils/constants";
 import { sunoMusicGenerationCallback } from "./webhooks/handlers/suno";
 import { clerkWebhookHandler } from "./webhooks/handlers/clerk";
 import { revenueCatWebhookHandler } from "./webhooks/handlers/revenuecat";
 import { vapiWebhookHandler } from "./webhooks/handlers/vapi";
+import { vapiAssistantRequestHandler } from "./webhooks/handlers/vapiAssistantRequest";
 
 const http = httpRouter();
 
@@ -43,6 +45,13 @@ http.route({
   path: VAPI_WEBHOOK_PATH,
   method: "POST",
   handler: vapiWebhookHandler,
+});
+
+// Route: VAPI assistant-request (for inbound calls)
+http.route({
+  path: VAPI_ASSISTANT_REQUEST_PATH,
+  method: "POST",
+  handler: vapiAssistantRequestHandler,
 });
 
 export default http;
