@@ -211,7 +211,7 @@ Respond with "true" if the call should generate diary/music, "false" otherwise.`
 Do not mention that this is from a call or conversation. Write as if the user is naturally reflecting on their day.
 
 Format the summary as a diary entry that flows naturally and captures the essence of what was discussed.
-Exception if the call was a voicemail, then return "Voicemail" and nothing else.`
+However, if the call was a voicemail, then return "Voicemail" and nothing else.`
           },{
             role: "user",
             content: "Here is the transcript:\n\n{{transcript}}\n\n"
