@@ -88,7 +88,7 @@ export const scheduleVapiCall = action({
 
       // Call VAPI using the client service
       // The client handles timeout, error handling, and type safety
-      const response = await vapiClient.createCall({
+      const call = await vapiClient.createCall({
         customer: {
           number: args.phoneNumber,
         },
@@ -99,8 +99,8 @@ export const scheduleVapiCall = action({
         },
       });
 
-      // Extract call ID from properly typed response
-      const vapiCallId = response.id || response.callId;
+      // Extract call ID from properly typed response (SDK guarantees id is a string)
+      const vapiCallId = call.id;
 
       if (!vapiCallId) {
         throw new Error("VAPI API did not return a call ID");
@@ -109,12 +109,12 @@ export const scheduleVapiCall = action({
       await ctx.runMutation(internal.callJobs.updateCallJobStatus, {
         jobId: args.jobId,
         status: "scheduled",
-        vapiCallId: typeof vapiCallId === "string" ? vapiCallId : String(vapiCallId),
+        vapiCallId,
       });
 
       return {
         success: true,
-        vapiCallId: typeof vapiCallId === "string" ? vapiCallId : String(vapiCallId),
+        vapiCallId,
       };
     } catch (error) {
       console.error("Failed to schedule VAPI call:", error);

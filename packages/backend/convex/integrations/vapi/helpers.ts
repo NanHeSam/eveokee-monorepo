@@ -4,22 +4,14 @@
  */
 
 import { Doc } from "../../_generated/dataModel";
+import { Vapi } from "@vapi-ai/server-sdk";
 import { getSystemPrompt, SystemPromptParams } from "./systemPrompt";
 import {
   DEFAULT_VOICE_ID,
-  VAPI_TRANSCRIBER_MODEL,
-  VAPI_TRANSCRIBER_LANGUAGE,
   VAPI_TRANSCRIBER_PROVIDER,
   VAPI_MODEL_NAME,
-  VAPI_MODEL_PROVIDER,
   VAPI_VOICE_MODEL,
-  VAPI_VOICE_PROVIDER,
-  VAPI_FIRST_MESSAGE_MODE,
   VAPI_ASSISTANT_NAME,
-  VAPI_VOICEMAIL_MESSAGE,
-  VAPI_END_CALL_MESSAGE,
-  VAPI_USER_NAME_FALLBACK,
-  HANGUP_TOOL_ID,
 } from "../../utils/constants";
 
 /**
@@ -104,55 +96,6 @@ export function buildSystemPrompt(
 }
 
 /**
- * VAPI assistant configuration type
- */
-type VapiAssistant = {
-  transcriber: {
-    model: string;
-    language: string;
-    provider: string;
-  };
-  model: {
-    messages: Array<{ content: string; role: string }>;
-    model: string;
-    provider: string;
-    toolIds?: string[];
-    tools?: Array<{
-      type: string;
-      function: {
-        name: string;
-      };
-    }>;
-  };
-  voice: {
-    voiceId: string;
-    model: string;
-    provider: string;
-  };
-  firstMessage: string;
-  firstMessageMode: string;
-  name: string;
-  voicemailMessage: string;
-  endCallMessage: string;
-  server: {
-    url: string;
-  };
-  credentialIds?: string[];
-  analysisPlan?: {
-    successEvaluationPlan?: {
-      rubric: "PassFail";
-      messages: Array<{ role: string; content: string }>;
-      enabled: boolean;
-      timeoutSeconds?: number;
-    };
-    summaryPlan?: {
-      messages: Array<{ role: string; content: string }>;
-    };
-  };
-  serverMessages?: Array<string>;
-};
-
-/**
  * Construct a VAPI assistant configuration object customized for a scheduled call.
  *
  * @param user - User document; `user.name` is used in the system prompt (falls back to "there" if absent)
@@ -160,7 +103,7 @@ type VapiAssistant = {
  * @param scheduledForUTC - UTC timestamp (milliseconds since epoch) when the call is scheduled
  * @param webhookUrl - URL for the assistant's webhook server to receive call events
  * @param credentialIds - Optional list of credential IDs to use for the assistant calls
- * @returns A VAPI assistant object containing transcriber, model (with system message), voice, messaging defaults, and server configuration (including `url`)
+ * @returns A VAPI assistant object using SDK types containing transcriber, model (with system message), voice, messaging defaults, and server configuration (including `url`)
  */
 export function buildVapiAssistant(
   user: Doc<"users">,
@@ -168,57 +111,61 @@ export function buildVapiAssistant(
   scheduledForUTC: number,
   webhookUrl: string,
   credentialIds?: string[]
-): VapiAssistant {
+): Vapi.CreateAssistantDto {
   // Format local time and day
   const localTime = formatLocalTime(scheduledForUTC, callSettings.timezone);
   const dayOfWeek = getDayOfWeekLabel(scheduledForUTC, callSettings.timezone);
   
   // Build system prompt with user context
   const systemPrompt = buildSystemPrompt(
-    user.name || VAPI_USER_NAME_FALLBACK,
+    user.name ?? "",
     localTime,
     dayOfWeek
   );
   
-  const assistant: VapiAssistant = {
-    transcriber: {
-      model: VAPI_TRANSCRIBER_MODEL,
-      language: VAPI_TRANSCRIBER_LANGUAGE,
-      provider: VAPI_TRANSCRIBER_PROVIDER
-    },
-    model: {
-      messages: [
-        {
-          content: systemPrompt,
-          role: "system"
-        }
-      ],
-      model: VAPI_MODEL_NAME,
-      provider: VAPI_MODEL_PROVIDER,
-      // toolIds: [HANGUP_TOOL_ID],
-      tools: [
-        {
-          type: "endCall",
-          function: {
-            name: "hang_up",
-          }
-        }
-      ]
-    },
-    voice: {
-      voiceId: DEFAULT_VOICE_ID,
-      model: VAPI_VOICE_MODEL,
-      provider: VAPI_VOICE_PROVIDER
-    },
+  // Build transcriber with proper SDK type (DeepgramTranscriber)
+  const transcriber: Vapi.DeepgramTranscriber = {
+    provider: VAPI_TRANSCRIBER_PROVIDER,
+    model: Vapi.DeepgramTranscriberModel.Nova2,
+    language: Vapi.DeepgramTranscriberLanguage.En,
+  };
+  
+  // Build model with proper SDK type (OpenAiModel)
+  const model: Vapi.OpenAiModel = {
+    provider: "openai",
+    model: VAPI_MODEL_NAME,
+    messages: [
+      {
+        content: systemPrompt,
+        role: "system"
+      }
+    ],
+    tools: [
+      {
+        type: "endCall",
+      }
+    ]
+  };
+  
+  // Build voice with proper SDK type (CartesiaVoice)
+  // Note: SDK supports "sonic-2" but constant has "sonic-3", using "sonic-2" as fallback
+  const voice: Vapi.CartesiaVoice = {
+    provider: "cartesia",
+    voiceId: DEFAULT_VOICE_ID,
+    model: (VAPI_VOICE_MODEL === "sonic-3" ? "sonic-2" : VAPI_VOICE_MODEL) as Vapi.CartesiaVoice.Model,
+  };
+  
+  const assistant: Vapi.CreateAssistantDto = {
+    transcriber,
+    model,
+    voice,
     firstMessage: "",
-    firstMessageMode: VAPI_FIRST_MESSAGE_MODE,
+    firstMessageMode: Vapi.CreateAssistantDto.FirstMessageMode.AssistantSpeaksFirstWithModelGeneratedMessage,
     name: VAPI_ASSISTANT_NAME,
-    voicemailMessage: VAPI_VOICEMAIL_MESSAGE,
-    endCallMessage: VAPI_END_CALL_MESSAGE,
     server: {
       url: webhookUrl,
     },
-    serverMessages: ["end-of-call-report"],
+    serverMessages: [Vapi.CreateAssistantDto.ServerMessages.Item.EndOfCallReport],
     analysisPlan: {
       successEvaluationPlan: {
         rubric: "PassFail",

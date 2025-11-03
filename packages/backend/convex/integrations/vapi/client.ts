@@ -2,27 +2,21 @@
  * VAPI Client Service
  * Provides a clean interface for interacting with the VAPI API
  * with proper error handling, timeout management, and type safety
+ * Uses the official @vapi-ai/server-sdk for type-safe API interactions
  */
 
-import { VAPI_API_BASE_URL, VAPI_DEFAULT_TIMEOUT_MS } from "../../utils/constants";
+import { VapiClient as VapiSdkClient, Vapi, VapiError } from "@vapi-ai/server-sdk";
+import { VAPI_DEFAULT_TIMEOUT_MS } from "../../utils/constants";
 
 export interface VapiCallRequest {
-  phoneNumberId: string;
   customer: {
     number: string;
   };
-  assistant: object;
-  metadata: {
+  assistant: Vapi.CreateAssistantDto;
+  metadata?: {
     jobId: string;
     userId: string;
   };
-}
-
-export interface VapiCallResponse {
-  id?: string;
-  callId?: string;
-  status?: string;
-  [key: string]: unknown;
 }
 
 export interface VapiClientConfig {
@@ -33,8 +27,8 @@ export interface VapiClientConfig {
 }
 
 export class VapiClient {
+  private sdkClient: VapiSdkClient;
   private config: Required<VapiClientConfig>;
-  private readonly baseUrl = VAPI_API_BASE_URL;
 
   constructor(config: VapiClientConfig) {
     this.config = {
@@ -43,6 +37,11 @@ export class VapiClient {
       phoneNumberId: config.phoneNumberId,
       timeout: config.timeout ?? VAPI_DEFAULT_TIMEOUT_MS,
     };
+    
+    // Initialize the VAPI SDK client
+    this.sdkClient = new VapiSdkClient({
+      token: this.config.apiKey,
+    });
   }
 
   /**
@@ -51,45 +50,54 @@ export class VapiClient {
    * @returns Promise resolving to the call response
    * @throws Error if the API call fails or times out
    */
-  async createCall(request: Omit<VapiCallRequest, "phoneNumberId">): Promise<VapiCallResponse> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
-
+  async createCall(request: VapiCallRequest): Promise<Vapi.Call> {
     try {
-      const response = await fetch(`${this.baseUrl}/call`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.config.apiKey}`,
-          "Content-Type": "application/json",
+      // Convert timeout from milliseconds to seconds for SDK
+      const timeoutInSeconds = Math.floor(this.config.timeout / 1000);
+      
+      // Build the SDK request object
+      const createCallDto: Vapi.CreateCallDto = {
+        phoneNumberId: this.config.phoneNumberId,
+        customer: {
+          number: request.customer.number,
         },
-        body: JSON.stringify({
-          phoneNumberId: this.config.phoneNumberId,
-          ...request,
-        }),
-        signal: controller.signal,
+        assistant: request.assistant,
+      };
+
+      // Make the API call using the SDK
+      // HttpResponsePromise resolves directly to the response type
+      const response = await this.sdkClient.calls.create(createCallDto, {
+        timeoutInSeconds,
       });
 
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`VAPI API error: ${response.status} - ${errorText}`);
+      // Handle batch response (if multiple calls were created)
+      if ("results" in response) {
+        // This is a CallBatchResponse - extract the first call
+        const batchResponse = response as Vapi.CallBatchResponse;
+        if (batchResponse.results.length === 0) {
+          throw new Error("VAPI API returned batch response with no calls");
+        }
+        // Return the first call from the batch
+        const firstCall = batchResponse.results[0];
+        if (!firstCall.id) {
+          throw new Error("VAPI API returned batch call with no ID");
+        }
+        return firstCall;
       }
 
-      const data = (await response.json()) as VapiCallResponse;
-
+      // Regular single call response
+      const call = response as Vapi.Call;
+      
       // Validate that we have a call ID
-      const callId = data.id || data.callId;
-      if (!callId) {
+      if (!call.id) {
         throw new Error("VAPI API did not return a call ID");
       }
 
-      return data;
+      return call;
     } catch (error) {
-      clearTimeout(timeoutId);
-      
-      if (error instanceof Error && error.name === "AbortError") {
-        throw new Error(`VAPI API request timed out after ${this.config.timeout}ms`);
+      // Handle SDK-specific errors
+      if (error instanceof VapiError) {
+        throw new Error(`VAPI API error: ${error.statusCode} - ${error.message}`);
       }
       
       // Re-throw the error if it's already an Error instance
