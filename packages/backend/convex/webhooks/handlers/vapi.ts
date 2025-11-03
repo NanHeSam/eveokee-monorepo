@@ -14,7 +14,9 @@ import {
   extractDurationSeconds,
   extractDisposition,
   extractArtifact,
+  extractAnalysis,
 } from "../../models/webhooks/vapi";
+import { shouldGenerateDiaryFromCall } from "../../callDiaryWorkflow";
 import {
   errorResponse,
   successResponse,
@@ -113,6 +115,7 @@ export const vapiWebhookHandler = httpAction(async (ctx, req) => {
       const durationSeconds = extractDurationSeconds(event);
       const disposition = extractDisposition(event);
       const artifact = extractArtifact(event);
+      const analysis = extractAnalysis(event);
 
       // Step 8: Update call job status
       await ctx.runMutation(internal.callJobs.updateCallJobStatus, {
@@ -120,7 +123,14 @@ export const vapiWebhookHandler = httpAction(async (ctx, req) => {
         status: "completed",
       });
 
-      // Step 9: Create/update call session
+      // Step 9: Quality check - determine if diary/music should be generated
+      const qualityCheck = shouldGenerateDiaryFromCall(
+        durationSeconds,
+        event.message.endedReason,
+        analysis.successEvaluation
+      );
+
+      // Step 10: Create/update call session
       await ctx.runMutation(internal.callJobs.updateCallSession, {
         vapiCallId,
         jobId: job._id,
@@ -133,7 +143,13 @@ export const vapiWebhookHandler = httpAction(async (ctx, req) => {
           messages: artifact.messages,
           recording: artifact.recording,
           endedReason: event.message.endedReason,
+          qualityEvaluation: {
+            shouldGenerate: qualityCheck.shouldGenerate,
+            reason: qualityCheck.reason,
+            successEvaluation: analysis.successEvaluation,
+          },
         },
+        endOfCallReport: event.message,
       });
 
       jobLogger.info("Call completed", {
@@ -141,10 +157,12 @@ export const vapiWebhookHandler = httpAction(async (ctx, req) => {
         disposition,
         hasTranscript: !!artifact.transcript,
         hasMessages: !!artifact.messages,
+        qualityCheck: qualityCheck.reason,
+        shouldGenerate: qualityCheck.shouldGenerate,
       });
 
-      // Step 10: Schedule diary generation workflow if transcript available
-      if (artifact.transcript || artifact.messages) {
+      // Step 11: Schedule diary generation workflow if transcript/summary available AND quality check passes
+      if ((artifact.transcript || artifact.messages || analysis.summary) && qualityCheck.shouldGenerate) {
         try {
           const callSession = await ctx.runQuery(internal.callJobs.getCallSessionByVapiId, {
             vapiCallId,
@@ -164,9 +182,12 @@ export const vapiWebhookHandler = httpAction(async (ctx, req) => {
                 endedAt: callSession.endedAt,
                 transcript: artifact.transcript as string | undefined,
                 messages: artifact.messages,
+                summary: analysis.summary,
               });
               jobLogger.info("Scheduled diary generation workflow", {
                 callSessionId: callSession._id,
+                qualityReason: qualityCheck.reason,
+                hasSummary: !!analysis.summary,
               });
             }
           } else {
@@ -175,6 +196,11 @@ export const vapiWebhookHandler = httpAction(async (ctx, req) => {
         } catch (workflowError) {
           jobLogger.error("Failed to schedule diary generation workflow", workflowError);
         }
+      } else if (artifact.transcript || artifact.messages) {
+        // Transcript available but quality check failed
+        jobLogger.info("Skipping diary generation due to quality check", {
+          reason: qualityCheck.reason,
+        });
       }
 
       logWebhookEvent(jobLogger, "vapi", "processed", {

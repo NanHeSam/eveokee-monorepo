@@ -200,6 +200,7 @@ export default defineSchema({
     durationSec: v.optional(v.number()),
     disposition: v.optional(v.string()), // e.g., "completed", "no-answer", "busy"
     metadata: v.optional(v.any()), // Store any additional VAPI metadata
+    endOfCallReport: v.optional(v.any()), // Full VAPI end-of-call-report object
   })
     .index("by_userId", ["userId"])
     .index("by_callJobId", ["callJobId"])

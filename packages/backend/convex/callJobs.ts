@@ -374,6 +374,7 @@ export const updateCallSession = internalMutation({
     durationSec: v.optional(v.number()),
     disposition: v.optional(v.string()),
     metadata: v.optional(v.any()),
+    endOfCallReport: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
     let session = await ctx.db
@@ -398,6 +399,7 @@ export const updateCallSession = internalMutation({
         durationSec: args.durationSec,
         disposition: args.disposition,
         metadata: args.metadata,
+        endOfCallReport: args.endOfCallReport,
       });
       
       console.log(`Created call session ${sessionId} for VAPI call ID ${args.vapiCallId}`);
@@ -420,6 +422,10 @@ export const updateCallSession = internalMutation({
     
     if (args.metadata !== undefined) {
       updateData.metadata = args.metadata;
+    }
+    
+    if (args.endOfCallReport !== undefined) {
+      updateData.endOfCallReport = args.endOfCallReport;
     }
     
     await ctx.db.patch(session._id, updateData);

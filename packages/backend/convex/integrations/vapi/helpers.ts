@@ -4,21 +4,13 @@
  */
 
 import { Doc } from "../../_generated/dataModel";
+import { Vapi } from "@vapi-ai/server-sdk";
 import { getSystemPrompt, SystemPromptParams } from "./systemPrompt";
 import {
   DEFAULT_VOICE_ID,
-  VAPI_TRANSCRIBER_MODEL,
-  VAPI_TRANSCRIBER_LANGUAGE,
   VAPI_TRANSCRIBER_PROVIDER,
   VAPI_MODEL_NAME,
-  VAPI_MODEL_PROVIDER,
-  VAPI_VOICE_MODEL,
-  VAPI_VOICE_PROVIDER,
-  VAPI_FIRST_MESSAGE_MODE,
   VAPI_ASSISTANT_NAME,
-  VAPI_VOICEMAIL_MESSAGE,
-  VAPI_END_CALL_MESSAGE,
-  VAPI_USER_NAME_FALLBACK,
 } from "../../utils/constants";
 
 /**
@@ -103,36 +95,6 @@ export function buildSystemPrompt(
 }
 
 /**
- * VAPI assistant configuration type
- */
-type VapiAssistant = {
-  transcriber: {
-    model: string;
-    language: string;
-    provider: string;
-  };
-  model: {
-    messages: Array<{ content: string; role: string }>;
-    model: string;
-    provider: string;
-  };
-  voice: {
-    voiceId: string;
-    model: string;
-    provider: string;
-  };
-  firstMessage: string;
-  firstMessageMode: string;
-  name: string;
-  voicemailMessage: string;
-  endCallMessage: string;
-  server: {
-    url: string;
-  };
-  credentialIds?: string[];
-};
-
-/**
  * Construct a VAPI assistant configuration object customized for a scheduled call.
  *
  * @param user - User document; `user.name` is used in the system prompt (falls back to "there" if absent)
@@ -140,7 +102,7 @@ type VapiAssistant = {
  * @param scheduledForUTC - UTC timestamp (milliseconds since epoch) when the call is scheduled
  * @param webhookUrl - URL for the assistant's webhook server to receive call events
  * @param credentialIds - Optional list of credential IDs to use for the assistant calls
- * @returns A VAPI assistant object containing transcriber, model (with system message), voice, messaging defaults, and server configuration (including `url`)
+ * @returns A VAPI assistant object using SDK types containing transcriber, model (with system message), voice, messaging defaults, and server configuration (including `url`)
  */
 export function buildVapiAssistant(
   user: Doc<"users">,
@@ -148,46 +110,114 @@ export function buildVapiAssistant(
   scheduledForUTC: number,
   webhookUrl: string,
   credentialIds?: string[]
-): VapiAssistant {
+): Vapi.CreateAssistantDto {
   // Format local time and day
   const localTime = formatLocalTime(scheduledForUTC, callSettings.timezone);
   const dayOfWeek = getDayOfWeekLabel(scheduledForUTC, callSettings.timezone);
   
   // Build system prompt with user context
   const systemPrompt = buildSystemPrompt(
-    user.name || VAPI_USER_NAME_FALLBACK,
+    user.name ?? "there",
     localTime,
     dayOfWeek
   );
   
-  const assistant: VapiAssistant = {
-    transcriber: {
-      model: VAPI_TRANSCRIBER_MODEL,
-      language: VAPI_TRANSCRIBER_LANGUAGE,
-      provider: VAPI_TRANSCRIBER_PROVIDER
-    },
-    model: {
-      messages: [
-        {
-          content: systemPrompt,
-          role: "system"
-        }
-      ],
-      model: VAPI_MODEL_NAME,
-      provider: VAPI_MODEL_PROVIDER
-    },
-    voice: {
-      voiceId: DEFAULT_VOICE_ID,
-      model: VAPI_VOICE_MODEL,
-      provider: VAPI_VOICE_PROVIDER
-    },
+  // Build transcriber with proper SDK type (DeepgramTranscriber)
+  const transcriber: Vapi.DeepgramTranscriber = {
+    provider: VAPI_TRANSCRIBER_PROVIDER,
+    model: Vapi.DeepgramTranscriberModel.Nova2,
+    language: Vapi.DeepgramTranscriberLanguage.En,
+  };
+  
+  // Build model with proper SDK type (OpenAiModel)
+  const model: Vapi.OpenAiModel = {
+    provider: "openai",
+    model: VAPI_MODEL_NAME,
+    messages: [
+      {
+        content: systemPrompt,
+        role: "system"
+      }
+    ],
+    tools: [
+      {
+        type: "endCall",
+      }
+    ]
+  };
+  
+  // Build voice with proper SDK type (CartesiaVoice)
+  const voice: Vapi.CartesiaVoice = {
+    provider: "cartesia",
+    voiceId: DEFAULT_VOICE_ID,
+    model: Vapi.CartesiaVoice.Model.SonicMultilingual,
+  };
+  
+  const assistant: Vapi.CreateAssistantDto = {
+    transcriber,
+    model,
+    voice,
     firstMessage: "",
-    firstMessageMode: VAPI_FIRST_MESSAGE_MODE,
+    firstMessageMode: Vapi.CreateAssistantDto.FirstMessageMode.AssistantSpeaksFirstWithModelGeneratedMessage,
     name: VAPI_ASSISTANT_NAME,
-    voicemailMessage: VAPI_VOICEMAIL_MESSAGE,
-    endCallMessage: VAPI_END_CALL_MESSAGE,
     server: {
       url: webhookUrl,
+    },
+    serverMessages: [Vapi.CreateAssistantDto.ServerMessages.Item.EndOfCallReport],
+    analysisPlan: {
+      successEvaluationPlan: {
+        rubric: "PassFail",
+        messages: [
+          {
+            role: "system",
+            content: `Evaluate whether this call should generate a diary entry and music. 
+The call should NOT generate diary/music if:
+- It's a voicemail (no real conversation)
+- Very brief (< 15 seconds of actual conversation)
+- User explicitly says they're "just testing" or testing the system
+- Hurried pickup with no meaningful content
+- Technical test calls with no personal content
+
+The call SHOULD generate diary/music if:
+- Actual conversation about the user's day
+- Meaningful moments or experiences shared
+- Substantive dialogue beyond greetings
+- Personal reflections or events discussed
+
+Respond with "true" if the call should generate diary/music, "false" otherwise.`
+          },{
+            role: "user",
+            content: "Here is the transcript:\n\n{{transcript}}\n\n"
+          },{
+            role: "user",
+            content: "Here was the system prompt of the call:\n\n{{systemPrompt}}\n\n. Here is the ended reason of the call:\n\n{{endedReason}}\n\n"
+          }
+        ],
+        enabled: true,
+        timeoutSeconds: 30,
+      },
+      summaryPlan: {
+        messages: [
+          {
+            role: "system",
+            content: `Based on the conversation transcript from this wellness check-in call, create a personal diary entry that:
+- Captures the main thoughts, feelings, and experiences shared
+- Writes in first person as if the user is writing their own diary
+- Maintains an authentic, personal tone
+- Focuses on emotional insights and meaningful moments
+- Is concise but meaningful (200-400 words)
+- Uses the same language as the conversation
+
+Do not mention that this is from a call or conversation. Write as if the user is naturally reflecting on their day.
+
+Format the summary as a diary entry that flows naturally and captures the essence of what was discussed.
+However, if the call was a voicemail, then return "Voicemail" and nothing else.`
+          },{
+            role: "user",
+            content: "Here is the transcript:\n\n{{transcript}}\n\n"
+          }
+        ],
+      },
     },
   };
 
