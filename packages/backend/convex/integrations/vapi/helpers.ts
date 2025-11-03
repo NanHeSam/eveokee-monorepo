@@ -10,7 +10,6 @@ import {
   DEFAULT_VOICE_ID,
   VAPI_TRANSCRIBER_PROVIDER,
   VAPI_MODEL_NAME,
-  VAPI_VOICE_MODEL,
   VAPI_ASSISTANT_NAME,
 } from "../../utils/constants";
 
@@ -148,11 +147,10 @@ export function buildVapiAssistant(
   };
   
   // Build voice with proper SDK type (CartesiaVoice)
-  // Note: SDK supports "sonic-2" but constant has "sonic-3", using "sonic-2" as fallback
   const voice: Vapi.CartesiaVoice = {
     provider: "cartesia",
     voiceId: DEFAULT_VOICE_ID,
-    model: (VAPI_VOICE_MODEL === "sonic-3" ? "sonic-2" : VAPI_VOICE_MODEL) as Vapi.CartesiaVoice.Model,
+    model: Vapi.CartesiaVoice.Model.SonicMultilingual,
   };
   
   const assistant: Vapi.CreateAssistantDto = {
@@ -192,7 +190,7 @@ Respond with "true" if the call should generate diary/music, "false" otherwise.`
             content: "Here is the transcript:\n\n{{transcript}}\n\n"
           },{
             role: "user",
-            content: "Here was the system prompt of the call:\n\n\{\{systemPrompt}}\n\n. Here is the ended reason of the call:\n\n\{\{endedReason}}\n\n"
+            content: "Here was the system prompt of the call:\n\n{{systemPrompt}}\n\n. Here is the ended reason of the call:\n\n{{endedReason}}\n\n"
           }
         ],
         enabled: true,
@@ -213,7 +211,7 @@ Respond with "true" if the call should generate diary/music, "false" otherwise.`
 Do not mention that this is from a call or conversation. Write as if the user is naturally reflecting on their day.
 
 Format the summary as a diary entry that flows naturally and captures the essence of what was discussed.
-Excepion if the call was a voicemail, then return "Voicemail" and nothing else.`
+Exception if the call was a voicemail, then return "Voicemail" and nothing else.`
           },{
             role: "user",
             content: "Here is the transcript:\n\n{{transcript}}\n\n"

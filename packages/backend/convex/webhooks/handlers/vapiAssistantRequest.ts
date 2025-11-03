@@ -169,9 +169,6 @@ export const vapiAssistantRequestHandler = httpAction(async (ctx, req) => {
       },
     };
 
-    logger.info("Returning assistant configuration", {
-      response: JSON.stringify(response),
-    });
 
     return successResponse(response);
   } catch (error) {

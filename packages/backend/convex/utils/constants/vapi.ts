@@ -17,9 +17,6 @@ export const VAPI_TRANSCRIBER_PROVIDER = "deepgram";
 export const VAPI_MODEL_NAME = "gpt-4.1";
 export const VAPI_MODEL_PROVIDER = "openai";
 
-// Voice Configuration
-export const VAPI_VOICE_MODEL = "sonic-3";
-
 // Assistant Defaults
 export const VAPI_ASSISTANT_NAME = "eveokee";
 
