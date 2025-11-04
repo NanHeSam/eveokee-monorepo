@@ -27,18 +27,19 @@ function MusicListContent({ music }: { music: any[] }) {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 py-6">
+    <div className="max-w-4xl">
       {music.map((track, index) => (
-        <MusicCard
-          key={track._id}
-          musicId={track._id}
-          title={track.title}
-          imageUrl={track.imageUrl}
-          diaryContent={track.diaryContent}
-          diaryDate={track.diaryDate}
-          status={track.status}
-          onPlay={() => handlePlay(index)}
-        />
+        <div key={track._id} className={index !== music.length - 1 ? "border-b border-slate-200 dark:border-slate-700" : ""}>
+          <MusicCard
+            musicId={track._id}
+            title={track.title}
+            imageUrl={track.imageUrl}
+            diaryContent={track.diaryContent}
+            diaryDate={track.diaryDate}
+            status={track.status}
+            onPlay={() => handlePlay(index)}
+          />
+        </div>
       ))}
     </div>
   );
