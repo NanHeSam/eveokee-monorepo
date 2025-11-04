@@ -1,9 +1,11 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useTheme } from "@/hooks/useTheme";
+import { PlaylistProvider } from "@/hooks/usePlaylist";
 import LayoutRoute from "@/components/LayoutRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import RouteErrorBoundary from "@/components/RouteErrorBoundary";
+import { MiniPlayer } from "@/components/MiniPlayer";
 import Home from "@/pages/Home";
 import SignIn from "@/pages/SignIn";
 import SignUp from "@/pages/SignUp";
@@ -13,6 +15,7 @@ import Blog from "./pages/Blog";
 import Share from "./pages/Share";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
+import { MusicDetail } from "./pages/MusicDetail";
 import NotFound from "./pages/NotFound";
 
 /**
@@ -42,36 +45,42 @@ export default function App() {
             },
           }}
         />
-        <Router>
-          <Routes>
-            {/* Public routes with marketing navigation */}
-            <Route path="/" element={<LayoutRoute />} errorElement={<RouteErrorBoundary />}>
-              <Route index element={<Home />} />
-              <Route path="terms" element={<TermsAndConditions />} />
-              <Route path="privacy" element={<PrivacyPolicy />} />
-              <Route path="blog" element={<Blog />} />
-              <Route path="blog/:slug" element={<Blog />} />
-            </Route>
-            
-            {/* Dashboard routes with authenticated navigation */}
-            <Route path="/dashboard" element={<DashboardLayout />} errorElement={<RouteErrorBoundary />}>
-              <Route index element={<Dashboard />} />
-              <Route path="profile" element={<Profile />} />
-            </Route>
-            
-            {/* Routes with custom background layout */}
-            <Route path="/share" element={<LayoutRoute className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800" />} errorElement={<RouteErrorBoundary />}>
-              <Route path=":shareId" element={<Share />} />
-            </Route>
-            
-            {/* Routes without navigation */}
-            <Route path="/sign-in/*" element={<SignIn />} errorElement={<RouteErrorBoundary />} />
-            <Route path="/sign-up/*" element={<SignUp />} errorElement={<RouteErrorBoundary />} />
-            
-            {/* 404 Catch-all route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Router>
+        <PlaylistProvider>
+          <Router>
+            <Routes>
+              {/* Public routes with marketing navigation */}
+              <Route path="/" element={<LayoutRoute />} errorElement={<RouteErrorBoundary />}>
+                <Route index element={<Home />} />
+                <Route path="terms" element={<TermsAndConditions />} />
+                <Route path="privacy" element={<PrivacyPolicy />} />
+                <Route path="blog" element={<Blog />} />
+                <Route path="blog/:slug" element={<Blog />} />
+              </Route>
+
+              {/* Dashboard routes with authenticated navigation */}
+              <Route path="/dashboard" element={<DashboardLayout />} errorElement={<RouteErrorBoundary />}>
+                <Route index element={<Dashboard />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="music/:musicId" element={<MusicDetail />} />
+              </Route>
+
+              {/* Routes with custom background layout */}
+              <Route path="/share" element={<LayoutRoute className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800" />} errorElement={<RouteErrorBoundary />}>
+                <Route path=":shareId" element={<Share />} />
+              </Route>
+
+              {/* Routes without navigation */}
+              <Route path="/sign-in/*" element={<SignIn />} errorElement={<RouteErrorBoundary />} />
+              <Route path="/sign-up/*" element={<SignUp />} errorElement={<RouteErrorBoundary />} />
+
+              {/* 404 Catch-all route */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Router>
+
+          {/* Floating Mini Player */}
+          <MiniPlayer />
+        </PlaylistProvider>
       </div>
   );
 }

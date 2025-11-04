@@ -6,13 +6,9 @@ import {
   Music,
   Phone,
   TrendingUp,
-  Loader2,
-  ChevronLeft,
-  ChevronRight
 } from 'lucide-react';
 import ConvexQueryBoundary from '@/components/ConvexQueryBoundary';
-import MusicPlayer from '@/components/MusicPlayer';
-import { useState, useRef, useEffect } from 'react';
+import { MusicList } from '@/components/MusicList';
 
 /**
  * Render the dashboard page that displays a personalized welcome, key statistics, and diary entries.
@@ -74,24 +70,12 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Diary Entries Section */}
+        {/* Music Library Section */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-            Your Diary Entries
+            Your Music
           </h2>
-          {diaries && diaries.length === 0 ? (
-            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-              <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                No diary entries yet
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Start documenting your thoughts and generate your first musical memory!
-              </p>
-            </div>
-          ) : (
-            <DiaryCarousel diaries={diaries || []} />
-          )}
+          <MusicList />
         </div>
       </ConvexQueryBoundary>
     </div>
@@ -133,214 +117,6 @@ function StatCard({ icon, title, value, subtitle, color }: StatCardProps) {
       <p className="text-gray-500 dark:text-gray-500 text-xs">
         {subtitle}
       </p>
-    </div>
-  );
-}
-
-interface DiaryCarouselProps {
-  diaries: Array<{
-    _id: string;
-    content: string;
-    date: number;
-    primaryMusic?: {
-      _id: string;
-      title?: string;
-      imageUrl?: string;
-      audioUrl?: string;
-      duration?: number;
-      lyric?: string;
-      status: 'pending' | 'ready' | 'failed';
-    };
-  }>;
-}
-
-/**
- * Render a horizontal, scrollable carousel of diary entries with optional left/right scroll controls.
- *
- * @param diaries - Array of diary objects to display; each item is rendered as a DiaryCard inside the carousel.
- * @returns A JSX element containing the horizontal carousel of diary cards and conditional left/right scroll buttons.
- */
-function DiaryCarousel({ diaries }: DiaryCarouselProps) {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
-
-  useEffect(() => {
-    const checkScrollability = () => {
-      if (!scrollContainerRef.current) return;
-      
-      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
-      setCanScrollLeft(scrollLeft > 0);
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
-    };
-
-    checkScrollability();
-    const container = scrollContainerRef.current;
-    if (container) {
-      container.addEventListener('scroll', checkScrollability);
-      window.addEventListener('resize', checkScrollability);
-    }
-
-    return () => {
-      if (container) {
-        container.removeEventListener('scroll', checkScrollability);
-      }
-      window.removeEventListener('resize', checkScrollability);
-    };
-  }, []);
-
-  const scroll = (direction: 'left' | 'right') => {
-    if (!scrollContainerRef.current) return;
-    
-    const scrollAmount = 400;
-    const { scrollLeft } = scrollContainerRef.current;
-    const newScrollLeft = direction === 'left' 
-      ? scrollLeft - scrollAmount 
-      : scrollLeft + scrollAmount;
-    
-    scrollContainerRef.current.scrollTo({
-      left: newScrollLeft,
-      behavior: 'smooth'
-    });
-  };
-
-  return (
-    <div className="relative">
-      {/* Scroll buttons */}
-      {canScrollLeft && (
-        <button
-          onClick={() => scroll('left')}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg hover:shadow-xl transition-shadow"
-          aria-label="Scroll left"
-        >
-          <ChevronLeft className="w-6 h-6 text-gray-900 dark:text-white" />
-        </button>
-      )}
-
-      {/* Carousel container */}
-      <div
-        ref={scrollContainerRef}
-        className="flex gap-6 overflow-x-auto scrollbar-hide pb-4 px-1 snap-x snap-mandatory scroll-smooth"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
-        {diaries.map((diary) => (
-          <div
-            key={diary._id}
-            className="flex-shrink-0 w-[350px] snap-start"
-          >
-            <DiaryCard diary={diary} />
-          </div>
-        ))}
-      </div>
-
-      {canScrollRight && (
-        <button
-          onClick={() => scroll('right')}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg hover:shadow-xl transition-shadow"
-          aria-label="Scroll right"
-        >
-          <ChevronRight className="w-6 h-6 text-gray-900 dark:text-white" />
-        </button>
-      )}
-    </div>
-  );
-}
-
-interface DiaryCardProps {
-  diary: {
-    _id: string;
-    content: string;
-    date: number;
-    primaryMusic?: {
-      _id: string;
-      title?: string;
-      imageUrl?: string;
-      audioUrl?: string;
-      duration?: number;
-      lyric?: string;
-      status: 'pending' | 'ready' | 'failed';
-    };
-  };
-}
-
-/**
- * Renders a diary entry card showing the entry date, truncated content, optional music artwork or pending loader, and a linked music player when audio is ready.
- *
- * @param diary - The diary entry to display. May include an optional `primaryMusic` object with fields such as `imageUrl`, `audioUrl`, `title`, `duration`, `_id`, and `status`.
- * @returns The JSX element for the diary card.
- */
-function DiaryCard({ diary }: DiaryCardProps) {
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    });
-  };
-
-  const formatDuration = (seconds?: number) => {
-    if (!seconds) return '0:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const truncateContent = (content: string, maxLength: number = 150) => {
-    if (content.length <= maxLength) return content;
-    return content.substring(0, maxLength) + '...';
-  };
-
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-      {/* Music Image if available */}
-      {diary.primaryMusic?.imageUrl ? (
-        <div className="aspect-video bg-gradient-to-br from-purple-400 to-pink-400 overflow-hidden">
-          <img
-            src={diary.primaryMusic.imageUrl}
-            alt={diary.primaryMusic.title || 'Diary music'}
-            className="w-full h-full object-cover"
-          />
-        </div>
-      ) : diary.primaryMusic?.status === 'pending' ? (
-        <div className="aspect-video bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center">
-          <Loader2 className="w-12 h-12 text-gray-400 animate-spin" />
-        </div>
-      ) : null}
-
-      {/* Content */}
-      <div className="p-6">
-        {/* Date */}
-        <div className="mb-4 flex items-center text-sm text-gray-500 dark:text-gray-400">
-          <Calendar className="w-4 h-4 mr-2" />
-          {formatDate(diary.date)}
-        </div>
-
-        {/* Diary Content */}
-        <p className="text-gray-800 dark:text-gray-200 mb-4 line-clamp-4">
-          {truncateContent(diary.content)}
-        </p>
-
-        {/* Music Section */}
-        {diary.primaryMusic?.audioUrl && diary.primaryMusic?.status === 'ready' && (
-          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-center mb-3 text-sm text-gray-600 dark:text-gray-400">
-              <Music className="w-4 h-4 mr-2" />
-              <span className="font-medium">Linked Music</span>
-            </div>
-            {diary.primaryMusic.title && (
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
-                {diary.primaryMusic.title}
-              </h4>
-            )}
-            <MusicPlayer
-              audioId={diary.primaryMusic._id}
-              audioUrl={diary.primaryMusic.audioUrl}
-              duration={formatDuration(diary.primaryMusic.duration)}
-            />
-          </div>
-        )}
-      </div>
     </div>
   );
 }

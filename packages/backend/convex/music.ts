@@ -494,3 +494,98 @@ export const listPlaylistMusic = query({
   },
 });
 
+/**
+ * Get a single music track by ID with associated diary data
+ *
+ * Steps:
+ * 1. Authenticate user (optional - returns null if not authenticated)
+ * 2. Fetch music record by ID
+ * 3. Verify ownership and check if deleted
+ * 4. Fetch associated diary data if exists
+ * 5. Return music with enriched diary information
+ *
+ * Returns music track with diary data or null if not found/not authorized.
+ */
+export const getMusicById = query({
+  args: {
+    musicId: v.id("music"),
+  },
+  returns: v.union(
+    v.object({
+      _id: v.id("music"),
+      diaryId: v.optional(v.id("diaries")),
+      title: v.optional(v.string()),
+      imageUrl: v.optional(v.string()),
+      audioUrl: v.optional(v.string()),
+      duration: v.optional(v.number()),
+      lyric: v.optional(v.string()),
+      status: v.union(
+        v.literal("pending"),
+        v.literal("ready"),
+        v.literal("failed"),
+      ),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+      diaryDate: v.optional(v.number()),
+      diaryContent: v.optional(v.string()),
+      diaryTitle: v.optional(v.string()),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    // Step 1: Authenticate user (optional)
+    const authResult = await getOptionalCurrentUser(ctx);
+    if (!authResult) {
+      return null;
+    }
+    const { userId } = authResult;
+
+    // Step 2: Fetch music record
+    const music = await ctx.db.get(args.musicId);
+    if (!music) {
+      return null;
+    }
+
+    // Step 3: Verify ownership and check if deleted
+    if (music.userId !== userId || music.deletedAt !== undefined) {
+      return null;
+    }
+
+    // Step 4: Fetch associated diary data
+    let diaryData: { date: number; content: string; title?: string } | undefined;
+    if (music.diaryId) {
+      const diary = await ctx.db.get(music.diaryId);
+      if (diary) {
+        diaryData = {
+          date: diary.date,
+          content: diary.content,
+          title: diary.title,
+        };
+      }
+    }
+
+    // Step 5: Return music with enriched data
+    const imageUrl = music.imageUrl ?? music.metadata?.source_image_url;
+    const audioUrl =
+      music.audioUrl ??
+      music.metadata?.stream_audio_url ??
+      music.metadata?.source_audio_url;
+
+    return {
+      _id: music._id,
+      diaryId: music.diaryId ?? undefined,
+      title: music.title ?? undefined,
+      imageUrl: imageUrl ?? undefined,
+      audioUrl: audioUrl ?? undefined,
+      duration: music.duration ?? undefined,
+      lyric: music.lyric ?? undefined,
+      status: music.status,
+      createdAt: music.createdAt,
+      updatedAt: music.updatedAt,
+      diaryDate: diaryData?.date,
+      diaryContent: diaryData?.content,
+      diaryTitle: diaryData?.title,
+    };
+  },
+});
+
