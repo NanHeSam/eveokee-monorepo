@@ -1,5 +1,5 @@
 import { PlayIcon } from "lucide-react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import type { Id } from "@backend/convex/convex/_generated/dataModel";
 

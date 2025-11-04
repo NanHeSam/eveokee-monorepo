@@ -1,17 +1,16 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "convex/react";
 import { api } from "@backend/convex";
-import { ConvexQueryBoundary } from "../components/ConvexQueryBoundary";
-import { MusicPlayer } from "../components/MusicPlayer";
+import ConvexQueryBoundary from "../components/ConvexQueryBoundary";
+import MusicPlayer from "../components/MusicPlayer";
 import { ArrowLeftIcon, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import type { Id } from "@backend/convex/convex/_generated/dataModel";
 
 type Tab = "lyrics" | "diary";
 
-function MusicDetailContent({ musicId }: { musicId: Id<"music"> }) {
-  const music = useQuery(api.music.getMusicById, { musicId });
+function MusicDetailContent({ musicId, music }: { musicId: Id<"music">; music: any }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>("lyrics");
 
@@ -135,6 +134,10 @@ function MusicDetailContent({ musicId }: { musicId: Id<"music"> }) {
 
 export function MusicDetail() {
   const { musicId } = useParams<{ musicId: string }>();
+  const music = useQuery(
+    api.music.getMusicById,
+    musicId ? { musicId: musicId as Id<"music"> } : "skip"
+  );
 
   if (!musicId) {
     return (
@@ -145,8 +148,8 @@ export function MusicDetail() {
   }
 
   return (
-    <ConvexQueryBoundary>
-      <MusicDetailContent musicId={musicId as Id<"music">} />
+    <ConvexQueryBoundary queries={[{ data: music }]}>
+      <MusicDetailContent musicId={musicId as Id<"music">} music={music} />
     </ConvexQueryBoundary>
   );
 }

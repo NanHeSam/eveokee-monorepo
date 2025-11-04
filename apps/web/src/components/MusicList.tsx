@@ -1,12 +1,11 @@
 import { useQuery } from "convex/react";
 import { api } from "@backend/convex";
 import { MusicCard } from "./MusicCard";
-import { ConvexQueryBoundary } from "./ConvexQueryBoundary";
-import { Empty } from "./Empty";
+import ConvexQueryBoundary from "./ConvexQueryBoundary";
+import Empty from "./Empty";
 import { usePlaylist } from "../hooks/usePlaylist";
 
-function MusicListContent() {
-  const music = useQuery(api.music.listPlaylistMusic);
+function MusicListContent({ music }: { music: any[] }) {
   const { playTrack, setPlaylist } = usePlaylist();
 
   if (!music || music.length === 0) {
@@ -46,9 +45,11 @@ function MusicListContent() {
 }
 
 export function MusicList() {
+  const music = useQuery(api.music.listPlaylistMusic);
+
   return (
-    <ConvexQueryBoundary>
-      <MusicListContent />
+    <ConvexQueryBoundary queries={[{ data: music }]}>
+      <MusicListContent music={music || []} />
     </ConvexQueryBoundary>
   );
 }
