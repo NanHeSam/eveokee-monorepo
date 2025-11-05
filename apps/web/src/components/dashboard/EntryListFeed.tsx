@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Calendar, Music, FileText, Globe, Lock, FileEdit } from 'lucide-react';
+import { Calendar, Music } from 'lucide-react';
 import { FilterType, DiaryEntry, MusicEntry } from '@/pages/NewDashboard';
 import EntryListItem from './EntryListItem';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
@@ -30,7 +30,7 @@ export default function EntryListFeed({
   const filteredEntries = useMemo(() => {
     let combined: CombinedEntry[] = [];
 
-    if (selectedFilter === 'journals') {
+    if (selectedFilter === 'blogs') {
       combined = diaries.map(diary => ({
         id: `diary-${diary._id}`,
         type: 'diary' as const,
@@ -40,7 +40,7 @@ export default function EntryListFeed({
       return combined.sort((a, b) => b.date - a.date);
     }
 
-    if (selectedFilter === 'all' || selectedFilter === 'songs') {
+    if (selectedFilter === 'songs') {
       combined = music.map(m => ({
         id: `music-${m._id}`,
         type: 'music' as const,
@@ -50,24 +50,12 @@ export default function EntryListFeed({
       return combined.sort((a, b) => b.date - a.date);
     }
 
-    if (selectedFilter === 'drafts') {
-      return []; // No drafts for now
-    }
-
-    if (selectedFilter === 'public' || selectedFilter === 'private') {
-      return []; // No visibility filtering for now
-    }
-
     return combined.sort((a, b) => b.date - a.date);
   }, [diaries, music, selectedFilter]);
 
   const filters: { key: FilterType; label: string; icon: React.ReactNode }[] = [
-    { key: 'all', label: 'All', icon: <FileText className="w-4 h-4" /> },
-    { key: 'journals', label: 'Journals', icon: <Calendar className="w-4 h-4" /> },
     { key: 'songs', label: 'Songs', icon: <Music className="w-4 h-4" /> },
-    { key: 'drafts', label: 'Drafts', icon: <FileEdit className="w-4 h-4" /> },
-    { key: 'public', label: 'Public', icon: <Globe className="w-4 h-4" /> },
-    { key: 'private', label: 'Private', icon: <Lock className="w-4 h-4" /> },
+    { key: 'blogs', label: 'Blogs', icon: <Calendar className="w-4 h-4" /> },
   ];
 
   return (
@@ -99,12 +87,11 @@ export default function EntryListFeed({
         {filteredEntries.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-              {selectedFilter === 'journals' && <Calendar className="w-8 h-8 text-gray-400" />}
+              {selectedFilter === 'blogs' && <Calendar className="w-8 h-8 text-gray-400" />}
               {selectedFilter === 'songs' && <Music className="w-8 h-8 text-gray-400" />}
-              {selectedFilter !== 'journals' && selectedFilter !== 'songs' && <FileText className="w-8 h-8 text-gray-400" />}
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              No {selectedFilter === 'all' ? 'entries' : selectedFilter} yet
+              No {selectedFilter} yet
             </h3>
             <p className="text-gray-600 dark:text-gray-400">
               Start documenting your thoughts and generate your first musical memory!

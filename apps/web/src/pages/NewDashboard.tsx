@@ -7,7 +7,7 @@ import EntryListFeed from '@/components/dashboard/EntryListFeed';
 import DetailDrawer from '@/components/dashboard/DetailDrawer';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
 
-export type FilterType = 'all' | 'journals' | 'songs' | 'drafts' | 'public' | 'private';
+export type FilterType = 'songs' | 'blogs';
 
 export interface DiaryEntry {
   _id: Id<'diaries'>;
@@ -44,7 +44,7 @@ export default function NewDashboard() {
   const { user } = useUser();
   const diaries = useQuery(api.diaries.listDiaries);
   const music = useQuery(api.music.listPlaylistMusic);
-  const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
+  const [selectedFilter, setSelectedFilter] = useState<FilterType>('songs');
   const [selectedDiaryId, setSelectedDiaryId] = useState<Id<'diaries'> | null>(null);
 
   const handleCloseDrawer = () => {
