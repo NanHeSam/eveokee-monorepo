@@ -1,3 +1,4 @@
+import type { ChangeEvent } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Music, List } from 'lucide-react';
 import { useAudio } from '@/contexts/AudioContext';
 
@@ -19,7 +20,7 @@ export default function GlobalPlayerBar({ onTogglePlaylist }: GlobalPlayerBarPro
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSeek = (e: ChangeEvent<HTMLInputElement>) => {
     const newTime = parseFloat(e.target.value);
     seekTo(newTime);
   };
