@@ -3,6 +3,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -350,65 +351,74 @@ export const SignUpScreen = ({ route }: SignUpScreenProps) => {
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.container}
+          keyboardVerticalOffset={0}
         >
-          <View style={styles.content}>
-            <AuthHeader subtitle={`We sent a verification code to ${emailAddress}`} />
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.content}>
+              <AuthHeader subtitle={`We sent a verification code to ${emailAddress}`} />
 
-            <View style={styles.form}>
-              <View>
-                <Text style={[styles.label, { color: colors.textPrimary }]}>Verification Code</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { 
-                      backgroundColor: colors.surface,
-                      borderColor: colors.border,
-                      color: colors.textPrimary,
-                    }
-                  ]}
-                  placeholder="Enter 6-digit code"
-                  placeholderTextColor={colors.textMuted}
-                  value={code}
-                  onChangeText={setCode}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!isLoading}
+              <View style={styles.form}>
+                <View>
+                  <Text style={[styles.label, { color: colors.textPrimary }]}>Verification Code</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      { 
+                        backgroundColor: colors.surface,
+                        borderColor: colors.border,
+                        color: colors.textPrimary,
+                      }
+                    ]}
+                    placeholder="Enter 6-digit code"
+                    placeholderTextColor={colors.textMuted}
+                    value={code}
+                    onChangeText={setCode}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!isLoading}
+                  />
+                </View>
+
+                <PrimaryButton
+                  onPress={handleVerify}
+                  text="Verify Email"
+                  isLoading={isLoading}
                 />
               </View>
 
-              <PrimaryButton
-                onPress={handleVerify}
-                text="Verify Email"
-                isLoading={isLoading}
-              />
+              <View style={styles.verificationActions}>
+                <TouchableOpacity 
+                  onPress={handleResendCode}
+                  hitSlop={8}
+                  disabled={isLoading}
+                >
+                  <Text style={[styles.resendLink, { color: colors.accentMint }, isLoading && styles.linkDisabled]}>
+                    Didn&apos;t receive code? Resend
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  onPress={() => setPendingVerification(false)}
+                  hitSlop={8}
+                  disabled={isLoading}
+                >
+                  <Text style={[styles.backLink, { color: colors.accentMint }, isLoading && styles.linkDisabled]}>
+                    ← Back to sign up
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
-            <View style={styles.verificationActions}>
-              <TouchableOpacity 
-                onPress={handleResendCode}
-                hitSlop={8}
-                disabled={isLoading}
-              >
-                <Text style={[styles.resendLink, { color: colors.accentMint }, isLoading && styles.linkDisabled]}>
-                  Didn&apos;t receive code? Resend
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                onPress={() => setPendingVerification(false)}
-                hitSlop={8}
-                disabled={isLoading}
-              >
-                <Text style={[styles.backLink, { color: colors.accentMint }, isLoading && styles.linkDisabled]}>
-                  ← Back to sign up
-                </Text>
-              </TouchableOpacity>
+            <View style={styles.footerWrapper}>
+              <AuthFooter showIcon={true} />
             </View>
-          </View>
-
-          <AuthFooter showIcon={true} />
+          </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
     );
@@ -420,49 +430,58 @@ export const SignUpScreen = ({ route }: SignUpScreenProps) => {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.container}
+        keyboardVerticalOffset={0}
       >
-        <View style={styles.content}>
-          <AuthHeader 
-            subtitle={isVerificationOnly ? `Complete verification for ${emailAddress}` : "Create an Account"} 
-            title="eveokee"
-            subtitleColor={colors.textPrimary}
-            titleColor={colors.accentMint}
-          />
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.content}>
+            <AuthHeader 
+              subtitle={isVerificationOnly ? `Complete verification for ${emailAddress}` : "Create an Account"} 
+              title="eveokee"
+              subtitleColor={colors.textPrimary}
+              titleColor={colors.accentMint}
+            />
 
-          <AuthForm
-            email={emailAddress}
-            password={password}
-            onEmailChange={setEmailAddress}
-            onPasswordChange={setPassword}
-            showPassword={!isVerificationOnly}
-            emailPlaceholder="Enter your email"
-            passwordPlaceholder="Create a password"
-            disabled={isLoading || isVerificationOnly}
-          />
+            <AuthForm
+              email={emailAddress}
+              password={password}
+              onEmailChange={setEmailAddress}
+              onPasswordChange={setPassword}
+              showPassword={!isVerificationOnly}
+              emailPlaceholder="Enter your email"
+              passwordPlaceholder="Create a password"
+              disabled={isLoading || isVerificationOnly}
+            />
 
-          <PrimaryButton
-            onPress={handleSignUp}
-            text={isVerificationOnly ? 'Send Verification Code' : 'Continue'}
-            isLoading={isLoading}
-          />
+            <PrimaryButton
+              onPress={handleSignUp}
+              text={isVerificationOnly ? 'Send Verification Code' : 'Continue'}
+              isLoading={isLoading}
+            />
 
-          <AuthDivider />
+            <AuthDivider />
 
-          <SocialAuthButtons
-            onGooglePress={handleGoogleSignUp}
-            onApplePress={handleAppleSignUp}
-            isGoogleLoading={isGoogleLoading}
-            isAppleLoading={isAppleLoading}
-          />
+            <SocialAuthButtons
+              onGooglePress={handleGoogleSignUp}
+              onApplePress={handleAppleSignUp}
+              isGoogleLoading={isGoogleLoading}
+              isAppleLoading={isAppleLoading}
+            />
 
-          <AuthNavigationLink
-            hint="Already have an account?"
-            linkText="Sign in"
-            onPress={handleSignIn}
-          />
-        </View>
+            <AuthNavigationLink
+              hint="Already have an account?"
+              linkText="Sign in"
+              onPress={handleSignIn}
+            />
+          </View>
 
-        <AuthFooter showIcon={true} />
+          <View style={styles.footerWrapper}>
+            <AuthFooter showIcon={true} />
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -475,12 +494,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 24,
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'space-between',
+    paddingVertical: 20,
   },
   content: {
     flex: 1,
     justifyContent: 'center',
     gap: 32,
+    minHeight: 400,
   },
   form: {
     gap: 20,
@@ -512,6 +536,10 @@ const styles = StyleSheet.create({
   },
   linkDisabled: {
     opacity: 0.5,
+  },
+  footerWrapper: {
+    marginTop: 'auto',
+    paddingTop: 20,
   },
 });
 

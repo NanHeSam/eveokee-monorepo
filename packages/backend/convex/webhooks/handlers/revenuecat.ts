@@ -82,6 +82,7 @@ export const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
   const appUserId = event.event.app_user_id;
   const productId = event.event.product_id;
   const store = event.event.store;
+  const environment = event.event.environment; // SANDBOX or PRODUCTION
 
   // Add event context to logger
   const eventLogger = logger.child({
@@ -89,11 +90,13 @@ export const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
     userId: appUserId,
     productId,
     store,
+    environment,
   });
 
   eventLogger.info("Webhook payload parsed", {
     hasEntitlements: !!event.event.entitlements,
     hasExpirationDate: !!event.event.expiration_at_ms,
+    environment, // Log environment to track sandbox vs production receipts
   });
 
   // Step 7: Validate user ID format
