@@ -4,7 +4,6 @@ import { useQuery } from 'convex/react';
 import { api } from '@backend/convex';
 import ConvexQueryBoundary from '@/components/ConvexQueryBoundary';
 import EntryListFeed from '@/components/dashboard/EntryListFeed';
-import MiniPlayerPanel from '@/components/dashboard/MiniPlayerPanel';
 import DetailDrawer from '@/components/dashboard/DetailDrawer';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
 
@@ -73,10 +72,10 @@ export default function NewDashboard() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 overflow-hidden">
         <ConvexQueryBoundary queries={[{ data: diaries }, { data: music }]}>
-          {/* Left Panel - 70% */}
-          <div className="flex-1 overflow-auto">
+          {/* Full Width Feed */}
+          <div className="h-full overflow-auto">
             <EntryListFeed
               diaries={diaries || []}
               music={music || []}
@@ -84,11 +83,6 @@ export default function NewDashboard() {
               onFilterChange={setSelectedFilter}
               onOpenDiary={handleOpenDiary}
             />
-          </div>
-
-          {/* Right Panel - 30% */}
-          <div className="w-[30%] border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-auto">
-            <MiniPlayerPanel music={music || []} />
           </div>
         </ConvexQueryBoundary>
       </div>

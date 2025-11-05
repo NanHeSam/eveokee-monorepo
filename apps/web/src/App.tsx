@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useTheme } from "@/hooks/useTheme";
 import { AudioProvider } from "@/contexts/AudioContext";
 import GlobalPlayerBar from "@/components/GlobalPlayerBar";
+import FloatingPlaylist from "@/components/FloatingPlaylist";
 import LayoutRoute from "@/components/LayoutRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import RouteErrorBoundary from "@/components/RouteErrorBoundary";
@@ -25,6 +27,8 @@ import NotFound from "./pages/NotFound";
 export default function App() {
   // Initialize theme globally
   useTheme();
+  
+  const [isPlaylistOpen, setIsPlaylistOpen] = useState(false);
 
   return (
     <AudioProvider>
@@ -74,7 +78,8 @@ export default function App() {
             {/* 404 Catch-all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-          <GlobalPlayerBar />
+          <GlobalPlayerBar onTogglePlaylist={() => setIsPlaylistOpen(!isPlaylistOpen)} />
+          <FloatingPlaylist isOpen={isPlaylistOpen} onClose={() => setIsPlaylistOpen(false)} />
         </Router>
       </div>
     </AudioProvider>

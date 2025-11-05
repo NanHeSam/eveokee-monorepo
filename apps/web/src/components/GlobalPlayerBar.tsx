@@ -1,7 +1,11 @@
-import { Play, Pause, SkipBack, SkipForward, Music } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Music, List } from 'lucide-react';
 import { useAudio } from '@/contexts/AudioContext';
 
-export default function GlobalPlayerBar() {
+interface GlobalPlayerBarProps {
+  onTogglePlaylist?: () => void;
+}
+
+export default function GlobalPlayerBar({ onTogglePlaylist }: GlobalPlayerBarProps) {
   const { currentTrack, isPlaying, currentTime, duration, toggleAudio, seekTo, pauseAudio } = useAudio();
 
   if (!currentTrack) {
@@ -90,6 +94,15 @@ export default function GlobalPlayerBar() {
                 >
                   <SkipForward className="w-5 h-5" />
                 </button>
+                {onTogglePlaylist && (
+                  <button
+                    onClick={onTogglePlaylist}
+                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                    title="Queue"
+                  >
+                    <List className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             </div>
 
