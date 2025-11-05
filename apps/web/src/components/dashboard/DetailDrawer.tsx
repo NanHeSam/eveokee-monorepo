@@ -181,6 +181,9 @@ export default function DetailDrawer({ diaryId, diaries, onClose }: DetailDrawer
                   <MusicPlayer
                     audioId={diary.primaryMusic._id}
                     audioUrl={diary.primaryMusic.audioUrl}
+                    title={diary.primaryMusic.title}
+                    imageUrl={diary.primaryMusic.imageUrl}
+                    diaryContent={diary.content}
                     duration={formatDuration(diary.primaryMusic.duration)}
                     className="bg-white dark:bg-gray-800 rounded-lg p-4"
                   />
