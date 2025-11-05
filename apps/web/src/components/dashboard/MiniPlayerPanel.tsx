@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Music, Play, Pause, SkipForward, Volume2 } from 'lucide-react';
-import { useAudioManager } from '@/hooks/useAudioManager';
+import { useAudio } from '@/contexts/AudioContext';
 import { MusicEntry } from '@/pages/NewDashboard';
 
 interface MiniPlayerPanelProps {
@@ -8,7 +8,7 @@ interface MiniPlayerPanelProps {
 }
 
 export default function MiniPlayerPanel({ music }: MiniPlayerPanelProps) {
-  const audioManager = useAudioManager();
+  const audioManager = useAudio();
 
   const readyMusic = useMemo(() => {
     return music.filter(m => m.status === 'ready' && m.audioUrl);
@@ -44,11 +44,30 @@ export default function MiniPlayerPanel({ music }: MiniPlayerPanelProps) {
   };
 
   const handlePlayTrack = async (trackId: string, audioUrl: string) => {
+    const track = readyMusic.find(m => m._id === trackId);
+    if (track) {
+      audioManager.setCurrentTrack({
+        id: track._id,
+        title: track.title || 'Untitled Song',
+        imageUrl: track.imageUrl,
+        duration: track.duration,
+        diaryContent: track.diaryContent,
+        audioUrl: track.audioUrl!,
+      });
+    }
     await audioManager.toggleAudio(trackId, audioUrl);
   };
 
   const handleNext = async () => {
     if (queue.length > 0 && queue[0].audioUrl) {
+      audioManager.setCurrentTrack({
+        id: queue[0]._id,
+        title: queue[0].title || 'Untitled Song',
+        imageUrl: queue[0].imageUrl,
+        duration: queue[0].duration,
+        diaryContent: queue[0].diaryContent,
+        audioUrl: queue[0].audioUrl,
+      });
       await audioManager.playAudio(queue[0]._id, queue[0].audioUrl);
     }
   };

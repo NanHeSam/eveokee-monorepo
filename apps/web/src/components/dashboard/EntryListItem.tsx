@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Calendar, Music, Play, Pause, Edit, Share2, Loader2, BookOpen } from 'lucide-react';
-import { useAudioManager } from '@/hooks/useAudioManager';
+import { useAudio } from '@/contexts/AudioContext';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
 
 interface EntryListItemProps {
@@ -37,7 +37,7 @@ interface EntryListItemProps {
 
 export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const audioManager = useAudioManager();
+  const audioManager = useAudio();
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -69,6 +69,14 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
 
     const handleRowClick = async () => {
       if (isReady && music.audioUrl) {
+        audioManager.setCurrentTrack({
+          id: music._id,
+          title: music.title || 'Untitled Song',
+          imageUrl: music.imageUrl,
+          duration: music.duration,
+          diaryContent: music.diaryContent,
+          audioUrl: music.audioUrl,
+        });
         await audioManager.toggleAudio(music._id, music.audioUrl);
       }
     };
@@ -213,6 +221,14 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
     const handlePlay = async (e: React.MouseEvent) => {
       e.stopPropagation();
       if (hasMusic && diary.primaryMusic?.audioUrl) {
+        audioManager.setCurrentTrack({
+          id: diary.primaryMusic._id,
+          title: diary.primaryMusic.title || 'Untitled Song',
+          imageUrl: undefined,
+          duration: diary.primaryMusic.duration,
+          diaryContent: diary.content,
+          audioUrl: diary.primaryMusic.audioUrl,
+        });
         await audioManager.toggleAudio(diary.primaryMusic._id, diary.primaryMusic.audioUrl);
       }
     };

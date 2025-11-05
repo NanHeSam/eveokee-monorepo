@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useTheme } from "@/hooks/useTheme";
+import { AudioProvider } from "@/contexts/AudioContext";
+import GlobalPlayerBar from "@/components/GlobalPlayerBar";
 import LayoutRoute from "@/components/LayoutRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import RouteErrorBoundary from "@/components/RouteErrorBoundary";
@@ -25,6 +27,7 @@ export default function App() {
   useTheme();
 
   return (
+    <AudioProvider>
       <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
         <Toaster
           position="top-center"
@@ -71,7 +74,9 @@ export default function App() {
             {/* 404 Catch-all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <GlobalPlayerBar />
         </Router>
       </div>
+    </AudioProvider>
   );
 }
