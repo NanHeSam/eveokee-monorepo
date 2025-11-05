@@ -17,6 +17,7 @@ export interface RevenueCatWebhookEvent {
     app_user_id: string;
     product_id: string;
     store: string;
+    environment?: "SANDBOX" | "PRODUCTION"; // Receipt environment (sandbox vs production)
     expiration_at_ms?: number;
     purchased_at_ms?: number;
     is_trial_conversion?: boolean;

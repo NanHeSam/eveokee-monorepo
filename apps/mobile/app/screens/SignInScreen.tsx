@@ -3,6 +3,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
@@ -219,49 +220,58 @@ export const SignInScreen = () => {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.container}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
-        <View style={styles.content}>
-          <AuthHeader 
-            subtitle="Login to" 
-            title="eveokee"
-            subtitleColor={colors.textPrimary}
-            titleColor={colors.accentMint}
-          />
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.content}>
+            <AuthHeader 
+              subtitle="Login to" 
+              title="eveokee"
+              subtitleColor={colors.textPrimary}
+              titleColor={colors.accentMint}
+            />
 
-          <AuthForm
-            email={identifier}
-            password={password}
-            onEmailChange={setIdentifier}
-            onPasswordChange={setPassword}
-            showPassword={true}
-            emailPlaceholder="Enter your email"
-            passwordPlaceholder="Enter your password"
-            disabled={isPasswordLoading}
-          />
+            <AuthForm
+              email={identifier}
+              password={password}
+              onEmailChange={setIdentifier}
+              onPasswordChange={setPassword}
+              showPassword={true}
+              emailPlaceholder="Enter your email"
+              passwordPlaceholder="Enter your password"
+              disabled={isPasswordLoading}
+            />
 
-          <PrimaryButton
-            onPress={handlePasswordSignIn}
-            text="Sign In"
-            isLoading={isPasswordLoading}
-          />
+            <PrimaryButton
+              onPress={handlePasswordSignIn}
+              text="Sign In"
+              isLoading={isPasswordLoading}
+            />
 
-          <AuthDivider />
+            <AuthDivider />
 
-          <SocialAuthButtons
-            onGooglePress={handleGoogleSignIn}
-            onApplePress={handleAppleSignIn}
-            isGoogleLoading={isGoogleLoading}
-            isAppleLoading={isAppleLoading}
-          />
+            <SocialAuthButtons
+              onGooglePress={handleGoogleSignIn}
+              onApplePress={handleAppleSignIn}
+              isGoogleLoading={isGoogleLoading}
+              isAppleLoading={isAppleLoading}
+            />
 
-          <AuthNavigationLink
-            hint="Don't have an account?"
-            linkText="Sign up"
-            onPress={handleSignUp}
-          />
-        </View>
+            <AuthNavigationLink
+              hint="Don't have an account?"
+              linkText="Sign up"
+              onPress={handleSignUp}
+            />
+          </View>
 
-        <AuthFooter showIcon={true} />
+          <View style={styles.footerWrapper}>
+            <AuthFooter showIcon={true} />
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -274,12 +284,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 24,
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'space-between',
+    paddingVertical: 20,
   },
   content: {
     flex: 1,
     justifyContent: 'center',
     gap: 32,
+    minHeight: 400,
+  },
+  footerWrapper: {
+    marginTop: 'auto',
+    paddingTop: 20,
   },
 });
 
