@@ -11,7 +11,7 @@ import TermsAndConditions from "@/pages/TermsAndConditions";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Blog from "./pages/Blog";
 import Share from "./pages/Share";
-import Dashboard from "./pages/Dashboard";
+import NewDashboard from "./pages/NewDashboard";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
@@ -55,7 +55,7 @@ export default function App() {
             
             {/* Dashboard routes with authenticated navigation */}
             <Route path="/dashboard" element={<DashboardLayout />} errorElement={<RouteErrorBoundary />}>
-              <Route index element={<Dashboard />} />
+              <Route index element={<NewDashboard />} />
               <Route path="profile" element={<Profile />} />
             </Route>
             
