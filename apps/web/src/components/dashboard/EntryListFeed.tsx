@@ -30,41 +30,32 @@ export default function EntryListFeed({
   const filteredEntries = useMemo(() => {
     let combined: CombinedEntry[] = [];
 
-    if (selectedFilter === 'all' || selectedFilter === 'journals' || selectedFilter === 'drafts' || selectedFilter === 'public' || selectedFilter === 'private') {
-      combined = [
-        ...combined,
-        ...diaries.map(diary => ({
-          id: `diary-${diary._id}`,
-          type: 'diary' as const,
-          date: diary.date,
-          diary,
-        })),
-      ];
+    if (selectedFilter === 'journals') {
+      combined = diaries.map(diary => ({
+        id: `diary-${diary._id}`,
+        type: 'diary' as const,
+        date: diary.date,
+        diary,
+      }));
+      return combined.sort((a, b) => b.date - a.date);
     }
 
     if (selectedFilter === 'all' || selectedFilter === 'songs') {
-      combined = [
-        ...combined,
-        ...music
-          .filter(m => {
-            const isDiaryPrimaryMusic = diaries.some(d => d.primaryMusic?._id === m._id);
-            return !isDiaryPrimaryMusic;
-          })
-          .map(m => ({
-            id: `music-${m._id}`,
-            type: 'music' as const,
-            date: m.diaryDate || m.createdAt,
-            music: m,
-          })),
-      ];
+      combined = music.map(m => ({
+        id: `music-${m._id}`,
+        type: 'music' as const,
+        date: m.diaryDate || m.createdAt,
+        music: m,
+      }));
+      return combined.sort((a, b) => b.date - a.date);
     }
 
     if (selectedFilter === 'drafts') {
-      combined = combined.filter(() => false); // No drafts for now
+      return []; // No drafts for now
     }
 
     if (selectedFilter === 'public' || selectedFilter === 'private') {
-      combined = combined.filter(() => false); // No visibility filtering for now
+      return []; // No visibility filtering for now
     }
 
     return combined.sort((a, b) => b.date - a.date);

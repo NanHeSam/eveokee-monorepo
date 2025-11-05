@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, Music, Play, Edit, Share2, Loader2 } from 'lucide-react';
+import { Calendar, Music, Play, Pause, Edit, Share2, Loader2, BookOpen } from 'lucide-react';
 import { useAudioManager } from '@/hooks/useAudioManager';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
 
@@ -28,6 +28,8 @@ interface EntryListItemProps {
       lyric?: string;
       status: 'pending' | 'ready' | 'failed';
       diaryContent?: string;
+      diaryId?: Id<'diaries'>;
+      imageUrl?: string;
     };
   };
   onOpenDiary: (diaryId: Id<'diaries'>) => void;
@@ -58,158 +60,262 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
     return text.substring(0, maxLength) + '...';
   };
 
-  const handleClick = () => {
-    if (entry.type === 'diary' && entry.diary) {
-      onOpenDiary(entry.diary._id);
-    }
-  };
+  if (entry.type === 'music' && entry.music) {
+    const music = entry.music;
+    const isReady = music.status === 'ready' && music.audioUrl;
+    const isPending = music.status === 'pending';
+    const isCurrentlyPlaying = audioManager.isCurrentAudio(music._id) && audioManager.isPlaying;
+    const hasDiary = !!music.diaryId && !!music.diaryContent;
 
-  const handlePlay = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    let audioUrl: string | undefined;
-    let audioId: string | undefined;
-    
-    if (entry.type === 'diary' && entry.diary?.primaryMusic?.audioUrl) {
-      audioUrl = entry.diary.primaryMusic.audioUrl;
-      audioId = entry.diary.primaryMusic._id;
-    } else if (entry.type === 'music' && entry.music?.audioUrl) {
-      audioUrl = entry.music.audioUrl;
-      audioId = entry.music._id;
-    }
-    
-    if (audioUrl && audioId) {
-      await audioManager.toggleAudio(audioId, audioUrl);
-    }
-  };
+    const handleRowClick = async () => {
+      if (isReady && music.audioUrl) {
+        await audioManager.toggleAudio(music._id, music.audioUrl);
+      }
+    };
 
-  const handleEdit = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    console.log('Edit clicked');
-  };
+    const handleViewJournal = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (music.diaryId) {
+        onOpenDiary(music.diaryId);
+      }
+    };
 
-  const handleShare = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    console.log('Share clicked');
-  };
+    const handleEdit = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      console.log('Edit clicked');
+    };
 
-  const hasMusic = entry.type === 'diary' 
-    ? entry.diary?.primaryMusic?.status === 'ready' && entry.diary?.primaryMusic?.audioUrl
-    : entry.music?.status === 'ready' && entry.music?.audioUrl;
+    const handleShare = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      console.log('Share clicked');
+    };
 
-  const isPending = entry.type === 'diary'
-    ? entry.diary?.primaryMusic?.status === 'pending'
-    : entry.music?.status === 'pending';
+    return (
+      <div
+        className={`relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-all group ${isReady ? 'cursor-pointer' : 'cursor-default'}`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={handleRowClick}
+      >
+        <div className="flex items-center gap-4">
+          {/* Image Thumbnail */}
+          <div className="flex-shrink-0">
+            {music.imageUrl ? (
+              <img
+                src={music.imageUrl}
+                alt={music.title || 'Album art'}
+                className="w-14 h-14 rounded-lg object-cover"
+              />
+            ) : (
+              <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
+                <Music className="w-6 h-6 text-white" />
+              </div>
+            )}
+          </div>
 
-  const displayContent = entry.type === 'diary'
-    ? entry.diary?.content || ''
-    : entry.music?.diaryContent || entry.music?.lyric || 'Untitled Song';
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            {/* Line 1: Song Title and Status */}
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white truncate">
+                {music.title || 'Untitled Song'}
+              </h3>
+              {isPending && (
+                <span className="text-xs px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded flex items-center gap-1 flex-shrink-0">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Generating
+                </span>
+              )}
+              {hasDiary && (
+                <span className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded flex-shrink-0">
+                  From journal
+                </span>
+              )}
+              {!hasDiary && isReady && (
+                <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded flex-shrink-0">
+                  No journal
+                </span>
+              )}
+            </div>
 
-  const displayTitle = entry.type === 'diary'
-    ? entry.diary?.title
-    : entry.music?.title;
+            {/* Line 2: Diary Content Preview (if exists) */}
+            {music.diaryContent && (
+              <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-1 mb-1">
+                {truncateText(music.diaryContent, 100)}
+              </p>
+            )}
 
-  const musicTitle = entry.type === 'diary'
-    ? entry.diary?.primaryMusic?.title
-    : entry.music?.title;
+            {/* Line 3: Metadata */}
+            <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+              <div className="flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                <span>{formatDate(entry.date)}</span>
+              </div>
+              {music.duration && (
+                <span>{formatDuration(music.duration)}</span>
+              )}
+            </div>
+          </div>
 
-  const musicDuration = entry.type === 'diary'
-    ? entry.diary?.primaryMusic?.duration
-    : entry.music?.duration;
+          {/* Hover Actions */}
+          {isHovered && isReady && (
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={handleRowClick}
+                className="p-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
+                title={isCurrentlyPlaying ? 'Pause' : 'Play'}
+              >
+                {isCurrentlyPlaying ? (
+                  <Pause className="w-4 h-4" />
+                ) : (
+                  <Play className="w-4 h-4" />
+                )}
+              </button>
+              {hasDiary && (
+                <button
+                  onClick={handleViewJournal}
+                  className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+                  title="View Journal"
+                >
+                  <BookOpen className="w-4 h-4" />
+                </button>
+              )}
+              <button
+                onClick={handleEdit}
+                className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                title="Edit"
+              >
+                <Edit className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleShare}
+                className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                title="Share"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
-  return (
-    <div
-      className="relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-all cursor-pointer group"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onClick={handleClick}
-    >
-      {/* Line 1: Date and Type Icon */}
-      <div className="flex items-center gap-2 mb-2">
-        <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-          {formatDate(entry.date)}
-        </span>
-        {entry.type === 'diary' && (
+  if (entry.type === 'diary' && entry.diary) {
+    const diary = entry.diary;
+    const hasMusic = diary.primaryMusic?.status === 'ready' && diary.primaryMusic?.audioUrl;
+    const isPending = diary.primaryMusic?.status === 'pending';
+
+    const handleClick = () => {
+      onOpenDiary(diary._id);
+    };
+
+    const handlePlay = async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (hasMusic && diary.primaryMusic?.audioUrl) {
+        await audioManager.toggleAudio(diary.primaryMusic._id, diary.primaryMusic.audioUrl);
+      }
+    };
+
+    const handleEdit = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      console.log('Edit clicked');
+    };
+
+    const handleShare = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      console.log('Share clicked');
+    };
+
+    return (
+      <div
+        className="relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-all cursor-pointer group"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={handleClick}
+      >
+        {/* Line 1: Date and Status */}
+        <div className="flex items-center gap-2 mb-2">
+          <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+            {formatDate(entry.date)}
+          </span>
           <span className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
             Journal
           </span>
-        )}
-        {entry.type === 'music' && (
-          <span className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">
-            Song
-          </span>
-        )}
-        {isPending && (
-          <span className="text-xs px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded flex items-center gap-1">
-            <Loader2 className="w-3 h-3 animate-spin" />
-            Generating
-          </span>
-        )}
-      </div>
-
-      {/* Line 2: Content Preview */}
-      <div className="mb-2">
-        {displayTitle && (
-          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
-            {displayTitle}
-          </h3>
-        )}
-        <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
-          {truncateText(displayContent)}
-        </p>
-      </div>
-
-      {/* Line 3: Metadata and Music Info */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-          {hasMusic && (
-            <>
-              <div className="flex items-center gap-1">
-                <Music className="w-4 h-4" />
-                <span>Linked: "{musicTitle || 'Untitled'}"</span>
-              </div>
-              <span className="text-xs">
-                {formatDuration(musicDuration)}
-              </span>
-            </>
-          )}
-          {!hasMusic && !isPending && entry.type === 'diary' && (
-            <span className="text-xs text-gray-400 dark:text-gray-500">
-              No music generated
+          {isPending && (
+            <span className="text-xs px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded flex items-center gap-1">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Generating
             </span>
           )}
         </div>
 
-        {/* Hover Actions */}
-        {isHovered && (
-          <div className="flex items-center gap-2">
-            {hasMusic && (
-              <button
-                onClick={handlePlay}
-                className="p-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
-                title="Play"
-              >
-                <Play className="w-4 h-4" />
-              </button>
+        {/* Line 2: Content Preview */}
+        <div className="mb-2">
+          {diary.title && (
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
+              {diary.title}
+            </h3>
+          )}
+          <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
+            {truncateText(diary.content)}
+          </p>
+        </div>
+
+        {/* Line 3: Metadata and Music Info */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+            {hasMusic && diary.primaryMusic && (
+              <>
+                <div className="flex items-center gap-1">
+                  <Music className="w-4 h-4" />
+                  <span>Linked: "{diary.primaryMusic.title || 'Untitled'}"</span>
+                </div>
+                <span className="text-xs">
+                  {formatDuration(diary.primaryMusic.duration)}
+                </span>
+              </>
             )}
-            <button
-              onClick={handleEdit}
-              className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-              title="Edit"
-            >
-              <Edit className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleShare}
-              className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-              title="Share"
-            >
-              <Share2 className="w-4 h-4" />
-            </button>
+            {!hasMusic && !isPending && (
+              <span className="text-xs text-gray-400 dark:text-gray-500">
+                No music generated
+              </span>
+            )}
           </div>
-        )}
+
+          {/* Hover Actions */}
+          {isHovered && (
+            <div className="flex items-center gap-2">
+              {hasMusic && (
+                <button
+                  onClick={handlePlay}
+                  className="p-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
+                  title="Play"
+                >
+                  <Play className="w-4 h-4" />
+                </button>
+              )}
+              <button
+                onClick={handleEdit}
+                className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                title="Edit"
+              >
+                <Edit className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleShare}
+                className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                title="Share"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return null;
 }
