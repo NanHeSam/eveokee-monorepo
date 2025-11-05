@@ -1,6 +1,6 @@
 import { Play, Music, Pause, Book, Settings } from 'lucide-react';
 import { usePostHog } from 'posthog-js/react';
-import { useAudioManager } from '../hooks/useAudioManager';
+import { useAudio } from '../contexts/AudioContext';
 import { getAndroidBetaLink } from '../utils/deviceUtils';
 import AndroidInviteForm from './AndroidInviteForm';
 
@@ -9,7 +9,7 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ onHearDemo }: HeroSectionProps) {
-  const audioManager = useAudioManager();
+  const audioManager = useAudio();
   const posthog = usePostHog();
   const androidBetaLink = getAndroidBetaLink();
   
@@ -17,6 +17,14 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
   const heroAudioId = 'hero-demo';
   
   const handleAudioToggle = async () => {
+    audioManager.setCurrentTrack({
+      id: heroAudioId,
+      title: 'Eveokee Demo',
+      imageUrl: undefined,
+      duration: undefined,
+      diaryContent: 'A demo of how your diary entries can become music',
+      audioUrl: demoAudioUrl,
+    });
     await audioManager.toggleAudio(heroAudioId, demoAudioUrl);
     
     // Call the original onHearDemo if provided
