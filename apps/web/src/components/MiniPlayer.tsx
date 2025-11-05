@@ -12,27 +12,7 @@ export function MiniPlayer() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const playerRef = useRef<HTMLDivElement>(null);
 
-  // Don't render if no track is loaded
-  if (!currentTrack) {
-    return null;
-  }
-
-  const isPlaying = audioManager.isPlaying && audioManager.isCurrentAudio(currentTrack._id);
-  const currentTime = audioManager.currentTime;
-  const duration = audioManager.duration;
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!playerRef.current) return;
-
-    const rect = playerRef.current.getBoundingClientRect();
-    setDragOffset({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
-    setIsDragging(true);
-  };
-
+  // Drag effect - must be before early return
   useEffect(() => {
     if (!isDragging) return;
 
@@ -62,6 +42,27 @@ export function MiniPlayer() {
       document.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isDragging, dragOffset]);
+
+  // Don't render if no track is loaded
+  if (!currentTrack) {
+    return null;
+  }
+
+  const isPlaying = audioManager.isPlaying && audioManager.isCurrentAudio(currentTrack._id);
+  const currentTime = audioManager.currentTime;
+  const duration = audioManager.duration;
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!playerRef.current) return;
+
+    const rect = playerRef.current.getBoundingClientRect();
+    setDragOffset({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+    setIsDragging(true);
+  };
 
   const handlePlayPause = () => {
     if (isPlaying) {

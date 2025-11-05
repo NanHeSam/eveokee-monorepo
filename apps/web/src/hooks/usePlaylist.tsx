@@ -94,6 +94,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
   return <PlaylistContext.Provider value={value}>{children}</PlaylistContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function usePlaylist() {
   const context = useContext(PlaylistContext);
   if (!context) {
