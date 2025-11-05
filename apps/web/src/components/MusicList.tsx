@@ -4,8 +4,25 @@ import { MusicCard } from "./MusicCard";
 import ConvexQueryBoundary from "./ConvexQueryBoundary";
 import Empty from "./Empty";
 import { usePlaylist } from "../hooks/usePlaylist";
+import type { Id } from "@backend/convex/convex/_generated/dataModel";
 
-function MusicListContent({ music }: { music: any[] }) {
+interface MusicTrack {
+  _id: Id<"music">;
+  diaryId?: Id<"diaries">;
+  title?: string;
+  imageUrl?: string;
+  audioUrl?: string;
+  duration?: number;
+  lyric?: string;
+  status: "pending" | "ready" | "failed";
+  createdAt: number;
+  updatedAt: number;
+  diaryDate?: number;
+  diaryContent?: string;
+  diaryTitle?: string;
+}
+
+function MusicListContent({ music }: { music: MusicTrack[] }) {
   const { playTrack, setPlaylist } = usePlaylist();
 
   if (!music || music.length === 0) {

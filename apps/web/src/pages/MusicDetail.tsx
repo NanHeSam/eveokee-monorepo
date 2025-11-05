@@ -10,7 +10,23 @@ import type { Id } from "@backend/convex/convex/_generated/dataModel";
 
 type Tab = "lyrics" | "diary";
 
-function MusicDetailContent({ musicId, music }: { musicId: Id<"music">; music: any }) {
+interface MusicData {
+  _id: Id<"music">;
+  diaryId?: Id<"diaries">;
+  title?: string;
+  imageUrl?: string;
+  audioUrl?: string;
+  duration?: number;
+  lyric?: string;
+  status: "pending" | "ready" | "failed";
+  createdAt: number;
+  updatedAt: number;
+  diaryDate?: number;
+  diaryContent?: string;
+  diaryTitle?: string;
+}
+
+function MusicDetailContent({ music }: { music: MusicData | null | undefined }) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>("lyrics");
 
@@ -149,7 +165,7 @@ export function MusicDetail() {
 
   return (
     <ConvexQueryBoundary queries={[{ data: music }]}>
-      <MusicDetailContent musicId={musicId as Id<"music">} music={music} />
+      <MusicDetailContent music={music} />
     </ConvexQueryBoundary>
   );
 }
