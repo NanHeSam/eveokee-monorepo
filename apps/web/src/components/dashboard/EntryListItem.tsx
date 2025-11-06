@@ -6,6 +6,7 @@ import { api } from '@backend/convex';
 import { useAudio } from '@/contexts/AudioContext';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
 import { FilterType } from '@/pages/NewDashboard';
+import toast from 'react-hot-toast';
 
 interface EntryListItemProps {
   entry: {
@@ -69,6 +70,7 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
   const deleteMusic = useMutation(api.music.softDeleteMusic);
   const deleteDiary = useMutation(api.diaries.deleteDiary);
   const toggleSharePrivacy = useMutation(api.sharing.toggleSharePrivacy);
+  const createShareLink = useMutation(api.sharing.createShareLink);
   
   // Get current tab from URL to preserve it when navigating
   const currentTab = (searchParams.get('tab') as FilterType) || 'songs';
@@ -129,9 +131,50 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
       }
     };
 
-    const handleShare = (e: React.MouseEvent) => {
+    const handleShare = async (e: React.MouseEvent) => {
       e.stopPropagation();
-      console.log('Share clicked');
+      
+      if (!music._id) {
+        toast.error('No music available to share');
+        return;
+      }
+
+      if (music.status !== 'ready') {
+        toast.error('Music is not ready to be shared yet');
+        return;
+      }
+
+      try {
+        const { shareUrl } = await createShareLink({
+          musicId: music._id,
+        });
+
+        // Try Web Share API first, fallback to clipboard
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: music.title || 'Check out this music from eveokee',
+              text: `Check out this music from eveokee: ${music.title || 'Untitled'}`,
+              url: shareUrl,
+            });
+            toast.success('Shared!');
+          } catch (error) {
+            // User cancelled the share dialog - this is normal behavior
+            if (error instanceof Error && error.name !== 'AbortError') {
+              console.error('Error sharing:', error);
+              // Fall through to clipboard fallback
+              await navigator.clipboard.writeText(shareUrl);
+              toast.success('Link copied to clipboard!');
+            }
+          }
+        } else {
+          await navigator.clipboard.writeText(shareUrl);
+          toast.success('Link copied to clipboard!');
+        }
+      } catch (error) {
+        console.error('Error creating share link:', error);
+        toast.error('Failed to create share link. Please try again.');
+      }
     };
 
     const handleDelete = async (e: React.MouseEvent) => {

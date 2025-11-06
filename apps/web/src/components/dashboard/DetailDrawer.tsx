@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Music, Edit, Share2, Lock, FileText, Trash2 } from 'lucide-react';
+import { X, Music, Edit, Share2, Lock, FileText, Trash2, Loader2 } from 'lucide-react';
 import { useMutation } from 'convex/react';
 import { api } from '@backend/convex';
 import { DiaryEntry, FilterType } from '@/pages/NewDashboard';
@@ -18,8 +18,10 @@ interface DetailDrawerProps {
 export default function DetailDrawer({ diaryId, diaries, onClose, returnTab }: DetailDrawerProps) {
   const navigate = useNavigate();
   const diary = diaries.find(d => d._id === diaryId);
+  const [isGenerating, setIsGenerating] = useState(false);
   const deleteDiary = useMutation(api.diaries.deleteDiary);
   const createShareLink = useMutation(api.sharing.createShareLink);
+  const startMusicGeneration = useMutation(api.music.startDiaryMusicGeneration);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -31,6 +33,15 @@ export default function DetailDrawer({ diaryId, diaries, onClose, returnTab }: D
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [onClose]);
+
+  // Reset generating state when music status changes
+  useEffect(() => {
+    if (diary?.primaryMusic) {
+      if (diary.primaryMusic.status === 'pending' || diary.primaryMusic.status === 'ready') {
+        setIsGenerating(false);
+      }
+    }
+  }, [diary?.primaryMusic?.status]);
 
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this memory entry? This will also delete any associated music. This action cannot be undone.')) {
@@ -94,6 +105,34 @@ export default function DetailDrawer({ diaryId, diaries, onClose, returnTab }: D
     }
   };
 
+  const handleGenerateMusic = async () => {
+    if (!diary || isGenerating) return;
+
+    setIsGenerating(true);
+    try {
+      const result = await startMusicGeneration({
+        content: diary.content,
+        diaryId: diary._id,
+      });
+
+      if (!result.success) {
+        toast.error(result.reason || 'Failed to start music generation');
+        setIsGenerating(false);
+        return;
+      }
+
+      toast.success('Music generation started! This usually takes 1-2 minutes.');
+      // Keep isGenerating true - the component will update when music status changes
+      // The diary will refresh with new primaryMusic status via the query
+    } catch (error) {
+      console.error('Failed to start music generation:', error);
+      toast.error('Failed to start music generation. Please try again.');
+      setIsGenerating(false);
+    }
+  };
+
+  const canShare = diary?.primaryMusic?.status === 'ready' && diary?.primaryMusic?._id;
+
   if (!diary) {
     return null;
   }
@@ -140,8 +179,13 @@ export default function DetailDrawer({ diaryId, diaries, onClose, returnTab }: D
             </button>
             <button
               onClick={handleShare}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              title="Share"
+              disabled={!canShare}
+              className={`p-2 rounded-lg transition-colors ${
+                canShare
+                  ? 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                  : 'opacity-50 cursor-not-allowed'
+              }`}
+              title={canShare ? 'Share' : 'No music available to share'}
             >
               <Share2 className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </button>
@@ -189,9 +233,21 @@ export default function DetailDrawer({ diaryId, diaries, onClose, returnTab }: D
                   <p className="text-sm font-medium text-red-800 dark:text-red-200">
                     Music generation failed
                   </p>
-                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-1 mb-3">
                     Please try generating again
                   </p>
+                  <button
+                    onClick={handleGenerateMusic}
+                    disabled={isGenerating}
+                    className={`px-4 py-2 bg-purple-600 text-white rounded-lg transition-colors font-medium text-sm flex items-center gap-2 ${
+                      isGenerating
+                        ? 'opacity-75 cursor-not-allowed'
+                        : 'hover:bg-purple-700'
+                    }`}
+                  >
+                    {isGenerating && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {isGenerating ? 'Generating...' : 'Retry Generation'}
+                  </button>
                 </div>
               )}
 
@@ -250,8 +306,17 @@ export default function DetailDrawer({ diaryId, diaries, onClose, returnTab }: D
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                   No music generated for this entry yet
                 </p>
-                <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium">
-                  Generate Music
+                <button
+                  onClick={handleGenerateMusic}
+                  disabled={isGenerating}
+                  className={`px-4 py-2 bg-purple-600 text-white rounded-lg transition-colors font-medium flex items-center gap-2 mx-auto ${
+                    isGenerating
+                      ? 'opacity-75 cursor-not-allowed'
+                      : 'hover:bg-purple-700'
+                  }`}
+                >
+                  {isGenerating && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isGenerating ? 'Generating...' : 'Generate Music'}
                 </button>
               </div>
             </div>
