@@ -73,7 +73,7 @@ export default function NewDashboard() {
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Top Bar */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between">
+        <div className="max-w-3xl mx-auto flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Welcome back, {user?.firstName || 'there'}! 👋
           </h1>

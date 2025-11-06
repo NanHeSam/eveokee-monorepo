@@ -41,7 +41,7 @@ export default function DetailDrawer({ diaryId, diaries, onClose, returnTab }: D
         setIsGenerating(false);
       }
     }
-  }, [diary?.primaryMusic?.status]);
+  }, [diary?.primaryMusic?.status, diary?.primaryMusic]);
 
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this memory entry? This will also delete any associated music. This action cannot be undone.')) {

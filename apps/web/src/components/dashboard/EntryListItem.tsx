@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Calendar, Music, Play, Pause, Edit, Share2, Loader2, BookOpen, Trash2, EyeOff } from 'lucide-react';
+import { Music, Play, Pause, Edit, Share2, Loader2, BookOpen, Trash2, EyeOff } from 'lucide-react';
 import { useMutation } from 'convex/react';
 import { api } from '@backend/convex';
 import { useAudio } from '@/contexts/AudioContext';
@@ -65,7 +64,6 @@ interface EntryListItemProps {
 export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [isHovered, setIsHovered] = useState(false);
   const audioManager = useAudio();
   const deleteMusic = useMutation(api.music.softDeleteMusic);
   const deleteDiary = useMutation(api.diaries.deleteDiary);
@@ -192,8 +190,6 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
     return (
       <div
         className={`relative group pt-6 pb-6 border-b border-gray-200 dark:border-gray-700 ${isReady ? 'cursor-pointer' : 'cursor-default'}`}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
         <div className="flex gap-4">
           {/* Thumbnail */}
@@ -394,8 +390,6 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
     return (
       <div
         className="relative group cursor-pointer pt-6 pb-6 border-b border-gray-200 dark:border-gray-700"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
         {/* Title */}
         <button
@@ -495,20 +489,6 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
       }
     };
 
-    const handleViewJournal = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (music.diaryId) {
-        onOpenDiary(music.diaryId);
-      }
-    };
-
-    const handleEdit = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (music.diaryId) {
-        navigate(`/dashboard/memory/${music.diaryId}/edit?tab=${currentTab}`);
-      }
-    };
-
     const handleTogglePrivacy = async (e: React.MouseEvent) => {
       e.stopPropagation();
       try {
@@ -522,8 +502,6 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
     return (
       <div
         className={`relative group pt-6 pb-6 border-b border-gray-200 dark:border-gray-700 ${isReady ? 'cursor-pointer' : 'cursor-default'}`}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
         <div className="flex gap-4">
           {/* Thumbnail */}
@@ -580,9 +558,8 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
             {/* Title */}
             <div className="flex items-center gap-2 mb-2">
               <button
-                onClick={handleRowClick}
+                onClick={() => navigate(`/share/${shared.shareId}`)}
                 className="text-left flex-1"
-                disabled={!isReady}
               >
                 <h4 className={`text-lg font-bold leading-tight ${
                   isCurrentlyPlaying

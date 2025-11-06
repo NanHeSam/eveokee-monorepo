@@ -1,9 +1,9 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import MusicPlayer from "../MusicPlayer";
-import { useAudioManager } from "../../hooks/useAudioManager";
+import { useAudio } from "../../contexts/AudioContext";
 
-vi.mock("../../hooks/useAudioManager");
+vi.mock("../../contexts/AudioContext");
 
 interface MockAudioManager {
   currentAudioId: string | null;
@@ -17,6 +17,8 @@ interface MockAudioManager {
   toggleAudio: ReturnType<typeof vi.fn>;
   seekTo: ReturnType<typeof vi.fn>;
   isCurrentAudio: ReturnType<typeof vi.fn>;
+  currentTrack: null;
+  setCurrentTrack: ReturnType<typeof vi.fn>;
 }
 
 describe("MusicPlayer", () => {
@@ -35,9 +37,11 @@ describe("MusicPlayer", () => {
       toggleAudio: vi.fn(),
       seekTo: vi.fn(),
       isCurrentAudio: vi.fn((id: string) => id === mockAudioManager.currentAudioId),
+      currentTrack: null,
+      setCurrentTrack: vi.fn(),
     };
 
-    (useAudioManager as ReturnType<typeof vi.fn>).mockReturnValue(mockAudioManager);
+    (useAudio as ReturnType<typeof vi.fn>).mockReturnValue(mockAudioManager);
   });
 
   it("should render play button when not playing", () => {

@@ -111,7 +111,7 @@ export default function EntryListFeed({
     <div className="h-full flex flex-col">
       {/* Filter Tabs */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
-        <div className="flex gap-2 overflow-x-auto">
+        <div className="max-w-3xl mx-auto flex gap-2 overflow-x-auto">
           {filters.map(filter => (
             <button
               key={filter.key}

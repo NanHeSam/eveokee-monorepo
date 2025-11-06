@@ -21,13 +21,13 @@ export default function DashboardNavigation() {
 
   return (
     <nav className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-50 backdrop-blur-sm bg-white/95 dark:bg-gray-800/95">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-6">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link to="/dashboard" className="flex items-center hover:opacity-80 transition-opacity cursor-pointer">
-              <div className="w-10 h-10 bg-accent-mint rounded-xl flex items-center justify-center relative overflow-hidden shadow-lg">
-                <span className="text-white text-lg font-bold">e</span>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center relative overflow-hidden shadow-lg">
+                <img src="/icon.png" alt="eveokee" className="w-full h-full object-cover" />
               </div>
               <span className="ml-3 text-xl font-bold text-gray-900 dark:text-white">eveokee</span>
             </Link>
@@ -35,7 +35,7 @@ export default function DashboardNavigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-4">
+            <div className="ml-10 flex items-center space-x-4">
               <Link 
                 to="/dashboard" 
                 className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -60,7 +60,7 @@ export default function DashboardNavigation() {
               </Link>
               <Link 
                 to="/" 
-                className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                className="flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
               >
                 Back to Home
               </Link>
