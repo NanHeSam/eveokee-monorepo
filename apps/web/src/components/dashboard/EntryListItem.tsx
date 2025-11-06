@@ -27,6 +27,7 @@ interface EntryListItemProps {
     };
     music?: {
       _id: Id<'music'>;
+      audioId?: string;
       title?: string;
       audioUrl?: string;
       duration?: number;
@@ -46,6 +47,7 @@ interface EntryListItemProps {
       updatedAt: number;
       music: {
         _id: Id<'music'>;
+        audioId?: string;
         title?: string;
         imageUrl?: string;
         audioUrl?: string;
@@ -76,22 +78,23 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
 
   if (entry.type === 'music' && entry.music) {
     const music = entry.music;
+    const playableId = music.audioId ?? music._id;
     const isReady = music.status === 'ready' && music.audioUrl;
     const isPending = music.status === 'pending';
-    const isCurrentlyPlaying = audioManager.isCurrentAudio(music._id) && audioManager.isPlaying;
+    const isCurrentlyPlaying = audioManager.isCurrentAudio(playableId) && audioManager.isPlaying;
     const hasDiary = !!music.diaryId && !!music.diaryContent;
 
     const handleRowClick = async () => {
       if (isReady && music.audioUrl) {
         audioManager.setCurrentTrack({
-          id: music._id,
+          id: playableId,
           title: music.title || 'Untitled Song',
           imageUrl: music.imageUrl,
           duration: music.duration,
           diaryContent: music.diaryContent,
           audioUrl: music.audioUrl,
         });
-        await audioManager.toggleAudio(music._id, music.audioUrl);
+        await audioManager.toggleAudio(playableId, music.audioUrl);
       }
     };
 
@@ -449,23 +452,24 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
   if (entry.type === 'shared' && entry.shared && entry.music) {
     const shared = entry.shared;
     const music = entry.music;
+    const playableId = music.audioId ?? music._id;
     const isReady = music.status === 'ready' && music.audioUrl;
     const isPending = music.status === 'pending';
-    const isCurrentlyPlaying = audioManager.isCurrentAudio(music._id) && audioManager.isPlaying;
+    const isCurrentlyPlaying = audioManager.isCurrentAudio(playableId) && audioManager.isPlaying;
     const hasDiary = !!music.diaryId && !!music.diaryContent;
     const isPrivate = shared.isPrivate ?? false;
 
     const handleRowClick = async () => {
       if (isReady && music.audioUrl) {
         audioManager.setCurrentTrack({
-          id: music._id,
+          id: playableId,
           title: music.title || 'Untitled Song',
           imageUrl: music.imageUrl,
           duration: music.duration,
           diaryContent: music.diaryContent,
           audioUrl: music.audioUrl,
         });
-        await audioManager.toggleAudio(music._id, music.audioUrl);
+        await audioManager.toggleAudio(playableId, music.audioUrl);
       }
     };
 
