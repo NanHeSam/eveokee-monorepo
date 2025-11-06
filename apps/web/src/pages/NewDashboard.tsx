@@ -29,6 +29,7 @@ export interface DiaryEntry {
 
 export interface MusicEntry {
   _id: Id<'music'>;
+  audioId?: string;
   title?: string;
   imageUrl?: string;
   audioUrl?: string;

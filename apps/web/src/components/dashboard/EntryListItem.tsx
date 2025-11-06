@@ -6,6 +6,7 @@ import { useAudio } from '@/contexts/AudioContext';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
 import { FilterType } from '@/pages/NewDashboard';
 import toast from 'react-hot-toast';
+import { formatDate, formatDuration, truncateText } from '@/utils/formatting';
 
 interface EntryListItemProps {
   entry: {
@@ -72,27 +73,6 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
   
   // Get current tab from URL to preserve it when navigating
   const currentTab = (searchParams.get('tab') as FilterType) || 'songs';
-
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const formatDuration = (seconds?: number) => {
-    if (!seconds) return '0:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const truncateText = (text: string, maxLength: number = 120) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-  };
 
   if (entry.type === 'music' && entry.music) {
     const music = entry.music;

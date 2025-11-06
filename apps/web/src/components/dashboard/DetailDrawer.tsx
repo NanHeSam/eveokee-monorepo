@@ -7,6 +7,7 @@ import { DiaryEntry, FilterType } from '@/pages/NewDashboard';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
 import MusicPlayer from '@/components/MusicPlayer';
 import toast from 'react-hot-toast';
+import { formatDate, formatDuration } from '@/utils/formatting';
 
 interface DetailDrawerProps {
   diaryId: Id<'diaries'>;
@@ -37,7 +38,7 @@ export default function DetailDrawer({ diaryId, diaries, onClose, returnTab }: D
   // Reset generating state when music status changes
   useEffect(() => {
     if (diary?.primaryMusic) {
-      if (diary.primaryMusic.status === 'pending' || diary.primaryMusic.status === 'ready') {
+      if (diary.primaryMusic.status === 'ready' || diary.primaryMusic.status === 'failed') {
         setIsGenerating(false);
       }
     }
@@ -136,23 +137,6 @@ export default function DetailDrawer({ diaryId, diaries, onClose, returnTab }: D
   if (!diary) {
     return null;
   }
-
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const formatDuration = (seconds?: number) => {
-    if (!seconds) return '0:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
   return (
     <>

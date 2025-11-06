@@ -1,6 +1,7 @@
 import type { ChangeEvent } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Music, List } from 'lucide-react';
 import { useAudio } from '@/contexts/AudioContext';
+import { formatTime } from '@/utils/formatting';
 
 interface GlobalPlayerBarProps {
   onTogglePlaylist?: () => void;
@@ -12,13 +13,6 @@ export default function GlobalPlayerBar({ onTogglePlaylist }: GlobalPlayerBarPro
   if (!currentTrack) {
     return null;
   }
-
-  const formatTime = (seconds: number) => {
-    if (!seconds || isNaN(seconds)) return '0:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
   const handleSeek = (e: ChangeEvent<HTMLInputElement>) => {
     const newTime = parseFloat(e.target.value);

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Music, Play, Pause, SkipForward, Volume2 } from 'lucide-react';
 import { useAudio } from '@/contexts/AudioContext';
 import { MusicEntry } from '@/pages/NewDashboard';
+import { formatTime, formatDuration } from '@/utils/formatting';
 
 interface MiniPlayerPanelProps {
   music: MusicEntry[];
@@ -16,59 +17,50 @@ export default function MiniPlayerPanel({ music }: MiniPlayerPanelProps) {
 
   const currentTrack = useMemo(() => {
     if (!audioManager.currentAudioId) return null;
-    return readyMusic.find(m => m._id === audioManager.currentAudioId);
+    return readyMusic.find(m => (m.audioId ?? m._id) === audioManager.currentAudioId);
   }, [audioManager.currentAudioId, readyMusic]);
 
   const queue = useMemo(() => {
     if (!currentTrack) return readyMusic.slice(0, 5);
-    const currentIndex = readyMusic.findIndex(m => m._id === currentTrack._id);
+    const currentIndex = readyMusic.findIndex(m => (m.audioId ?? m._id) === (currentTrack.audioId ?? currentTrack._id));
     return readyMusic.slice(currentIndex + 1, currentIndex + 6);
   }, [currentTrack, readyMusic]);
 
   const recentlyPlayed = useMemo(() => {
     if (!currentTrack) return [];
-    const currentIndex = readyMusic.findIndex(m => m._id === currentTrack._id);
+    const currentIndex = readyMusic.findIndex(m => (m.audioId ?? m._id) === (currentTrack.audioId ?? currentTrack._id));
     if (currentIndex <= 0) return [];
     return readyMusic.slice(Math.max(0, currentIndex - 5), currentIndex).reverse();
   }, [currentTrack, readyMusic]);
 
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const formatDuration = (seconds?: number) => {
-    if (!seconds) return '0:00';
-    return formatTime(seconds);
-  };
-
   const handlePlayTrack = async (trackId: string, audioUrl: string) => {
     const track = readyMusic.find(m => m._id === trackId);
     if (track) {
+      const playableId = track.audioId ?? track._id;
       audioManager.setCurrentTrack({
-        id: track._id,
+        id: playableId,
         title: track.title || 'Untitled Song',
         imageUrl: track.imageUrl,
         duration: track.duration,
         diaryContent: track.diaryContent,
         audioUrl: track.audioUrl!,
       });
+      await audioManager.toggleAudio(playableId, audioUrl);
     }
-    await audioManager.toggleAudio(trackId, audioUrl);
   };
 
   const handleNext = async () => {
     if (queue.length > 0 && queue[0].audioUrl) {
+      const playableId = queue[0].audioId ?? queue[0]._id;
       audioManager.setCurrentTrack({
-        id: queue[0]._id,
+        id: playableId,
         title: queue[0].title || 'Untitled Song',
         imageUrl: queue[0].imageUrl,
         duration: queue[0].duration,
         diaryContent: queue[0].diaryContent,
         audioUrl: queue[0].audioUrl,
       });
-      await audioManager.playAudio(queue[0]._id, queue[0].audioUrl);
+      await audioManager.playAudio(playableId, queue[0].audioUrl);
     }
   };
 
@@ -129,7 +121,7 @@ export default function MiniPlayerPanel({ music }: MiniPlayerPanelProps) {
               </button>
               
               <button
-                onClick={() => audioManager.toggleAudio(currentTrack._id, currentTrack.audioUrl!)}
+                onClick={() => audioManager.toggleAudio(currentTrack.audioId ?? currentTrack._id, currentTrack.audioUrl!)}
                 className="p-4 bg-white text-accent-mint rounded-full hover:bg-gray-100 transition-colors"
               >
                 {audioManager.isPlaying ? (
