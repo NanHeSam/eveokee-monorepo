@@ -6,7 +6,7 @@ import { isValidEmail } from '@/lib/utils';
 import { CheckCircle } from 'lucide-react';
 
 interface AndroidInviteFormProps {
-  source: 'hero' | 'footer' | 'finalCTA';
+  source: 'hero' | 'footer' | 'finalCTA' | 'share';
   className?: string;
 }
 

@@ -5,6 +5,8 @@ import { api } from "@backend/convex";
 import MusicPlayer from "@/components/MusicPlayer";
 import { formatDistanceToNow } from "date-fns";
 import toast from "react-hot-toast";
+import { getAndroidBetaLink } from "@/utils/deviceUtils";
+import AndroidInviteForm from "@/components/AndroidInviteForm";
 
 const formatDuration = (seconds?: number): string => {
   if (!seconds) return "0:00";
@@ -229,40 +231,42 @@ export default function Share() {
                   Create your own music diary. Turn your thoughts into personalized songs.
                 </p>
                 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center">
-                  <a 
-                    href="https://apps.apple.com/app/eveokee"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:opacity-80 transition-opacity"
-                  >
-                    <img 
-                      src="/app-store-badge.svg"
-                      alt="Download on the App Store"
-                      className="h-[60px] w-auto"
-                    />
-                  </a>
-                  <a 
-                    href="https://play.google.com/store/apps/details?id=com.eveokee"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:opacity-80 transition-opacity"
-                  >
-                    <img 
-                      src="/google-play-badge.svg"
-                      alt="Get it on Google Play"
-                      className="h-[60px] w-auto"
-                    />
-                  </a>
-                  <button
-                    onClick={handleShare}
-                    className="inline-flex items-center justify-center px-6 py-4 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors whitespace-nowrap"
-                  >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                    </svg>
-                    Share This Music
-                  </button>
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center">
+                    <a 
+                      href="https://testflight.apple.com/join/aGT4PMED"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-full text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    >
+                      <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                      📱 iOS TestFlight
+                    </a>
+                    <a 
+                      href={getAndroidBetaLink()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-full text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    >
+                      <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                      📱 Android Beta
+                    </a>
+                    <button
+                      onClick={handleShare}
+                      className="inline-flex items-center justify-center px-6 py-4 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors whitespace-nowrap"
+                    >
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                      </svg>
+                      Share This Music
+                    </button>
+                  </div>
+                  <div className="text-center lg:text-left">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      Internal test — enter your Google Play email to request access
+                    </p>
+                    <AndroidInviteForm source="share" />
+                  </div>
                 </div>
               </div>
             </div>
