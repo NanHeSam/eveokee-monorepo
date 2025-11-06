@@ -275,7 +275,7 @@ export default function MiniPlayerPanel({ music }: MiniPlayerPanelProps) {
               No music tracks yet
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-              Generate your first song from a journal entry
+              Generate your first song from a memory entry
             </p>
           </div>
         )}

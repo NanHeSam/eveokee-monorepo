@@ -1,17 +1,25 @@
 import { useEffect } from 'react';
-import { X, Calendar, Music, Edit, Share2, Lock } from 'lucide-react';
-import { DiaryEntry } from '@/pages/NewDashboard';
+import { useNavigate } from 'react-router-dom';
+import { X, Music, Edit, Share2, Lock, FileText, Trash2 } from 'lucide-react';
+import { useMutation } from 'convex/react';
+import { api } from '@backend/convex';
+import { DiaryEntry, FilterType } from '@/pages/NewDashboard';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
 import MusicPlayer from '@/components/MusicPlayer';
+import toast from 'react-hot-toast';
 
 interface DetailDrawerProps {
   diaryId: Id<'diaries'>;
   diaries: DiaryEntry[];
   onClose: () => void;
+  returnTab?: FilterType;
 }
 
-export default function DetailDrawer({ diaryId, diaries, onClose }: DetailDrawerProps) {
+export default function DetailDrawer({ diaryId, diaries, onClose, returnTab }: DetailDrawerProps) {
+  const navigate = useNavigate();
   const diary = diaries.find(d => d._id === diaryId);
+  const deleteDiary = useMutation(api.diaries.deleteDiary);
+  const createShareLink = useMutation(api.sharing.createShareLink);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -23,6 +31,68 @@ export default function DetailDrawer({ diaryId, diaries, onClose }: DetailDrawer
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [onClose]);
+
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this memory entry? This will also delete any associated music. This action cannot be undone.')) {
+      try {
+        await deleteDiary({ diaryId });
+        onClose();
+      } catch (error) {
+        console.error('Failed to delete diary:', error);
+        alert('Failed to delete memory entry. Please try again.');
+      }
+    }
+  };
+
+  const handleEdit = () => {
+    const tab = returnTab || 'songs';
+    navigate(`/dashboard/memory/${diaryId}/edit?tab=${tab}`);
+    onClose();
+  };
+
+  const handleShare = async () => {
+    if (!diary?.primaryMusic?._id) {
+      toast.error('No music available to share');
+      return;
+    }
+
+    if (diary.primaryMusic.status !== 'ready') {
+      toast.error('Music is not ready to be shared yet');
+      return;
+    }
+
+    try {
+      const { shareUrl } = await createShareLink({
+        musicId: diary.primaryMusic._id,
+      });
+
+      // Try Web Share API first, fallback to clipboard
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: diary.primaryMusic.title || 'Check out this music from eveokee',
+            text: `Check out this music from eveokee: ${diary.primaryMusic.title || 'Untitled'}`,
+            url: shareUrl,
+          });
+          toast.success('Shared!');
+        } catch (error) {
+          // User cancelled the share dialog - this is normal behavior
+          if (error instanceof Error && error.name !== 'AbortError') {
+            console.error('Error sharing:', error);
+            // Fall through to clipboard fallback
+            await navigator.clipboard.writeText(shareUrl);
+            toast.success('Link copied to clipboard!');
+          }
+        }
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Link copied to clipboard!');
+      }
+    } catch (error) {
+      console.error('Error creating share link:', error);
+      toast.error('Failed to create share link. Please try again.');
+    }
+  };
 
   if (!diary) {
     return null;
@@ -58,26 +128,29 @@ export default function DetailDrawer({ diaryId, diaries, onClose }: DetailDrawer
         {/* Header */}
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-            Journal Entry
+            {diary.primaryMusic?.title || 'Music'}
           </h2>
           <div className="flex items-center gap-2">
             <button
+              onClick={handleEdit}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               title="Edit"
             >
               <Edit className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </button>
             <button
+              onClick={handleShare}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               title="Share"
             >
               <Share2 className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </button>
             <button
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              title="Toggle visibility"
+              onClick={handleDelete}
+              className="p-2 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+              title="Delete"
             >
-              <Lock className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
             </button>
             <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-2" />
             <button
@@ -92,38 +165,9 @@ export default function DetailDrawer({ diaryId, diaries, onClose }: DetailDrawer
 
         {/* Content */}
         <div className="p-6">
-          {/* Date */}
-          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-4">
-            <Calendar className="w-5 h-5" />
-            <span className="text-sm font-medium">
-              {formatDate(diary.date)}
-            </span>
-          </div>
-
-          {/* Title */}
-          {diary.title && (
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
-              {diary.title}
-            </h1>
-          )}
-
-          {/* Content */}
-          <div className="prose dark:prose-invert max-w-none mb-8">
-            <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">
-              {diary.content}
-            </p>
-          </div>
-
-          {/* Linked Music Section */}
+          {/* Music Section - Top Priority */}
           {diary.primaryMusic && (
-            <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-2 mb-4">
-                <Music className="w-5 h-5 text-purple-600" />
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Linked Music
-                </h3>
-              </div>
-
+            <div className="mb-8">
               {diary.primaryMusic.status === 'pending' && (
                 <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
                   <div className="flex items-center gap-3">
@@ -169,12 +213,6 @@ export default function DetailDrawer({ diaryId, diaries, onClose }: DetailDrawer
                     <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                       {diary.primaryMusic.title || 'Untitled'}
                     </h4>
-                    {diary.primaryMusic.lyric && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 italic">
-                        "{diary.primaryMusic.lyric.substring(0, 100)}
-                        {diary.primaryMusic.lyric.length > 100 ? '...' : ''}"
-                      </p>
-                    )}
                   </div>
 
                   {/* Music Player */}
@@ -206,7 +244,7 @@ export default function DetailDrawer({ diaryId, diaries, onClose }: DetailDrawer
 
           {/* No Music */}
           {!diary.primaryMusic && (
-            <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+            <div className="mb-8">
               <div className="text-center py-8 bg-gray-50 dark:bg-gray-900 rounded-lg">
                 <Music className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
@@ -218,6 +256,28 @@ export default function DetailDrawer({ diaryId, diaries, onClose }: DetailDrawer
               </div>
             </div>
           )}
+
+          {/* Journal Entry as Attachment */}
+          <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-2 mb-4">
+              <FileText className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Memory Entry
+              </h3>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {formatDate(diary.date)}
+              </span>
+            </div>
+
+            {/* Content */}
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+              <div className="prose dark:prose-invert max-w-none">
+                <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">
+                  {diary.content}
+                </p>
+              </div>
+            </div>
+          </div>
 
           {/* Metadata Footer */}
           <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">

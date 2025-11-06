@@ -17,6 +17,7 @@ import Blog from "./pages/Blog";
 import Share from "./pages/Share";
 import NewDashboard from "./pages/NewDashboard";
 import Profile from "./pages/Profile";
+import MemoryCompose from "./pages/MemoryCompose";
 import NotFound from "./pages/NotFound";
 
 /**
@@ -64,6 +65,8 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardLayout />} errorElement={<RouteErrorBoundary />}>
               <Route index element={<NewDashboard />} />
               <Route path="profile" element={<Profile />} />
+              <Route path="memory/new" element={<MemoryCompose />} />
+              <Route path="memory/:id/edit" element={<MemoryCompose />} />
             </Route>
             
             {/* Routes with custom background layout */}

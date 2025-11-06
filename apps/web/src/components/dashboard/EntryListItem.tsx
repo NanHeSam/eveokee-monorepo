@@ -1,12 +1,16 @@
 import { useState } from 'react';
-import { Calendar, Music, Play, Pause, Edit, Share2, Loader2, BookOpen } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Calendar, Music, Play, Pause, Edit, Share2, Loader2, BookOpen, Trash2, EyeOff } from 'lucide-react';
+import { useMutation } from 'convex/react';
+import { api } from '@backend/convex';
 import { useAudio } from '@/contexts/AudioContext';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
+import { FilterType } from '@/pages/NewDashboard';
 
 interface EntryListItemProps {
   entry: {
     id: string;
-    type: 'diary' | 'music';
+    type: 'diary' | 'music' | 'shared';
     date: number;
     diary?: {
       _id: Id<'diaries'>;
@@ -31,13 +35,43 @@ interface EntryListItemProps {
       diaryId?: Id<'diaries'>;
       imageUrl?: string;
     };
+    shared?: {
+      _id: Id<'sharedMusic'>;
+      musicId: Id<'music'>;
+      shareId: string;
+      viewCount: number;
+      isPrivate?: boolean;
+      createdAt: number;
+      updatedAt: number;
+      music: {
+        _id: Id<'music'>;
+        title?: string;
+        imageUrl?: string;
+        audioUrl?: string;
+        duration?: number;
+        lyric?: string;
+        status: 'pending' | 'ready' | 'failed';
+        createdAt: number;
+        diaryId?: Id<'diaries'>;
+        diaryContent?: string;
+        diaryDate?: number;
+      };
+    };
   };
   onOpenDiary: (diaryId: Id<'diaries'>) => void;
 }
 
 export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps) {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isHovered, setIsHovered] = useState(false);
   const audioManager = useAudio();
+  const deleteMusic = useMutation(api.music.softDeleteMusic);
+  const deleteDiary = useMutation(api.diaries.deleteDiary);
+  const toggleSharePrivacy = useMutation(api.sharing.toggleSharePrivacy);
+  
+  // Get current tab from URL to preserve it when navigating
+  const currentTab = (searchParams.get('tab') as FilterType) || 'songs';
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -90,7 +124,9 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
 
     const handleEdit = (e: React.MouseEvent) => {
       e.stopPropagation();
-      console.log('Edit clicked');
+      if (music.diaryId) {
+        navigate(`/dashboard/memory/${music.diaryId}/edit?tab=${currentTab}`);
+      }
     };
 
     const handleShare = (e: React.MouseEvent) => {
@@ -98,112 +134,174 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
       console.log('Share clicked');
     };
 
+    const handleDelete = async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (window.confirm('Are you sure you want to delete this song? This action cannot be undone.')) {
+        try {
+          await deleteMusic({ musicId: music._id });
+        } catch (error) {
+          console.error('Failed to delete music:', error);
+          alert('Failed to delete song. Please try again.');
+        }
+      }
+    };
+
     return (
       <div
-        className={`relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-all group ${isReady ? 'cursor-pointer' : 'cursor-default'}`}
+        className={`relative group pt-6 pb-6 border-b border-gray-200 dark:border-gray-700 ${isReady ? 'cursor-pointer' : 'cursor-default'}`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        onClick={handleRowClick}
       >
-        <div className="flex items-center gap-4">
-          {/* Image Thumbnail */}
-          <div className="flex-shrink-0">
+        <div className="flex gap-4">
+          {/* Thumbnail */}
+          <div className="flex-shrink-0 relative group/thumbnail">
             {music.imageUrl ? (
-              <img
-                src={music.imageUrl}
-                alt={music.title || 'Album art'}
-                className="w-14 h-14 rounded-lg object-cover"
-              />
+              <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700">
+                <img
+                  src={music.imageUrl}
+                  alt={music.title || 'Album art'}
+                  className="w-full h-full object-cover"
+                />
+                {isReady && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRowClick();
+                    }}
+                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover/thumbnail:opacity-100 transition-opacity"
+                    title={isCurrentlyPlaying ? 'Pause' : 'Play'}
+                  >
+                    {isCurrentlyPlaying ? (
+                      <Pause className="w-6 h-6 text-white" />
+                    ) : (
+                      <Play className="w-6 h-6 text-white ml-0.5" />
+                    )}
+                  </button>
+                )}
+              </div>
             ) : (
-              <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
-                <Music className="w-6 h-6 text-white" />
+              <div className="relative w-20 h-20 rounded-lg bg-gradient-to-br from-accent-mint to-accent-apricot flex items-center justify-center">
+                <Music className="w-8 h-8 text-white" />
+                {isReady && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRowClick();
+                    }}
+                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover/thumbnail:opacity-100 transition-opacity"
+                    title={isCurrentlyPlaying ? 'Pause' : 'Play'}
+                  >
+                    {isCurrentlyPlaying ? (
+                      <Pause className="w-6 h-6 text-white" />
+                    ) : (
+                      <Play className="w-6 h-6 text-white ml-0.5" />
+                    )}
+                  </button>
+                )}
               </div>
             )}
           </div>
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            {/* Line 1: Song Title and Status */}
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-base font-semibold text-gray-900 dark:text-white truncate">
+            {/* Title */}
+            <button
+              onClick={handleRowClick}
+              className="w-full text-left"
+              disabled={!isReady}
+            >
+              <h4 className={`text-lg font-bold leading-tight mb-2 ${
+                isCurrentlyPlaying
+                  ? 'text-accent-mint'
+                  : 'text-gray-900 dark:text-white'
+              }`}>
                 {music.title || 'Untitled Song'}
-              </h3>
-              {isPending && (
-                <span className="text-xs px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded flex items-center gap-1 flex-shrink-0">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  Generating
-                </span>
-              )}
-              {hasDiary && (
-                <span className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded flex-shrink-0">
-                  From journal
-                </span>
-              )}
-              {!hasDiary && isReady && (
-                <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded flex-shrink-0">
-                  No journal
-                </span>
-              )}
-            </div>
+              </h4>
+            </button>
 
-            {/* Line 2: Diary Content Preview (if exists) */}
+            {/* Description */}
             {music.diaryContent && (
-              <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-1 mb-1">
-                {truncateText(music.diaryContent, 100)}
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 leading-relaxed line-clamp-2">
+                {truncateText(music.diaryContent, 120)}
               </p>
             )}
 
-            {/* Line 3: Metadata */}
-            <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-              <div className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                <span>{formatDate(entry.date)}</span>
+            {/* Status Badge */}
+            {(isPending || hasDiary || (!hasDiary && isReady)) && (
+              <div className="flex items-center gap-2 mb-3">
+                {isPending && (
+                  <span className="text-xs px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Generating
+                  </span>
+                )}
+                {!hasDiary && isReady && (
+                  <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
+                    No journal
+                  </span>
+                )}
               </div>
-              {music.duration && (
-                <span>{formatDuration(music.duration)}</span>
-              )}
+            )}
+
+            {/* Metadata Row */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                <span>{formatDate(entry.date)}</span>
+                {music.duration && (
+                  <span>{formatDuration(music.duration)}</span>
+                )}
+                {isCurrentlyPlaying && (
+                  <span className="flex items-center gap-1">
+                    {audioManager.isPlaying ? (
+                      <>
+                        <Pause className="w-3 h-3" />
+                        <span>Playing</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3 h-3" />
+                        <span>Paused</span>
+                      </>
+                    )}
+                  </span>
+                )}
+              </div>
+
+              {/* Action Icons */}
+              <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                {hasDiary && (
+                  <button
+                    onClick={handleViewJournal}
+                    className="p-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    title="View Journal"
+                  >
+                    <BookOpen className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  onClick={handleEdit}
+                  className="p-1 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
+                  title="Edit"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={handleShare}
+                  className="p-1 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
+                  title="Share"
+                >
+                  <Share2 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="p-1 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                  title="Delete"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
-
-          {/* Hover Actions */}
-          {isHovered && isReady && (
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                onClick={handleRowClick}
-                className="p-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
-                title={isCurrentlyPlaying ? 'Pause' : 'Play'}
-              >
-                {isCurrentlyPlaying ? (
-                  <Pause className="w-4 h-4" />
-                ) : (
-                  <Play className="w-4 h-4" />
-                )}
-              </button>
-              {hasDiary && (
-                <button
-                  onClick={handleViewJournal}
-                  className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
-                  title="View Journal"
-                >
-                  <BookOpen className="w-4 h-4" />
-                </button>
-              )}
-              <button
-                onClick={handleEdit}
-                className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                title="Edit"
-              >
-                <Edit className="w-4 h-4" />
-              </button>
-              <button
-                onClick={handleShare}
-                className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                title="Share"
-              >
-                <Share2 className="w-4 h-4" />
-              </button>
-            </div>
-          )}
         </div>
       </div>
     );
@@ -235,30 +333,44 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
 
     const handleEdit = (e: React.MouseEvent) => {
       e.stopPropagation();
-      console.log('Edit clicked');
+      navigate(`/dashboard/memory/${diary._id}/edit?tab=${currentTab}`);
     };
 
-    const handleShare = (e: React.MouseEvent) => {
+    const handleDelete = async (e: React.MouseEvent) => {
       e.stopPropagation();
-      console.log('Share clicked');
+      if (window.confirm('Are you sure you want to delete this memory entry? This will also delete any associated music. This action cannot be undone.')) {
+        try {
+          await deleteDiary({ diaryId: diary._id });
+        } catch (error) {
+          console.error('Failed to delete diary:', error);
+          alert('Failed to delete memory entry. Please try again.');
+        }
+      }
     };
 
     return (
       <div
-        className="relative bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-all cursor-pointer group"
+        className="relative group cursor-pointer pt-6 pb-6 border-b border-gray-200 dark:border-gray-700"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        onClick={handleClick}
       >
-        {/* Line 1: Date and Status */}
-        <div className="flex items-center gap-2 mb-2">
-          <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-            {formatDate(entry.date)}
-          </span>
-          <span className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
-            Journal
-          </span>
+        {/* Title */}
+        <button
+          onClick={handleClick}
+          className="w-full text-left"
+        >
+          <h4 className="text-lg font-bold leading-tight mb-2 text-gray-900 dark:text-white">
+            {diary.title || formatDate(entry.date)}
+          </h4>
+        </button>
+
+        {/* Description */}
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 leading-relaxed line-clamp-2">
+          {truncateText(diary.content, 120)}
+        </p>
+
+        {/* Status Badge */}
+        <div className="flex items-center gap-2 mb-3">
           {isPending && (
             <span className="text-xs px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded flex items-center gap-1">
               <Loader2 className="w-3 h-3 animate-spin" />
@@ -267,67 +379,246 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
           )}
         </div>
 
-        {/* Line 2: Content Preview */}
-        <div className="mb-2">
-          {diary.title && (
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
-              {diary.title}
-            </h3>
-          )}
-          <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
-            {truncateText(diary.content)}
-          </p>
-        </div>
-
-        {/* Line 3: Metadata and Music Info */}
+        {/* Metadata Row */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+          <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+            <span>{formatDate(entry.date)}</span>
             {hasMusic && diary.primaryMusic && (
               <>
-                <div className="flex items-center gap-1">
-                  <Music className="w-4 h-4" />
-                  <span>Linked: "{diary.primaryMusic.title || 'Untitled'}"</span>
-                </div>
-                <span className="text-xs">
-                  {formatDuration(diary.primaryMusic.duration)}
+                <span className="flex items-center gap-1">
+                  <Music className="w-3 h-3" />
+                  <span>{diary.primaryMusic.title || 'Untitled'}</span>
                 </span>
+                <span>{formatDuration(diary.primaryMusic.duration)}</span>
               </>
             )}
             {!hasMusic && !isPending && (
-              <span className="text-xs text-gray-400 dark:text-gray-500">
-                No music generated
-              </span>
+              <span>No music generated</span>
             )}
           </div>
 
-          {/* Hover Actions */}
-          {isHovered && (
-            <div className="flex items-center gap-2">
-              {hasMusic && (
-                <button
-                  onClick={handlePlay}
-                  className="p-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
-                  title="Play"
-                >
-                  <Play className="w-4 h-4" />
-                </button>
-              )}
+          {/* Action Icons */}
+          <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+            {hasMusic && (
               <button
-                onClick={handleEdit}
-                className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                title="Edit"
+                onClick={handlePlay}
+                className="p-1 hover:text-accent-mint transition-colors"
+                title="Play"
               >
-                <Edit className="w-4 h-4" />
+                <Play className="w-4 h-4" />
               </button>
+            )}
+            <button
+              onClick={handleEdit}
+              className="p-1 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
+              title="Edit"
+            >
+              <Edit className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={handleDelete}
+              className="p-1 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+              title="Delete"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (entry.type === 'shared' && entry.shared && entry.music) {
+    const shared = entry.shared;
+    const music = entry.music;
+    const isReady = music.status === 'ready' && music.audioUrl;
+    const isPending = music.status === 'pending';
+    const isCurrentlyPlaying = audioManager.isCurrentAudio(music._id) && audioManager.isPlaying;
+    const hasDiary = !!music.diaryId && !!music.diaryContent;
+    const isPrivate = shared.isPrivate ?? false;
+
+    const handleRowClick = async () => {
+      if (isReady && music.audioUrl) {
+        audioManager.setCurrentTrack({
+          id: music._id,
+          title: music.title || 'Untitled Song',
+          imageUrl: music.imageUrl,
+          duration: music.duration,
+          diaryContent: music.diaryContent,
+          audioUrl: music.audioUrl,
+        });
+        await audioManager.toggleAudio(music._id, music.audioUrl);
+      }
+    };
+
+    const handleViewJournal = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (music.diaryId) {
+        onOpenDiary(music.diaryId);
+      }
+    };
+
+    const handleEdit = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (music.diaryId) {
+        navigate(`/dashboard/memory/${music.diaryId}/edit?tab=${currentTab}`);
+      }
+    };
+
+    const handleTogglePrivacy = async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      try {
+        await toggleSharePrivacy({ sharedMusicId: shared._id });
+      } catch (error) {
+        console.error('Failed to toggle share privacy:', error);
+        alert('Failed to update share status. Please try again.');
+      }
+    };
+
+    return (
+      <div
+        className={`relative group pt-6 pb-6 border-b border-gray-200 dark:border-gray-700 ${isReady ? 'cursor-pointer' : 'cursor-default'}`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div className="flex gap-4">
+          {/* Thumbnail */}
+          <div className="flex-shrink-0 relative group/thumbnail">
+            {music.imageUrl ? (
+              <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700">
+                <img
+                  src={music.imageUrl}
+                  alt={music.title || 'Album art'}
+                  className="w-full h-full object-cover"
+                />
+                {isReady && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRowClick();
+                    }}
+                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover/thumbnail:opacity-100 transition-opacity"
+                    title={isCurrentlyPlaying ? 'Pause' : 'Play'}
+                  >
+                    {isCurrentlyPlaying ? (
+                      <Pause className="w-6 h-6 text-white" />
+                    ) : (
+                      <Play className="w-6 h-6 text-white ml-0.5" />
+                    )}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="relative w-20 h-20 rounded-lg bg-gradient-to-br from-accent-mint to-accent-apricot flex items-center justify-center">
+                <Music className="w-8 h-8 text-white" />
+                {isReady && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRowClick();
+                    }}
+                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover/thumbnail:opacity-100 transition-opacity"
+                    title={isCurrentlyPlaying ? 'Pause' : 'Play'}
+                  >
+                    {isCurrentlyPlaying ? (
+                      <Pause className="w-6 h-6 text-white" />
+                    ) : (
+                      <Play className="w-6 h-6 text-white ml-0.5" />
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            {/* Title */}
+            <div className="flex items-center gap-2 mb-2">
               <button
-                onClick={handleShare}
-                className="p-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                title="Share"
+                onClick={handleRowClick}
+                className="text-left flex-1"
+                disabled={!isReady}
               >
-                <Share2 className="w-4 h-4" />
+                <h4 className={`text-lg font-bold leading-tight ${
+                  isCurrentlyPlaying
+                    ? 'text-accent-mint'
+                    : 'text-gray-900 dark:text-white'
+                }`}>
+                  {music.title || 'Untitled Song'}
+                </h4>
+              </button>
+              {/* Privacy Icon */}
+              <button
+                onClick={handleTogglePrivacy}
+                className="p-1 hover:text-gray-600 dark:hover:text-gray-400 transition-colors"
+                title={isPrivate ? 'Unshare (Make public)' : 'Share (Currently public)'}
+              >
+                {isPrivate ? (
+                  <EyeOff className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                ) : (
+                  <Share2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                )}
               </button>
             </div>
-          )}
+
+            {/* Description */}
+            {music.diaryContent && (
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 leading-relaxed line-clamp-2">
+                {truncateText(music.diaryContent, 120)}
+              </p>
+            )}
+
+            {/* Status Badge */}
+            {(isPending || hasDiary || (!hasDiary && isReady)) && (
+              <div className="flex items-center gap-2 mb-3">
+                {isPending && (
+                  <span className="text-xs px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Generating
+                  </span>
+                )}
+                {isPrivate && (
+                  <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded flex items-center gap-1">
+                    <EyeOff className="w-3 h-3" />
+                    Private
+                  </span>
+                )}
+                {!hasDiary && isReady && !isPrivate && (
+                  <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
+                    No journal
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Metadata Row */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                <span>{formatDate(entry.date)}</span>
+                {music.duration && (
+                  <span>{formatDuration(music.duration)}</span>
+                )}
+                <span>{shared.viewCount} {shared.viewCount === 1 ? 'view' : 'views'}</span>
+                {isCurrentlyPlaying && (
+                  <span className="flex items-center gap-1">
+                    {audioManager.isPlaying ? (
+                      <>
+                        <Pause className="w-3 h-3" />
+                        <span>Playing</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3 h-3" />
+                        <span>Paused</span>
+                      </>
+                    )}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

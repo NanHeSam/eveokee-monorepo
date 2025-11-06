@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useUser } from '@clerk/clerk-react';
 import { useQuery } from 'convex/react';
 import { api } from '@backend/convex';
@@ -7,7 +8,7 @@ import EntryListFeed from '@/components/dashboard/EntryListFeed';
 import DetailDrawer from '@/components/dashboard/DetailDrawer';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
 
-export type FilterType = 'songs' | 'blogs';
+export type FilterType = 'songs' | 'memories' | 'shared';
 
 export interface DiaryEntry {
   _id: Id<'diaries'>;
@@ -41,11 +42,24 @@ export interface MusicEntry {
 }
 
 export default function NewDashboard() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useUser();
   const diaries = useQuery(api.diaries.listDiaries);
   const music = useQuery(api.music.listPlaylistMusic);
-  const [selectedFilter, setSelectedFilter] = useState<FilterType>('songs');
+  const sharedMusic = useQuery(api.sharing.listSharedMusic);
+  
+  // Derive selectedFilter directly from URL (single source of truth)
+  const tabFromUrl = searchParams.get('tab') as FilterType | null;
+  const selectedFilter: FilterType = (tabFromUrl === 'songs' || tabFromUrl === 'memories' || tabFromUrl === 'shared') ? tabFromUrl : 'songs';
   const [selectedDiaryId, setSelectedDiaryId] = useState<Id<'diaries'> | null>(null);
+
+  // Handler to update filter - updates URL directly
+  const handleFilterChange = (filter: FilterType) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('tab', filter);
+    setSearchParams(newParams, { replace: true });
+  };
 
   const handleCloseDrawer = () => {
     setSelectedDiaryId(null);
@@ -64,7 +78,10 @@ export default function NewDashboard() {
             Welcome back, {user?.firstName || 'there'}! 👋
           </h1>
           <div className="flex items-center gap-4">
-            <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium">
+            <button
+              onClick={() => navigate(`/dashboard/memory/new?tab=${selectedFilter}`)}
+              className="px-4 py-2 bg-accent-mint text-white rounded-lg hover:bg-accent-mint/90 transition-colors font-medium"
+            >
               + New
             </button>
           </div>
@@ -73,14 +90,15 @@ export default function NewDashboard() {
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden">
-        <ConvexQueryBoundary queries={[{ data: diaries }, { data: music }]}>
+        <ConvexQueryBoundary queries={[{ data: diaries }, { data: music }, { data: sharedMusic }]}>
           {/* Full Width Feed */}
           <div className="h-full overflow-auto">
             <EntryListFeed
               diaries={diaries || []}
               music={music || []}
+              sharedMusic={sharedMusic || []}
               selectedFilter={selectedFilter}
-              onFilterChange={setSelectedFilter}
+              onFilterChange={handleFilterChange}
               onOpenDiary={handleOpenDiary}
             />
           </div>
@@ -93,6 +111,7 @@ export default function NewDashboard() {
           diaryId={selectedDiaryId}
           diaries={diaries || []}
           onClose={handleCloseDrawer}
+          returnTab={selectedFilter}
         />
       )}
     </div>
