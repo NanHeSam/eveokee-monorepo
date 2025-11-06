@@ -35,6 +35,7 @@ export const SettingsScreen = () => {
   useEffect(() => {
     // RevenueCat SDK automatically notifies when subscription changes
     // The listener callback will be called whenever customerInfo updates
+    // Deduplication in useRevenueCatSubscription prevents duplicate API calls
     Purchases.addCustomerInfoUpdateListener(() => {
       // Refresh subscription status when RevenueCat notifies of changes
       refreshSubscription();
@@ -107,24 +108,26 @@ export const SettingsScreen = () => {
                       {(() => {
                         const tier = subscriptionStatus?.tier;
                         if (tier === 'free') return 'Free';
-                        if (tier === 'weekly') return 'Weekly Pro';
-                        if (tier === 'monthly') return 'Monthly Pro';
-                        if (tier === 'yearly') return 'Yearly Pro';
+                        if (tier === 'weekly') return 'Weekly Premium';
+                        if (tier === 'monthly') return 'Monthly Premium';
+                        if (tier === 'yearly') return 'Yearly Premium';
                         return '—';
                       })()}
                     </Text>
                   </View>
 
               {(() => {
-                if (!subscriptionStatus?.periodEnd) return null;
+                // Only show period end for paid plans (not free)
+                if (subscriptionStatus?.tier === 'free' || !subscriptionStatus?.periodEnd) return null;
                 
                 const date = new Date(subscriptionStatus.periodEnd);
                 const isValidDate = !isNaN(date.getTime());
+                const willRenew = subscriptionStatus?.willRenew;
                 
                 return (
-                  <View className="flex-row items-center justify-between mb-3">
+                  <View className="flex-row items-center justify-between">
                     <Text className="text-sm" style={{ color: colors.textSecondary }}>
-                      {subscriptionStatus?.tier === 'free' ? 'Period Ends' : 'Renews On'}
+                      {willRenew === true ? 'Renews On' : willRenew === false ? 'Will Expire On' : 'Renews On'}
                     </Text>
                     <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
                       {isValidDate
@@ -139,18 +142,6 @@ export const SettingsScreen = () => {
                 );
               })()}
 
-              <View className="flex-row items-center justify-between">
-                <Text className="text-sm" style={{ color: colors.textSecondary }}>
-                  Status
-                </Text>
-                <Text
-                  className="text-base font-semibold"
-                  style={{ color: subscriptionStatus?.isActive ? colors.accentMint : colors.accentApricot }}
-                >
-                  {subscriptionStatus?.isActive ? 'Active' : 'Expired'}
-                </Text>
-              </View>
-
                   {subscriptionStatus?.tier === 'free' && (
                     <TouchableOpacity
                       className="mt-4 items-center rounded-[20px] py-3"
@@ -159,7 +150,7 @@ export const SettingsScreen = () => {
                       onPress={() => setShowPaywall(true, 'settings')}
                     >
                       <Text className="text-sm font-semibold" style={{ color: colors.background }}>
-                        Upgrade to Pro
+                        Upgrade to Premium
                       </Text>
                     </TouchableOpacity>
                   )}

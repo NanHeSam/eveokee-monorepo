@@ -13,7 +13,8 @@ import { DiaryEditNavigationProp, DiaryEditRouteProp } from '../navigation/types
 import { api } from '@backend/convex';
 import { useTrackPlayerStore } from '../store/useTrackPlayerStore';
 import { PaywallModal } from '../components/billing/PaywallModal';
-import { useSubscriptionUIStore, useSubscription } from '../store/useSubscriptionStore';
+import { useSubscriptionUIStore } from '../store/useSubscriptionStore';
+import { useRevenueCatSubscription } from '../hooks/useRevenueCatSubscription';
 import { useMusicGenerationStatus } from '../store/useMusicGenerationStatus';
 import { UsageProgress } from '../components/billing/UsageProgress';
 
@@ -31,9 +32,9 @@ export const DiaryEditScreen = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEditing, setIsEditing] = useState(!route.params?.diaryId);
   
-  // Billing integration
+  // Billing integration - Read directly from RevenueCat SDK (single source of truth)
   const { showPaywall, paywallReason, setShowPaywall } = useSubscriptionUIStore();
-  const { subscriptionStatus } = useSubscription();
+  const { subscriptionStatus } = useRevenueCatSubscription();
   const addPendingGeneration = useMusicGenerationStatus((state) => state.addPendingGeneration);
 
   const diaryDocs = useQuery(api.diaries.listDiaries);

@@ -21,6 +21,7 @@ export interface SubscriptionState {
   periodStart: number;
   periodEnd: number;
   isActive: boolean;
+  willRenew?: boolean;
 }
 
 export interface UsageState {

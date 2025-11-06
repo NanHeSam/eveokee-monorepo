@@ -142,7 +142,7 @@ export const updateSubscriptionFromWebhook = internalMutation({
         userId: user._id,
         eventType: args.eventType as any, // eventType is validated string, safe cast
         productId: args.productId,
-        platform: platform as "app_store" | "play_store" | "stripe" | undefined,
+        platform: platform,
         subscriptionTier: effectiveTier,
         status,
         expiresAt,

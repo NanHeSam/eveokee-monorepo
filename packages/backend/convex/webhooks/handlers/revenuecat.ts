@@ -136,7 +136,7 @@ export const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
       userId: appUserId, // Type-safe: validated by isValidConvexId()
       eventType,
       productId,
-      store: getPlatformFromStore(store),
+      store,
       expirationAtMs,
       purchasedAtMs,
       isTrialConversion,

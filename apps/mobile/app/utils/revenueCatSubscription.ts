@@ -21,9 +21,9 @@ const REVENUECAT_PRODUCT_TO_TIER: Record<string, SubscriptionTier> = {
 
 // Plan configuration (should match backend PLAN_CONFIG)
 const PLAN_CONFIG = {
-  free: { musicLimit: 5, periodDays: 30 },
+  free: { musicLimit: 5, periodDays: 31 },
   weekly: { musicLimit: 20, periodDays: 7 },
-  monthly: { musicLimit: 90, periodDays: 30 },
+  monthly: { musicLimit: 90, periodDays: 31 },
   yearly: { musicLimit: 1000, periodDays: 365 },
 } as const;
 
@@ -134,6 +134,21 @@ function getIsActive(customerInfo: CustomerInfo): boolean {
 }
 
 /**
+ * Get willRenew status from RevenueCat customer info
+ * Reads directly from RevenueCat entitlement's willRenew property
+ */
+function getWillRenew(customerInfo: CustomerInfo): boolean | undefined {
+  const activeEntitlements = customerInfo.entitlements.active;
+  
+  if (Object.keys(activeEntitlements).length > 0) {
+    const entitlement = Object.values(activeEntitlements)[0];
+    return entitlement.willRenew;
+  }
+  
+  return undefined;
+}
+
+/**
  * Convert RevenueCat CustomerInfo to SubscriptionState
  * 
  * This function reads directly from RevenueCat SDK, making it the single source of truth.
@@ -165,6 +180,9 @@ export function customerInfoToSubscriptionState(
   // Get isActive directly from RevenueCat entitlement (single source of truth)
   const isActive = getIsActive(customerInfo);
   
+  // Get willRenew from RevenueCat entitlement
+  const willRenew = getWillRenew(customerInfo);
+  
   // Get plan configuration
   const planConfig = PLAN_CONFIG[tier];
   
@@ -181,6 +199,7 @@ export function customerInfoToSubscriptionState(
       periodStart: usageData?.periodStart ?? purchaseDate ?? Date.now(),
       periodEnd: expirationDate ?? (usageData?.periodStart ?? purchaseDate ?? Date.now()) + (freeConfig.periodDays * 24 * 60 * 60 * 1000),
       isActive,
+      willRenew,
     };
   }
   
@@ -206,6 +225,7 @@ export function customerInfoToSubscriptionState(
     periodStart,
     periodEnd,
     isActive,
+    willRenew,
   };
 }
 

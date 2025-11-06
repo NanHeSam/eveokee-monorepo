@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { useSubscription, formatUsageText, formatRemainingQuota, getUsagePercentage } from '../../store/useSubscriptionStore';
+import { formatUsageText, formatRemainingQuota, getUsagePercentage } from '../../store/useSubscriptionStore';
+import { useRevenueCatSubscription } from '../../hooks/useRevenueCatSubscription';
 
 interface SubscriptionStatusProps {
   onPress?: () => void;
@@ -13,7 +14,7 @@ interface SubscriptionStatusProps {
  *
  * Displays a compact tier pill when `compact` is true, otherwise renders a full card with tier badge,
  * optional upgrade action, usage progress for the Free tier, and the billing period end plus active state.
- * The component reads subscription state from the subscription store; while that data is loading it shows
+ * The component reads subscription state directly from RevenueCat SDK (single source of truth); while that data is loading it shows
  * a small "Loading subscription…" placeholder.
  *
  * @param onPress - Optional handler invoked when the component is pressed.
@@ -26,9 +27,9 @@ export function SubscriptionStatus({
   showUpgradeButton = true, 
   compact = false 
 }: SubscriptionStatusProps) {
-  const { subscriptionStatus } = useSubscription();
+  const { subscriptionStatus, loading } = useRevenueCatSubscription();
 
-  if (!subscriptionStatus) {
+  if (loading || !subscriptionStatus) {
     return (
       <View className="bg-gray-100 p-3 rounded-lg">
         <Text className="text-gray-600 text-sm">Loading subscription...</Text>
@@ -54,8 +55,9 @@ export function SubscriptionStatus({
   const getTierDisplayName = (tier: string) => {
     switch (tier) {
       case 'free': return 'Free';
-      case 'monthly': return 'Monthly Pro';
-      case 'yearly': return 'Yearly Pro';
+      case 'weekly': return 'Weekly Premium';
+      case 'monthly': return 'Monthly Premium';
+      case 'yearly': return 'Yearly Premium';
       default: return tier;
     }
   };
@@ -63,6 +65,7 @@ export function SubscriptionStatus({
   const getTierColor = (tier: string) => {
     switch (tier) {
       case 'free': return 'bg-gray-100 text-gray-800';
+      case 'weekly': return 'bg-blue-100 text-blue-800';
       case 'monthly': return 'bg-purple-100 text-purple-800';
       case 'yearly': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
