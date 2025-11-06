@@ -247,6 +247,7 @@ export default defineSchema({
     isTrialConversion: v.optional(v.boolean()), // From webhook is_trial_conversion
     entitlementIds: v.optional(v.array(v.string())), // Array of entitlement IDs
     store: v.optional(v.string()), // Original store from webhook
+    environment: v.optional(v.union(v.literal("SANDBOX"), v.literal("PRODUCTION"))), // Receipt environment from webhook
     rawEvent: v.optional(v.any()), // Full RC webhook payload for debugging
     recordedAt: v.number(),
   })

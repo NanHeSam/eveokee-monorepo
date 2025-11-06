@@ -55,6 +55,7 @@ export const updateSubscriptionFromWebhook = internalMutation({
     purchasedAtMs: v.optional(v.union(v.string(), v.number())),
     isTrialConversion: v.optional(v.boolean()),
     entitlementIds: v.optional(v.array(v.string())),
+    environment: v.optional(v.union(v.literal("SANDBOX"), v.literal("PRODUCTION"))),
     rawEvent: v.optional(v.any()),
   },
   returns: v.object({ success: v.boolean() }),
@@ -150,6 +151,7 @@ export const updateSubscriptionFromWebhook = internalMutation({
         isTrialConversion: args.isTrialConversion,
         entitlementIds: args.entitlementIds,
         store: args.store,
+        environment: args.environment,
         rawEvent: args.rawEvent,
         recordedAt: now,
       });

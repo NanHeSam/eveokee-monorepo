@@ -141,6 +141,7 @@ export const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
       purchasedAtMs,
       isTrialConversion,
       entitlementIds,
+      environment,
       rawEvent: sanitizedEvent,
     });
 
