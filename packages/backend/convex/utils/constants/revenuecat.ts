@@ -12,6 +12,9 @@ export const REVENUECAT_PRODUCT_TO_TIER = {
   "eveokee_premium_weekly": "weekly",
   "eveokee_premium_monthly": "monthly",
   "eveokee_premium_annual": "yearly",
+  "eveokee_premium:eveokee-premium-annual": "yearly", // android store identifier
+  "eveokee_premium:eveokee-premium-monthly": "monthly", // android store identifier
+  "eveokee_premium:eveokee-premium-weekly": "weekly", // android store identifier
   "free-tier": "free",
 } as const;
 

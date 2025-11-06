@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { api } from '@backend/convex';
 import { useQuery, useMutation, useAction } from 'convex/react';
 
-export type SubscriptionTier = 'free' | 'monthly' | 'yearly';
+export type SubscriptionTier = 'free' | 'monthly' | 'yearly' | 'weekly';
 export type SubscriptionStatus = 'active' | 'canceled' | 'expired' | 'in_grace';
 
 export interface SubscriptionPlan {

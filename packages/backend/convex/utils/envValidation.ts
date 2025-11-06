@@ -33,6 +33,7 @@ const ENV_CONFIG = {
 
   // RevenueCat Integration
   REVENUECAT_API_KEY: { required: true, description: "RevenueCat API key for subscription management" },
+  REVENUECAT_PROJECT_ID: { required: true, description: "RevenueCat project ID for API v2" },
   REVENUECAT_WEBHOOK_SECRET: { required: true, description: "RevenueCat webhook authentication secret" },
   REVENUECAT_TIMEOUT: { required: false, description: "RevenueCat API timeout in milliseconds" },
 

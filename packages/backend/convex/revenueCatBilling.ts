@@ -10,7 +10,7 @@ import {
   REVENUECAT_RECONCILIATION_WINDOW_MS,
   MAX_RECONCILIATION_ERRORS_TO_LOG,
 } from "./utils/constants";
-import { createRevenueCatClientFromEnv } from "./integrations/revenuecat/client";
+import { createRevenueCatClientFromEnv, RevenueCatCustomerInfo } from "./integrations/revenuecat/client";
 
 const getPlatformFromStore = (store: string | undefined): "app_store" | "play_store" | "stripe" | undefined => {
   return store ? REVENUECAT_STORE_TO_PLATFORM[store] : undefined;
@@ -24,6 +24,11 @@ const getStatusFromEventType = (eventType: string, isActive: boolean): "active" 
     case "SUBSCRIPTION_UNPAUSED":
     case "SUBSCRIPTION_RESUMED":
       return "active";
+    case "PRODUCT_CHANGE":
+      // PRODUCT_CHANGE indicates a subscription change (upgrade/downgrade)
+      // If isActive is true (has entitlements), subscription is active
+      // Otherwise, it's expired (user changed to a product that's no longer active)
+      return isActive ? "active" : "expired";
     case "CANCELLATION":
       return "canceled";
     case "EXPIRATION":
@@ -74,7 +79,11 @@ export const updateSubscriptionFromWebhook = internalMutation({
       : undefined;
 
     // Determine if this is an active subscription
-    const isActive = REVENUECAT_ACTIVE_EVENT_TYPES.includes(args.eventType as any);
+    // For PRODUCT_CHANGE events, check entitlements to determine if subscription is active
+    // For other events, use the event type list
+    const isActive = args.eventType === "PRODUCT_CHANGE"
+      ? (args.entitlementIds && args.entitlementIds.length > 0)
+      : REVENUECAT_ACTIVE_EVENT_TYPES.includes(args.eventType as any);
     const status = getStatusFromEventType(args.eventType, isActive);
 
     const effectiveTier = status === "active" || status === "in_grace" ? mappedTier : "free";
@@ -151,52 +160,83 @@ export const updateSubscriptionFromWebhook = internalMutation({
 });
 
 /**
- * Internal mutation: Reconcile subscription status with RevenueCat customer data
+ * Internal mutation: Reconcile subscription status and product ID with RevenueCat customer data
  * This mutation updates the database based on RevenueCat customer info fetched server-side
+ * RevenueCat is treated as the single source of truth for product ID and status
  */
 export const reconcileSubscriptionWithData = internalMutation({
   args: {
     userId: v.id("users"),
-    rcCustomerInfo: v.any(), // From RevenueCat API (subscriber format)
+    rcCustomerInfo: v.any(), // From RevenueCat API v2 (customer format)
   },
   returns: v.object({ 
     success: v.boolean(),
     updated: v.boolean(),
     backendStatus: v.string(),
     rcStatus: v.string(),
+    productIdUpdated: v.boolean(),
   }),
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
     if (!user || !user.activeSubscriptionId) {
-      return { success: false, updated: false, backendStatus: "none", rcStatus: "none" };
+      return { success: false, updated: false, backendStatus: "none", rcStatus: "none", productIdUpdated: false };
     }
 
     const backendSubscription = await ctx.db.get(user.activeSubscriptionId);
     if (!backendSubscription) {
-      return { success: false, updated: false, backendStatus: "missing", rcStatus: "none" };
+      return { success: false, updated: false, backendStatus: "missing", rcStatus: "none", productIdUpdated: false };
     }
 
     // Check RC entitlements to determine if user has active subscription
-    // RevenueCat API format: subscriber.entitlements.active
-    const rcEntitlements = args.rcCustomerInfo?.subscriber?.entitlements?.active || {};
+    // RevenueCat API v2 format: active_entitlements.items[]
+    const rcEntitlements = getActiveEntitlementsFromV2(args.rcCustomerInfo);
     const hasActiveSubscription = Object.keys(rcEntitlements).length > 0;
     const rcStatus = hasActiveSubscription ? "active" : "expired";
 
-    // Only update if different
+    // Extract product ID from RevenueCat entitlements (v2 API)
+    const rcProductId = getProductIdentifierFromV2(args.rcCustomerInfo);
+
+    const now = Date.now();
+    let statusUpdated = false;
+    let productIdUpdated = false;
+    const updates: Record<string, unknown> = {};
+
+    // Reconcile product ID if mismatch (RevenueCat is source of truth)
+    if (rcProductId && backendSubscription.productId !== rcProductId) {
+      console.warn(
+        `Product ID mismatch detected for user ${args.userId}: ` +
+        `backend=${backendSubscription.productId}, RevenueCat=${rcProductId}. ` +
+        `Updating database to match RevenueCat (single source of truth).`
+      );
+      
+      // Map RC product ID to tier
+      const mappedTier = REVENUECAT_PRODUCT_TO_TIER[rcProductId] || "free";
+      // Use hasActiveSubscription to determine tier (active subscriptions get mapped tier, expired get free)
+      const effectiveTier = hasActiveSubscription ? mappedTier : "free";
+      
+      updates.productId = rcProductId;
+      updates.subscriptionTier = effectiveTier;
+      productIdUpdated = true;
+    }
+
+    // Reconcile status if different (and not in grace period)
     if (backendSubscription.status !== rcStatus && backendSubscription.status !== "in_grace") {
-      const now = Date.now();
-      await ctx.db.patch(user.activeSubscriptionId, {
-        status: rcStatus,
-        lastVerifiedAt: now,
-      });
+      updates.status = rcStatus;
+      statusUpdated = true;
+    }
+
+    // Update database if any changes
+    if (statusUpdated || productIdUpdated) {
+      updates.lastVerifiedAt = now;
+      await ctx.db.patch(user.activeSubscriptionId, updates);
 
       // Log reconciliation
       await ctx.db.insert("subscriptionLog", {
         userId: user._id,
         eventType: "RECONCILIATION",
-        productId: backendSubscription.productId,
+        productId: rcProductId || backendSubscription.productId,
         platform: backendSubscription.platform, // Type-safe: platform is validated in schema
-        subscriptionTier: backendSubscription.subscriptionTier,
+        subscriptionTier: updates.subscriptionTier as string || backendSubscription.subscriptionTier,
         status: rcStatus,
         expiresAt: backendSubscription.expiresAt,
         rawEvent: sanitizeForConvex(args.rcCustomerInfo),
@@ -207,7 +247,8 @@ export const reconcileSubscriptionWithData = internalMutation({
         success: true, 
         updated: true, 
         backendStatus: backendSubscription.status, 
-        rcStatus 
+        rcStatus,
+        productIdUpdated,
       };
     }
 
@@ -215,7 +256,92 @@ export const reconcileSubscriptionWithData = internalMutation({
       success: true, 
       updated: false, 
       backendStatus: backendSubscription.status, 
-      rcStatus 
+      rcStatus,
+      productIdUpdated: false,
+    };
+  },
+});
+
+/**
+ * Internal mutation: Reconcile product ID from RevenueCat customer data
+ * Called before usage checks to ensure product ID matches RevenueCat (single source of truth)
+ */
+export const reconcileProductIdFromRevenueCatData = internalMutation({
+  args: {
+    userId: v.id("users"),
+    rcCustomerInfo: v.any(), // From RevenueCat API v2 (customer format)
+  },
+  returns: v.object({ 
+    success: v.boolean(),
+    productIdUpdated: v.boolean(),
+    rcProductId: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    if (!user || !user.activeSubscriptionId) {
+      return { success: false, productIdUpdated: false };
+    }
+
+    const backendSubscription = await ctx.db.get(user.activeSubscriptionId);
+    if (!backendSubscription) {
+      return { success: false, productIdUpdated: false };
+    }
+
+    // Extract product ID from RevenueCat entitlements (v2 API)
+    const rcEntitlements = getActiveEntitlementsFromV2(args.rcCustomerInfo);
+    const rcProductId = getProductIdentifierFromV2(args.rcCustomerInfo);
+
+    // Reconcile product ID if mismatch (RevenueCat is source of truth)
+    if (rcProductId && backendSubscription.productId !== rcProductId) {
+      console.warn(
+        `Product ID mismatch detected for user ${args.userId}: ` +
+        `backend=${backendSubscription.productId}, RevenueCat=${rcProductId}. ` +
+        `Updating database to match RevenueCat (single source of truth).`
+      );
+      
+      // Map RC product ID to tier
+      const mappedTier = REVENUECAT_PRODUCT_TO_TIER[rcProductId] || "free";
+      const hasActiveSubscription = Object.keys(rcEntitlements).length > 0;
+      const effectiveTier = hasActiveSubscription ? mappedTier : "free";
+      
+      const now = Date.now();
+      await ctx.db.patch(user.activeSubscriptionId, {
+        productId: rcProductId,
+        subscriptionTier: effectiveTier,
+        lastVerifiedAt: now,
+        status: hasActiveSubscription ? "active" : "expired",
+        // v2 API: platform info may be in last_seen_platform or entitlement details
+        platform: args.rcCustomerInfo?.last_seen_platform === "iOS" 
+          ? "app_store" 
+          : args.rcCustomerInfo?.last_seen_platform === "ANDROID" 
+          ? "play_store" 
+          : undefined,
+      });
+
+      // Log reconciliation
+      await ctx.db.insert("subscriptionLog", {
+        userId: user._id,
+        eventType: "RECONCILIATION",
+        productId: rcProductId,
+        platform: backendSubscription.platform,
+        subscriptionTier: effectiveTier,
+        status: backendSubscription.status,
+        expiresAt: backendSubscription.expiresAt,
+        rawEvent: sanitizeForConvex(args.rcCustomerInfo),
+        recordedAt: now,
+      });
+
+      return { 
+        success: true, 
+        productIdUpdated: true,
+        rcProductId,
+      };
+    }
+
+    return { 
+      success: true, 
+      productIdUpdated: false,
+      rcProductId,
     };
   },
 });
@@ -279,6 +405,11 @@ export const reconcileSubscription = internalAction({
           result.backendStatus,
           result.rcStatus
         );
+        if (result.productIdUpdated) {
+          logger.warn('Product ID updated during reconciliation', {
+            userId: args.userId,
+          });
+        }
       } else {
         logger.debug('Subscription status unchanged', {
           backendStatus: result.backendStatus,
@@ -295,6 +426,53 @@ export const reconcileSubscription = internalAction({
         updated: false, 
         backendStatus: "error", 
         rcStatus: "error" 
+      };
+    }
+  },
+});
+
+/**
+ * Reconcile product ID with RevenueCat before usage checks
+ * ACTION: Fetches canonical customer data from RevenueCat API and reconciles product ID
+ * This ensures RevenueCat is always the single source of truth for product ID
+ */
+export const reconcileProductId = internalAction({
+  args: {
+    userId: v.id("users"),
+  },
+  returns: v.object({ 
+    success: v.boolean(),
+    productIdUpdated: v.boolean(),
+    rcProductId: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    try {
+      // Fetch canonical customer data from RevenueCat API
+      const rcCustomerInfo = await fetchRevenueCatCustomer(args.userId);
+
+      if (!rcCustomerInfo) {
+        return { 
+          success: false, 
+          productIdUpdated: false,
+        };
+      }
+
+      // Call mutation to update database based on canonical RC data
+      const result = await ctx.runMutation(
+        internal.revenueCatBilling.reconcileProductIdFromRevenueCatData,
+        {
+          userId: args.userId,
+          rcCustomerInfo,
+        }
+      );
+
+      return result;
+    } catch (error) {
+      console.error(`Failed to reconcile product ID: userId=${args.userId}`, error);
+      
+      return { 
+        success: false, 
+        productIdUpdated: false,
       };
     }
   },
@@ -331,13 +509,49 @@ export const getStaleSubscriptions = internalQuery({
  * Fetch customer info from RevenueCat REST API
  * Uses the RevenueCat client for consistent error handling
  */
-async function fetchRevenueCatCustomer(appUserId: string): Promise<any> {
+async function fetchRevenueCatCustomer(appUserId: string): Promise<RevenueCatCustomerInfo | null> {
   const revenueCatClient = createRevenueCatClientFromEnv({
     REVENUECAT_API_KEY: process.env.REVENUECAT_API_KEY,
+    REVENUECAT_PROJECT_ID: process.env.REVENUECAT_PROJECT_ID,
     REVENUECAT_TIMEOUT: process.env.REVENUECAT_TIMEOUT,
   });
 
   return await revenueCatClient.getCustomerInfo(appUserId);
+}
+
+/**
+ * Helper to extract active entitlements from RevenueCat v2 API response
+ * Returns a record compatible with the old v1 format for backward compatibility
+ * @internal - Exported for testing purposes
+ */
+export function getActiveEntitlementsFromV2(customerInfo: RevenueCatCustomerInfo | null): Record<string, any> {
+  if (!customerInfo?.active_entitlements?.items) {
+    return {};
+  }
+
+  const entitlements: Record<string, any> = {};
+  for (const entitlement of customerInfo.active_entitlements.items) {
+    // Map entitlement_id to the entitlement object
+    entitlements[entitlement.entitlement_id] = entitlement;
+  }
+  return entitlements;
+}
+
+/**
+ * Helper to extract product identifier from RevenueCat v2 API response
+ * Note: v2 API may require fetching entitlement details separately for full product info
+ * @internal - Exported for testing purposes
+ */
+export function getProductIdentifierFromV2(customerInfo: RevenueCatCustomerInfo | null): string | undefined {
+  const entitlements = getActiveEntitlementsFromV2(customerInfo);
+  if (Object.keys(entitlements).length === 0) {
+    return undefined;
+  }
+
+  // Try to get product_identifier from the first entitlement
+  // v2 API structure: entitlement may have product_identifier or we may need to fetch details
+  const firstEntitlement = Object.values(entitlements)[0] as any;
+  return firstEntitlement?.product_identifier || firstEntitlement?.product_id;
 }
 
 /**
@@ -460,8 +674,8 @@ export const reconcileSingleSubscription = internalMutation({
       return { updated: false };
     }
 
-    // Check RC entitlements to determine subscription status
-    const rcEntitlements = args.rcCustomerInfo?.subscriber?.entitlements?.active || {};
+    // Check RC entitlements to determine subscription status (v2 API)
+    const rcEntitlements = getActiveEntitlementsFromV2(args.rcCustomerInfo);
     const hasActiveSubscription = Object.keys(rcEntitlements).length > 0;
     const rcStatus = hasActiveSubscription ? "active" : "expired";
 

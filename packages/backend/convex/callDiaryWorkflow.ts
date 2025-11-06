@@ -266,8 +266,9 @@ export const generateMusicForCallDiary = internalAction({
   returns: v.null(),
   handler: async (ctx, args) => {
     // Check usage limit and increment counter for music generation
-    const usageResult = await ctx.runMutation(
-      internal.usage.recordMusicGeneration,
+    // Use reconciliation version to ensure RevenueCat product ID is up-to-date (single source of truth)
+    const usageResult = await ctx.runAction(
+      internal.usage.recordMusicGenerationWithReconciliation,
       {
         userId: args.userId,
       },

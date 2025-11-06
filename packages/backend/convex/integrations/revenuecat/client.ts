@@ -11,15 +11,33 @@ import {
 
 export interface RevenueCatClientConfig {
   apiKey: string;
+  projectId: string;
   timeout?: number;
 }
 
+export interface RevenueCatActiveEntitlement {
+  entitlement_id: string;
+  expires_at: number | null;
+  object: "customer.active_entitlement";
+  [key: string]: unknown;
+}
+
 export interface RevenueCatCustomerInfo {
-  subscriber?: {
-    entitlements?: {
-      active?: Record<string, unknown>;
-    };
+  active_entitlements: {
+    items: RevenueCatActiveEntitlement[];
+    next_page: string | null;
+    object: "list";
+    url: string;
   };
+  id: string;
+  project_id: string;
+  first_seen_at: number;
+  last_seen_at: number;
+  last_seen_app_version?: string;
+  last_seen_country?: string;
+  last_seen_platform?: string;
+  last_seen_platform_version?: string;
+  experiment?: unknown;
   [key: string]: unknown;
 }
 
@@ -33,12 +51,13 @@ export class RevenueCatClient {
   constructor(config: RevenueCatClientConfig) {
     this.config = {
       apiKey: config.apiKey,
+      projectId: config.projectId,
       timeout: config.timeout ?? REVENUECAT_API_TIMEOUT_MS,
     };
   }
 
   /**
-   * Fetch customer info from RevenueCat REST API
+   * Fetch customer info from RevenueCat REST API v2
    * @param appUserId - The app user ID (same as our userId)
    * @returns Promise resolving to customer info, or null if not found
    * @throws Error if the API call fails or times out
@@ -49,14 +68,18 @@ export class RevenueCatClient {
 
     try {
       const encodedUserId = encodeURIComponent(appUserId);
-      const response = await fetch(`${this.baseUrl}/v1/subscribers/${encodedUserId}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${this.config.apiKey}`,
-          "Content-Type": "application/json",
-        },
-        signal: controller.signal,
-      });
+      const encodedProjectId = encodeURIComponent(this.config.projectId);
+      const response = await fetch(
+        `${this.baseUrl}/v2/projects/${encodedProjectId}/customers/${encodedUserId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${this.config.apiKey}`,
+            "Content-Type": "application/json",
+          },
+          signal: controller.signal,
+        }
+      );
 
       clearTimeout(timeout);
 
@@ -84,16 +107,18 @@ export class RevenueCatClient {
 }
 
 /**
- * Instantiate a RevenueCatClient using REVENUECAT_API_KEY environment variable.
+ * Instantiate a RevenueCatClient using RevenueCat environment variables.
  *
  * @param env - Object containing RevenueCat configuration environment variables:
  *   - `REVENUECAT_API_KEY`: API key for authorization (required)
+ *   - `REVENUECAT_PROJECT_ID`: Project ID for the RevenueCat project (required)
  *   - `REVENUECAT_TIMEOUT`: optional request timeout in milliseconds
  * @returns A configured RevenueCatClient instance
- * @throws Error if `REVENUECAT_API_KEY` is missing
+ * @throws Error if `REVENUECAT_API_KEY` or `REVENUECAT_PROJECT_ID` is missing
  */
 export function createRevenueCatClientFromEnv(env: {
   REVENUECAT_API_KEY?: string;
+  REVENUECAT_PROJECT_ID?: string;
   REVENUECAT_TIMEOUT?: string;
 }): RevenueCatClient {
   const apiKey = env.REVENUECAT_API_KEY;
@@ -101,10 +126,16 @@ export function createRevenueCatClientFromEnv(env: {
     throw new Error("REVENUECAT_API_KEY environment variable is not set");
   }
 
+  const projectId = env.REVENUECAT_PROJECT_ID;
+  if (!projectId) {
+    throw new Error("REVENUECAT_PROJECT_ID environment variable is not set");
+  }
+
   const timeout = env.REVENUECAT_TIMEOUT ? parseInt(env.REVENUECAT_TIMEOUT, 10) : undefined;
 
   return new RevenueCatClient({
     apiKey,
+    projectId,
     timeout,
   });
 }

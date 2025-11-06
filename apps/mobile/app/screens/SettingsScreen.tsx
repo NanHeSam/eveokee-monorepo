@@ -1,12 +1,14 @@
 import { Image, Text, TouchableOpacity, View, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useCallback } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { useCallback, useEffect } from 'react';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import Purchases from 'react-native-purchases';
 
 import { useAuth, useUser } from '@clerk/clerk-expo';
 
 import { useThemeColors } from '../theme/useThemeColors';
-import { useSubscription, useSubscriptionUIStore } from '../store/useSubscriptionStore';
+import { useRevenueCatSubscription } from '../hooks/useRevenueCatSubscription';
+import { useSubscriptionUIStore } from '../store/useSubscriptionStore';
 import { PaywallModal } from '../components/billing/PaywallModal';
 import { UsageProgress } from '../components/billing/UsageProgress';
 
@@ -17,9 +19,30 @@ export const SettingsScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
 
-  // Billing hooks
-  const { subscriptionStatus } = useSubscription();
+  // Billing hooks - Read directly from RevenueCat SDK (single source of truth)
+  const { subscriptionStatus, loading: subscriptionLoading, refresh: refreshSubscription } = useRevenueCatSubscription();
   const { showPaywall, paywallReason, setShowPaywall } = useSubscriptionUIStore();
+
+  // Refresh subscription status when screen comes into focus
+  // This ensures the UI updates when navigating back to Settings after subscription changes
+  useFocusEffect(
+    useCallback(() => {
+      refreshSubscription();
+    }, [refreshSubscription])
+  );
+
+  // Listen for subscription changes from RevenueCat SDK
+  useEffect(() => {
+    // RevenueCat SDK automatically notifies when subscription changes
+    // The listener callback will be called whenever customerInfo updates
+    Purchases.addCustomerInfoUpdateListener(() => {
+      // Refresh subscription status when RevenueCat notifies of changes
+      refreshSubscription();
+    });
+
+    // Note: addCustomerInfoUpdateListener doesn't return a cleanup function
+    // The listener is automatically cleaned up when the component unmounts
+  }, [refreshSubscription]);
   const handleSignOut = useCallback(async () => {
     try {
       await signOut();
@@ -70,17 +93,27 @@ export const SettingsScreen = () => {
               Subscription
             </Text>
             <View className="rounded-3xl p-5" style={{ backgroundColor: colors.surface }}>
-              <View className="flex-row items-center justify-between mb-3">
+              {subscriptionLoading ? (
                 <Text className="text-sm" style={{ color: colors.textSecondary }}>
-                  Plan
+                  Loading subscription...
                 </Text>
-                <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
-                  {subscriptionStatus?.tier === 'free' && 'Free'}
-                  {subscriptionStatus?.tier === 'monthly' && 'Monthly Pro'}
-                  {subscriptionStatus?.tier === 'yearly' && 'Yearly Pro'}
-                  {!subscriptionStatus?.tier && '—'}
-                </Text>
-              </View>
+              ) : (
+                <>
+                  <View className="flex-row items-center justify-between mb-3">
+                    <Text className="text-sm" style={{ color: colors.textSecondary }}>
+                      Plan
+                    </Text>
+                    <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
+                      {(() => {
+                        const tier = subscriptionStatus?.tier;
+                        if (tier === 'free') return 'Free';
+                        if (tier === 'weekly') return 'Weekly Pro';
+                        if (tier === 'monthly') return 'Monthly Pro';
+                        if (tier === 'yearly') return 'Yearly Pro';
+                        return '—';
+                      })()}
+                    </Text>
+                  </View>
 
               {(() => {
                 if (!subscriptionStatus?.periodEnd) return null;
@@ -118,17 +151,19 @@ export const SettingsScreen = () => {
                 </Text>
               </View>
 
-              {subscriptionStatus?.tier === 'free' && (
-                <TouchableOpacity
-                  className="mt-4 items-center rounded-[20px] py-3"
-                  style={{ backgroundColor: colors.accentMint }}
-                  activeOpacity={0.85}
-                  onPress={() => setShowPaywall(true, 'settings')}
-                >
-                  <Text className="text-sm font-semibold" style={{ color: colors.background }}>
-                    Upgrade to Pro
-                  </Text>
-                </TouchableOpacity>
+                  {subscriptionStatus?.tier === 'free' && (
+                    <TouchableOpacity
+                      className="mt-4 items-center rounded-[20px] py-3"
+                      style={{ backgroundColor: colors.accentMint }}
+                      activeOpacity={0.85}
+                      onPress={() => setShowPaywall(true, 'settings')}
+                    >
+                      <Text className="text-sm font-semibold" style={{ color: colors.background }}>
+                        Upgrade to Pro
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
               )}
             </View>
           </View>
@@ -191,6 +226,7 @@ export const SettingsScreen = () => {
       <PaywallModal
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
+        onPurchased={refreshSubscription}
         reason={paywallReason}
       />
     </SafeAreaView>

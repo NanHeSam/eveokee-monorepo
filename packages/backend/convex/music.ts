@@ -94,10 +94,11 @@ export const startDiaryMusicGeneration = mutation({
     }
 
     // Step 5: Check usage limits and record attempt
-    const usageResult = await ctx.runMutation(
-      internal.usage.recordMusicGeneration,
+    // Use reconciliation version to ensure RevenueCat product ID is up-to-date (single source of truth)
+    const usageResult = await ctx.runAction(
+      internal.usage.recordMusicGenerationWithReconciliation,
       {
-      userId,
+        userId,
       },
     );
 

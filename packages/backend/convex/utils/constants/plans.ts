@@ -5,9 +5,14 @@
 
 export const PLAN_CONFIG = {
   free: {
-    musicLimit: 10,
+    musicLimit: 5,
     periodDays: 30,
     price: 0,
+  },
+  weekly: {
+    musicLimit: 20,
+    periodDays: 7,
+    price: 3.99,
   },
   monthly: {
     musicLimit: 90,
