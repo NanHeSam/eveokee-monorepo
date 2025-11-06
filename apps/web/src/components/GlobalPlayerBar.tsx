@@ -48,7 +48,7 @@ export default function GlobalPlayerBar({ onTogglePlaylist }: GlobalPlayerBarPro
                 className="w-12 h-12 rounded-lg object-cover"
               />
             ) : (
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-accent-mint to-accent-apricot flex items-center justify-center">
                 <Music className="w-6 h-6 text-white" />
               </div>
             )}
@@ -79,7 +79,7 @@ export default function GlobalPlayerBar({ onTogglePlaylist }: GlobalPlayerBarPro
                 </button>
                 <button
                   onClick={handleTogglePlay}
-                  className="p-2 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors"
+                  className="p-2 bg-accent-mint text-white rounded-full hover:bg-accent-mint/90 transition-colors"
                   title={isPlaying ? 'Pause' : 'Play'}
                 >
                   {isPlaying ? (
@@ -121,7 +121,7 @@ export default function GlobalPlayerBar({ onTogglePlaylist }: GlobalPlayerBarPro
                   onChange={handleSeek}
                   className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
                   style={{
-                    background: `linear-gradient(to right, rgb(147, 51, 234) 0%, rgb(147, 51, 234) ${progress}%, rgb(229, 231, 235) ${progress}%, rgb(229, 231, 235) 100%)`,
+                    background: `linear-gradient(to right, rgb(82, 199, 160) 0%, rgb(82, 199, 160) ${progress}%, rgb(229, 231, 235) ${progress}%, rgb(229, 231, 235) 100%)`,
                   }}
                 />
               </div>

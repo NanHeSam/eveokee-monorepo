@@ -75,7 +75,7 @@ export default function MiniPlayerPanel({ music }: MiniPlayerPanelProps) {
   return (
     <div className="h-full flex flex-col">
       {/* Mini Player */}
-      <div className="bg-gradient-to-br from-purple-600 to-pink-600 p-6 text-white">
+      <div className="bg-gradient-to-br from-accent-mint to-accent-apricot p-6 text-white">
         {currentTrack ? (
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -130,7 +130,7 @@ export default function MiniPlayerPanel({ music }: MiniPlayerPanelProps) {
               
               <button
                 onClick={() => audioManager.toggleAudio(currentTrack._id, currentTrack.audioUrl!)}
-                className="p-4 bg-white text-purple-600 rounded-full hover:bg-gray-100 transition-colors"
+                className="p-4 bg-white text-accent-mint rounded-full hover:bg-gray-100 transition-colors"
               >
                 {audioManager.isPlaying ? (
                   <Pause className="w-6 h-6" />
@@ -173,7 +173,7 @@ export default function MiniPlayerPanel({ music }: MiniPlayerPanelProps) {
                   className="w-full text-left p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-400 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                    <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-400 group-hover:bg-accent-mint group-hover:text-white transition-colors">
                       {index + 1}
                     </div>
                     <div className="flex-1 min-w-0">
