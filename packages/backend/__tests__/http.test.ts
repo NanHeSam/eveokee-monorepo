@@ -334,9 +334,9 @@ describe("Webhook Logic Tests", () => {
 
       expect(usageResult.success).toBe(true);
       expect(usageResult.tier).toBe("free");
-      expect(usageResult.limit).toBe(10);
+      expect(usageResult.limit).toBe(5);
       expect(usageResult.currentUsage).toBe(1);
-      expect(usageResult.remainingQuota).toBe(9);
+      expect(usageResult.remainingQuota).toBe(4);
     });
 
     it("should handle music generation webhook completing after user creates diary", async () => {

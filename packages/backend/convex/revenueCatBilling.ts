@@ -11,6 +11,7 @@ import {
   MAX_RECONCILIATION_ERRORS_TO_LOG,
 } from "./utils/constants";
 import { createRevenueCatClientFromEnv, RevenueCatCustomerInfo } from "./integrations/revenuecat/client";
+import { getAnnualMonthlyCredit } from "./billing";
 
 const getPlatformFromStore = (store: string | undefined): "app_store" | "play_store" | "stripe" | undefined => {
   return store ? REVENUECAT_STORE_TO_PLATFORM[store] : undefined;
@@ -107,6 +108,9 @@ export const updateSubscriptionFromWebhook = internalMutation({
 
     const shouldLogToAudit = stateChanged || isSignificantEvent;
 
+    // Detect tier change for usage reset
+    const tierChanged = currentSubscription && currentSubscription.subscriptionTier !== effectiveTier;
+
     // Update snapshot
     if (user.activeSubscriptionId && currentSubscription) {
       await ctx.db.patch(user.activeSubscriptionId, {
@@ -116,6 +120,12 @@ export const updateSubscriptionFromWebhook = internalMutation({
         subscriptionTier: effectiveTier,
         ...(typeof expiresAt === "number" && !isNaN(expiresAt) ? { expiresAt } : {}),
         lastVerifiedAt: now,
+        // Reset usage when tier changes to prevent credit loss/blocking
+        ...(tierChanged && {
+          musicGenerationsUsed: 0,
+          lastResetAt: now,
+          customMusicLimit: effectiveTier === "yearly" ? getAnnualMonthlyCredit() : undefined,
+        }),
       });
     } else {
       const subscriptionId = await ctx.db.insert("subscriptionStatuses", {

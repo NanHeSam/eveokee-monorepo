@@ -43,7 +43,8 @@ describe("Subscription Usage Accounting", () => {
       const subscription = await getSubscription(t, subscriptionId);
 
       expect(subscription?.musicGenerationsUsed).toBe(1);
-      expect(subscription?.lastResetAt).toBe(afterPeriodEnd);
+      // Reset aligns to period boundary (startTime + periodDuration), not to afterPeriodEnd
+      expect(subscription?.lastResetAt).toBe(startTime + periodDuration);
     });
 
     it("should NOT reset when period has not expired", async () => {
@@ -107,7 +108,7 @@ describe("Subscription Usage Accounting", () => {
       expect(monthlyResult.periodStart).toBe(startTime);
       expect(monthlyResult.periodEnd).toBe(startTime + 30 * 24 * 60 * 60 * 1000);
 
-      // Test yearly tier (365 days)
+      // Test yearly tier (30 days - annual subscriptions now reset monthly)
       const { userId: yearlyUserId } = await createTestUser(t, {
         tier: "yearly",
         clerkId: "yearly-user",
@@ -119,7 +120,7 @@ describe("Subscription Usage Accounting", () => {
       );
 
       expect(yearlyResult.periodStart).toBe(startTime);
-      expect(yearlyResult.periodEnd).toBe(startTime + 365 * 24 * 60 * 60 * 1000);
+      expect(yearlyResult.periodEnd).toBe(startTime + 30 * 24 * 60 * 60 * 1000);
     });
 
     it("should reset exactly at period boundary", async () => {
@@ -128,8 +129,8 @@ describe("Subscription Usage Accounting", () => {
 
       const t = createTestEnvironment();
       const { userId, subscriptionId } = await createTestUser(t, {
-        tier: "free", // 30 days
-        musicGenerationsUsed: 8,
+        tier: "free", // Limit of 5
+        musicGenerationsUsed: 4, // Start with 4, so we can increment to 5 at boundary
       });
 
       // Fast-forward exactly to period end (not +1ms)
@@ -143,7 +144,7 @@ describe("Subscription Usage Accounting", () => {
       });
 
       // At exact boundary, should NOT reset yet (uses > comparison)
-      expect(result.currentUsage).toBe(9);
+      expect(result.currentUsage).toBe(5);
 
       // Now go 1ms past
       unfreezeTime();
@@ -157,7 +158,8 @@ describe("Subscription Usage Accounting", () => {
       expect(result2.currentUsage).toBe(1);
 
       const subscription = await getSubscription(t, subscriptionId);
-      expect(subscription?.lastResetAt).toBe(periodEnd + 1);
+      // Reset aligns to period boundary, not to periodEnd + 1
+      expect(subscription?.lastResetAt).toBe(periodEnd);
     });
   });
 
@@ -165,45 +167,7 @@ describe("Subscription Usage Accounting", () => {
     it("should return failure when at limit", async () => {
       const t = createTestEnvironment();
       const { userId, subscriptionId } = await createTestUser(t, {
-        tier: "free", // Limit of 10
-        musicGenerationsUsed: 10,
-      });
-
-      const result = await t.mutation(internal.usage.recordMusicGeneration, {
-        userId,
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.reason).toBe("Usage limit reached");
-      expect(result.currentUsage).toBe(10);
-      expect(result.remainingQuota).toBe(0);
-
-      // Verify counter was NOT incremented
-      const subscription = await getSubscription(t, subscriptionId);
-      expect(subscription?.musicGenerationsUsed).toBe(10);
-    });
-
-    it("should return failure when above limit", async () => {
-      const t = createTestEnvironment();
-      const { userId } = await createTestUser(t, {
-        tier: "free", // Limit of 10
-        musicGenerationsUsed: 15, // Somehow above limit
-      });
-
-      const result = await t.mutation(internal.usage.recordMusicGeneration, {
-        userId,
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.reason).toBe("Usage limit reached");
-      expect(result.currentUsage).toBe(15);
-      expect(result.remainingQuota).toBe(0); // Clamped to 0
-    });
-
-    it("should increment usage counter when under limit", async () => {
-      const t = createTestEnvironment();
-      const { userId, subscriptionId } = await createTestUser(t, {
-        tier: "free", // Limit of 10
+        tier: "free", // Limit of 5
         musicGenerationsUsed: 5,
       });
 
@@ -211,19 +175,38 @@ describe("Subscription Usage Accounting", () => {
         userId,
       });
 
-      expect(result.success).toBe(true);
-      expect(result.currentUsage).toBe(6);
-      expect(result.remainingQuota).toBe(4);
+      expect(result.success).toBe(false);
+      expect(result.reason).toBe("Usage limit reached");
+      expect(result.currentUsage).toBe(5);
+      expect(result.remainingQuota).toBe(0);
 
+      // Verify counter was NOT incremented
       const subscription = await getSubscription(t, subscriptionId);
-      expect(subscription?.musicGenerationsUsed).toBe(6);
+      expect(subscription?.musicGenerationsUsed).toBe(5);
     });
 
-    it("should allow generation at limit - 1", async () => {
+    it("should return failure when above limit", async () => {
+      const t = createTestEnvironment();
+      const { userId } = await createTestUser(t, {
+        tier: "free", // Limit of 5
+        musicGenerationsUsed: 10, // Somehow above limit
+      });
+
+      const result = await t.mutation(internal.usage.recordMusicGeneration, {
+        userId,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.reason).toBe("Usage limit reached");
+      expect(result.currentUsage).toBe(10);
+      expect(result.remainingQuota).toBe(0); // Clamped to 0
+    });
+
+    it("should increment usage counter when under limit", async () => {
       const t = createTestEnvironment();
       const { userId, subscriptionId } = await createTestUser(t, {
-        tier: "free", // Limit of 10
-        musicGenerationsUsed: 9,
+        tier: "free", // Limit of 5
+        musicGenerationsUsed: 2,
       });
 
       const result = await t.mutation(internal.usage.recordMusicGeneration, {
@@ -231,17 +214,36 @@ describe("Subscription Usage Accounting", () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.currentUsage).toBe(10);
+      expect(result.currentUsage).toBe(3);
+      expect(result.remainingQuota).toBe(2);
+
+      const subscription = await getSubscription(t, subscriptionId);
+      expect(subscription?.musicGenerationsUsed).toBe(3);
+    });
+
+    it("should allow generation at limit - 1", async () => {
+      const t = createTestEnvironment();
+      const { userId, subscriptionId } = await createTestUser(t, {
+        tier: "free", // Limit of 5
+        musicGenerationsUsed: 4,
+      });
+
+      const result = await t.mutation(internal.usage.recordMusicGeneration, {
+        userId,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.currentUsage).toBe(5);
       expect(result.remainingQuota).toBe(0);
 
       const subscription = await getSubscription(t, subscriptionId);
-      expect(subscription?.musicGenerationsUsed).toBe(10);
+      expect(subscription?.musicGenerationsUsed).toBe(5);
     });
 
     it("should respect custom music limit", async () => {
       const t = createTestEnvironment();
       const { userId, subscriptionId } = await createTestUser(t, {
-        tier: "free", // Default limit of 10
+        tier: "free", // Default limit of 5
         customMusicLimit: 100, // Custom override
         musicGenerationsUsed: 99,
       });
@@ -311,8 +313,8 @@ describe("Subscription Usage Accounting", () => {
     it("should never return negative remainingQuota", async () => {
       const t = createTestEnvironment();
       const { userId } = await createTestUser(t, {
-        tier: "free", // Limit of 10
-        musicGenerationsUsed: 15, // Somehow exceeds limit
+        tier: "free", // Limit of 5
+        musicGenerationsUsed: 10, // Somehow exceeds limit
       });
 
       const result = await t.mutation(internal.usage.recordMusicGeneration, {
@@ -325,7 +327,7 @@ describe("Subscription Usage Accounting", () => {
     it("should calculate quota for different tiers", async () => {
       const t = createTestEnvironment();
 
-      // Free: 10
+      // Free: 5
       const { userId: freeUser } = await createTestUser(t, {
         tier: "free",
         musicGenerationsUsed: 0,
@@ -334,8 +336,8 @@ describe("Subscription Usage Accounting", () => {
       const freeResult = await t.mutation(internal.usage.recordMusicGeneration, {
         userId: freeUser,
       });
-      expect(freeResult.limit).toBe(10);
-      expect(freeResult.remainingQuota).toBe(9);
+      expect(freeResult.limit).toBe(5);
+      expect(freeResult.remainingQuota).toBe(4);
 
       // Monthly: 90
       const { userId: monthlyUser } = await createTestUser(t, {
@@ -350,7 +352,7 @@ describe("Subscription Usage Accounting", () => {
       expect(monthlyResult.limit).toBe(90);
       expect(monthlyResult.remainingQuota).toBe(89);
 
-      // Yearly: 1000
+      // Yearly: 84 (monthly credit: 1000 / 12 rounded up)
       const { userId: yearlyUser } = await createTestUser(t, {
         tier: "yearly",
         musicGenerationsUsed: 0,
@@ -360,8 +362,8 @@ describe("Subscription Usage Accounting", () => {
         internal.usage.recordMusicGeneration,
         { userId: yearlyUser }
       );
-      expect(yearlyResult.limit).toBe(1000);
-      expect(yearlyResult.remainingQuota).toBe(999);
+      expect(yearlyResult.limit).toBe(84);
+      expect(yearlyResult.remainingQuota).toBe(83);
     });
   });
 
@@ -554,7 +556,8 @@ describe("Subscription Usage Accounting", () => {
       // After mutation, should be reset
       expect(result.currentUsage).toBe(1); // Reset to 0, then incremented
       expect(result.remainingQuota).toBe(89);
-      expect(result.periodStart).toBe(startTime + periodDuration + 1000);
+      // Reset aligns to period boundary, not to current time
+      expect(result.periodStart).toBe(startTime + periodDuration);
     });
 
     it("should include custom limit in snapshot", async () => {

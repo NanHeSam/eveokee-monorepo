@@ -88,8 +88,8 @@ describe("Music Generation Flow", () => {
     it("should return failure when usage limit is reached", async () => {
       const t = createTestEnvironment();
       const { userId, subscriptionId } = await createTestUser(t, {
-        tier: "free", // Free tier has limit of 10
-        musicGenerationsUsed: 10, // Already at limit
+        tier: "free", // Free tier has limit of 5
+        musicGenerationsUsed: 5, // Already at limit
       });
 
       // Create diary beforehand
@@ -110,14 +110,14 @@ describe("Music Generation Flow", () => {
 
       // Verify usage counter was NOT incremented
       const subscription = await getSubscription(t, subscriptionId);
-      expect(subscription?.musicGenerationsUsed).toBe(10);
+      expect(subscription?.musicGenerationsUsed).toBe(5);
     });
 
     it("should increment usage counter when under limit", async () => {
       const t = createTestEnvironment();
       const { userId, subscriptionId } = await createTestUser(t, {
-        tier: "free", // Limit of 10
-        musicGenerationsUsed: 5, // Under limit
+        tier: "free", // Limit of 5
+        musicGenerationsUsed: 2, // Under limit
       });
 
       const result = await t.mutation(internal.usage.recordMusicGeneration, {
@@ -125,11 +125,11 @@ describe("Music Generation Flow", () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.remainingQuota).toBe(4); // 10 - 6 = 4
+      expect(result.remainingQuota).toBe(2); // 5 - 3 = 2
 
       // Verify usage counter was incremented
       const subscription = await getSubscription(t, subscriptionId);
-      expect(subscription?.musicGenerationsUsed).toBe(6);
+      expect(subscription?.musicGenerationsUsed).toBe(3);
     });
 
     it("should return correct remainingQuota", async () => {

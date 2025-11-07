@@ -51,7 +51,7 @@ describe("getUserProfile", () => {
     expect(result?.subscription?.tier).toBe("free");
     expect(result?.subscription?.status).toBe("active");
     expect(result?.subscription?.musicGenerationsUsed).toBe(5);
-    expect(result?.subscription?.musicLimit).toBe(10); // Free tier default
+    expect(result?.subscription?.musicLimit).toBe(5); // Free tier default
     expect(result?.callSettings).toBeNull();
   });
 
@@ -242,8 +242,8 @@ describe("getUserProfile", () => {
     expect(result).toBeDefined();
     expect(result?.subscription).toBeDefined();
     expect(result?.subscription?.tier).toBe("yearly");
-    expect(result?.subscription?.musicLimit).toBe(1000); // Yearly tier limit
-    expect(result?.subscription?.remainingQuota).toBe(900); // 1000 - 100 used
+    expect(result?.subscription?.musicLimit).toBe(84); // Yearly tier monthly credit (1000 / 12 rounded up)
+    expect(result?.subscription?.remainingQuota).toBe(0); // 84 - 100 used = 0 (clamped)
     expect(result?.subscription?.isActive).toBe(true);
   });
 
