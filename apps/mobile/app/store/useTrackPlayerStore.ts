@@ -18,6 +18,9 @@ type TrackPlayerState = {
   position: number;
   duration: number;
   isFullPlayerVisible: boolean;
+  miniPlayerHeight: number | null;
+  miniPlayerBottom: number | null;
+  setMiniPlayerDimensions: (height: number, bottom: number) => void;
   showPlayer: (track: TrackPlayerTrack) => void;
   loadPlaylist: (tracks: TrackPlayerTrack[], startIndex: number) => void;
   setCurrentTrack: (track: TrackPlayerTrack | null) => void;
@@ -37,6 +40,9 @@ export const useTrackPlayerStore = create<TrackPlayerState>((set) => ({
   position: 0,
   duration: 0,
   isFullPlayerVisible: false,
+  miniPlayerHeight: null,
+  miniPlayerBottom: null,
+  setMiniPlayerDimensions: (height, bottom) => set({ miniPlayerHeight: height, miniPlayerBottom: bottom }),
   showPlayer: (track) => set({ currentTrack: track, isVisible: true, position: 0, duration: 0 }),
   loadPlaylist: (tracks, startIndex) => set({
     playlist: tracks,

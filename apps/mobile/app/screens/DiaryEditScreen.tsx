@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View, ScrollView, Alert, Image, Pressable } from 'react-native';
+import { KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View, ScrollView, Alert, Image, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,7 @@ import { useSubscriptionUIStore } from '../store/useSubscriptionStore';
 import { useRevenueCatSubscription } from '../hooks/useRevenueCatSubscription';
 import { useMusicGenerationStatus } from '../store/useMusicGenerationStatus';
 import { UsageProgress } from '../components/billing/UsageProgress';
+import { BUTTON_SPACING, EXTRA_PADDING, DEFAULT_BUTTON_HEIGHT } from '../utils/layoutConstants';
 
 export const DiaryEditScreen = () => {
   const colors = useThemeColors();
@@ -36,6 +37,29 @@ export const DiaryEditScreen = () => {
   const { showPaywall, paywallReason, setShowPaywall } = useSubscriptionUIStore();
   const { subscriptionStatus } = useRevenueCatSubscription();
   const addPendingGeneration = useMusicGenerationStatus((state) => state.addPendingGeneration);
+  
+  // Get usage data from Convex to get effective limit (handles yearly monthly credits correctly)
+  const usageData = useQuery(api.usage.getCurrentUserUsage);
+  
+  // Get MiniPlayer dimensions dynamically
+  const { isVisible: isMiniPlayerVisible, miniPlayerHeight, miniPlayerBottom } = useTrackPlayerStore();
+  
+  // Measure button height dynamically
+  const [buttonHeight, setButtonHeight] = useState<number | null>(null);
+  
+  // Calculate bottom padding to ensure buttons are above MiniPlayer
+  // Uses dynamically measured MiniPlayer and button dimensions
+  const bottomPadding = useMemo(() => {
+    const effectiveButtonHeight = buttonHeight ?? DEFAULT_BUTTON_HEIGHT;
+    
+    if (isMiniPlayerVisible && miniPlayerHeight !== null && miniPlayerBottom !== null) {
+      // When MiniPlayer is visible: position buttons above it with spacing
+      return miniPlayerBottom + miniPlayerHeight + effectiveButtonHeight + BUTTON_SPACING + EXTRA_PADDING;
+    } else {
+      // When MiniPlayer is hidden: use safe area + button height
+      return Math.max(insets.bottom, 20) + effectiveButtonHeight + EXTRA_PADDING;
+    }
+  }, [isMiniPlayerVisible, miniPlayerHeight, miniPlayerBottom, buttonHeight, insets.bottom]);
 
   const diaryDocs = useQuery(api.diaries.listDiaries);
   const currentDiary = useMemo(
@@ -116,7 +140,53 @@ export const DiaryEditScreen = () => {
       if (!result.success) {
         // Handle limit reached or other errors
         if (result.code === 'USAGE_LIMIT_REACHED') {
-          setShowPaywall(true, 'limit_reached');
+          // Update navigation params with diaryId so user can return to edit this diary
+          // This ensures the diary is properly linked even though music generation failed
+          if (diaryId && !route.params?.diaryId) {
+            navigation.setParams({
+              diaryId: diaryId,
+              content: trimmed,
+            });
+            // Keep editing mode enabled so user can see/edit the diary
+            setIsEditing(true);
+          }
+          
+          // Show error message with usage details before paywall
+          // Use usage data from Convex to get effective limit (handles yearly monthly credits correctly)
+          const effectiveLimit = usageData?.musicLimit ?? subscriptionStatus?.musicLimit ?? 0;
+          const tier = subscriptionStatus?.tier ?? usageData?.tier ?? 'free';
+          
+          // For yearly subscriptions, show "monthly" in the message since they reset monthly
+          let tierDisplayName: string;
+          let periodDisplayName: string;
+          if (tier === 'yearly') {
+            tierDisplayName = 'yearly';
+            periodDisplayName = 'monthly'; // Yearly subscriptions reset monthly
+          } else {
+            tierDisplayName = tier === 'free' ? 'free' : tier === 'weekly' ? 'weekly' : tier === 'monthly' ? 'monthly' : 'yearly';
+            periodDisplayName = tierDisplayName;
+          }
+          
+          // Show error message (PaywallModal handles preventing double presentation)
+          if (!showPaywall) {
+            Alert.alert(
+              'Credits Exhausted',
+              `You've used all ${effectiveLimit} of your ${periodDisplayName} music generation${effectiveLimit === 1 ? '' : 's'}.
+               Your diary entry has been saved. Upgrade to generate music for this entry. or reach out to support@eveoky.com`,
+              [
+                {
+                  text: 'OK',
+                  style: 'cancel',
+                },
+                {
+                  text: 'Upgrade',
+                  onPress: () => {
+                    setShowPaywall(true, 'limit_reached');
+                  },
+                },
+              ]
+            );
+          }
         } else if (result.code === 'ALREADY_IN_PROGRESS') {
           // Navigate to Playlist - music generation is already in progress
           // Use a 1-button alert so it's less intrusive than the error alert
@@ -270,7 +340,11 @@ export const DiaryEditScreen = () => {
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 20, paddingBottom: 24 }}
+          contentContainerStyle={{ 
+            flexGrow: 1, 
+            paddingHorizontal: 20,
+            paddingBottom: bottomPadding,
+          }}
           keyboardShouldPersistTaps="handled"
         >
           <View className="mt-1">
@@ -290,7 +364,7 @@ export const DiaryEditScreen = () => {
               placeholderTextColor={colors.textMuted}
               multiline
               className="text-base leading-6"
-              style={{ color: colors.textPrimary, minHeight: 180, textAlignVertical: 'top' }}
+              style={{ color: colors.textPrimary, minHeight: 280, textAlignVertical: 'top' }}
             />
           </View>
 
@@ -303,36 +377,40 @@ export const DiaryEditScreen = () => {
               />
             </View>
           )}
+
+          {/* Action buttons - positioned relative to textbox */}
+          <View 
+            className="mt-6 flex-row gap-4"
+            onLayout={(event) => {
+              const { height } = event.nativeEvent.layout;
+              setButtonHeight(height);
+            }}
+          >
+            <TouchableOpacity
+              className="flex-1 items-center justify-center rounded-[26px] py-4"
+              style={{ backgroundColor: colors.card, opacity: (isSaving || isGenerating) ? 0.7 : 1 }}
+              activeOpacity={0.85}
+              onPress={handleDone}
+              disabled={isSaving || isGenerating}
+            >
+              <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
+                {isSaving ? 'Saving...' : 'Done'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="flex-1 items-center justify-center rounded-[26px] py-4"
+              style={{ backgroundColor: colors.accentMint, opacity: (isSaving || isGenerating) ? 0.7 : 1 }}
+              activeOpacity={0.85}
+              onPress={handleGenerateMusic}
+              disabled={isSaving || isGenerating}
+            >
+              <Text className="text-base font-semibold" style={{ color: colors.background }}>
+                {isGenerating ? 'Generating...' : 'Generate Music'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
-
-        <View
-          className="flex-row gap-4 px-5 pb-5"
-          style={{ paddingBottom: Math.max(insets.bottom, 20), backgroundColor: colors.background }}
-        >
-          <TouchableOpacity
-            className="flex-1 items-center justify-center rounded-[26px] py-4"
-            style={{ backgroundColor: colors.card, opacity: (isSaving || isGenerating) ? 0.7 : 1 }}
-            activeOpacity={0.85}
-            onPress={handleDone}
-            disabled={isSaving || isGenerating}
-          >
-            <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
-              {isSaving ? 'Saving...' : 'Done'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            className="flex-1 items-center justify-center rounded-[26px] py-4"
-            style={{ backgroundColor: colors.accentMint, opacity: (isSaving || isGenerating) ? 0.7 : 1 }}
-            activeOpacity={0.85}
-            onPress={handleGenerateMusic}
-            disabled={isSaving || isGenerating}
-          >
-            <Text className="text-base font-semibold" style={{ color: colors.background }}>
-              {isGenerating ? 'Generating...' : 'Generate Music'}
-            </Text>
-          </TouchableOpacity>
-        </View>
       </KeyboardAvoidingView>
       
       {/* Paywall Modal */}

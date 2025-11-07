@@ -107,14 +107,20 @@ type SubscriptionUIState = {
   setIsLoading: (loading: boolean) => void;
 };
 
-export const useSubscriptionUIStore = create<SubscriptionUIState>((set) => ({
+export const useSubscriptionUIStore = create<SubscriptionUIState>((set, get) => ({
   showPaywall: false,
   paywallReason: null,
   isLoading: false,
-  setShowPaywall: (show, reason) => set({ 
-    showPaywall: show, 
-    paywallReason: show ? reason || null : null 
-  }),
+  setShowPaywall: (show, reason) => {
+    // Prevent setting paywall to true if it's already true (prevents double presentation)
+    if (show && get().showPaywall) {
+      return;
+    }
+    set({ 
+      showPaywall: show, 
+      paywallReason: show ? reason || null : null 
+    });
+  },
   setIsLoading: (loading) => set({ isLoading: loading }),
 }));
 
