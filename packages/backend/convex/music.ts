@@ -1,4 +1,4 @@
-import { internalMutation, mutation, query } from "./_generated/server";
+import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { internal, api } from "./_generated/api";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
@@ -34,7 +34,7 @@ const sunoTrackValidator = v.object({
  * 
  * Returns success status with diaryId and remaining quota, or error code if limit reached or already in progress.
  */
-export const startDiaryMusicGeneration = mutation({
+export const startDiaryMusicGeneration = action({
   args: {
     content: v.string(),
     diaryId: v.optional(v.id("diaries")),
@@ -57,8 +57,8 @@ export const startDiaryMusicGeneration = mutation({
       throw new Error("Content cannot be empty");
     }
 
-    // Step 2: Authenticate user
-    const { userId } = await ensureCurrentUser(ctx);
+    // Step 2: Authenticate user via mutation (actions cannot access DB directly)
+    const { userId } = await ctx.runMutation(api.users.ensureCurrentUser, {});
 
     // Step 3: Create or update diary entry
     let diaryId: Id<"diaries">;
@@ -76,14 +76,12 @@ export const startDiaryMusicGeneration = mutation({
       diaryId = _id;
     }
 
-    // Step 4: Check for existing pending music generation
-    const pendingMusic = await ctx.db
-      .query("music")
-      .withIndex("by_diaryId", (q) => q.eq("diaryId", diaryId))
-      .filter((q) => q.eq(q.field("status"), "pending"))
-      .first();
+    // Step 4: Check for existing pending music generation via internal query
+    const hasPending = await ctx.runQuery(internal.music.hasPendingMusicForDiary, {
+      diaryId,
+    });
 
-    if (pendingMusic) {
+    if (hasPending) {
       return {
         diaryId,
         success: false,
@@ -93,11 +91,11 @@ export const startDiaryMusicGeneration = mutation({
       };
     }
 
-    // Step 5: Check usage limits and record attempt
-    const usageResult = await ctx.runMutation(
-      internal.usage.recordMusicGeneration,
+    // Step 5: Reconcile subscription with RevenueCat before recording usage
+    const usageResult = await ctx.runAction(
+      internal.usage.recordMusicGenerationWithReconciliation,
       {
-      userId,
+        userId,
       },
     );
 
@@ -106,7 +104,9 @@ export const startDiaryMusicGeneration = mutation({
       return {
         diaryId,
         success: false,
-        code: (usageResult.code || "UNKNOWN_ERROR") as "USAGE_LIMIT_REACHED" | "UNKNOWN_ERROR",
+        code: (usageResult.code || "UNKNOWN_ERROR") as
+          | "USAGE_LIMIT_REACHED"
+          | "UNKNOWN_ERROR",
         reason: usageResult.reason,
         remainingQuota: usageResult.remainingQuota,
       };
@@ -132,6 +132,30 @@ export const startDiaryMusicGeneration = mutation({
       code: undefined,
       remainingQuota: usageResult.remainingQuota,
     };
+  },
+});
+
+export const hasPendingMusicForDiary = internalQuery({
+  args: {
+    diaryId: v.id("diaries"),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const TEN_MINUTES_MS = 10 * 60 * 1000;
+    const now = Date.now();
+
+    const pending = await ctx.db
+      .query("music")
+      .withIndex("by_diaryId", (q) => q.eq("diaryId", args.diaryId))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("status"), "pending"),
+          q.gte(q.field("createdAt"), now - TEN_MINUTES_MS)
+        )
+      )
+      .first();
+
+    return pending !== null;
   },
 });
 

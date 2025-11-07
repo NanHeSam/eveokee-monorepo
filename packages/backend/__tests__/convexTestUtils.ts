@@ -24,7 +24,7 @@ export async function createTestUser(
     clerkId?: string;
     email?: string;
     name?: string;
-    tier?: "free" | "monthly" | "yearly";
+    tier?: "free" | "weekly" | "monthly" | "yearly";
     musicGenerationsUsed?: number;
     customMusicLimit?: number;
     tags?: string[];

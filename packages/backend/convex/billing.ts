@@ -37,7 +37,27 @@ export function getEffectiveMusicLimit(
     return customLimit;
   }
   
+  // Annual subscriptions use monthly credit (total / 12, rounded up)
+  if (tier === "yearly") {
+    return getAnnualMonthlyCredit();
+  }
+  
   return PLAN_CONFIG[tier].musicLimit;
+}
+
+// Helper function to get reset period duration for a tier
+// Annual subscriptions reset monthly, others reset according to their tier
+export function getResetPeriodDurationMs(tier: SubscriptionTier): number {
+  if (tier === "yearly") {
+    // Annual subscriptions reset monthly
+    return PLAN_CONFIG.monthly.periodDays * 24 * 60 * 60 * 1000;
+  }
+  return getPeriodDurationMs(tier);
+}
+
+// Helper function to get monthly credit for annual subscriptions
+export function getAnnualMonthlyCredit(): number {
+  return Math.ceil(PLAN_CONFIG.yearly.musicLimit / 12);
 }
 
 // Mutation to create a free subscription for new users
@@ -138,13 +158,15 @@ export const getCurrentUserStatus = query({
     );
     const isActive = subscription.status === "active" || subscription.status === "in_grace";
 
+    const tier = subscription.subscriptionTier as SubscriptionTier;
     return {
       tier: subscription.subscriptionTier,
       status: subscription.status,
       musicGenerationsUsed: subscription.musicGenerationsUsed,
       musicLimit,
       periodStart: subscription.lastResetAt,
-      periodEnd: subscription.lastResetAt + getPeriodDurationMs(subscription.subscriptionTier as SubscriptionTier),
+      // Use reset period duration (monthly for annual, otherwise tier's period)
+      periodEnd: subscription.lastResetAt + getResetPeriodDurationMs(tier),
       isActive,
       remainingQuota: Math.max(0, musicLimit - subscription.musicGenerationsUsed),
     };

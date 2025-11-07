@@ -16,6 +16,7 @@ export interface RevenueCatWebhookEvent {
     type: string;
     app_user_id: string;
     product_id: string;
+    new_product_id?: string; // For PRODUCT_CHANGE events, this is the new product
     store: string;
     environment?: "SANDBOX" | "PRODUCTION"; // Receipt environment (sandbox vs production)
     expiration_at_ms?: number;

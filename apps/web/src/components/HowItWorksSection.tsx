@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { PenTool, Music, Headphones, Loader2, Sparkles } from 'lucide-react';
 import { SignedIn, SignedOut, useAuth } from '@clerk/clerk-react';
-import { useMutation, useQuery } from 'convex/react';
+import { useAction, useQuery } from 'convex/react';
 import { api } from '@backend/convex';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
 import Confetti from 'react-confetti';
@@ -108,7 +108,7 @@ export default function HowItWorksSection() {
   
   const { isSignedIn, userId } = useAuth();
   
-  const startMusicGeneration = useMutation(api.music.startDiaryMusicGeneration);
+  const startMusicGeneration = useAction(api.music.startDiaryMusicGeneration);
   const [generatedMusic, setGeneratedMusic] = useState<GeneratedMusic | null>(null);
   const hasRestoredFromStorage = useRef(false);
   const storageKey = `last_generated_music_${userId ?? 'guest'}`;

@@ -3,9 +3,11 @@ import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { Easing, SlideInUp, SlideOutDown } from 'react-native-reanimated';
 import TrackPlayer, { State, usePlaybackState } from 'react-native-track-player';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTrackPlayerStore } from '../../store/useTrackPlayerStore';
 import { useThemeColors } from '../../theme/useThemeColors';
+import { TAB_BAR_BASE_HEIGHT } from '../../utils/layoutConstants';
 
 const formatTime = (seconds: number) => {
   const wholeSeconds = Math.floor(Math.max(0, seconds));
@@ -16,10 +18,15 @@ const formatTime = (seconds: number) => {
 
 export const MiniPlayer = () => {
   const colors = useThemeColors();
-  const { currentTrack, isVisible, position, duration } = useTrackPlayerStore();
+  const insets = useSafeAreaInsets();
+  const { currentTrack, isVisible, position, duration, setMiniPlayerDimensions } = useTrackPlayerStore();
   const playbackState = usePlaybackState();
   const hidePlayer = useTrackPlayerStore((state) => state.hidePlayer);
   const showFullPlayer = useTrackPlayerStore((state) => state.showFullPlayer);
+  
+  // Calculate MiniPlayer bottom position dynamically
+  // Uses design constant for tab bar height + safe area insets for proper positioning
+  const miniPlayerBottom = TAB_BAR_BASE_HEIGHT + insets.bottom;
 
   const togglePlayback = useCallback(async () => {
     try {
@@ -27,6 +34,11 @@ export const MiniPlayer = () => {
       if (state.state === State.Playing) {
         await TrackPlayer.pause();
       } else {
+        const { position, duration } = useTrackPlayerStore.getState();
+        // If track has finished (position at or near the end), seek to beginning before playing
+        if (duration > 0 && position >= duration - 0.5) {
+          await TrackPlayer.seekTo(0);
+        }
         await TrackPlayer.play();
       }
     } catch (error) {
@@ -48,9 +60,17 @@ export const MiniPlayer = () => {
     <Animated.View
       entering={SlideInUp.duration(220).easing(Easing.out(Easing.quad))}
       exiting={SlideOutDown.duration(220).easing(Easing.in(Easing.quad))}
+      onLayout={(event) => {
+        const { height } = event.nativeEvent.layout;
+        setMiniPlayerDimensions(height, miniPlayerBottom);
+      }}
       style={[
         styles.container,
-        { backgroundColor: colors.surface, shadowColor: colors.accentMint }
+        { 
+          backgroundColor: colors.surface, 
+          shadowColor: colors.accentMint,
+          bottom: miniPlayerBottom,
+        }
       ]}
       className="mx-4 rounded-3xl"
     >
@@ -127,7 +147,6 @@ export const MiniPlayer = () => {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 90,
     left: 0,
     right: 0,
     shadowOpacity: 0.2,

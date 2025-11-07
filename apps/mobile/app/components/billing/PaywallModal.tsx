@@ -2,6 +2,11 @@ import { useEffect, useRef } from 'react';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import * as Sentry from '@sentry/react-native';
 
+// Module-level singleton to track paywall presentation globally
+// This prevents double presentation even if multiple PaywallModal instances exist
+let globalIsPresenting = false;
+let globalHasPresented = false;
+
 interface PaywallModalProps {
   visible: boolean;
   onClose: () => void;
@@ -10,7 +15,6 @@ interface PaywallModalProps {
 }
 
 export function PaywallModal({ visible, onClose, onPurchased, reason }: PaywallModalProps) {
-  const isPresentingRef = useRef(false);
   const onCloseRef = useRef(onClose);
   const onPurchasedRef = useRef(onPurchased);
   const reasonRef = useRef(reason);
@@ -21,9 +25,24 @@ export function PaywallModal({ visible, onClose, onPurchased, reason }: PaywallM
   reasonRef.current = reason;
 
   useEffect(() => {
-    if (visible && !isPresentingRef.current) {
+    // Reset guards when visible becomes false
+    if (!visible) {
+      // Reset after a delay to ensure paywall is fully closed
+      const resetTimeout = setTimeout(() => {
+        globalIsPresenting = false;
+        globalHasPresented = false;
+      }, 1000); // Increased delay to ensure paywall is fully dismissed
+      return () => clearTimeout(resetTimeout);
+    }
+
+    // Only show paywall if:
+    // 1. visible is true
+    // 2. We're not already presenting globally
+    // 3. We haven't already presented globally (prevents double presentation)
+    if (visible && !globalIsPresenting && !globalHasPresented) {
       const showPaywall = async () => {
-        isPresentingRef.current = true;
+        globalIsPresenting = true;
+        globalHasPresented = true;
         try {
           Sentry.addBreadcrumb({
             category: 'revenuecat',
@@ -68,7 +87,8 @@ export function PaywallModal({ visible, onClose, onPurchased, reason }: PaywallM
           Sentry.captureException(error);
           onCloseRef.current();
         } finally {
-          isPresentingRef.current = false;
+          // Only reset isPresenting, keep hasPresented true to prevent double presentation
+          globalIsPresenting = false;
         }
       };
 

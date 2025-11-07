@@ -1,12 +1,14 @@
-import { Image, Text, TouchableOpacity, View, ScrollView } from 'react-native';
+import { Image, Text, TouchableOpacity, View, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useCallback } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import Purchases from 'react-native-purchases';
 
 import { useAuth, useUser } from '@clerk/clerk-expo';
 
 import { useThemeColors } from '../theme/useThemeColors';
-import { useSubscription, useSubscriptionUIStore } from '../store/useSubscriptionStore';
+import { useRevenueCatSubscription } from '../hooks/useRevenueCatSubscription';
+import { useSubscriptionUIStore } from '../store/useSubscriptionStore';
 import { PaywallModal } from '../components/billing/PaywallModal';
 import { UsageProgress } from '../components/billing/UsageProgress';
 
@@ -17,9 +19,44 @@ export const SettingsScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
 
-  // Billing hooks
-  const { subscriptionStatus } = useSubscription();
+  // Billing hooks - Read directly from RevenueCat SDK (single source of truth)
+  const { subscriptionStatus, loading: subscriptionLoading, refresh: refreshSubscription } = useRevenueCatSubscription();
   const { showPaywall, paywallReason, setShowPaywall } = useSubscriptionUIStore();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Refresh subscription status when screen comes into focus
+  // This ensures the UI updates when navigating back to Settings after subscription changes
+  // Uses cached data if available (no force refresh)
+  useFocusEffect(
+    useCallback(() => {
+      refreshSubscription(false);
+    }, [refreshSubscription])
+  );
+
+  // Handle pull-to-refresh - forces a fresh fetch from RevenueCat servers
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshSubscription(true); // Force refresh to get latest data from RevenueCat
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refreshSubscription]);
+
+  // Listen for subscription changes from RevenueCat SDK
+  useEffect(() => {
+    const handleCustomerInfoUpdate = () => {
+      // Refresh subscription status when RevenueCat notifies of changes
+      // Uses cached data if available (no force refresh)
+      refreshSubscription(false);
+    };
+
+    Purchases.addCustomerInfoUpdateListener(handleCustomerInfoUpdate);
+
+    return () => {
+      Purchases.removeCustomerInfoUpdateListener(handleCustomerInfoUpdate);
+    };
+  }, [refreshSubscription]);
   const handleSignOut = useCallback(async () => {
     try {
       await signOut();
@@ -34,7 +71,18 @@ export const SettingsScreen = () => {
 
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background, paddingTop: insets.top }}>
-      <ScrollView className="flex-1" style={{ backgroundColor: colors.background }}>
+      <ScrollView 
+        className="flex-1" 
+        style={{ backgroundColor: colors.background }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing || subscriptionLoading}
+            onRefresh={handleRefresh}
+            tintColor={colors.textSecondary}
+            colors={[colors.accentMint]} // Android
+          />
+        }
+      >
         <View className="p-6">
           <Text className="text-[26px] font-semibold" style={{ color: colors.textPrimary }}>
             Settings
@@ -70,28 +118,40 @@ export const SettingsScreen = () => {
               Subscription
             </Text>
             <View className="rounded-3xl p-5" style={{ backgroundColor: colors.surface }}>
-              <View className="flex-row items-center justify-between mb-3">
+              {subscriptionLoading ? (
                 <Text className="text-sm" style={{ color: colors.textSecondary }}>
-                  Plan
+                  Loading subscription...
                 </Text>
-                <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
-                  {subscriptionStatus?.tier === 'free' && 'Free'}
-                  {subscriptionStatus?.tier === 'monthly' && 'Monthly Pro'}
-                  {subscriptionStatus?.tier === 'yearly' && 'Yearly Pro'}
-                  {!subscriptionStatus?.tier && '—'}
-                </Text>
-              </View>
+              ) : (
+                <>
+                  <View className="flex-row items-center justify-between mb-3">
+                    <Text className="text-sm" style={{ color: colors.textSecondary }}>
+                      Plan
+                    </Text>
+                    <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
+                      {(() => {
+                        const tier = subscriptionStatus?.tier;
+                        if (tier === 'free') return 'Free';
+                        if (tier === 'weekly') return 'Weekly Premium';
+                        if (tier === 'monthly') return 'Monthly Premium';
+                        if (tier === 'yearly') return 'Yearly Premium';
+                        return '—';
+                      })()}
+                    </Text>
+                  </View>
 
               {(() => {
-                if (!subscriptionStatus?.periodEnd) return null;
+                // Only show period end for paid plans (not free)
+                if (subscriptionStatus?.tier === 'free' || !subscriptionStatus?.periodEnd) return null;
                 
                 const date = new Date(subscriptionStatus.periodEnd);
                 const isValidDate = !isNaN(date.getTime());
+                const willRenew = subscriptionStatus?.willRenew;
                 
                 return (
-                  <View className="flex-row items-center justify-between mb-3">
+                  <View className="flex-row items-center justify-between">
                     <Text className="text-sm" style={{ color: colors.textSecondary }}>
-                      {subscriptionStatus?.tier === 'free' ? 'Period Ends' : 'Renews On'}
+                      {willRenew === true ? 'Renews On' : willRenew === false ? 'Will Expire On' : 'Renews On'}
                     </Text>
                     <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
                       {isValidDate
@@ -106,29 +166,19 @@ export const SettingsScreen = () => {
                 );
               })()}
 
-              <View className="flex-row items-center justify-between">
-                <Text className="text-sm" style={{ color: colors.textSecondary }}>
-                  Status
-                </Text>
-                <Text
-                  className="text-base font-semibold"
-                  style={{ color: subscriptionStatus?.isActive ? colors.accentMint : colors.accentApricot }}
-                >
-                  {subscriptionStatus?.isActive ? 'Active' : 'Expired'}
-                </Text>
-              </View>
-
-              {subscriptionStatus?.tier === 'free' && (
-                <TouchableOpacity
-                  className="mt-4 items-center rounded-[20px] py-3"
-                  style={{ backgroundColor: colors.accentMint }}
-                  activeOpacity={0.85}
-                  onPress={() => setShowPaywall(true, 'settings')}
-                >
-                  <Text className="text-sm font-semibold" style={{ color: colors.background }}>
-                    Upgrade to Pro
-                  </Text>
-                </TouchableOpacity>
+                  {subscriptionStatus?.tier === 'free' && (
+                    <TouchableOpacity
+                      className="mt-4 items-center rounded-[20px] py-3"
+                      style={{ backgroundColor: colors.accentMint }}
+                      activeOpacity={0.85}
+                      onPress={() => setShowPaywall(true, 'settings')}
+                    >
+                      <Text className="text-sm font-semibold" style={{ color: colors.background }}>
+                        Upgrade to Premium
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
               )}
             </View>
           </View>
@@ -191,6 +241,7 @@ export const SettingsScreen = () => {
       <PaywallModal
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
+        onPurchased={() => refreshSubscription(true)} // Force refresh after purchase
         reason={paywallReason}
       />
     </SafeAreaView>

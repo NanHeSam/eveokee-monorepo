@@ -5,7 +5,6 @@
 
 import { httpAction } from "../../_generated/server";
 import { internal } from "../../_generated/api";
-import type { RevenueCatWebhookEvent } from "../../models/webhooks/revenuecat";
 import { parseRevenueCatPayload } from "../../models/webhooks/revenuecat";
 import {
   errorResponse,
@@ -21,7 +20,6 @@ import {
   sanitizeForConvex,
 } from "../../utils/logger";
 import {
-  HTTP_STATUS_UNAUTHORIZED,
   HTTP_STATUS_BAD_REQUEST,
   HTTP_STATUS_INTERNAL_SERVER_ERROR,
 } from "../../utils/constants";
@@ -80,7 +78,10 @@ export const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
   // Step 6: Extract and validate required fields
   const eventType = event.event.type;
   const appUserId = event.event.app_user_id;
-  const productId = event.event.product_id;
+  // For PRODUCT_CHANGE events, use new_product_id if available, otherwise fall back to product_id
+  const productId = eventType === "PRODUCT_CHANGE" && event.event.new_product_id
+    ? event.event.new_product_id
+    : event.event.product_id;
   const store = event.event.store;
   const environment = event.event.environment; // SANDBOX or PRODUCTION
 
@@ -135,11 +136,12 @@ export const revenueCatWebhookHandler = httpAction(async (ctx, req) => {
       userId: appUserId, // Type-safe: validated by isValidConvexId()
       eventType,
       productId,
-      store: getPlatformFromStore(store),
+      store,
       expirationAtMs,
       purchasedAtMs,
       isTrialConversion,
       entitlementIds,
+      environment,
       rawEvent: sanitizedEvent,
     });
 

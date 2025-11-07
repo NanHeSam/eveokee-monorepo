@@ -5,42 +5,163 @@ import {
   mutation,
   query,
   action,
+  type MutationCtx,
+  type QueryCtx,
 } from "./_generated/server";
+import { internal } from "./_generated/api";
+import { Id } from "./_generated/dataModel";
 import {
-  getPeriodDurationMs,
   getEffectiveMusicLimit,
+  getResetPeriodDurationMs,
+  getAnnualMonthlyCredit,
   type SubscriptionTier,
   subscriptionStatusValidator,
 } from "./billing";
 import ensureCurrentUser, { getOptionalCurrentUser } from "./users";
-import { internal } from "./_generated/api";
+import { isMutationCtx } from "./utils/contextHelpers";
 
+/**
+ * Subscription Usage Reset and Query Functions
+ * 
+ * These functions handle subscription usage tracking with automatic period-based resets.
+ * 
+ * CRITICAL RESET PERIOD MAPPING (not intuitive):
+ * - Weekly subscriptions → reset weekly
+ * - Monthly subscriptions → reset monthly
+ * - Yearly subscriptions → reset MONTHLY (not yearly!)
+ * 
+ * This means annual subscriptions receive their total quota divided into 12 monthly
+ * allocations, resetting each month rather than once per year.
+ * 
+ * Key Implementation Details:
+ * 
+ * 1. Period Boundary Alignment:
+ *    - Resets occur at period boundaries, NOT at the current time ("now")
+ *    - This prevents timeline drift: if a user checks usage 2.5 periods after last reset,
+ *      we reset to the boundary at 2 periods, not to "now"
+ *    - Example: If lastResetAt was 10 days ago and period is 7 days, we reset to 14 days
+ *      ago (2 periods), not to "now"
+ * 
+ * 2. Annual Subscription Behavior:
+ *    - Annual subscriptions use monthly reset periods (via getResetPeriodDurationMs)
+ *    - Monthly credit = total annual quota / 12, rounded UP
+ *    - customMusicLimit is set on reset to track the monthly allocation
+ * 
+ * 3. Reset Calculation Steps:
+ *    a. Calculate periodEnd = lastResetAt + resetPeriodDuration
+ *    b. If now > periodEnd, calculate how many full periods have passed
+ *    c. Reset lastResetAt to the most recent period boundary (not "now")
+ *    d. Reset musicGenerationsUsed to 0
+ *    e. For annual subscriptions, set customMusicLimit to monthly credit
+ * 
+ * 4. Usage Info Calculation:
+ *    - Returns current usage, effective limit, period boundaries, and remaining quota
+ *    - Effective limit accounts for customMusicLimit override (used for annual monthly credits)
+ *    - Period boundaries use reset period duration (monthly for annual, otherwise tier's period)
+ * 
+ * @see getResetPeriodDurationMs in billing.ts for reset period logic
+ * @see getAnnualMonthlyCredit in billing.ts for annual monthly credit calculation
+ */
 // Helper function to check and reset subscription if period expired
-async function checkAndResetSubscription(ctx: any, subscriptionId: string, tier: SubscriptionTier) {
+// If ctx is a query context (no patch method), computes reset values without modifying DB
+async function checkAndResetSubscription(ctx: MutationCtx | QueryCtx, subscriptionId: Id<"subscriptionStatuses">, tier: SubscriptionTier) {
   const now = Date.now();
-  const periodDuration = getPeriodDurationMs(tier);
+  const resetPeriodDuration = getResetPeriodDurationMs(tier);
   const subscription = await ctx.db.get(subscriptionId);
   
   if (!subscription) {
     throw new Error("Subscription not found");
   }
 
-  const periodEnd = subscription.lastResetAt + periodDuration;
+  const periodEnd = subscription.lastResetAt + resetPeriodDuration;
 
   // Check if period has expired and reset if needed
   if (now > periodEnd) {
-    await ctx.db.patch(subscriptionId, {
-      lastResetAt: now,
+    // Calculate how many full periods have passed
+    const periodsPassed = Math.floor((now - subscription.lastResetAt) / resetPeriodDuration);
+    // Reset to the most recent period boundary (not 'now') to avoid shifting timeline forward
+    const newLastResetAt = subscription.lastResetAt + (periodsPassed * resetPeriodDuration);
+
+    const resetData: {
+      lastResetAt: number;
+      musicGenerationsUsed: number;
+      lastVerifiedAt: number;
+      customMusicLimit?: number;
+    } = {
+      lastResetAt: newLastResetAt,
       musicGenerationsUsed: 0,
       lastVerifiedAt: now,
-    });
+    };
+
+    // For annual subscriptions, set monthly credit (total / 12, rounded up)
+    if (tier === "yearly") {
+      resetData.customMusicLimit = getAnnualMonthlyCredit();
+    }
+
+    // Only patch if we're in a mutation context
+    if (isMutationCtx(ctx)) {
+      await ctx.db.patch(subscriptionId, resetData);
+      return await ctx.db.get(subscriptionId);
+    } else {
+      // In query context, return computed values without patching
+      return {
+        ...subscription,
+        ...resetData,
+      };
+    }
   }
 
-  return await ctx.db.get(subscriptionId);
+  return subscription;
 }
 
-// Helper function to get user's current usage info
-async function getUserUsageInfo(ctx: any, userId: string) {
+/**
+ * Get User's Current Usage Information
+ * 
+ * Retrieves comprehensive usage information for a user's active subscription, including
+ * automatic period reset if needed. Works in both query and mutation contexts:
+ * - In mutation contexts: Actually resets the subscription if period expired
+ * - In query contexts: Computes what the reset would be without modifying the database
+ * 
+ * Execution Flow:
+ * 1. Validates user exists and has an active subscription
+ * 2. Calls checkAndResetSubscription() which:
+ *    - In mutation contexts: Resets subscription if period expired (modifies DB)
+ *    - In query contexts: Computes reset values without modifying DB
+ * 3. Calculates effective limit (accounts for customMusicLimit override for annual subscriptions)
+ * 4. Computes period boundaries using reset period duration:
+ *    - Weekly subscriptions: 7-day periods
+ *    - Monthly subscriptions: ~30-day periods
+ *    - Yearly subscriptions: ~30-day periods (monthly reset, not yearly!)
+ * 5. Calculates remaining quota (effectiveLimit - currentUsage, clamped to >= 0)
+ * 
+ * Important Assumptions:
+ * - User MUST have an activeSubscriptionId (throws error if missing)
+ * - Subscription is automatically reset if period expired (in mutation contexts)
+ * - Period boundaries use reset period duration, not billing period duration
+ *   (e.g., yearly subscriptions show monthly period boundaries)
+ * - Effective limit respects customMusicLimit override (set for annual monthly credits)
+ * 
+ * Return Value Structure:
+ * - subscriptionId: The active subscription document ID
+ * - tier: Subscription tier (free, weekly, monthly, yearly)
+ * - status: Subscription status (active, canceled, expired, in_grace)
+ * - currentUsage: Number of music generations used in current period
+ * - effectiveLimit: Total quota available (may be customMusicLimit for annual subscriptions)
+ * - periodStart: Timestamp of current period start (lastResetAt)
+ * - periodEnd: Timestamp of current period end (periodStart + resetPeriodDuration)
+ * - remainingQuota: Available quota remaining (max(0, effectiveLimit - currentUsage))
+ * 
+ * @param ctx - Convex context (query or mutation - automatically detects context type)
+ * @param userId - User ID to get usage info for
+ * @returns Usage information object with current usage, limits, and period boundaries
+ * @throws Error if user not found, no active subscription, or subscription not found
+ * 
+ * @see checkAndResetSubscription for reset logic details
+ * @see getEffectiveMusicLimit for limit calculation logic
+ * @see getResetPeriodDurationMs for reset period duration calculation
+ */
+// Helper function to get user's current usage info (works in both query and mutation contexts)
+async function getUserUsageInfo(ctx: MutationCtx | QueryCtx, userId: Id<"users">) {
   const user = await ctx.db.get(userId);
   if (!user) {
     throw new Error("User not found");
@@ -55,6 +176,10 @@ async function getUserUsageInfo(ctx: any, userId: string) {
     throw new Error("Subscription not found");
   }
 
+  // Note: Product ID reconciliation with RevenueCat should happen before this point
+  // via reconcileSubscription action. This ensures RevenueCat is the single source of truth.
+  // The subscription.productId should already be reconciled at this point.
+
   const tier = subscription.subscriptionTier as SubscriptionTier;
   const updatedSubscription = await checkAndResetSubscription(ctx, user.activeSubscriptionId, tier);
   
@@ -67,9 +192,10 @@ async function getUserUsageInfo(ctx: any, userId: string) {
     tier,
     updatedSubscription.customMusicLimit
   );
-  const periodDuration = getPeriodDurationMs(tier);
+  // Use reset period duration (monthly for annual, otherwise tier's period)
+  const resetPeriodDuration = getResetPeriodDurationMs(tier);
   const periodStart = updatedSubscription.lastResetAt;
-  const periodEnd = periodStart + periodDuration;
+  const periodEnd = periodStart + resetPeriodDuration;
   const remainingQuota = Math.max(0, effectiveLimit - currentUsage);
 
   return {
@@ -83,6 +209,44 @@ async function getUserUsageInfo(ctx: any, userId: string) {
     remainingQuota,
   };
 }
+
+// Internal action to record a music generation with RevenueCat reconciliation
+// This ensures we always have the latest product ID from RevenueCat before checking usage
+export const recordMusicGenerationWithReconciliation = action({
+  args: { userId: v.id("users") },
+  returns: v.object({
+    success: v.boolean(),
+    code: v.optional(v.union(
+      v.literal("USAGE_LIMIT_REACHED"),
+      v.literal("UNKNOWN_ERROR")
+    )),
+    reason: v.optional(v.string()),
+    currentUsage: v.number(),
+    limit: v.number(),
+    remainingQuota: v.number(),
+    tier: v.string(),
+    status: subscriptionStatusValidator,
+    periodStart: v.number(),
+    periodEnd: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    // Reconcile product ID with RevenueCat first (single source of truth)
+    const reconcileResult = await ctx.runAction(internal.revenueCatBilling.reconcileSubscription, {
+      userId: args.userId,
+    });
+
+    if (reconcileResult.productIdUpdated) {
+      console.log(`Product ID reconciled for user ${args.userId} before usage check`);
+    }
+
+    // Now proceed with recording music generation
+    const result = await ctx.runMutation(internal.usage.recordMusicGeneration, {
+      userId: args.userId,
+    });
+
+    return result;
+  },
+});
 
 // Internal mutation to record a music generation and enforce usage limits
 export const recordMusicGeneration = internalMutation({
@@ -103,11 +267,11 @@ export const recordMusicGeneration = internalMutation({
     periodEnd: v.number(),
   }),
   handler: async (ctx, args) => {
-    const { subscriptionId, tier, currentUsage, effectiveLimit, status, periodStart, periodEnd } =
+    const { subscriptionId, tier, status, currentUsage, effectiveLimit, periodStart, periodEnd, remainingQuota } =
       await getUserUsageInfo(ctx, args.userId);
 
     // Check if user has reached their limit
-    if (currentUsage >= effectiveLimit) {
+    if (remainingQuota == 0) {
       return {
         success: false,
         code: "USAGE_LIMIT_REACHED" as const,
@@ -128,14 +292,14 @@ export const recordMusicGeneration = internalMutation({
       lastVerifiedAt: Date.now(),
     });
 
-    const remainingQuota = Math.max(0, effectiveLimit - (currentUsage + 1));
+    const newRemainingQuota = Math.max(0, effectiveLimit - (currentUsage + 1));
 
     return {
       success: true,
       code: undefined,
       currentUsage: currentUsage + 1,
       limit: effectiveLimit,
-      remainingQuota,
+      remainingQuota: newRemainingQuota,
       tier,
       status,
       periodStart,
@@ -192,6 +356,7 @@ export const getUsageSnapshot = internalQuery({
   ),
   handler: async (ctx, args) => {
     try {
+      // getUserUsageInfo automatically detects query context and computes without patching
       const usageInfo = await getUserUsageInfo(ctx, args.userId);
 
       if (!usageInfo) {

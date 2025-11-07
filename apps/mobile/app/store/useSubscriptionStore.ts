@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { api } from '@backend/convex';
 import { useQuery, useMutation, useAction } from 'convex/react';
 
-export type SubscriptionTier = 'free' | 'monthly' | 'yearly';
+export type SubscriptionTier = 'free' | 'monthly' | 'yearly' | 'weekly';
 export type SubscriptionStatus = 'active' | 'canceled' | 'expired' | 'in_grace';
 
 export interface SubscriptionPlan {
@@ -21,6 +21,7 @@ export interface SubscriptionState {
   periodStart: number;
   periodEnd: number;
   isActive: boolean;
+  willRenew?: boolean;
 }
 
 export interface UsageState {
@@ -106,14 +107,20 @@ type SubscriptionUIState = {
   setIsLoading: (loading: boolean) => void;
 };
 
-export const useSubscriptionUIStore = create<SubscriptionUIState>((set) => ({
+export const useSubscriptionUIStore = create<SubscriptionUIState>((set, get) => ({
   showPaywall: false,
   paywallReason: null,
   isLoading: false,
-  setShowPaywall: (show, reason) => set({ 
-    showPaywall: show, 
-    paywallReason: show ? reason || null : null 
-  }),
+  setShowPaywall: (show, reason) => {
+    // Prevent setting paywall to true if it's already true (prevents double presentation)
+    if (show && get().showPaywall) {
+      return;
+    }
+    set({ 
+      showPaywall: show, 
+      paywallReason: show ? reason || null : null 
+    });
+  },
   setIsLoading: (loading) => set({ isLoading: loading }),
 }));
 
