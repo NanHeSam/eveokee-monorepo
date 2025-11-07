@@ -8,6 +8,7 @@ import FloatingPlaylist from "@/components/FloatingPlaylist";
 import LayoutRoute from "@/components/LayoutRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import RouteErrorBoundary from "@/components/RouteErrorBoundary";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 import Home from "@/pages/Home";
 import SignIn from "@/pages/SignIn";
 import SignUp from "@/pages/SignUp";
@@ -51,6 +52,7 @@ export default function App() {
           }}
         />
         <Router>
+          <GoogleAnalytics />
           <Routes>
             {/* Public routes with marketing navigation */}
             <Route path="/" element={<LayoutRoute />} errorElement={<RouteErrorBoundary />}>
