@@ -1,6 +1,6 @@
-import { Image, Text, TouchableOpacity, View, ScrollView } from 'react-native';
+import { Image, Text, TouchableOpacity, View, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Purchases from 'react-native-purchases';
 
@@ -22,14 +22,26 @@ export const SettingsScreen = () => {
   // Billing hooks - Read directly from RevenueCat SDK (single source of truth)
   const { subscriptionStatus, loading: subscriptionLoading, refresh: refreshSubscription } = useRevenueCatSubscription();
   const { showPaywall, paywallReason, setShowPaywall } = useSubscriptionUIStore();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Refresh subscription status when screen comes into focus
   // This ensures the UI updates when navigating back to Settings after subscription changes
+  // Uses cached data if available (no force refresh)
   useFocusEffect(
     useCallback(() => {
-      refreshSubscription();
+      refreshSubscription(false);
     }, [refreshSubscription])
   );
+
+  // Handle pull-to-refresh - forces a fresh fetch from RevenueCat servers
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshSubscription(true); // Force refresh to get latest data from RevenueCat
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refreshSubscription]);
 
   // Listen for subscription changes from RevenueCat SDK
   useEffect(() => {
@@ -38,7 +50,8 @@ export const SettingsScreen = () => {
     // Deduplication in useRevenueCatSubscription prevents duplicate API calls
     Purchases.addCustomerInfoUpdateListener(() => {
       // Refresh subscription status when RevenueCat notifies of changes
-      refreshSubscription();
+      // Uses cached data if available (no force refresh)
+      refreshSubscription(false);
     });
 
     // Note: addCustomerInfoUpdateListener doesn't return a cleanup function
@@ -58,7 +71,18 @@ export const SettingsScreen = () => {
 
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background, paddingTop: insets.top }}>
-      <ScrollView className="flex-1" style={{ backgroundColor: colors.background }}>
+      <ScrollView 
+        className="flex-1" 
+        style={{ backgroundColor: colors.background }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing || subscriptionLoading}
+            onRefresh={handleRefresh}
+            tintColor={colors.textSecondary}
+            colors={[colors.accentMint]} // Android
+          />
+        }
+      >
         <View className="p-6">
           <Text className="text-[26px] font-semibold" style={{ color: colors.textPrimary }}>
             Settings
@@ -217,7 +241,7 @@ export const SettingsScreen = () => {
       <PaywallModal
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
-        onPurchased={refreshSubscription}
+        onPurchased={() => refreshSubscription(true)} // Force refresh after purchase
         reason={paywallReason}
       />
     </SafeAreaView>

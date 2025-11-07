@@ -94,9 +94,9 @@ export const startDiaryMusicGeneration = mutation({
     }
 
     // Step 5: Check usage limits and record attempt
-    // Use reconciliation version to ensure RevenueCat product ID is up-to-date (single source of truth)
-    const usageResult = await ctx.runAction(
-      internal.usage.recordMusicGenerationWithReconciliation,
+    // Note: Reconciliation happens via RevenueCat webhooks, so product ID should be up-to-date
+    const usageResult = await ctx.runMutation(
+      internal.usage.recordMusicGeneration,
       {
         userId,
       },

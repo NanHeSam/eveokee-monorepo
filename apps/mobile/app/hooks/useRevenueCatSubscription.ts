@@ -27,21 +27,34 @@ const DEBOUNCE_MS = 3000; // Minimum time between requests
 /**
  * Get customer info with deduplication and debouncing
  * If a request is already in flight, returns the same promise
- * If a request was made recently, waits for debounce period
+ * If a request was made recently, waits for debounce period (unless forceRefresh is true)
+ * 
+ * @param forceRefresh - If true, bypasses debounce and forces a fresh fetch from RevenueCat servers
  */
-async function getCustomerInfoDeduplicated(): Promise<CustomerInfo> {
-  // If there's already a request in flight, return the same promise
-  if (inFlightRequest) {
+async function getCustomerInfoDeduplicated(forceRefresh = false): Promise<CustomerInfo> {
+  // If forcing refresh, we want fresh data immediately, so bypass in-flight request check
+  // Note: We don't cancel the in-flight request (can't cancel promises), but we'll make a new one
+  // The new request will update inFlightRequest, so subsequent calls will use the fresh data
+  if (forceRefresh && inFlightRequest) {
+    // Clear the in-flight request reference so we can make a new one
+    // The old request will complete but won't be used by new callers
+    inFlightRequest = null;
+  }
+
+  // If there's already a request in flight and not forcing refresh, return the same promise
+  if (inFlightRequest && !forceRefresh) {
     return inFlightRequest;
   }
 
-  // Debounce: if a request was made recently, wait a bit
-  const timeSinceLastRequest = Date.now() - lastRequestTime;
-  if (timeSinceLastRequest < DEBOUNCE_MS) {
-    await new Promise(resolve => setTimeout(resolve, DEBOUNCE_MS - timeSinceLastRequest));
+  // Debounce: if a request was made recently and not forcing refresh, wait a bit
+  if (!forceRefresh) {
+    const timeSinceLastRequest = Date.now() - lastRequestTime;
+    if (timeSinceLastRequest < DEBOUNCE_MS) {
+      await new Promise(resolve => setTimeout(resolve, DEBOUNCE_MS - timeSinceLastRequest));
+    }
   }
 
-  // Create new request
+  // Create new request - Purchases.getCustomerInfo() always fetches fresh data from RevenueCat servers
   lastRequestTime = Date.now();
   inFlightRequest = Purchases.getCustomerInfo()
     .then((info) => {
@@ -72,11 +85,11 @@ export function useRevenueCatSubscription() {
   const usageData = useQuery(api.usage.getCurrentUserUsage);
 
   // Load customer info from RevenueCat with deduplication
-  const loadCustomerInfo = useCallback(async () => {
+  const loadCustomerInfo = useCallback(async (forceRefresh = false) => {
     try {
       setLoading(true);
       setError(null);
-      const info = await getCustomerInfoDeduplicated();
+      const info = await getCustomerInfoDeduplicated(forceRefresh);
       // Only update state if component is still mounted
       if (isMountedRef.current) {
         setCustomerInfo(info);
@@ -118,8 +131,10 @@ export function useRevenueCatSubscription() {
     : null;
 
   // Refresh subscription status
-  const refresh = useCallback(async () => {
-    await loadCustomerInfo();
+  // By default, uses cached data if available (respects debounce)
+  // Pass forceRefresh=true to bypass cache and force a fresh fetch from RevenueCat servers
+  const refresh = useCallback(async (forceRefresh = false) => {
+    await loadCustomerInfo(forceRefresh);
   }, [loadCustomerInfo]);
 
   return {

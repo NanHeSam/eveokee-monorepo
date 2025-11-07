@@ -5,8 +5,19 @@
  * directly from RevenueCat SDK instead of Convex DB.
  */
 
+import { useEffect, useCallback } from 'react';
+import { Image, Text, TouchableOpacity, View, ScrollView } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { useAuth, useUser } from '@clerk/clerk-expo';
+import Purchases, { PurchasesPackage } from 'react-native-purchases';
+
 import { useRevenueCatSubscription } from '../app/hooks/useRevenueCatSubscription';
 import { useRevenueCat } from '../app/hooks/useRevenueCat';
+import { useThemeColors } from '../app/theme/useThemeColors';
+import { useSubscriptionUIStore } from '../app/store/useSubscriptionStore';
+import { PaywallModal } from '../app/components/billing/PaywallModal';
+import { UsageProgress } from '../app/components/billing/UsageProgress';
 
 // ============================================================================
 // EXAMPLE 1: Settings Screen - Read from RevenueCat
@@ -37,7 +48,7 @@ export const SettingsScreenExample = () => {
     <View>
       <Text>Plan: {subscriptionStatus?.tier}</Text>
       <Text>Status: {subscriptionStatus?.isActive ? 'Active' : 'Expired'}</Text>
-      <Text>Expires: {new Date(subscriptionStatus?.periodEnd).toLocaleDateString()}</Text>
+      <Text>Expires: {new Date(subscriptionStatus?.periodEnd || 0).toLocaleDateString()}</Text>
     </View>
   );
 };
@@ -104,25 +115,20 @@ export const FeatureGateExample = () => {
 // EXAMPLE 4: Listen for Subscription Changes
 // ============================================================================
 
-import { useEffect } from 'react';
-import Purchases from 'react-native-purchases';
-
 export const SubscriptionListenerExample = () => {
   const { refresh } = useRevenueCatSubscription();
 
   useEffect(() => {
     // RevenueCat SDK automatically notifies when subscription changes
     // But you can also listen for customer info updates
-    const customerInfoUpdateListener = Purchases.addCustomerInfoUpdateListener((customerInfo) => {
+    Purchases.addCustomerInfoUpdateListener((customerInfo) => {
       console.log('Subscription updated:', customerInfo);
       // Refresh your local state
       refresh();
     });
 
-    // Cleanup listener on unmount
-    return () => {
-      customerInfoUpdateListener.remove();
-    };
+    // Note: addCustomerInfoUpdateListener doesn't return a cleanup function
+    // The listener is automatically cleaned up when the component unmounts
   }, [refresh]);
 
   return null; // Component implementation
@@ -131,19 +137,6 @@ export const SubscriptionListenerExample = () => {
 // ============================================================================
 // EXAMPLE 5: Complete Settings Screen Implementation
 // ============================================================================
-
-import { Image, Text, TouchableOpacity, View, ScrollView } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useCallback, useEffect } from 'react';
-import { useNavigation } from '@react-navigation/native';
-import { useAuth, useUser } from '@clerk/clerk-expo';
-import Purchases from 'react-native-purchases';
-
-import { useThemeColors } from '../app/theme/useThemeColors';
-import { useRevenueCatSubscription } from '../app/hooks/useRevenueCatSubscription';
-import { useSubscriptionUIStore } from '../app/store/useSubscriptionStore';
-import { PaywallModal } from '../app/components/billing/PaywallModal';
-import { UsageProgress } from '../app/components/billing/UsageProgress';
 
 export const SettingsScreenComplete = () => {
   const { user } = useUser();
@@ -163,11 +156,13 @@ export const SettingsScreenComplete = () => {
 
   // Listen for subscription changes
   useEffect(() => {
-    const listener = Purchases.addCustomerInfoUpdateListener(() => {
+    // RevenueCat SDK automatically notifies when subscription changes
+    Purchases.addCustomerInfoUpdateListener(() => {
       refresh(); // Refresh when RevenueCat notifies of changes
     });
 
-    return () => listener.remove();
+    // Note: addCustomerInfoUpdateListener doesn't return a cleanup function
+    // The listener is automatically cleaned up when the component unmounts
   }, [refresh]);
 
   const handleSignOut = useCallback(async () => {

@@ -165,6 +165,12 @@ export const updateSubscriptionFromWebhook = internalMutation({
  * Internal mutation: Reconcile subscription status and product ID with RevenueCat customer data
  * This mutation updates the database based on RevenueCat customer info fetched server-side
  * RevenueCat is treated as the single source of truth for product ID and status
+ * 
+ * Unified function that replaces both reconcileSubscriptionWithData and reconcileProductIdFromRevenueCatData
+ * - Reconciles both product ID and status
+ * - Respects grace period (doesn't update status if in_grace)
+ * - Updates platform when available
+ * - Returns comprehensive result with all fields
  */
 export const reconcileSubscriptionWithData = internalMutation({
   args: {
@@ -177,16 +183,31 @@ export const reconcileSubscriptionWithData = internalMutation({
     backendStatus: v.string(),
     rcStatus: v.string(),
     productIdUpdated: v.boolean(),
+    rcProductId: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
     if (!user || !user.activeSubscriptionId) {
-      return { success: false, updated: false, backendStatus: "none", rcStatus: "none", productIdUpdated: false };
+      return { 
+        success: false, 
+        updated: false, 
+        backendStatus: "none", 
+        rcStatus: "none", 
+        productIdUpdated: false,
+        rcProductId: undefined,
+      };
     }
 
     const backendSubscription = await ctx.db.get(user.activeSubscriptionId);
     if (!backendSubscription) {
-      return { success: false, updated: false, backendStatus: "missing", rcStatus: "none", productIdUpdated: false };
+      return { 
+        success: false, 
+        updated: false, 
+        backendStatus: "missing", 
+        rcStatus: "none", 
+        productIdUpdated: false,
+        rcProductId: undefined,
+      };
     }
 
     // Check RC entitlements to determine if user has active subscription
@@ -222,13 +243,28 @@ export const reconcileSubscriptionWithData = internalMutation({
     }
 
     // Reconcile status if different (and not in grace period)
+    // FIXED: Now respects grace period - doesn't update status if already in_grace
     if (backendSubscription.status !== rcStatus && backendSubscription.status !== "in_grace") {
       updates.status = rcStatus;
       statusUpdated = true;
     }
 
+    // Update platform if available from RevenueCat data
+    // v2 API: platform info may be in last_seen_platform
+    const platformUpdate = args.rcCustomerInfo?.last_seen_platform === "iOS" 
+      ? "app_store" 
+      : args.rcCustomerInfo?.last_seen_platform === "ANDROID" 
+      ? "play_store" 
+      : undefined;
+    
+    let platformUpdated = false;
+    if (platformUpdate && backendSubscription.platform !== platformUpdate) {
+      updates.platform = platformUpdate;
+      platformUpdated = true;
+    }
+
     // Update database if any changes
-    if (statusUpdated || productIdUpdated) {
+    if (statusUpdated || productIdUpdated || platformUpdated) {
       updates.lastVerifiedAt = now;
       await ctx.db.patch(user.activeSubscriptionId, updates);
 
@@ -237,8 +273,8 @@ export const reconcileSubscriptionWithData = internalMutation({
         userId: user._id,
         eventType: "RECONCILIATION",
         productId: rcProductId || backendSubscription.productId,
-        platform: backendSubscription.platform, // Type-safe: platform is validated in schema
-        subscriptionTier: updates.subscriptionTier as string || backendSubscription.subscriptionTier,
+        platform: (updates.platform as "app_store" | "play_store" | "stripe" | undefined) || backendSubscription.platform,
+        subscriptionTier: (updates.subscriptionTier as string) || backendSubscription.subscriptionTier,
         status: rcStatus,
         expiresAt: backendSubscription.expiresAt,
         rawEvent: sanitizeForConvex(args.rcCustomerInfo),
@@ -251,6 +287,7 @@ export const reconcileSubscriptionWithData = internalMutation({
         backendStatus: backendSubscription.status, 
         rcStatus,
         productIdUpdated,
+        rcProductId,
       };
     }
 
@@ -260,97 +297,20 @@ export const reconcileSubscriptionWithData = internalMutation({
       backendStatus: backendSubscription.status, 
       rcStatus,
       productIdUpdated: false,
-    };
-  },
-});
-
-/**
- * Internal mutation: Reconcile product ID from RevenueCat customer data
- * Called before usage checks to ensure product ID matches RevenueCat (single source of truth)
- */
-export const reconcileProductIdFromRevenueCatData = internalMutation({
-  args: {
-    userId: v.id("users"),
-    rcCustomerInfo: v.any(), // From RevenueCat API v2 (customer format)
-  },
-  returns: v.object({ 
-    success: v.boolean(),
-    productIdUpdated: v.boolean(),
-    rcProductId: v.optional(v.string()),
-  }),
-  handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.userId);
-    if (!user || !user.activeSubscriptionId) {
-      return { success: false, productIdUpdated: false };
-    }
-
-    const backendSubscription = await ctx.db.get(user.activeSubscriptionId);
-    if (!backendSubscription) {
-      return { success: false, productIdUpdated: false };
-    }
-
-    // Extract product ID from RevenueCat entitlements (v2 API)
-    const rcEntitlements = getActiveEntitlementsFromV2(args.rcCustomerInfo);
-    const rcProductId = getProductIdentifierFromV2(args.rcCustomerInfo);
-
-    // Reconcile product ID if mismatch (RevenueCat is source of truth)
-    if (rcProductId && backendSubscription.productId !== rcProductId) {
-      console.warn(
-        `Product ID mismatch detected for user ${args.userId}: ` +
-        `backend=${backendSubscription.productId}, RevenueCat=${rcProductId}. ` +
-        `Updating database to match RevenueCat (single source of truth).`
-      );
-      
-      // Map RC product ID to tier
-      const mappedTier = REVENUECAT_PRODUCT_TO_TIER[rcProductId] || "free";
-      const hasActiveSubscription = Object.keys(rcEntitlements).length > 0;
-      const effectiveTier = hasActiveSubscription ? mappedTier : "free";
-      
-      const now = Date.now();
-      await ctx.db.patch(user.activeSubscriptionId, {
-        productId: rcProductId,
-        subscriptionTier: effectiveTier,
-        lastVerifiedAt: now,
-        status: hasActiveSubscription ? "active" : "expired",
-        // v2 API: platform info may be in last_seen_platform or entitlement details
-        platform: args.rcCustomerInfo?.last_seen_platform === "iOS" 
-          ? "app_store" 
-          : args.rcCustomerInfo?.last_seen_platform === "ANDROID" 
-          ? "play_store" 
-          : undefined,
-      });
-
-      // Log reconciliation
-      await ctx.db.insert("subscriptionLog", {
-        userId: user._id,
-        eventType: "RECONCILIATION",
-        productId: rcProductId,
-        platform: backendSubscription.platform,
-        subscriptionTier: effectiveTier,
-        status: backendSubscription.status,
-        expiresAt: backendSubscription.expiresAt,
-        rawEvent: sanitizeForConvex(args.rcCustomerInfo),
-        recordedAt: now,
-      });
-
-      return { 
-        success: true, 
-        productIdUpdated: true,
-        rcProductId,
-      };
-    }
-
-    return { 
-      success: true, 
-      productIdUpdated: false,
       rcProductId,
     };
   },
 });
 
 /**
- * Reconcile subscription status with RevenueCat
+ * Reconcile subscription status and product ID with RevenueCat
  * ACTION: Fetches canonical customer data from RevenueCat API and reconciles subscription
+ * 
+ * Unified function that replaces both reconcileSubscription and reconcileProductId
+ * - Reconciles both product ID and status
+ * - Includes structured logging
+ * - Returns comprehensive result with all fields
+ * 
  * Called from usage checks when reconciliation is needed
  */
 export const reconcileSubscription = internalAction({
@@ -362,6 +322,8 @@ export const reconcileSubscription = internalAction({
     updated: v.boolean(),
     backendStatus: v.string(),
     rcStatus: v.string(),
+    productIdUpdated: v.boolean(),
+    rcProductId: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
     const correlationId = generateCorrelationId();
@@ -385,7 +347,9 @@ export const reconcileSubscription = internalAction({
           success: false, 
           updated: false, 
           backendStatus: "unknown", 
-          rcStatus: "unknown" 
+          rcStatus: "unknown",
+          productIdUpdated: false,
+          rcProductId: undefined,
         };
       }
 
@@ -427,7 +391,9 @@ export const reconcileSubscription = internalAction({
         success: false, 
         updated: false, 
         backendStatus: "error", 
-        rcStatus: "error" 
+        rcStatus: "error",
+        productIdUpdated: false,
+        rcProductId: undefined,
       };
     }
   },
@@ -435,8 +401,10 @@ export const reconcileSubscription = internalAction({
 
 /**
  * Reconcile product ID with RevenueCat before usage checks
- * ACTION: Fetches canonical customer data from RevenueCat API and reconciles product ID
- * This ensures RevenueCat is always the single source of truth for product ID
+ * ACTION: Wrapper around reconcileSubscription for backward compatibility
+ * 
+ * @deprecated Use reconcileSubscription instead. This function is kept for backward compatibility
+ * and will be removed in a future version.
  */
 export const reconcileProductId = internalAction({
   args: {
@@ -448,35 +416,20 @@ export const reconcileProductId = internalAction({
     rcProductId: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
-    try {
-      // Fetch canonical customer data from RevenueCat API
-      const rcCustomerInfo = await fetchRevenueCatCustomer(args.userId);
-
-      if (!rcCustomerInfo) {
-        return { 
-          success: false, 
-          productIdUpdated: false,
-        };
+    // Use the unified reconciliation function
+    const result = await ctx.runAction(
+      internal.revenueCatBilling.reconcileSubscription,
+      {
+        userId: args.userId,
       }
+    );
 
-      // Call mutation to update database based on canonical RC data
-      const result = await ctx.runMutation(
-        internal.revenueCatBilling.reconcileProductIdFromRevenueCatData,
-        {
-          userId: args.userId,
-          rcCustomerInfo,
-        }
-      );
-
-      return result;
-    } catch (error) {
-      console.error(`Failed to reconcile product ID: userId=${args.userId}`, error);
-      
-      return { 
-        success: false, 
-        productIdUpdated: false,
-      };
-    }
+    // Return subset of fields for backward compatibility
+    return {
+      success: result.success,
+      productIdUpdated: result.productIdUpdated,
+      rcProductId: result.rcProductId,
+    };
   },
 });
 
