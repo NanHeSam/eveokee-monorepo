@@ -1,18 +1,26 @@
 import { Play, Pause } from 'lucide-react';
-import { useAudioManager } from '../hooks/useAudioManager';
+import { useAudio } from '../contexts/AudioContext';
 
 interface EmotionalHookSectionProps {
   onPlayTrack?: () => void;
 }
 
 export default function EmotionalHookSection({ onPlayTrack }: EmotionalHookSectionProps) {
-  const audioManager = useAudioManager();
+  const audioManager = useAudio();
   
   // Demo audio for this section
   const emotionalAudioUrl = 'https://cdn1.suno.ai/b28aad1b-2d89-44f9-9f06-0e4fe429f98e.mp3';
   const emotionalAudioId = 'emotional-demo';
   
   const handleAudioToggle = async () => {
+    audioManager.setCurrentTrack({
+      id: emotionalAudioId,
+      title: 'Million Dollar Dream',
+      imageUrl: undefined,
+      duration: 154, // 2:34
+      diaryContent: 'Finally built my app. It\'s happening.',
+      audioUrl: emotionalAudioUrl,
+    });
     await audioManager.toggleAudio(emotionalAudioId, emotionalAudioUrl);
     
     if (onPlayTrack) {

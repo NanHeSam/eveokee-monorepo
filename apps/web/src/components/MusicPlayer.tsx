@@ -1,10 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause } from 'lucide-react';
-import { useAudioManager } from '../hooks/useAudioManager';
+import { useAudio } from '../contexts/AudioContext';
 
 interface MusicPlayerProps {
   audioId: string;
   audioUrl: string;
+  title?: string;
+  imageUrl?: string;
+  diaryContent?: string;
   startTime?: number;
   duration: string;
   onPlay?: () => void;
@@ -24,13 +27,16 @@ const parseTimeString = (timeString: string): number => {
 
 export default function MusicPlayer({ 
   audioId, 
-  audioUrl, 
+  audioUrl,
+  title,
+  imageUrl,
+  diaryContent,
   startTime = 0, 
   duration, 
   onPlay,
   className = '' 
 }: MusicPlayerProps) {
-  const audioManager = useAudioManager();
+  const audioManager = useAudio();
   const progressBarRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragProgress, setDragProgress] = useState(0);
@@ -47,6 +53,14 @@ export default function MusicPlayer({
   const displayProgress = isDragging ? dragProgress : progress;
 
   const handlePlayToggle = async () => {
+    audioManager.setCurrentTrack({
+      id: audioId,
+      title: title || 'Untitled Song',
+      imageUrl,
+      duration: parseTimeString(duration),
+      diaryContent,
+      audioUrl,
+    });
     await audioManager.toggleAudio(audioId, audioUrl, startTime);
     if (onPlay) {
       onPlay();

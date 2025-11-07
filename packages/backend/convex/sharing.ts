@@ -90,6 +90,7 @@ export const createShareLink = mutation({
       shareId,
       viewCount: 0,
       isActive: true,
+      isPrivate: false,
       createdAt: now,
       updatedAt: now,
     });
@@ -132,7 +133,7 @@ export const getSharedMusic = query({
       .withIndex("by_shareId", (q) => q.eq("shareId", args.shareId))
       .first();
 
-    if (!shared || !shared.isActive) {
+    if (!shared || !shared.isActive || shared.isPrivate) {
       return { found: false as const };
     }
 
@@ -196,7 +197,7 @@ export const recordShareView = mutation({
       .withIndex("by_shareId", (q) => q.eq("shareId", args.shareId))
       .first();
 
-    if (!shared || !shared.isActive) {
+    if (!shared || !shared.isActive || shared.isPrivate) {
       return null;
     }
 
@@ -211,5 +212,131 @@ export const recordShareView = mutation({
     });
 
     return null;
+  },
+});
+
+/**
+ * Lists all shared music for the current user.
+ * Returns music entries with their sharing status (isPrivate).
+ */
+export const listSharedMusic = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("sharedMusic"),
+      musicId: v.id("music"),
+      shareId: v.string(),
+      viewCount: v.number(),
+      isPrivate: v.optional(v.boolean()),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+      music: v.object({
+        _id: v.id("music"),
+        title: v.optional(v.string()),
+        imageUrl: v.optional(v.string()),
+        audioUrl: v.optional(v.string()),
+        duration: v.optional(v.number()),
+        lyric: v.optional(v.string()),
+        status: v.union(
+          v.literal("pending"),
+          v.literal("ready"),
+          v.literal("failed")
+        ),
+        createdAt: v.number(),
+        diaryId: v.optional(v.id("diaries")),
+        diaryContent: v.optional(v.string()),
+        diaryDate: v.optional(v.number()),
+      }),
+    })
+  ),
+  handler: async (ctx) => {
+    const { userId } = await ensureCurrentUser(ctx);
+
+    const sharedList = await ctx.db
+      .query("sharedMusic")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+
+    const result = [];
+    for (const shared of sharedList) {
+      const music = await ctx.db.get(shared.musicId);
+      if (!music || music.deletedAt) {
+        continue;
+      }
+
+      let diaryContent: string | undefined;
+      let diaryDate: number | undefined;
+      if (music.diaryId) {
+        const diary = await ctx.db.get(music.diaryId);
+        if (diary) {
+          diaryContent = diary.content;
+          diaryDate = diary.date;
+        }
+      }
+
+      result.push({
+        _id: shared._id,
+        musicId: shared.musicId,
+        shareId: shared.shareId,
+        viewCount: shared.viewCount,
+        isPrivate: shared.isPrivate,
+        createdAt: shared.createdAt,
+        updatedAt: shared.updatedAt,
+        music: {
+          _id: music._id,
+          title: music.title,
+          imageUrl: music.imageUrl,
+          audioUrl: music.audioUrl,
+          duration: music.duration,
+          lyric: music.lyric,
+          status: music.status,
+          createdAt: music.createdAt,
+          diaryId: music.diaryId,
+          diaryContent,
+          diaryDate,
+        },
+      });
+    }
+
+    // Sort by updatedAt descending (most recently updated first)
+    return result.sort((a, b) => b.updatedAt - a.updatedAt);
+  },
+});
+
+/**
+ * Toggles the privacy status of a shared music track.
+ * If isPrivate is true, the share link will not be accessible publicly.
+ */
+export const toggleSharePrivacy = mutation({
+  args: {
+    sharedMusicId: v.id("sharedMusic"),
+  },
+  returns: v.object({
+    isPrivate: v.boolean(),
+  }),
+  handler: async (ctx, args) => {
+    const { userId } = await ensureCurrentUser(ctx);
+
+    const shared = await ctx.db.get(args.sharedMusicId);
+    if (!shared) {
+      throw new Error("Shared music not found");
+    }
+
+    if (shared.userId !== userId) {
+      throw new Error("Not authorized to modify this share");
+    }
+
+    if (!shared.isActive) {
+      throw new Error("Cannot modify inactive share");
+    }
+
+    const newIsPrivate = !shared.isPrivate;
+    await ctx.db.patch(args.sharedMusicId, {
+      isPrivate: newIsPrivate,
+      updatedAt: Date.now(),
+    });
+
+    return { isPrivate: newIsPrivate };
   },
 });

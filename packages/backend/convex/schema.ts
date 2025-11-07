@@ -130,6 +130,7 @@ export default defineSchema({
     shareId: v.string(),
     viewCount: v.number(),
     isActive: v.boolean(),
+    isPrivate: v.optional(v.boolean()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

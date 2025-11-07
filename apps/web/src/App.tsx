@@ -1,6 +1,10 @@
+import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useTheme } from "@/hooks/useTheme";
+import { AudioProvider } from "@/contexts/AudioContext";
+import GlobalPlayerBar from "@/components/GlobalPlayerBar";
+import FloatingPlaylist from "@/components/FloatingPlaylist";
 import LayoutRoute from "@/components/LayoutRoute";
 import DashboardLayout from "@/components/DashboardLayout";
 import RouteErrorBoundary from "@/components/RouteErrorBoundary";
@@ -11,8 +15,9 @@ import TermsAndConditions from "@/pages/TermsAndConditions";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Blog from "./pages/Blog";
 import Share from "./pages/Share";
-import Dashboard from "./pages/Dashboard";
+import NewDashboard from "./pages/NewDashboard";
 import Profile from "./pages/Profile";
+import MemoryCompose from "./pages/MemoryCompose";
 import NotFound from "./pages/NotFound";
 
 /**
@@ -23,8 +28,11 @@ import NotFound from "./pages/NotFound";
 export default function App() {
   // Initialize theme globally
   useTheme();
+  
+  const [isPlaylistOpen, setIsPlaylistOpen] = useState(false);
 
   return (
+    <AudioProvider>
       <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
         <Toaster
           position="top-center"
@@ -55,8 +63,10 @@ export default function App() {
             
             {/* Dashboard routes with authenticated navigation */}
             <Route path="/dashboard" element={<DashboardLayout />} errorElement={<RouteErrorBoundary />}>
-              <Route index element={<Dashboard />} />
+              <Route index element={<NewDashboard />} />
               <Route path="profile" element={<Profile />} />
+              <Route path="memory/new" element={<MemoryCompose />} />
+              <Route path="memory/:id/edit" element={<MemoryCompose />} />
             </Route>
             
             {/* Routes with custom background layout */}
@@ -71,7 +81,10 @@ export default function App() {
             {/* 404 Catch-all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <GlobalPlayerBar onTogglePlaylist={() => setIsPlaylistOpen(!isPlaylistOpen)} />
+          <FloatingPlaylist isOpen={isPlaylistOpen} onClose={() => setIsPlaylistOpen(false)} />
         </Router>
       </div>
+    </AudioProvider>
   );
 }
