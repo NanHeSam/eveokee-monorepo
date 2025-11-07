@@ -255,19 +255,24 @@ export const reconcileSubscriptionWithData = internalMutation({
       // Use hasActiveSubscription to determine tier (active subscriptions get mapped tier, expired get free)
       const effectiveTier = hasActiveSubscription ? mappedTier : "free";
       
+      // Check if tier changed (aligns with webhook behavior - only reset usage on tier change)
+      const tierChanged = backendSubscription.subscriptionTier !== effectiveTier;
+      
       updates.productId = rcProductId;
       updates.subscriptionTier = effectiveTier;
-      updates.musicGenerationsUsed = 0;
-      updates.lastResetAt = now;
+      
+      // Only reset usage if tier changed (not just productId)
+      // This prevents unnecessary resets when productId changes without tier change
+      // (e.g., RevenueCat identifier updates, platform-specific variations)
+      if (tierChanged) {
+        updates.musicGenerationsUsed = 0;
+        updates.lastResetAt = now;
 
-      const defaultCustomMusicLimit = effectiveTier === "yearly"
-        ? getAnnualMonthlyCredit()
-        : undefined;
-
-      if (defaultCustomMusicLimit !== undefined) {
-        updates.customMusicLimit = defaultCustomMusicLimit;
-      } else if (backendSubscription.customMusicLimit !== undefined) {
-        updates.customMusicLimit = undefined;
+        if (effectiveTier === "yearly") {
+          updates.customMusicLimit = getAnnualMonthlyCredit();
+        } else if (backendSubscription.customMusicLimit !== undefined) {
+          updates.customMusicLimit = undefined;
+        }
       }
 
       productIdUpdated = true;

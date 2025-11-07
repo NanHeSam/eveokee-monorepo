@@ -142,7 +142,7 @@ export function useRevenueCatSubscription(): {
   // On mount, fetch customer info (run once)
   useEffect(() => {
     loadCustomerInfo();
-  }, []);
+  }, [loadCustomerInfo]);
 
   // Translate raw RevenueCat info plus usage data into SubscriptionState.
   // This merges data from the external billing platform and the Convex backend.
