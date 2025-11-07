@@ -27,6 +27,10 @@ export const MiniPlayer = () => {
       if (state.state === State.Playing) {
         await TrackPlayer.pause();
       } else {
+        // If track has finished (position at or near the end), seek to beginning before playing
+        if (duration > 0 && position >= duration - 0.5) {
+          await TrackPlayer.seekTo(0);
+        }
         await TrackPlayer.play();
       }
     } catch (error) {
@@ -36,7 +40,7 @@ export const MiniPlayer = () => {
         hidePlayer();
       }
     }
-  }, [hidePlayer]);
+  }, [hidePlayer, position, duration]);
 
   if (!currentTrack || !isVisible) {
     return null;

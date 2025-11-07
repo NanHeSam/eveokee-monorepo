@@ -35,6 +35,10 @@ export const FullPlayer = () => {
       if (state.state === State.Playing) {
         await TrackPlayer.pause();
       } else {
+        // If track has finished (position at or near the end), seek to beginning before playing
+        if (duration > 0 && position >= duration - 0.5) {
+          await TrackPlayer.seekTo(0);
+        }
         await TrackPlayer.play();
       }
     } catch (error) {
@@ -44,7 +48,7 @@ export const FullPlayer = () => {
         hideFullPlayer();
       }
     }
-  }, [hideFullPlayer]);
+  }, [hideFullPlayer, position, duration]);
 
   const skipToPrevious = useCallback(async () => {
     try {
@@ -215,7 +219,9 @@ export const FullPlayer = () => {
           className="h-20 w-20 items-center justify-center rounded-full"
           style={{ backgroundColor: colors.accentMint }}
         >
-          <Ionicons name={isPlaying ? 'pause' : 'play'} size={40} color={colors.background} />
+          <View style={{ marginLeft: isPlaying ? 0 : 2 }}>
+            <Ionicons name={isPlaying ? 'pause' : 'play'} size={40} color={colors.background} />
+          </View>
         </Pressable>
 
         <Pressable
