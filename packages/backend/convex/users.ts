@@ -11,6 +11,7 @@ import { internal } from "./_generated/api";
 import { Id, Doc } from "./_generated/dataModel";
 import { deleteUserData } from "./deleteAccount";
 import { getEffectiveMusicLimit, getPeriodDurationMs, type SubscriptionTier } from "./billing";
+import { isMutationCtx } from "./utils/contextHelpers";
 
 export const createUser = internalMutation({
   args: {
@@ -40,10 +41,6 @@ export const createUser = internalMutation({
 
 type EnsureCurrentUserResult = {
   userId: Id<"users">;
-};
-
-const isMutationCtx = (ctx: MutationCtx | QueryCtx): ctx is MutationCtx => {
-  return "runMutation" in ctx;
 };
 
 const ensureCurrentUserHandler = async (

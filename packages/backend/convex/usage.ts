@@ -5,8 +5,11 @@ import {
   mutation,
   query,
   action,
+  type MutationCtx,
+  type QueryCtx,
 } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { Id } from "./_generated/dataModel";
 import {
   getEffectiveMusicLimit,
   getResetPeriodDurationMs,
@@ -15,6 +18,7 @@ import {
   subscriptionStatusValidator,
 } from "./billing";
 import ensureCurrentUser, { getOptionalCurrentUser } from "./users";
+import { isMutationCtx } from "./utils/contextHelpers";
 
 /**
  * Subscription Usage Reset and Query Functions
@@ -60,7 +64,7 @@ import ensureCurrentUser, { getOptionalCurrentUser } from "./users";
  */
 // Helper function to check and reset subscription if period expired
 // If ctx is a query context (no patch method), computes reset values without modifying DB
-async function checkAndResetSubscription(ctx: any, subscriptionId: string, tier: SubscriptionTier) {
+async function checkAndResetSubscription(ctx: MutationCtx | QueryCtx, subscriptionId: Id<"subscriptionStatuses">, tier: SubscriptionTier) {
   const now = Date.now();
   const resetPeriodDuration = getResetPeriodDurationMs(tier);
   const subscription = await ctx.db.get(subscriptionId);
@@ -70,7 +74,6 @@ async function checkAndResetSubscription(ctx: any, subscriptionId: string, tier:
   }
 
   const periodEnd = subscription.lastResetAt + resetPeriodDuration;
-  const canPatch = typeof ctx.db.patch === "function";
 
   // Check if period has expired and reset if needed
   if (now > periodEnd) {
@@ -95,8 +98,8 @@ async function checkAndResetSubscription(ctx: any, subscriptionId: string, tier:
       resetData.customMusicLimit = getAnnualMonthlyCredit();
     }
 
-    // Only patch if we're in a mutation context (patch method exists)
-    if (canPatch) {
+    // Only patch if we're in a mutation context
+    if (isMutationCtx(ctx)) {
       await ctx.db.patch(subscriptionId, resetData);
       return await ctx.db.get(subscriptionId);
     } else {
@@ -158,7 +161,7 @@ async function checkAndResetSubscription(ctx: any, subscriptionId: string, tier:
  * @see getResetPeriodDurationMs for reset period duration calculation
  */
 // Helper function to get user's current usage info (works in both query and mutation contexts)
-async function getUserUsageInfo(ctx: any, userId: string) {
+async function getUserUsageInfo(ctx: MutationCtx | QueryCtx, userId: Id<"users">) {
   const user = await ctx.db.get(userId);
   if (!user) {
     throw new Error("User not found");
@@ -174,7 +177,7 @@ async function getUserUsageInfo(ctx: any, userId: string) {
   }
 
   // Note: Product ID reconciliation with RevenueCat should happen before this point
-  // via reconcileProductId action. This ensures RevenueCat is the single source of truth.
+  // via reconcileSubscription action. This ensures RevenueCat is the single source of truth.
   // The subscription.productId should already be reconciled at this point.
 
   const tier = subscription.subscriptionTier as SubscriptionTier;
@@ -228,7 +231,7 @@ export const recordMusicGenerationWithReconciliation = action({
   }),
   handler: async (ctx, args) => {
     // Reconcile product ID with RevenueCat first (single source of truth)
-    const reconcileResult = await ctx.runAction(internal.revenueCatBilling.reconcileProductId, {
+    const reconcileResult = await ctx.runAction(internal.revenueCatBilling.reconcileSubscription, {
       userId: args.userId,
     });
 

@@ -70,46 +70,68 @@ async function getCustomerInfoDeduplicated(forceRefresh = false): Promise<Custom
 }
 
 /**
- * Hook that provides subscription status directly from RevenueCat
+ * Hook that retrieves the current user's subscription status from RevenueCat, 
+ * augmented with usage data from Convex.
  * 
- * @returns Subscription state from RevenueCat, with usage data from Convex
+ * ## Return properties:
+ * - subscriptionStatus: SubscriptionState | null
+ *     The computed app-aware subscription state (tier, expiration, usage) or null if unavailable.
+ * - customerInfo: CustomerInfo | null
+ *     Raw RevenueCat customer info response object or null if not loaded yet.
+ * - loading: boolean
+ *     True if data is being loaded (either from RevenueCat or Convex).
+ * - error: string | null
+ *     Error message if fetching subscription state failed, null otherwise.
+ * - refresh: (forceRefresh?: boolean) => Promise<void>
+ *     Function to re-fetch data; pass forceRefresh=true to bypass debounce and cache.
+ * - hasActiveSubscription: boolean
+ *     True if user has at least one active entitlement/subscription.
  */
-export function useRevenueCatSubscription() {
+export function useRevenueCatSubscription(): {
+  subscriptionStatus: SubscriptionState | null;
+  customerInfo: CustomerInfo | null;
+  loading: boolean;
+  error: string | null;
+  refresh: (forceRefresh?: boolean) => Promise<void>;
+  hasActiveSubscription: boolean;
+} {
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const isMountedRef = useRef(true);
-  
-  // Get usage data from Convex (musicGenerationsUsed, periodStart)
-  // This is still needed as it's app-specific data
   const usageData = useQuery(api.usage.getCurrentUserUsage);
 
-  // Load customer info from RevenueCat with deduplication
+  /**
+   * Loads customer info from RevenueCat (with deduplication and optional force refresh).
+   * Also handles error and loading state, set only if the hook is still mounted.
+   */
   const loadCustomerInfo = useCallback(async (forceRefresh = false) => {
     try {
       setLoading(true);
       setError(null);
+
+      // Fetch info, possibly forcing fresh call
       const info = await getCustomerInfoDeduplicated(forceRefresh);
-      // Only update state if component is still mounted
+
+      // Only set state if component is still mounted
       if (isMountedRef.current) {
         setCustomerInfo(info);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load subscription status';
-      // Only update state if component is still mounted
       if (isMountedRef.current) {
         setError(errorMessage);
       }
       console.error('Failed to load RevenueCat customer info:', err);
     } finally {
-      // Only update state if component is still mounted
       if (isMountedRef.current) {
         setLoading(false);
       }
     }
   }, []);
 
-  // Track mount status
+  // Track mounted status to avoid setting state after unmount
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -117,12 +139,13 @@ export function useRevenueCatSubscription() {
     };
   }, []);
 
-  // Load customer info on mount and when usage data changes
+  // On mount, fetch customer info (run once)
   useEffect(() => {
     loadCustomerInfo();
-  }, [loadCustomerInfo]);
+  }, []);
 
-  // Convert RevenueCat customer info to subscription state
+  // Translate raw RevenueCat info plus usage data into SubscriptionState.
+  // This merges data from the external billing platform and the Convex backend.
   const subscriptionState: SubscriptionState | null = customerInfo
     ? customerInfoToSubscriptionState(customerInfo, {
         musicGenerationsUsed: usageData?.musicGenerationsUsed ?? 0,
@@ -130,9 +153,10 @@ export function useRevenueCatSubscription() {
       })
     : null;
 
-  // Refresh subscription status
-  // By default, uses cached data if available (respects debounce)
-  // Pass forceRefresh=true to bypass cache and force a fresh fetch from RevenueCat servers
+  /**
+   * Public refresh function to reload all relevant info (optionally bypassing debounce/caching).
+   * Useful after successful purchase, restoration, or to manually check for changes.
+   */
   const refresh = useCallback(async (forceRefresh = false) => {
     await loadCustomerInfo(forceRefresh);
   }, [loadCustomerInfo]);

@@ -185,7 +185,6 @@ export const updateSubscriptionFromWebhook = internalMutation({
  * This mutation updates the database based on RevenueCat customer info fetched server-side
  * RevenueCat is treated as the single source of truth for product ID and status
  * 
- * Unified function that replaces both reconcileSubscriptionWithData and reconcileProductIdFromRevenueCatData
  * - Reconciles both product ID and status
  * - Respects grace period (doesn't update status if in_grace)
  * - Updates platform when available
@@ -338,7 +337,6 @@ export const reconcileSubscriptionWithData = internalMutation({
  * Reconcile subscription status and product ID with RevenueCat
  * ACTION: Fetches canonical customer data from RevenueCat API and reconciles subscription
  * 
- * Unified function that replaces both reconcileSubscription and reconcileProductId
  * - Reconciles both product ID and status
  * - Includes structured logging
  * - Returns comprehensive result with all fields
@@ -431,39 +429,6 @@ export const reconcileSubscription = internalAction({
   },
 });
 
-/**
- * Reconcile product ID with RevenueCat before usage checks
- * ACTION: Wrapper around reconcileSubscription for backward compatibility
- * 
- * @deprecated Use reconcileSubscription instead. This function is kept for backward compatibility
- * and will be removed in a future version.
- */
-export const reconcileProductId = internalAction({
-  args: {
-    userId: v.id("users"),
-  },
-  returns: v.object({ 
-    success: v.boolean(),
-    productIdUpdated: v.boolean(),
-    rcProductId: v.optional(v.string()),
-  }),
-  handler: async (ctx, args) => {
-    // Use the unified reconciliation function
-    const result = await ctx.runAction(
-      internal.revenueCatBilling.reconcileSubscription,
-      {
-        userId: args.userId,
-      }
-    );
-
-    // Return subset of fields for backward compatibility
-    return {
-      success: result.success,
-      productIdUpdated: result.productIdUpdated,
-      rcProductId: result.rcProductId,
-    };
-  },
-});
 
 /**
  * Query to get stale subscriptions for reconciliation cron

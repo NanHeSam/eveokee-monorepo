@@ -100,8 +100,9 @@ export const DiaryEditScreen = () => {
       }
     } catch {
       Alert.alert('Unable to save entry', 'Please try again.');
-      setIsSaving(false);
       return;
+    } finally {
+      setIsSaving(false);
     }
 
     // Start music generation (this handles usage tracking internally)
