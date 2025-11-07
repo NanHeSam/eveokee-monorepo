@@ -45,17 +45,17 @@ export const SettingsScreen = () => {
 
   // Listen for subscription changes from RevenueCat SDK
   useEffect(() => {
-    // RevenueCat SDK automatically notifies when subscription changes
-    // The listener callback will be called whenever customerInfo updates
-    // Deduplication in useRevenueCatSubscription prevents duplicate API calls
-    Purchases.addCustomerInfoUpdateListener(() => {
+    const handleCustomerInfoUpdate = () => {
       // Refresh subscription status when RevenueCat notifies of changes
       // Uses cached data if available (no force refresh)
       refreshSubscription(false);
-    });
+    };
 
-    // Note: addCustomerInfoUpdateListener doesn't return a cleanup function
-    // The listener is automatically cleaned up when the component unmounts
+    Purchases.addCustomerInfoUpdateListener(handleCustomerInfoUpdate);
+
+    return () => {
+      Purchases.removeCustomerInfoUpdateListener(handleCustomerInfoUpdate);
+    };
   }, [refreshSubscription]);
   const handleSignOut = useCallback(async () => {
     try {

@@ -21,9 +21,9 @@ const REVENUECAT_PRODUCT_TO_TIER: Record<string, SubscriptionTier> = {
 
 // Plan configuration (should match backend PLAN_CONFIG)
 const PLAN_CONFIG = {
-  free: { musicLimit: 5, periodDays: 31 },
+  free: { musicLimit: 5, periodDays: 30 },
   weekly: { musicLimit: 20, periodDays: 7 },
-  monthly: { musicLimit: 90, periodDays: 31 },
+  monthly: { musicLimit: 90, periodDays: 30 },
   yearly: { musicLimit: 1000, periodDays: 365 },
 } as const;
 
@@ -78,8 +78,9 @@ function getStatusFromCustomerInfo(customerInfo: CustomerInfo): SubscriptionStat
     // User had entitlements but they're not active anymore
     return 'expired';
   }
-  
-  return 'expired';
+
+  // No entitlements at all ⇒ user is on the free tier
+  return 'active';
 }
 
 /**
@@ -129,7 +130,13 @@ function getIsActive(customerInfo: CustomerInfo): boolean {
     const entitlement = Object.values(activeEntitlements)[0];
     return entitlement.isActive === true;
   }
-  
+
+  // Treat bare free tier as active so UI doesn't label it expired
+  const allEntitlements = customerInfo.entitlements.all;
+  if (Object.keys(allEntitlements).length === 0) {
+    return true;
+  }
+
   return false;
 }
 

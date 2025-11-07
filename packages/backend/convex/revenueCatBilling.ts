@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { internalMutation, internalQuery, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { createLogger, generateCorrelationId, logReconciliation, sanitizeForConvex } from "./utils/logger";
+import { getAnnualMonthlyCredit } from "./billing";
 import {
   REVENUECAT_PRODUCT_TO_TIER,
   REVENUECAT_STORE_TO_PLATFORM,
@@ -11,7 +12,6 @@ import {
   MAX_RECONCILIATION_ERRORS_TO_LOG,
 } from "./utils/constants";
 import { createRevenueCatClientFromEnv, RevenueCatCustomerInfo } from "./integrations/revenuecat/client";
-import { getAnnualMonthlyCredit } from "./billing";
 
 const getPlatformFromStore = (store: string | undefined): "app_store" | "play_store" | "stripe" | undefined => {
   return store ? REVENUECAT_STORE_TO_PLATFORM[store] : undefined;
@@ -108,25 +108,31 @@ export const updateSubscriptionFromWebhook = internalMutation({
 
     const shouldLogToAudit = stateChanged || isSignificantEvent;
 
-    // Detect tier change for usage reset
-    const tierChanged = currentSubscription && currentSubscription.subscriptionTier !== effectiveTier;
-
     // Update snapshot
     if (user.activeSubscriptionId && currentSubscription) {
-      await ctx.db.patch(user.activeSubscriptionId, {
+      const tierChanged = currentSubscription.subscriptionTier !== effectiveTier;
+
+      const updates: Record<string, unknown> = {
         ...(platform && { platform: platform as "app_store" | "play_store" | "stripe" }),
         productId: args.productId,
         status,
         subscriptionTier: effectiveTier,
         ...(typeof expiresAt === "number" && !isNaN(expiresAt) ? { expiresAt } : {}),
         lastVerifiedAt: now,
-        // Reset usage when tier changes to prevent credit loss/blocking
-        ...(tierChanged && {
-          musicGenerationsUsed: 0,
-          lastResetAt: now,
-          customMusicLimit: effectiveTier === "yearly" ? getAnnualMonthlyCredit() : undefined,
-        }),
-      });
+      };
+
+      if (tierChanged) {
+        updates.musicGenerationsUsed = 0;
+        updates.lastResetAt = now;
+
+        if (effectiveTier === "yearly") {
+          updates.customMusicLimit = getAnnualMonthlyCredit();
+        } else if (currentSubscription.customMusicLimit !== undefined) {
+          updates.customMusicLimit = undefined;
+        }
+      }
+
+      await ctx.db.patch(user.activeSubscriptionId, updates);
     } else {
       const subscriptionId = await ctx.db.insert("subscriptionStatuses", {
         userId: user._id,
@@ -138,6 +144,9 @@ export const updateSubscriptionFromWebhook = internalMutation({
         musicGenerationsUsed: 0,
         lastVerifiedAt: now,
         ...(typeof expiresAt === "number" && !isNaN(expiresAt) ? { expiresAt } : {}),
+        ...(effectiveTier === "yearly"
+          ? { customMusicLimit: getAnnualMonthlyCredit() }
+          : {}),
       });
 
       await ctx.db.patch(user._id, {
@@ -249,6 +258,19 @@ export const reconcileSubscriptionWithData = internalMutation({
       
       updates.productId = rcProductId;
       updates.subscriptionTier = effectiveTier;
+      updates.musicGenerationsUsed = 0;
+      updates.lastResetAt = now;
+
+      const defaultCustomMusicLimit = effectiveTier === "yearly"
+        ? getAnnualMonthlyCredit()
+        : undefined;
+
+      if (defaultCustomMusicLimit !== undefined) {
+        updates.customMusicLimit = defaultCustomMusicLimit;
+      } else if (backendSubscription.customMusicLimit !== undefined) {
+        updates.customMusicLimit = undefined;
+      }
+
       productIdUpdated = true;
     }
 

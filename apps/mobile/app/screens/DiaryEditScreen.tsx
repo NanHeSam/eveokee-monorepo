@@ -4,7 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { useMutation, useQuery } from 'convex/react';
+import { useAction, useMutation, useQuery } from 'convex/react';
 import TrackPlayer from 'react-native-track-player';
 import { format } from 'date-fns';
 
@@ -25,7 +25,7 @@ export const DiaryEditScreen = () => {
   const route = useRoute<DiaryEditRouteProp>();
   const createDiary = useMutation(api.diaries.createDiary);
   const updateDiary = useMutation(api.diaries.updateDiary);
-  const startMusicGeneration = useMutation(api.music.startDiaryMusicGeneration);
+  const startMusicGeneration = useAction(api.music.startDiaryMusicGeneration);
   const initialBody = useMemo(() => route.params?.content ?? '', [route.params?.content]);
   const [body, setBody] = useState(initialBody);
   const [isSaving, setIsSaving] = useState(false);

@@ -24,7 +24,7 @@ describe("Music Generation Flow", () => {
       const asUser = withAuth(t, clerkId, email, name);
 
       await expect(
-        asUser.mutation(api.music.startDiaryMusicGeneration, { content: "" })
+        asUser.action(api.music.startDiaryMusicGeneration, { content: "" })
       ).rejects.toThrow("Content cannot be empty");
     });
 
@@ -34,7 +34,7 @@ describe("Music Generation Flow", () => {
       const asUser = withAuth(t, clerkId, email, name);
 
       await expect(
-        asUser.mutation(api.music.startDiaryMusicGeneration, {
+        asUser.action(api.music.startDiaryMusicGeneration, {
           content: "   \n  \t  ",
         })
       ).rejects.toThrow("Content cannot be empty");
