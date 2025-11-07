@@ -3,11 +3,15 @@
 declare global {
   interface Window {
     dataLayer: unknown[]
-    gtag: (
-      command: 'config' | 'set' | 'event' | 'js',
-      targetId: string | Date,
-      config?: Record<string, unknown>
-    ) => void
+    gtag: {
+      (
+        command: 'config' | 'event',
+        targetId: string,
+        config?: Record<string, unknown>
+      ): void
+      (command: 'set', config: Record<string, unknown>): void
+      (command: 'js', date: Date): void
+    }
   }
 }
 
