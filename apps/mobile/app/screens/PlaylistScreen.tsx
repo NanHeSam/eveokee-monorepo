@@ -364,8 +364,7 @@ const PlaylistRow = ({
           exiting={FadeOut.duration(200)}
           className="px-3 pb-4"
         >
-          <Pressable
-            onPress={handleDiaryPress}
+          <View
             className="rounded-2xl p-4"
             style={{ backgroundColor: colors.card }}
           >
@@ -388,7 +387,7 @@ const PlaylistRow = ({
                 <Ionicons name="chevron-forward" size={16} color={colors.accentMint} style={{ marginLeft: 4 }} />
               </Pressable>
             )}
-          </Pressable>
+          </View>
         </Reanimated.View>
       )}
     </View>
