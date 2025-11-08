@@ -145,7 +145,7 @@ export function useVideoGeneration(musicId: Id<'music'> | null) {
     return () => {
       clearInterval(intervalId);
     };
-  }, [pendingVideo?.createdAt]);
+  }, [pendingVideo]);
 
   // Get ready videos count
   const readyVideosCount = videos?.filter((v) => v.status === 'ready').length ?? 0;

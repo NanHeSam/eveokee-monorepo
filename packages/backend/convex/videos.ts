@@ -410,6 +410,7 @@ export const failVideoGeneration = internalMutation({
     await ctx.db.patch(video._id, {
       status: "failed",
       metadata: {
+        data: video.metadata?.data ?? {},
         ...(video.metadata ?? {}),
         errorMessage: args.errorMessage,
       },

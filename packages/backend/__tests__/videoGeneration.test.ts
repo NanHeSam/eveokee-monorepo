@@ -3,60 +3,20 @@
  * Tests for video generation, credit tracking, and webhook handling
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { ConvexTestingHelper } from './convexTestUtils';
+import { describe, test, expect } from 'vitest';
+import { createTestEnvironment, createTestUser } from './convexTestUtils';
 import { api, internal } from '../convex/_generated/api';
 import type { Id } from '../convex/_generated/dataModel';
 
 describe('Video Generation Workflow', () => {
-  let t: ConvexTestingHelper;
-  let userId: Id<'users'>;
-  let musicId: Id<'music'>;
-
-  beforeEach(async () => {
-    t = new ConvexTestingHelper();
-    await t.start();
-
-    // Create test user with active subscription
-    userId = await t.run(async (ctx) => {
-      const user = await ctx.db.insert('users', {
-        clerkId: 'test_user_video',
-        email: 'video@test.com',
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      });
-
-      // Create active subscription with sufficient credits
-      const subscription = await ctx.db.insert('subscriptionStatuses', {
-        userId: user,
-        productId: 'monthly_plan',
-        status: 'active',
-        subscriptionTier: 'monthly',
-        lastResetAt: Date.now(),
-        musicGenerationsUsed: 0, // No usage yet
-        lastVerifiedAt: Date.now(),
-        platform: 'stripe',
-      });
-
-      await ctx.db.patch(user, { activeSubscriptionId: subscription });
-      return user;
-    });
-
-    // Create test music with lyrics
-    musicId = await t.run(async (ctx) => {
-      return await ctx.db.insert('music', {
-        userId,
-        title: 'Test Song',
-        lyric: 'Test lyrics for video generation\nThis is a test song',
-        audioUrl: 'https://example.com/audio.mp3',
-        status: 'ready',
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      });
-    });
-  });
 
   test('should deduct 3 credits for video generation', async () => {
+    const t = createTestEnvironment();
+    const { userId } = await createTestUser(t, {
+      tier: 'monthly',
+      musicGenerationsUsed: 0,
+    });
+
     // Record video generation
     const result = await t.mutation(internal.usage.recordVideoGeneration, {
       userId,
@@ -68,14 +28,10 @@ describe('Video Generation Workflow', () => {
   });
 
   test('should fail when insufficient credits', async () => {
-    // Set usage to 89 (only 1 credit remaining for monthly plan with 90 limit)
-    await t.run(async (ctx) => {
-      const user = await ctx.db.get(userId);
-      if (user?.activeSubscriptionId) {
-        await ctx.db.patch(user.activeSubscriptionId, {
-          musicGenerationsUsed: 89,
-        });
-      }
+    const t = createTestEnvironment();
+    const { userId } = await createTestUser(t, {
+      tier: 'monthly',
+      musicGenerationsUsed: 89, // Only 1 credit remaining for monthly plan with 90 limit
     });
 
     const result = await t.mutation(internal.usage.recordVideoGeneration, {
@@ -88,6 +44,12 @@ describe('Video Generation Workflow', () => {
   });
 
   test('should refund 3 credits when video generation fails', async () => {
+    const t = createTestEnvironment();
+    const { userId } = await createTestUser(t, {
+      tier: 'monthly',
+      musicGenerationsUsed: 0,
+    });
+
     // First deduct credits
     await t.mutation(internal.usage.recordVideoGeneration, { userId });
 
@@ -101,6 +63,24 @@ describe('Video Generation Workflow', () => {
   });
 
   test('should create pending video record', async () => {
+    const t = createTestEnvironment();
+    const { userId } = await createTestUser(t, {
+      tier: 'monthly',
+    });
+
+    // Create test music with lyrics
+    const musicId = await t.run(async (ctx) => {
+      return await ctx.db.insert('music', {
+        userId,
+        title: 'Test Song',
+        lyric: 'Test lyrics for video generation\nThis is a test song',
+        audioUrl: 'https://example.com/audio.mp3',
+        status: 'ready',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    });
+
     const result = await t.mutation(internal.videos.createPendingVideoRecord, {
       musicId,
       userId,
@@ -121,6 +101,24 @@ describe('Video Generation Workflow', () => {
   });
 
   test('should prevent duplicate video generation', async () => {
+    const t = createTestEnvironment();
+    const { userId } = await createTestUser(t, {
+      tier: 'monthly',
+    });
+
+    // Create test music with lyrics
+    const musicId = await t.run(async (ctx) => {
+      return await ctx.db.insert('music', {
+        userId,
+        title: 'Test Song',
+        lyric: 'Test lyrics for video generation\nThis is a test song',
+        audioUrl: 'https://example.com/audio.mp3',
+        status: 'ready',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    });
+
     // Create first pending video
     await t.mutation(internal.videos.createPendingVideoRecord, {
       musicId,
@@ -138,6 +136,24 @@ describe('Video Generation Workflow', () => {
   });
 
   test('should complete video generation successfully', async () => {
+    const t = createTestEnvironment();
+    const { userId } = await createTestUser(t, {
+      tier: 'monthly',
+    });
+
+    // Create test music with lyrics
+    const musicId = await t.run(async (ctx) => {
+      return await ctx.db.insert('music', {
+        userId,
+        title: 'Test Song',
+        lyric: 'Test lyrics for video generation\nThis is a test song',
+        audioUrl: 'https://example.com/audio.mp3',
+        status: 'ready',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    });
+
     // Create pending video
     const { videoId } = await t.mutation(internal.videos.createPendingVideoRecord, {
       musicId,
@@ -152,6 +168,7 @@ describe('Video Generation Workflow', () => {
       videoStorageId: 'storage_test_123',
       duration: 15,
       metadata: {
+        data: {},
         model: 'sora-2-text-to-video',
         aspectRatio: 'portrait',
         nFrames: '15',
@@ -176,6 +193,24 @@ describe('Video Generation Workflow', () => {
   });
 
   test('should mark video as failed on error', async () => {
+    const t = createTestEnvironment();
+    const { userId } = await createTestUser(t, {
+      tier: 'monthly',
+    });
+
+    // Create test music with lyrics
+    const musicId = await t.run(async (ctx) => {
+      return await ctx.db.insert('music', {
+        userId,
+        title: 'Test Song',
+        lyric: 'Test lyrics for video generation\nThis is a test song',
+        audioUrl: 'https://example.com/audio.mp3',
+        status: 'ready',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    });
+
     // Create pending video
     await t.mutation(internal.videos.createPendingVideoRecord, {
       musicId,
@@ -203,6 +238,24 @@ describe('Video Generation Workflow', () => {
   });
 
   test('should list videos for music track', async () => {
+    const t = createTestEnvironment();
+    const { userId } = await createTestUser(t, {
+      tier: 'monthly',
+    });
+
+    // Create test music with lyrics
+    const musicId = await t.run(async (ctx) => {
+      return await ctx.db.insert('music', {
+        userId,
+        title: 'Test Song',
+        lyric: 'Test lyrics for video generation\nThis is a test song',
+        audioUrl: 'https://example.com/audio.mp3',
+        status: 'ready',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    });
+
     // Create multiple videos
     await t.mutation(internal.videos.createPendingVideoRecord, {
       musicId,
@@ -230,6 +283,24 @@ describe('Video Generation Workflow', () => {
   });
 
   test('should delete video and clear primary reference', async () => {
+    const t = createTestEnvironment();
+    const { userId } = await createTestUser(t, {
+      tier: 'monthly',
+    });
+
+    // Create test music with lyrics
+    const musicId = await t.run(async (ctx) => {
+      return await ctx.db.insert('music', {
+        userId,
+        title: 'Test Song',
+        lyric: 'Test lyrics for video generation\nThis is a test song',
+        audioUrl: 'https://example.com/audio.mp3',
+        status: 'ready',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    });
+
     // Create and complete a video
     const { videoId } = await t.mutation(internal.videos.createPendingVideoRecord, {
       musicId,
@@ -242,6 +313,9 @@ describe('Video Generation Workflow', () => {
       kieTaskId: 'test-task-123',
       videoStorageId: 'storage_test_123',
       duration: 15,
+      metadata: {
+        data: {},
+      },
     });
 
     // Verify it's set as primary
@@ -272,10 +346,6 @@ describe('Video Generation Workflow', () => {
       return await ctx.db.get(musicId);
     });
     expect(music?.primaryVideoId).toBeUndefined();
-  });
-
-  afterEach(async () => {
-    await t.finish();
   });
 });
 
