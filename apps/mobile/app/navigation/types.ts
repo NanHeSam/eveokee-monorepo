@@ -1,5 +1,6 @@
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, NavigatorScreenParams, CompositeNavigationProp } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
 
 export type DiaryStackParamList = {
@@ -10,6 +11,29 @@ export type DiaryStackParamList = {
     title?: string;
   } | undefined;
 };
+
+export type SettingsStackParamList = {
+  SettingsHome: undefined;
+  Account: undefined;
+};
+
+export type MainTabsParamList = {
+  Diary: NavigatorScreenParams<DiaryStackParamList>;
+  Playlist: undefined;
+  Settings: NavigatorScreenParams<SettingsStackParamList>;
+};
+
+export type RootStackParamList = {
+  SignIn: undefined;
+  SignUp: undefined;
+  MainTabs: NavigatorScreenParams<MainTabsParamList>;
+};
+
+// Navigation props for nested navigation from tab screens
+export type PlaylistTabNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<MainTabsParamList, 'Playlist'>,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 export type DiaryStackNavigationProp = NativeStackNavigationProp<DiaryStackParamList, 'DiaryHome'>;
 

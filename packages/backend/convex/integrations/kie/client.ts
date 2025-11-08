@@ -171,7 +171,13 @@ export function createKieClientFromEnv(env: {
   const pathNormalized = callbackPath.startsWith("/") ? callbackPath : `/${callbackPath}`;
   const callbackUrl = `${baseUrlNormalized}${pathNormalized}`;
 
-  const timeout = env.KIE_AI_TIMEOUT ? parseInt(env.KIE_AI_TIMEOUT, 10) : undefined;
+  let timeout: number | undefined;
+  if (env.KIE_AI_TIMEOUT) {
+    const parsed = parseInt(env.KIE_AI_TIMEOUT, 10);
+    if (!Number.isNaN(parsed) && parsed > 0) {
+      timeout = parsed;
+    }
+  }
 
   return new KieClient({
     apiKey,

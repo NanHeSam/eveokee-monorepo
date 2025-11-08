@@ -43,7 +43,6 @@ export function VideoPlayerModal({ visible, videoUrl, title, onClose }: VideoPla
 
   const handleLoad = useCallback(() => {
     setIsLoading(false);
-    setIsPlaying(true);
   }, []);
 
   const handleBuffer = useCallback((data: any) => {

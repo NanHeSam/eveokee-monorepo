@@ -16,7 +16,7 @@ export const DEFAULT_REMOVE_WATERMARK = true;
 
 // OpenAI Configuration for Video Script Generation
 export const OPENAI_VIDEO_SCRIPT_MODEL = "gpt-5-mini";
-export const OPENAI_VIDEO_SCRIPT_MAX_OUTPUT_TOKENS = 3000;
+export const OPENAI_VIDEO_SCRIPT_MAX_OUTPUT_TOKENS = 10000;
 
 // Video limits
 export const MAX_VIDEO_DURATION_SECONDS = 15;

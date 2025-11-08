@@ -128,15 +128,16 @@ export function useVideoGeneration(musicId: Id<'music'> | null) {
   const hasPendingVideo = pendingVideo !== null;
 
   const [pendingElapsedSeconds, setPendingElapsedSeconds] = useState<number | null>(null);
+  const pendingCreatedAt = pendingVideo?.createdAt ?? null;
 
   useEffect(() => {
-    if (!pendingVideo) {
+    if (pendingCreatedAt === null) {
       setPendingElapsedSeconds(null);
       return;
     }
 
     const updateElapsed = () => {
-      const elapsedMs = Date.now() - pendingVideo.createdAt;
+      const elapsedMs = Date.now() - pendingCreatedAt;
       setPendingElapsedSeconds(Math.max(0, Math.floor(elapsedMs / 1000)));
     };
 
@@ -145,7 +146,7 @@ export function useVideoGeneration(musicId: Id<'music'> | null) {
     return () => {
       clearInterval(intervalId);
     };
-  }, [pendingVideo]);
+  }, [pendingCreatedAt]);
 
   // Get ready videos count
   const readyVideosCount = videos?.filter((v) => v.status === 'ready').length ?? 0;

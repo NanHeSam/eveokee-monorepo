@@ -9,6 +9,8 @@ import type { KieWebhookPayload } from "../../models/webhooks/kie";
 import {
   isValidKieCallback,
   parseKiePayload,
+  extractKieCallbackType,
+  extractKieTaskId,
 } from "../../models/webhooks/kie";
 import {
   errorResponse,
@@ -65,52 +67,60 @@ export const kieVideoGenerationCallback = httpAction(async (ctx, req) => {
   }
   const body = parseResult.data;
 
-  // Step 4: Parse and validate payload
+  // Step 4: Extract callback type and taskId first (before requiring videoUrl)
+  const callbackType = extractKieCallbackType(body);
+  const taskId = extractKieTaskId(body);
+
+  if (!taskId) {
+    logger.warn("Missing taskId in callback");
+    return errorResponse("Missing taskId", HTTP_STATUS_BAD_REQUEST);
+  }
+
+  const eventLogger = logger.child({ taskId, callbackType });
+
+  // Step 5: Handle failure callbacks (which may not have videoUrl)
+  if (callbackType === "failed" || callbackType === "error") {
+    eventLogger.warn("Received failure callback");
+    try {
+      // Get video record to find userId for credit refund
+      const video = await ctx.runQuery(internal.videos.getVideoByTaskId, {
+        taskId,
+      });
+
+      if (video) {
+        // Refund 3 credits
+        await ctx.runMutation(internal.usage.decrementVideoGeneration, {
+          userId: video.userId,
+        });
+
+        // Mark video as failed
+        await ctx.runMutation(internal.videos.failVideoGeneration, {
+          kieTaskId: taskId,
+          errorMessage: "Video generation failed on Kie.ai",
+        });
+      }
+
+      return successResponse({ status: "failure_handled" });
+    } catch (error) {
+      eventLogger.error("Failed to process failure callback", error);
+      return errorResponse("Failed to process failure callback", HTTP_STATUS_INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  // Step 6: Handle non-completion callbacks
+  if (callbackType !== "complete" && callbackType !== "completed" && callbackType !== "success") {
+    eventLogger.info("Ignoring non-complete callback");
+    return successResponse({ status: "ignored" });
+  }
+
+  // Step 7: Parse and validate success payload (requires videoUrl)
   const parsedPayload = parseKiePayload(body);
   if (parsedPayload.success === false) {
     logger.warn("Payload validation failed", { error: parsedPayload.error });
     return errorResponse(parsedPayload.error, HTTP_STATUS_BAD_REQUEST);
   }
 
-  const { taskId, videoUrl, callbackType, code, videoData } = parsedPayload.data;
-
-  // Add taskId to logger context
-  const eventLogger = logger.child({ taskId, callbackType, code });
-
-  // Step 5: Check callback type
-  if (callbackType !== "complete" && callbackType !== "completed" && callbackType !== "success") {
-    // If it's a failure callback
-    if (callbackType === "failed" || callbackType === "error") {
-      eventLogger.warn("Received failure callback");
-      try {
-        // Get video record to find userId for credit refund
-        const video = await ctx.runQuery(internal.videos.getVideoByTaskId, {
-          taskId,
-        });
-        
-        if (video) {
-          // Refund 3 credits
-          await ctx.runMutation(internal.usage.decrementVideoGeneration, {
-            userId: video.userId,
-          });
-          
-          // Mark video as failed
-          await ctx.runMutation(internal.videos.failVideoGeneration, {
-            kieTaskId: taskId,
-            errorMessage: "Video generation failed on Kie.ai",
-          });
-        }
-        
-        return successResponse({ status: "failure_handled" });
-      } catch (error) {
-        eventLogger.error("Failed to process failure callback", error);
-        return errorResponse("Failed to process failure callback", HTTP_STATUS_INTERNAL_SERVER_ERROR);
-      }
-    }
-    
-    eventLogger.info("Ignoring non-complete callback");
-    return successResponse({ status: "ignored" });
-  }
+  const { videoUrl, code, videoData } = parsedPayload.data;
 
   if (code !== HTTP_STATUS_OK && code !== 200) {
     eventLogger.warn("Received non-success callback");

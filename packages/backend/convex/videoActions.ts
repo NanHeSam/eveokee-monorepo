@@ -145,24 +145,42 @@ export const requestKieVideoGeneration = internalAction({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    // Create OpenAI client for generating video script
-    const openaiClient = createOpenAIClientFromEnv({
-      OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-      OPENAI_TIMEOUT: process.env.OPENAI_TIMEOUT,
-    });
+    // Create clients with refund protection
+    let openaiClient: ReturnType<typeof createOpenAIClientFromEnv>;
+    let kieClient: ReturnType<typeof createKieClientFromEnv>;
 
-    // Create Kie.ai client for video generation
-    // CONVEX_SITE_URL is provided automatically by Convex
-    const convexSiteUrl = process.env.CONVEX_SITE_URL;
-    if (!convexSiteUrl) {
-      throw new Error("CONVEX_SITE_URL is not available (this should be provided automatically by Convex)");
+    try {
+      // Create OpenAI client for generating video script
+      openaiClient = createOpenAIClientFromEnv({
+        OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+        OPENAI_TIMEOUT: process.env.OPENAI_TIMEOUT,
+      });
+
+      // Create Kie.ai client for video generation
+      // CONVEX_SITE_URL is provided automatically by Convex
+      const convexSiteUrl = process.env.CONVEX_SITE_URL;
+      if (!convexSiteUrl) {
+        throw new Error("CONVEX_SITE_URL is not available (this should be provided automatically by Convex)");
+      }
+      kieClient = createKieClientFromEnv({
+        KIE_AI_API_KEY: process.env.KIE_AI_API_KEY,
+        CONVEX_SITE_URL: convexSiteUrl,
+        CALLBACK_PATH: VIDEO_GENERATION_CALLBACK_PATH,
+        KIE_AI_TIMEOUT: process.env.KIE_AI_TIMEOUT,
+      });
+    } catch (error) {
+      // Refund credits if client construction fails
+      if (args.usageResult) {
+        try {
+          await ctx.runMutation(internal.usage.decrementVideoGeneration, {
+            userId: args.userId,
+          });
+        } catch (decrementError) {
+          console.error("Failed to decrement usage counter after client setup error:", decrementError);
+        }
+      }
+      throw error;
     }
-    const kieClient = createKieClientFromEnv({
-      KIE_AI_API_KEY: process.env.KIE_AI_API_KEY,
-      CONVEX_SITE_URL: convexSiteUrl,
-      CALLBACK_PATH: VIDEO_GENERATION_CALLBACK_PATH,
-      KIE_AI_TIMEOUT: process.env.KIE_AI_TIMEOUT,
-    });
 
     // Generate video script from lyrics using OpenAI
     let videoScript: string;
@@ -172,7 +190,7 @@ export const requestKieVideoGeneration = internalAction({
         songTitle: args.title,
         diaryEntry: args.diaryEntry,
       });
-      console.log("Generated video script:", videoScript);
+      console.log("Video script generated successfully", { scriptLength: videoScript.length });
     } catch (error) {
       console.error("OpenAI API error:", error);
       

@@ -256,6 +256,7 @@ Your output should read like a film director's short shotlist written as prose, 
           ],
 
           reasoning_effort: "low",
+          max_completion_tokens: OPENAI_VIDEO_SCRIPT_MAX_OUTPUT_TOKENS,
         } as any);
 
       // Log token usage statistics

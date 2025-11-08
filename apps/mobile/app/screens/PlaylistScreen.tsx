@@ -16,10 +16,11 @@ import TrackPlayer from 'react-native-track-player';
 import { useTrackPlayerStore } from '../store/useTrackPlayerStore';
 import { useShareMusic } from '../hooks/useShareMusic';
 import { useMusicGenerationStatus } from '../store/useMusicGenerationStatus';
+import { PlaylistTabNavigationProp } from '../navigation/types';
 
 export const PlaylistScreen = () => {
   const colors = useThemeColors();
-  const navigation = useNavigation();
+  const navigation = useNavigation<PlaylistTabNavigationProp>();
   const musicDocs = useQuery(api.music.listPlaylistMusic);
   const softDeleteMusic = useMutation(api.music.softDeleteMusic);
   const { shareMusic } = useShareMusic();
@@ -235,7 +236,7 @@ const PlaylistRow = ({
 }: {
   item: PlaylistItem;
   colors: ReturnType<typeof useThemeColors>;
-  navigation: ReturnType<typeof useNavigation>;
+  navigation: PlaylistTabNavigationProp;
   onPress: () => void;
   onDelete: () => void;
   onShare: () => void;
@@ -246,7 +247,7 @@ const PlaylistRow = ({
   const handleDiaryPress = () => {
     if (item.diaryId) {
       // Navigate to Diary tab, then to DiaryEdit screen
-      (navigation as any).navigate('Diary', {
+      navigation.navigate('Diary', {
         screen: 'DiaryEdit',
         params: {
           diaryId: item.diaryId,
