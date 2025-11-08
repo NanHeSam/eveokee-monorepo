@@ -134,14 +134,18 @@ export const vapiAssistantRequestHandler = httpAction(async (ctx, req) => {
     // Step 7: Build assistant configuration
     // For inbound calls, use current time as the scheduled time
     const now = Date.now();
-    const webhookUrl = process.env.VAPI_WEBHOOK_URL;
-    if (!webhookUrl) {
-      logger.error("VAPI_WEBHOOK_URL not configured");
+    // CONVEX_SITE_URL is provided automatically by Convex
+    const convexSiteUrl = process.env.CONVEX_SITE_URL;
+    if (!convexSiteUrl) {
+      logger.error("CONVEX_SITE_URL not available (this should be provided automatically by Convex)");
       return errorResponse(
         "Server configuration error",
         HTTP_STATUS_INTERNAL_SERVER_ERROR
       );
     }
+    // Construct webhook URL from site URL + path
+    const baseUrlNormalized = convexSiteUrl.replace(/\/$/, "");
+    const webhookUrl = `${baseUrlNormalized}/webhooks/vapi`;
 
     // Parse optional credentialId from environment variable
     const credentialId = process.env.VAPI_CREDENTIAL_ID;

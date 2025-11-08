@@ -26,14 +26,14 @@ Before deploying, verify all environment variables are set in your [Convex dashb
   - Source: https://platform.openai.com/api-keys
   - Required for music prompt generation
 
+- [ ] **CONVEX_SITE_URL** ✅ **AUTOMATIC**
+  - **Note:** This is automatically provided by Convex - you do NOT need to set it manually
+  - Used for constructing webhook callback URLs
+  - Used by Suno, Kie.ai, and VAPI integrations
+
 - [ ] **SUNO_API_KEY**
   - Source: Your Suno API provider
   - Required for music generation
-
-- [ ] **SUNO_CALLBACK_URL**
-  - Format: `https://your-convex-deployment.convex.cloud/http/suno-webhook`
-  - Required for receiving music generation status updates
-  - Must point to your Convex HTTP endpoint
 
 ### 2. GitHub Secrets
 

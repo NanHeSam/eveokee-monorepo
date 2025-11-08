@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
 import Reanimated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { useNavigation } from '@react-navigation/native';
 
 import { useThemeColors } from '../theme/useThemeColors';
 import { api } from '@backend/convex';
@@ -18,6 +19,7 @@ import { useMusicGenerationStatus } from '../store/useMusicGenerationStatus';
 
 export const PlaylistScreen = () => {
   const colors = useThemeColors();
+  const navigation = useNavigation();
   const musicDocs = useQuery(api.music.listPlaylistMusic);
   const softDeleteMusic = useMutation(api.music.softDeleteMusic);
   const { shareMusic } = useShareMusic();
@@ -129,6 +131,7 @@ export const PlaylistScreen = () => {
               <PlaylistRow
                 item={item}
                 colors={colors}
+                navigation={navigation}
                 onPress={async () => {
                   if (!item.canPlay || !item.audioUrl) {
                     return;
@@ -225,18 +228,32 @@ const GeneratingRow = ({
 const PlaylistRow = ({
   item,
   colors,
+  navigation,
   onPress,
   onDelete,
   onShare,
 }: {
   item: PlaylistItem;
   colors: ReturnType<typeof useThemeColors>;
+  navigation: ReturnType<typeof useNavigation>;
   onPress: () => void;
   onDelete: () => void;
   onShare: () => void;
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const hasContent = !!item.diaryContent;
+
+  const handleDiaryPress = () => {
+    if (item.diaryId) {
+      // Navigate to Diary tab, then to DiaryEdit screen
+      (navigation as any).navigate('Diary', {
+        screen: 'DiaryEdit',
+        params: {
+          diaryId: item.diaryId,
+        },
+      });
+    }
+  };
 
   const handleLongPress = () => {
     if (item.canPlay) {
@@ -346,7 +363,11 @@ const PlaylistRow = ({
           exiting={FadeOut.duration(200)}
           className="px-3 pb-4"
         >
-          <View className="rounded-2xl p-4" style={{ backgroundColor: colors.card }}>
+          <Pressable
+            onPress={handleDiaryPress}
+            className="rounded-2xl p-4"
+            style={{ backgroundColor: colors.card }}
+          >
             {item.diaryTitle && (
               <Text className="text-sm font-semibold mb-2" style={{ color: colors.textPrimary }}>
                 {item.diaryTitle}
@@ -355,7 +376,18 @@ const PlaylistRow = ({
             <Text className="text-sm leading-6" style={{ color: colors.textSecondary }} numberOfLines={5}>
               {item.diaryContent}
             </Text>
-          </View>
+            {item.diaryId && (
+              <Pressable
+                onPress={handleDiaryPress}
+                className="mt-3 flex-row items-center"
+              >
+                <Text className="text-sm font-medium" style={{ color: colors.accentMint }}>
+                  Read full diary
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.accentMint} style={{ marginLeft: 4 }} />
+              </Pressable>
+            )}
+          </Pressable>
         </Reanimated.View>
       )}
     </View>

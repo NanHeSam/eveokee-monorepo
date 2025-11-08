@@ -1,4 +1,4 @@
-import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { action, internalMutation, internalQuery, mutation, query, internalAction } from "./_generated/server";
 import { internal, api } from "./_generated/api";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
@@ -416,6 +416,52 @@ export const softDeleteMusic = mutation({
  * 
  * Returns array of music tracks with associated diary information, ordered by creation date (newest first).
  */
+/**
+ * Internal query to get music record by ID
+ * Used for internal operations like video generation
+ */
+export const getMusicInternal = internalQuery({
+  args: {
+    musicId: v.id("music"),
+  },
+  returns: v.union(
+    v.object({
+      _id: v.id("music"),
+      userId: v.id("users"),
+      diaryId: v.optional(v.id("diaries")),
+      title: v.optional(v.string()),
+      lyric: v.optional(v.string()),
+      duration: v.optional(v.number()),
+      audioUrl: v.optional(v.string()),
+      imageUrl: v.optional(v.string()),
+      status: v.union(
+        v.literal("pending"),
+        v.literal("ready"),
+        v.literal("failed"),
+      ),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const music = await ctx.db.get(args.musicId);
+    if (!music) {
+      return null;
+    }
+
+    return {
+      _id: music._id,
+      userId: music.userId,
+      diaryId: music.diaryId,
+      title: music.title,
+      lyric: music.lyric,
+      duration: music.duration,
+      audioUrl: music.audioUrl,
+      imageUrl: music.imageUrl,
+      status: music.status,
+    };
+  },
+});
+
 export const listPlaylistMusic = query({
   args: {},
   returns: v.array(

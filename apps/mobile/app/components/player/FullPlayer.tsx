@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Dimensions, Alert } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, Dimensions, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { Easing, FadeIn, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import TrackPlayer, { State, usePlaybackState } from 'react-native-track-player';
@@ -8,6 +8,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTrackPlayerStore } from '../../store/useTrackPlayerStore';
 import { useThemeColors } from '../../theme/useThemeColors';
 import { useShareMusic } from '../../hooks/useShareMusic';
+import { useVideoGeneration } from '../../hooks/useVideoGeneration';
+import { VideoPlayerModal } from './VideoPlayerModal';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -27,7 +29,19 @@ export const FullPlayer = () => {
   const hideFullPlayer = useTrackPlayerStore((state) => state.hideFullPlayer);
   const setCurrentTrack = useTrackPlayerStore((state) => state.setCurrentTrack);
   const [progressBarWidth, setProgressBarWidth] = useState(0);
+  const [isVideoModalVisible, setIsVideoModalVisible] = useState(false);
   const { shareMusic } = useShareMusic();
+  
+  // Video generation hook
+  const musicId = currentTrack?.id as Id<'music'> | null;
+  const {
+    isGenerating,
+    primaryVideo,
+    generateVideo,
+    canGenerate,
+    remainingCredits,
+    pendingElapsedSeconds,
+  } = useVideoGeneration(musicId);
 
   const togglePlayback = useCallback(async () => {
     try {
@@ -128,22 +142,35 @@ export const FullPlayer = () => {
         </Pressable>
       </View>
 
-      {/* Artwork */}
+      {/* Artwork / Video */}
       <View className="items-center px-8 py-4">
         {currentTrack.artwork ? (
-          <Animated.Image
-            entering={FadeIn}
-            source={{ uri: currentTrack.artwork }}
-            className="rounded-3xl"
-            style={{
-              width: SCREEN_HEIGHT * 0.32,
-              height: SCREEN_HEIGHT * 0.32,
-              shadowColor: colors.accentMint,
-              shadowOpacity: 0.3,
-              shadowRadius: 20,
-              shadowOffset: { width: 0, height: 10 },
-            }}
-          />
+          <Pressable onPress={() => primaryVideo && setIsVideoModalVisible(true)}>
+            <Animated.Image
+              entering={FadeIn}
+              source={{ uri: currentTrack.artwork }}
+              className="rounded-3xl"
+              style={{
+                width: SCREEN_HEIGHT * 0.32,
+                height: SCREEN_HEIGHT * 0.32,
+                shadowColor: colors.accentMint,
+                shadowOpacity: 0.3,
+                shadowRadius: 20,
+                shadowOffset: { width: 0, height: 10 },
+              }}
+            />
+            {/* Video play overlay */}
+            {primaryVideo && (
+              <View style={StyleSheet.absoluteFill} className="items-center justify-center rounded-3xl">
+                <View 
+                  className="h-16 w-16 items-center justify-center rounded-full"
+                  style={{ backgroundColor: `${colors.background}DD` }}
+                >
+                  <Ionicons name="play" size={32} color={colors.accentMint} style={{ marginLeft: 4 }} />
+                </View>
+              </View>
+            )}
+          </Pressable>
         ) : (
           <View
             className="items-center justify-center rounded-3xl"
@@ -154,6 +181,40 @@ export const FullPlayer = () => {
             }}
           >
             <Ionicons name="musical-notes" size={80} color={colors.textSecondary} />
+          </View>
+        )}
+        
+        {/* Generate / Regenerate Video Button */}
+        {!isGenerating && (
+          <Pressable
+            onPress={() => {
+              if (!canGenerate) {
+                Alert.alert(
+                  'Insufficient Credits',
+                  `Video generation requires 3 credits. You have ${remainingCredits} remaining.`,
+                  [{ text: 'OK' }]
+                );
+                return;
+              }
+              void generateVideo();
+            }}
+            className="mt-4 flex-row items-center rounded-full px-6 py-3"
+            style={{ backgroundColor: colors.accentMint }}
+          >
+            <Ionicons name="videocam" size={20} color={colors.background} />
+            <Text className="ml-2 font-semibold" style={{ color: colors.background }}>
+              {primaryVideo ? 'Regenerate Video (3 credits)' : 'Generate Video (3 credits)'}
+            </Text>
+          </Pressable>
+        )}
+        
+        {/* Generating indicator */}
+        {isGenerating && (
+          <View className="mt-4 flex-row items-center rounded-full px-6 py-3" style={{ backgroundColor: colors.surface }}>
+            <ActivityIndicator size="small" color={colors.accentMint} />
+            <Text className="ml-2 text-sm" style={{ color: colors.textSecondary }}>
+              Generating video{pendingElapsedSeconds !== null ? ` • ${pendingElapsedSeconds}s elapsed` : '...'}
+            </Text>
           </View>
         )}
       </View>
@@ -258,6 +319,14 @@ export const FullPlayer = () => {
           )}
         </ScrollView>
       </View>
+      
+      {/* Video Player Modal */}
+      <VideoPlayerModal
+        visible={isVideoModalVisible}
+        videoUrl={primaryVideo?.videoUrl ?? null}
+        title={currentTrack?.title}
+        onClose={() => setIsVideoModalVisible(false)}
+      />
     </Animated.View>
   );
 };

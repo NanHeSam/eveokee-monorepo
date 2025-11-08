@@ -116,6 +116,13 @@ export class VapiClient {
   getPhoneNumberId(): string {
     return this.config.phoneNumberId;
   }
+
+  /**
+   * Get the configured webhook URL
+   */
+  getWebhookUrl(): string {
+    return this.config.webhookUrl;
+  }
 }
 
 /**
@@ -123,15 +130,17 @@ export class VapiClient {
  *
  * @param env - Object containing VAPI configuration environment variables:
  *   - `VAPI_API_KEY`: API key for authorization (required)
- *   - `VAPI_WEBHOOK_URL`: webhook callback URL (required)
+ *   - `CONVEX_SITE_URL`: site URL of the Convex deployment (provided automatically by Convex)
+ *   - `WEBHOOK_PATH`: webhook path to append to site URL (required)
  *   - `VAPI_PHONE_NUMBER_ID`: phone number identifier to use for calls (required)
  *   - `VAPI_TIMEOUT`: optional request timeout in milliseconds
  * @returns A configured VapiClient instance
- * @throws Error if `VAPI_API_KEY`, `VAPI_WEBHOOK_URL`, or `VAPI_PHONE_NUMBER_ID` is missing
+ * @throws Error if `VAPI_API_KEY`, `CONVEX_SITE_URL`, `WEBHOOK_PATH`, or `VAPI_PHONE_NUMBER_ID` is missing
  */
 export function createVapiClientFromEnv(env: {
   VAPI_API_KEY?: string;
-  VAPI_WEBHOOK_URL?: string;
+  CONVEX_SITE_URL?: string;
+  WEBHOOK_PATH?: string;
   VAPI_PHONE_NUMBER_ID?: string;
   VAPI_TIMEOUT?: string;
 }): VapiClient {
@@ -140,10 +149,21 @@ export function createVapiClientFromEnv(env: {
     throw new Error("VAPI_API_KEY environment variable is not set");
   }
 
-  const webhookUrl = env.VAPI_WEBHOOK_URL;
-  if (!webhookUrl) {
-    throw new Error("VAPI_WEBHOOK_URL environment variable is not set");
+  const convexSiteUrl = env.CONVEX_SITE_URL;
+  if (!convexSiteUrl) {
+    throw new Error("CONVEX_SITE_URL is not available (this should be provided automatically by Convex)");
   }
+
+  const webhookPath = env.WEBHOOK_PATH;
+  if (!webhookPath) {
+    throw new Error("WEBHOOK_PATH is required");
+  }
+
+  // Construct full webhook URL from site URL + path
+  // Ensure site URL doesn't end with / and path starts with /
+  const baseUrlNormalized = convexSiteUrl.replace(/\/$/, "");
+  const pathNormalized = webhookPath.startsWith("/") ? webhookPath : `/${webhookPath}`;
+  const webhookUrl = `${baseUrlNormalized}${pathNormalized}`;
 
   const phoneNumberId = env.VAPI_PHONE_NUMBER_ID;
   if (!phoneNumberId) {

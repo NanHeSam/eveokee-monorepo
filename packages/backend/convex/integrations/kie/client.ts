@@ -1,29 +1,34 @@
 /**
- * Suno Client Service
- * Provides a clean interface for interacting with the Suno API
+ * Kie.ai Client Service
+ * Provides a clean interface for interacting with the Kie.ai API (Sora 2 model)
  * with proper error handling, timeout management, and type safety
+ * 
+ * API Documentation: https://kie.ai/sora-2
  */
 
 import {
-  SUNO_API_GENERATE_ENDPOINT,
-  SUNO_DEFAULT_MODEL,
-  HTTP_STATUS_OK,
-} from "../../utils/constants";
+  KIE_API_CREATE_TASK_ENDPOINT,
+  KIE_MODEL_TEXT_TO_VIDEO,
+  DEFAULT_VIDEO_DURATION,
+  DEFAULT_ASPECT_RATIO,
+  DEFAULT_REMOVE_WATERMARK,
+} from "../../utils/constants/video";
+import { HTTP_STATUS_OK } from "../../utils/constants";
 
-export interface SunoClientConfig {
+export interface KieClientConfig {
   apiKey: string;
   callbackUrl: string;
   timeout?: number;
 }
 
-export interface SunoGenerateRequest {
+export interface KieGenerateRequest {
   prompt: string;
-  style: string;
-  title: string;
-  callbackUrl: string;
+  aspect_ratio?: "portrait" | "landscape";
+  n_frames?: "10" | "15"; // 10s or 15s
+  remove_watermark?: boolean;
 }
 
-export interface SunoGenerateResponse {
+export interface KieGenerateResponse {
   code: number;
   msg: string;
   data?: {
@@ -31,20 +36,20 @@ export interface SunoGenerateResponse {
   };
 }
 
-export interface SunoClientResponse {
+export interface KieClientResponse {
   taskId: string;
 }
 
 const DEFAULT_TIMEOUT_MS = 30000; // 30 seconds
 
 /**
- * Suno client for music generation
+ * Kie.ai client for video generation using Sora 2 model
  */
-export class SunoClient {
-  private config: Required<Omit<SunoClientConfig, "callbackUrl">> & Pick<SunoClientConfig, "callbackUrl">;
-  private readonly baseUrl = SUNO_API_GENERATE_ENDPOINT;
+export class KieClient {
+  private config: Required<Omit<KieClientConfig, "callbackUrl">> & Pick<KieClientConfig, "callbackUrl">;
+  private readonly baseUrl = KIE_API_CREATE_TASK_ENDPOINT;
 
-  constructor(config: SunoClientConfig) {
+  constructor(config: KieClientConfig) {
     this.config = {
       apiKey: config.apiKey,
       callbackUrl: config.callbackUrl,
@@ -53,24 +58,25 @@ export class SunoClient {
   }
 
   /**
-   * Generate music from song data (lyrics, style, title)
-   * @param request - Generation request with prompt, style, title
+   * Generate video from text prompt
+   * @param request - Generation request with prompt and optional settings
    * @returns Promise resolving to task ID
    * @throws Error if the API call fails or times out
    */
-  async generateMusic(request: Omit<SunoGenerateRequest, "callbackUrl">): Promise<SunoClientResponse> {
+  async generateVideo(request: Omit<KieGenerateRequest, "callbackUrl">): Promise<KieClientResponse> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
 
     try {
       const payload = {
-        prompt: request.prompt,
-        style: request.style,
-        title: request.title,
-        customMode: true,
-        instrumental: false,
-        model: SUNO_DEFAULT_MODEL,
+        model: KIE_MODEL_TEXT_TO_VIDEO,
         callBackUrl: this.config.callbackUrl,
+        input: {
+          prompt: request.prompt,
+          aspect_ratio: request.aspect_ratio ?? DEFAULT_ASPECT_RATIO,
+          n_frames: request.n_frames ?? DEFAULT_VIDEO_DURATION,
+          remove_watermark: request.remove_watermark ?? DEFAULT_REMOVE_WATERMARK,
+        },
       };
 
       const response = await fetch(this.baseUrl, {
@@ -87,18 +93,18 @@ export class SunoClient {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Suno API request failed: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(`Kie.ai API request failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
-      const data = (await response.json()) as SunoGenerateResponse;
+      const data = (await response.json()) as KieGenerateResponse;
 
       if (data.code !== HTTP_STATUS_OK) {
-        throw new Error(`Suno API returned error code ${data.code}: ${data.msg}`);
+        throw new Error(`Kie.ai API returned error code ${data.code}: ${data.msg}`);
       }
 
       const taskId = data.data?.taskId;
       if (!taskId) {
-        throw new Error("Suno API response missing taskId");
+        throw new Error("Kie.ai API response missing taskId");
       }
 
       return { taskId };
@@ -106,7 +112,7 @@ export class SunoClient {
       clearTimeout(timeoutId);
 
       if (error instanceof Error && error.name === "AbortError") {
-        throw new Error(`Suno API request timed out after ${this.config.timeout}ms`);
+        throw new Error(`Kie.ai API request timed out after ${this.config.timeout}ms`);
       }
 
       // Re-throw the error if it's already an Error instance
@@ -115,7 +121,7 @@ export class SunoClient {
       }
 
       // Wrap unknown errors
-      throw new Error(`Suno API request failed: ${String(error)}`);
+      throw new Error(`Kie.ai API request failed: ${String(error)}`);
     }
   }
 
@@ -128,25 +134,25 @@ export class SunoClient {
 }
 
 /**
- * Instantiate a SunoClient using SUNO_* environment variables.
+ * Instantiate a KieClient using KIE_* environment variables.
  *
- * @param env - Object containing Suno configuration environment variables:
- *   - `SUNO_API_KEY`: API key for authorization (required)
+ * @param env - Object containing Kie.ai configuration environment variables:
+ *   - `KIE_AI_API_KEY`: API key for authorization (required)
  *   - `CONVEX_SITE_URL`: site URL of the Convex deployment (provided automatically by Convex)
  *   - `CALLBACK_PATH`: callback path to append to site URL (required)
- *   - `SUNO_TIMEOUT`: optional request timeout in milliseconds
- * @returns A configured SunoClient instance
- * @throws Error if `SUNO_API_KEY`, `CONVEX_SITE_URL`, or `CALLBACK_PATH` is missing
+ *   - `KIE_AI_TIMEOUT`: optional request timeout in milliseconds
+ * @returns A configured KieClient instance
+ * @throws Error if `KIE_AI_API_KEY`, `CONVEX_SITE_URL`, or `CALLBACK_PATH` is missing
  */
-export function createSunoClientFromEnv(env: {
-  SUNO_API_KEY?: string;
+export function createKieClientFromEnv(env: {
+  KIE_AI_API_KEY?: string;
   CONVEX_SITE_URL?: string;
   CALLBACK_PATH?: string;
-  SUNO_TIMEOUT?: string;
-}): SunoClient {
-  const apiKey = env.SUNO_API_KEY;
+  KIE_AI_TIMEOUT?: string;
+}): KieClient {
+  const apiKey = env.KIE_AI_API_KEY;
   if (!apiKey) {
-    throw new Error("SUNO_API_KEY environment variable is not set");
+    throw new Error("KIE_AI_API_KEY environment variable is not set");
   }
 
   const convexSiteUrl = env.CONVEX_SITE_URL;
@@ -165,12 +171,13 @@ export function createSunoClientFromEnv(env: {
   const pathNormalized = callbackPath.startsWith("/") ? callbackPath : `/${callbackPath}`;
   const callbackUrl = `${baseUrlNormalized}${pathNormalized}`;
 
-  const timeout = env.SUNO_TIMEOUT ? parseInt(env.SUNO_TIMEOUT, 10) : undefined;
+  const timeout = env.KIE_AI_TIMEOUT ? parseInt(env.KIE_AI_TIMEOUT, 10) : undefined;
 
-  return new SunoClient({
+  return new KieClient({
     apiKey,
     callbackUrl,
     timeout,
   });
 }
+
 

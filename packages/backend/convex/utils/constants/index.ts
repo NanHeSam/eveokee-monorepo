@@ -13,6 +13,9 @@ export * from "./revenuecat";
 // Music generation constants
 export * from "./music";
 
+// Video generation constants
+export * from "./video";
+
 // Webhook constants
 export * from "./webhooks";
 

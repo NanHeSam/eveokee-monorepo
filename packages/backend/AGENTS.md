@@ -99,11 +99,11 @@ Shared utilities in `convex/utils/`:
 
 ### Key Environment Variables
 - `SHARE_BASE_URL` — Base URL for shareable music links (required)
+- `CONVEX_SITE_URL` — Site URL of Convex deployment (automatically provided by Convex, no manual setup needed)
 - `CLERK_WEBHOOK_SIGNING_SECRET` — Clerk webhook signature validation
 - `CLERK_FRONTEND_API_URL` — Clerk authentication domain
 - `OPENAI_API_KEY` — OpenAI API access for music prompts
 - `SUNO_API_KEY` — Suno API access for music generation
-- `SUNO_CALLBACK_URL` — Webhook endpoint for Suno callbacks
 
 See [`ENV_VARS.md`](docs/ENV_VARS.md) for complete details.
 

@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import {
   internalMutation,
   internalQuery,
+  internalAction,
   mutation,
   query,
   action,
@@ -327,6 +328,149 @@ export const decrementMusicGeneration = internalMutation({
     }
 
     const currentUsage = Math.max(0, subscription.musicGenerationsUsed - 1);
+
+    await ctx.db.patch(user.activeSubscriptionId, {
+      musicGenerationsUsed: currentUsage,
+      lastVerifiedAt: Date.now(),
+    });
+
+    return {
+      success: true,
+      currentUsage,
+    };
+  },
+});
+
+/**
+ * Record video generation with RevenueCat reconciliation
+ * Videos cost 3 credits (same quota system as music)
+ * INTERNAL ACTION: Fetches canonical subscription data from RevenueCat API and reconciles if needed
+ */
+export const recordVideoGenerationWithReconciliation = internalAction({
+  args: { userId: v.id("users") },
+  returns: v.object({
+    success: v.boolean(),
+    code: v.optional(v.union(
+      v.literal("USAGE_LIMIT_REACHED"),
+      v.literal("UNKNOWN_ERROR")
+    )),
+    reason: v.optional(v.string()),
+    currentUsage: v.number(),
+    limit: v.number(),
+    remainingQuota: v.number(),
+    tier: v.string(),
+    status: subscriptionStatusValidator,
+    periodStart: v.number(),
+    periodEnd: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    // Reconcile product ID with RevenueCat first (single source of truth)
+    const reconcileResult = await ctx.runAction(internal.revenueCatBilling.reconcileSubscription, {
+      userId: args.userId,
+    });
+
+    if (reconcileResult.productIdUpdated) {
+      console.log(`Product ID reconciled for user ${args.userId} before video generation check`);
+    }
+
+    // Now proceed with recording video generation (costs 3 credits)
+    const result = await ctx.runMutation(internal.usage.recordVideoGeneration, {
+      userId: args.userId,
+    });
+
+    return result;
+  },
+});
+
+/**
+ * Internal mutation to record a video generation and enforce usage limits
+ * Video generation costs 3 music generation credits
+ */
+export const recordVideoGeneration = internalMutation({
+  args: { userId: v.id("users") },
+  returns: v.object({
+    success: v.boolean(),
+    code: v.optional(v.union(
+      v.literal("USAGE_LIMIT_REACHED"),
+      v.literal("UNKNOWN_ERROR")
+    )),
+    reason: v.optional(v.string()),
+    currentUsage: v.number(),
+    limit: v.number(),
+    remainingQuota: v.number(),
+    tier: v.string(),
+    status: subscriptionStatusValidator,
+    periodStart: v.number(),
+    periodEnd: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const VIDEO_CREDIT_COST = 3; // Each video costs 3 credits
+
+    const { subscriptionId, tier, status, currentUsage, effectiveLimit, periodStart, periodEnd, remainingQuota } =
+      await getUserUsageInfo(ctx, args.userId);
+
+    // Check if user has enough credits (need 3 for video generation)
+    if (remainingQuota < VIDEO_CREDIT_COST) {
+      return {
+        success: false,
+        code: "USAGE_LIMIT_REACHED" as const,
+        reason: `Insufficient credits. Video generation requires ${VIDEO_CREDIT_COST} credits, but only ${remainingQuota} remaining.`,
+        currentUsage,
+        limit: effectiveLimit,
+        remainingQuota,
+        tier,
+        status,
+        periodStart,
+        periodEnd,
+      };
+    }
+
+    // Increment usage counter by 3
+    await ctx.db.patch(subscriptionId, {
+      musicGenerationsUsed: currentUsage + VIDEO_CREDIT_COST,
+      lastVerifiedAt: Date.now(),
+    });
+
+    const newRemainingQuota = Math.max(0, effectiveLimit - (currentUsage + VIDEO_CREDIT_COST));
+
+    return {
+      success: true,
+      code: undefined,
+      currentUsage: currentUsage + VIDEO_CREDIT_COST,
+      limit: effectiveLimit,
+      remainingQuota: newRemainingQuota,
+      tier,
+      status,
+      periodStart,
+      periodEnd,
+    };
+  },
+});
+
+/**
+ * Internal mutation to decrement video generation counter (refund 3 credits for failed generations)
+ */
+export const decrementVideoGeneration = internalMutation({
+  args: { userId: v.id("users") },
+  returns: v.object({
+    success: v.boolean(),
+    currentUsage: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const VIDEO_CREDIT_COST = 3;
+
+    const user = await ctx.db.get(args.userId);
+    if (!user?.activeSubscriptionId) {
+      return { success: false, currentUsage: 0 };
+    }
+
+    const subscription = await ctx.db.get(user.activeSubscriptionId);
+    if (!subscription) {
+      return { success: false, currentUsage: 0 };
+    }
+
+    // Decrement by 3 credits (video cost)
+    const currentUsage = Math.max(0, subscription.musicGenerationsUsed - VIDEO_CREDIT_COST);
 
     await ctx.db.patch(user.activeSubscriptionId, {
       musicGenerationsUsed: currentUsage,

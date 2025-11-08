@@ -32,15 +32,21 @@ export const scheduleVapiCall = action({
   handler: async (ctx, args): Promise<{ success: true; vapiCallId: string } | { success: false; error: string }> => {
     // Create VAPI client with environment configuration
     // This abstracts IO and provides proper timeout handling and type safety
+    // CONVEX_SITE_URL is provided automatically by Convex
+    const convexSiteUrl = process.env.CONVEX_SITE_URL;
+    if (!convexSiteUrl) {
+      throw new Error("CONVEX_SITE_URL is not available (this should be provided automatically by Convex)");
+    }
     const vapiClient = createVapiClientFromEnv({
       VAPI_API_KEY: process.env.VAPI_API_KEY,
-      VAPI_WEBHOOK_URL: process.env.VAPI_WEBHOOK_URL,
+      CONVEX_SITE_URL: convexSiteUrl,
+      WEBHOOK_PATH: "/webhooks/vapi",
       VAPI_PHONE_NUMBER_ID: process.env.VAPI_PHONE_NUMBER_ID,
       VAPI_TIMEOUT: process.env.VAPI_TIMEOUT,
     });
 
-    // Get webhook URL from environment for assistant configuration (already validated by createVapiClientFromEnv)
-    const webhookUrl = process.env.VAPI_WEBHOOK_URL!;
+    // Get webhook URL from client (already constructed from CONVEX_SITE_URL + path)
+    const webhookUrl = vapiClient.getWebhookUrl();
 
     // Parse optional credentialId from environment variable (single credential ID wrapped in array)
     const credentialId = process.env.VAPI_CREDENTIAL_ID;

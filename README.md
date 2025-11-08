@@ -86,7 +86,7 @@ install them locally before running the tests.
   - `SHARE_BASE_URL` - Your production domain (e.g., `https://yourdomain.com`) for generating share links
   - `CLERK_WEBHOOK_SIGNING_SECRET` - From Clerk dashboard
   - `CLERK_FRONTEND_API_URL` - Your Clerk domain
-  - `OPENAI_API_KEY`, `SUNO_API_KEY`, `SUNO_CALLBACK_URL` - For AI music generation
+  - `OPENAI_API_KEY`, `SUNO_API_KEY` - For AI music generation
 - See [`packages/backend/ENV_VARS.md`](packages/backend/docs/ENV_VARS.md) for detailed documentation
 
 ## Environment Variables
