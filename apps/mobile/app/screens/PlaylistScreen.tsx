@@ -1,7 +1,7 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityIndicator, Alert, FlatList, Image, Pressable, Text, View, Animated } from 'react-native';
 import { useMutation, useQuery } from 'convex/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
 import Reanimated, { FadeIn, FadeOut } from 'react-native-reanimated';
@@ -244,7 +244,7 @@ const PlaylistRow = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const hasContent = !!item.diaryContent;
 
-  const handleDiaryPress = () => {
+  const handleDiaryPress = useCallback(() => {
     if (item.diaryId) {
       // Navigate to Diary tab, then to DiaryEdit screen
       navigation.navigate('Diary', {
@@ -254,7 +254,7 @@ const PlaylistRow = ({
         },
       });
     }
-  };
+  }, [item.diaryId, navigation]);
 
   const handleLongPress = () => {
     if (item.canPlay) {

@@ -5,8 +5,7 @@
 
 import { mutation, query, internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
-import ensureCurrentUser, { getOptionalCurrentUser } from "./users";
+import { ensureCurrentUser, getOptionalCurrentUser } from "./users";
 
 /**
  * List all videos for a specific music track
