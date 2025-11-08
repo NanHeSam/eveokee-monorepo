@@ -28,7 +28,7 @@ import { logWebhookEvent } from "../../utils/logger";
 
 /**
  * Handle Kie.ai video generation callback webhook
- * 
+ *
  * Steps:
  * 1. Validate HTTP method (POST only)
  * 2. Parse and validate JSON payload
@@ -36,7 +36,11 @@ import { logWebhookEvent } from "../../utils/logger";
  * 4. Download video from Kie.ai URL
  * 5. Upload video to Convex storage
  * 6. Process completed video generation via internal mutation
- * 7. On failure: Mark video as failed and refund 3 credits
+ * 7. On failure: Mark video as failed (failVideoGeneration handles credit refund atomically)
+ *
+ * IMPORTANT: Credit refunds are now idempotent - failVideoGeneration atomically checks
+ * the video status and only refunds if status is "pending", preventing duplicate refunds
+ * when callbacks are retried.
  */
 export const kieVideoGenerationCallback = httpAction(async (ctx, req) => {
   // Initialize structured logger
@@ -82,22 +86,16 @@ export const kieVideoGenerationCallback = httpAction(async (ctx, req) => {
   if (callbackType === "failed" || callbackType === "error") {
     eventLogger.warn("Received failure callback");
     try {
-      // Get video record to find userId for credit refund
-      const video = await ctx.runQuery(internal.videos.getVideoByTaskId, {
-        taskId,
+      // Mark video as failed (failVideoGeneration now handles refund atomically)
+      const result = await ctx.runMutation(internal.videos.failVideoGeneration, {
+        kieTaskId: taskId,
+        errorMessage: "Video generation failed on Kie.ai",
       });
 
-      if (video) {
-        // Refund 3 credits
-        await ctx.runMutation(internal.usage.decrementVideoGeneration, {
-          userId: video.userId,
-        });
-
-        // Mark video as failed
-        await ctx.runMutation(internal.videos.failVideoGeneration, {
-          kieTaskId: taskId,
-          errorMessage: "Video generation failed on Kie.ai",
-        });
+      if (result.alreadyFailed) {
+        eventLogger.info("Video already failed, skipped duplicate refund");
+      } else if (result.refunded) {
+        eventLogger.info("Marked video as failed and refunded 3 credits");
       }
 
       return successResponse({ status: "failure_handled" });
@@ -131,34 +129,26 @@ export const kieVideoGenerationCallback = httpAction(async (ctx, req) => {
   try {
     eventLogger.info("Downloading video from Kie.ai", { videoUrl });
     const videoResponse = await fetch(videoUrl);
-    
+
     if (!videoResponse.ok) {
       throw new Error(`Failed to download video: ${videoResponse.status} ${videoResponse.statusText}`);
     }
-    
+
     videoBlob = await videoResponse.blob();
     eventLogger.info("Video downloaded successfully", { size: videoBlob.size });
   } catch (error) {
     eventLogger.error("Failed to download video", error);
-    
-    // Get video record to find userId for credit refund
-    const video = await ctx.runQuery(internal.videos.getVideoByTaskId, {
-      taskId,
+
+    // Mark video as failed (failVideoGeneration handles refund atomically)
+    const result = await ctx.runMutation(internal.videos.failVideoGeneration, {
+      kieTaskId: taskId,
+      errorMessage: error instanceof Error ? error.message : "Failed to download video",
     });
-    
-    if (video) {
-      // Refund 3 credits
-      await ctx.runMutation(internal.usage.decrementVideoGeneration, {
-        userId: video.userId,
-      });
-      
-      // Mark video as failed
-      await ctx.runMutation(internal.videos.failVideoGeneration, {
-        kieTaskId: taskId,
-        errorMessage: error instanceof Error ? error.message : "Failed to download video",
-      });
+
+    if (result.refunded) {
+      eventLogger.info("Refunded 3 credits for download failure");
     }
-    
+
     return errorResponse("Failed to download video", HTTP_STATUS_INTERNAL_SERVER_ERROR);
   }
 
@@ -170,25 +160,17 @@ export const kieVideoGenerationCallback = httpAction(async (ctx, req) => {
     eventLogger.info("Video uploaded successfully", { storageId });
   } catch (error) {
     eventLogger.error("Failed to upload video to storage", error);
-    
-    // Get video record to find userId for credit refund
-    const video = await ctx.runQuery(internal.videos.getVideoByTaskId, {
-      taskId,
+
+    // Mark video as failed (failVideoGeneration handles refund atomically)
+    const result = await ctx.runMutation(internal.videos.failVideoGeneration, {
+      kieTaskId: taskId,
+      errorMessage: error instanceof Error ? error.message : "Failed to upload video",
     });
-    
-    if (video) {
-      // Refund 3 credits
-      await ctx.runMutation(internal.usage.decrementVideoGeneration, {
-        userId: video.userId,
-      });
-      
-      // Mark video as failed
-      await ctx.runMutation(internal.videos.failVideoGeneration, {
-        kieTaskId: taskId,
-        errorMessage: error instanceof Error ? error.message : "Failed to upload video",
-      });
+
+    if (result.refunded) {
+      eventLogger.info("Refunded 3 credits for upload failure");
     }
-    
+
     return errorResponse("Failed to upload video to storage", HTTP_STATUS_INTERNAL_SERVER_ERROR);
   }
 
