@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 
 import { useAction, useMutation, useQuery } from 'convex/react';
 import TrackPlayer from 'react-native-track-player';
@@ -27,11 +28,14 @@ export const DiaryEditScreen = () => {
   const createDiary = useMutation(api.diaries.createDiary);
   const updateDiary = useMutation(api.diaries.updateDiary);
   const startMusicGeneration = useAction(api.music.startDiaryMusicGeneration);
+  const generateUploadUrl = useMutation(api.media.generateUploadUrl);
   const initialBody = useMemo(() => route.params?.content ?? '', [route.params?.content]);
   const [body, setBody] = useState(initialBody);
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEditing, setIsEditing] = useState(!route.params?.diaryId);
+  const [mediaItems, setMediaItems] = useState<{ uri: string; type: 'image' | 'video'; storageId?: string }[]>([]);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   
   // Billing integration - Read directly from RevenueCat SDK (single source of truth)
   const { showPaywall, paywallReason, setShowPaywall } = useSubscriptionUIStore();
@@ -88,6 +92,72 @@ export const DiaryEditScreen = () => {
     }
   }, [currentDiary?.content, route.params?.content, isEditing]);
 
+  useEffect(() => {
+    if (currentDiary?.mediaUrls && currentDiary?.mediaTypes && currentDiary?.mediaStorageIds) {
+      const loadedMedia = currentDiary.mediaUrls.map((url, index) => ({
+        uri: url,
+        type: currentDiary.mediaTypes![index],
+        storageId: currentDiary.mediaStorageIds![index],
+      }));
+      setMediaItems(loadedMedia);
+    }
+  }, [currentDiary?.mediaUrls, currentDiary?.mediaTypes, currentDiary?.mediaStorageIds]);
+
+  const handlePickMedia = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant permission to access your photos and videos.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images', 'videos'],
+        allowsMultipleSelection: false,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const mediaType = asset.type === 'video' ? 'video' : 'image';
+        
+        setMediaItems([...mediaItems, { uri: asset.uri, type: mediaType }]);
+      }
+    } catch (error) {
+      console.error('Error picking media:', error);
+      Alert.alert('Error', 'Failed to pick media. Please try again.');
+    }
+  };
+
+  const handleRemoveMedia = (index: number) => {
+    setMediaItems(mediaItems.filter((_, i) => i !== index));
+  };
+
+  const uploadMediaToConvex = async (uri: string): Promise<string | null> => {
+    try {
+      const uploadUrl = await generateUploadUrl();
+      
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': blob.type },
+        body: blob,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const { storageId } = await uploadResponse.json();
+      return storageId;
+    } catch (error) {
+      console.error('Error uploading media:', error);
+      return null;
+    }
+  };
+
   const handleDone = async () => {
     const trimmed = body.trim();
 
@@ -98,16 +168,44 @@ export const DiaryEditScreen = () => {
 
     try {
       setIsSaving(true);
+      setIsUploadingMedia(true);
+
+      const mediaStorageIds: string[] = [];
+      const mediaTypes: ('image' | 'video')[] = [];
+
+      for (const item of mediaItems) {
+        if (item.storageId) {
+          mediaStorageIds.push(item.storageId);
+          mediaTypes.push(item.type);
+        } else {
+          const storageId = await uploadMediaToConvex(item.uri);
+          if (storageId) {
+            mediaStorageIds.push(storageId);
+            mediaTypes.push(item.type);
+          }
+        }
+      }
+
       if (route.params?.diaryId) {
-        await updateDiary({ diaryId: route.params.diaryId, content: trimmed });
+        await updateDiary({ 
+          diaryId: route.params.diaryId, 
+          content: trimmed,
+          mediaStorageIds: mediaStorageIds.length > 0 ? mediaStorageIds : undefined,
+          mediaTypes: mediaTypes.length > 0 ? mediaTypes : undefined,
+        });
       } else {
-        await createDiary({ content: trimmed });
+        await createDiary({ 
+          content: trimmed,
+          mediaStorageIds: mediaStorageIds.length > 0 ? mediaStorageIds : undefined,
+          mediaTypes: mediaTypes.length > 0 ? mediaTypes : undefined,
+        });
       }
       navigation.goBack();
     } catch {
       Alert.alert('Unable to save entry', 'Please try again.');
     } finally {
       setIsSaving(false);
+      setIsUploadingMedia(false);
     }
   };
 
@@ -123,10 +221,37 @@ export const DiaryEditScreen = () => {
     let diaryId = route.params?.diaryId;
     try {
       setIsSaving(true);
+      setIsUploadingMedia(true);
+
+      const mediaStorageIds: string[] = [];
+      const mediaTypes: ('image' | 'video')[] = [];
+
+      for (const item of mediaItems) {
+        if (item.storageId) {
+          mediaStorageIds.push(item.storageId);
+          mediaTypes.push(item.type);
+        } else {
+          const storageId = await uploadMediaToConvex(item.uri);
+          if (storageId) {
+            mediaStorageIds.push(storageId);
+            mediaTypes.push(item.type);
+          }
+        }
+      }
+
       if (route.params?.diaryId) {
-        await updateDiary({ diaryId: route.params.diaryId, content: trimmed });
+        await updateDiary({ 
+          diaryId: route.params.diaryId, 
+          content: trimmed,
+          mediaStorageIds: mediaStorageIds.length > 0 ? mediaStorageIds : undefined,
+          mediaTypes: mediaTypes.length > 0 ? mediaTypes : undefined,
+        });
       } else {
-        const result = await createDiary({ content: trimmed });
+        const result = await createDiary({ 
+          content: trimmed,
+          mediaStorageIds: mediaStorageIds.length > 0 ? mediaStorageIds : undefined,
+          mediaTypes: mediaTypes.length > 0 ? mediaTypes : undefined,
+        });
         diaryId = result._id;
       }
     } catch {
@@ -134,6 +259,7 @@ export const DiaryEditScreen = () => {
       return;
     } finally {
       setIsSaving(false);
+      setIsUploadingMedia(false);
     }
 
     // Start music generation (this handles usage tracking internally)
@@ -293,6 +419,28 @@ export const DiaryEditScreen = () => {
             {currentDiary?.content ?? body}
           </Text>
 
+          {mediaItems.length > 0 && (
+            <View className="mb-6">
+              <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
+                Photos & Videos
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-3">
+                {mediaItems.map((item, index) => (
+                  <View key={index} className="rounded-2xl overflow-hidden" style={{ width: 200, height: 200 }}>
+                    {item.type === 'image' ? (
+                      <Image source={{ uri: item.uri }} className="w-full h-full" resizeMode="cover" />
+                    ) : (
+                      <View className="w-full h-full items-center justify-center" style={{ backgroundColor: colors.card }}>
+                        <Ionicons name="videocam" size={48} color={colors.textSecondary} />
+                        <Text className="mt-2 text-sm" style={{ color: colors.textSecondary }}>Video</Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
           {primaryMusic && (
             <View className="mb-6">
               <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
@@ -374,6 +522,43 @@ export const DiaryEditScreen = () => {
               style={{ color: colors.textPrimary, minHeight: 280, textAlignVertical: 'top' }}
             />
           </View>
+
+          {mediaItems.length > 0 && (
+            <View className="mt-4">
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-3">
+                {mediaItems.map((item, index) => (
+                  <View key={index} className="relative rounded-2xl overflow-hidden" style={{ width: 120, height: 120 }}>
+                    {item.type === 'image' ? (
+                      <Image source={{ uri: item.uri }} className="w-full h-full" resizeMode="cover" />
+                    ) : (
+                      <View className="w-full h-full items-center justify-center" style={{ backgroundColor: colors.card }}>
+                        <Ionicons name="videocam" size={32} color={colors.textSecondary} />
+                      </View>
+                    )}
+                    <TouchableOpacity
+                      className="absolute top-1 right-1 w-6 h-6 rounded-full items-center justify-center"
+                      style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+                      onPress={() => handleRemoveMedia(index)}
+                    >
+                      <Ionicons name="close" size={16} color="white" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          <TouchableOpacity
+            className="mt-4 flex-row items-center justify-center py-3 px-4 rounded-2xl"
+            style={{ backgroundColor: colors.surface }}
+            onPress={handlePickMedia}
+            disabled={isUploadingMedia}
+          >
+            <Ionicons name="image-outline" size={20} color={colors.accentMint} />
+            <Text className="ml-2 text-base font-medium" style={{ color: colors.accentMint }}>
+              {isUploadingMedia ? 'Uploading...' : 'Add Photo or Video'}
+            </Text>
+          </TouchableOpacity>
 
           {/* Usage Progress - Only show for free tier */}
           {subscriptionStatus?.tier === 'free' && (

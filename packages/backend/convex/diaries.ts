@@ -16,6 +16,8 @@ import ensureCurrentUser, { getOptionalCurrentUser } from "./users";
 export const createDiary = mutation({
   args: {
     content: v.string(),
+    mediaStorageIds: v.optional(v.array(v.string())),
+    mediaTypes: v.optional(v.array(v.union(v.literal("image"), v.literal("video")))),
   },
   returns: v.object({
     _id: v.id("diaries"),
@@ -30,6 +32,8 @@ export const createDiary = mutation({
       userId,
       content: args.content,
       date: now,
+      mediaStorageIds: args.mediaStorageIds,
+      mediaTypes: args.mediaTypes,
       updatedAt: now,
     });
 
@@ -52,6 +56,8 @@ export const updateDiary = mutation({
   args: {
     diaryId: v.id("diaries"),
     content: v.string(),
+    mediaStorageIds: v.optional(v.array(v.string())),
+    mediaTypes: v.optional(v.array(v.union(v.literal("image"), v.literal("video")))),
   },
   returns: v.object({
     _id: v.id("diaries"),
@@ -76,6 +82,8 @@ export const updateDiary = mutation({
 
     await ctx.db.patch(args.diaryId, {
       content: args.content,
+      mediaStorageIds: args.mediaStorageIds,
+      mediaTypes: args.mediaTypes,
       updatedAt,
     });
 
@@ -165,6 +173,9 @@ export const listDiaries = query({
       content: v.string(),
       date: v.number(),
       primaryMusicId: v.optional(v.id("music")),
+      mediaStorageIds: v.optional(v.array(v.string())),
+      mediaTypes: v.optional(v.array(v.union(v.literal("image"), v.literal("video")))),
+      mediaUrls: v.optional(v.array(v.string())),
       updatedAt: v.number(),
       primaryMusic: v.optional(
         v.object({
@@ -238,17 +249,30 @@ export const listDiaries = query({
       }),
     );
 
-    return diaries.map((doc) => ({
-      _id: doc._id,
-      userId: doc.userId,
-      title: doc.title,
-      content: doc.content,
-      date: doc.date,
-      primaryMusicId: doc.primaryMusicId,
-      updatedAt: doc.updatedAt,
-      primaryMusic: doc.primaryMusicId
-        ? musicDataById.get(doc.primaryMusicId)
-        : undefined,
-    }));
+    return await Promise.all(
+      diaries.map(async (doc) => {
+        const mediaUrls = doc.mediaStorageIds
+          ? await Promise.all(
+              doc.mediaStorageIds.map((storageId) => ctx.storage.getUrl(storageId))
+            )
+          : undefined;
+
+        return {
+          _id: doc._id,
+          userId: doc.userId,
+          title: doc.title,
+          content: doc.content,
+          date: doc.date,
+          primaryMusicId: doc.primaryMusicId,
+          mediaStorageIds: doc.mediaStorageIds,
+          mediaTypes: doc.mediaTypes,
+          mediaUrls: mediaUrls?.filter((url): url is string => url !== null),
+          updatedAt: doc.updatedAt,
+          primaryMusic: doc.primaryMusicId
+            ? musicDataById.get(doc.primaryMusicId)
+            : undefined,
+        };
+      })
+    );
   },
 });

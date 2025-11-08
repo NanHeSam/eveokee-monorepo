@@ -51,6 +51,8 @@ export default defineSchema({
     content: v.string(),
     date: v.number(),
     primaryMusicId: v.optional(v.id("music")),
+    mediaStorageIds: v.optional(v.array(v.string())), // Array of Convex storage IDs
+    mediaTypes: v.optional(v.array(v.union(v.literal("image"), v.literal("video")))), // Corresponding media types
     updatedAt: v.number(),
   })
     .index("by_userId", ["userId"])
