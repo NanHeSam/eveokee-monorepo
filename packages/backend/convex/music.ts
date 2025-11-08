@@ -58,7 +58,7 @@ export const startDiaryMusicGeneration = action({
     }
 
     // Step 2: Authenticate user via mutation (actions cannot access DB directly)
-    const { userId } = await ctx.runMutation(api.users.ensureCurrentUser, {});
+    const { userId } = await ctx.runMutation(api.users.ensureCurrentUserMutation, {});
 
     // Step 3: Create or update diary entry
     let diaryId: Id<"diaries">;
@@ -416,6 +416,52 @@ export const softDeleteMusic = mutation({
  * 
  * Returns array of music tracks with associated diary information, ordered by creation date (newest first).
  */
+/**
+ * Internal query to get music record by ID
+ * Used for internal operations like video generation
+ */
+export const getMusicInternal = internalQuery({
+  args: {
+    musicId: v.id("music"),
+  },
+  returns: v.union(
+    v.object({
+      _id: v.id("music"),
+      userId: v.id("users"),
+      diaryId: v.optional(v.id("diaries")),
+      title: v.optional(v.string()),
+      lyric: v.optional(v.string()),
+      duration: v.optional(v.number()),
+      audioUrl: v.optional(v.string()),
+      imageUrl: v.optional(v.string()),
+      status: v.union(
+        v.literal("pending"),
+        v.literal("ready"),
+        v.literal("failed"),
+      ),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const music = await ctx.db.get(args.musicId);
+    if (!music) {
+      return null;
+    }
+
+    return {
+      _id: music._id,
+      userId: music.userId,
+      diaryId: music.diaryId,
+      title: music.title,
+      lyric: music.lyric,
+      duration: music.duration,
+      audioUrl: music.audioUrl,
+      imageUrl: music.imageUrl,
+      status: music.status,
+    };
+  },
+});
+
 export const listPlaylistMusic = query({
   args: {},
   returns: v.array(

@@ -41,6 +41,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   return <AudioContext.Provider value={value}>{children}</AudioContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAudio() {
   const context = useContext(AudioContext);
   if (!context) {

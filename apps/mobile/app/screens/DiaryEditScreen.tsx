@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View, ScrollView, Alert, Image, Pressable, StyleSheet } from 'react-native';
+import { useMemo, useState, useEffect } from 'react';
+import { KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View, ScrollView, Alert, Image, Pressable } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -80,6 +80,13 @@ export const DiaryEditScreen = () => {
     lyric: diaryMusic.lyric,
     status: diaryMusic.status,
   } : undefined);
+
+  // Update body state when currentDiary loads (for read mode when navigating without content param)
+  useEffect(() => {
+    if (currentDiary?.content && !route.params?.content && !isEditing) {
+      setBody(currentDiary.content);
+    }
+  }, [currentDiary?.content, route.params?.content, isEditing]);
 
   const handleDone = async () => {
     const trimmed = body.trim();
@@ -283,7 +290,7 @@ export const DiaryEditScreen = () => {
           </Text>
 
           <Text className="text-base leading-7 mb-8" style={{ color: colors.textPrimary }}>
-            {body}
+            {currentDiary?.content ?? body}
           </Text>
 
           {primaryMusic && (

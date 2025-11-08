@@ -6,12 +6,14 @@
 import { httpRouter } from "convex/server";
 import {
   MUSIC_GENERATION_CALLBACK_PATH,
+  VIDEO_GENERATION_CALLBACK_PATH,
   CLERK_WEBHOOK_PATH,
   REVENUECAT_WEBHOOK_PATH,
   VAPI_WEBHOOK_PATH,
   VAPI_ASSISTANT_REQUEST_PATH,
 } from "./utils/constants";
 import { sunoMusicGenerationCallback } from "./webhooks/handlers/suno";
+import { kieVideoGenerationCallback } from "./webhooks/handlers/kie";
 import { clerkWebhookHandler } from "./webhooks/handlers/clerk";
 import { revenueCatWebhookHandler } from "./webhooks/handlers/revenuecat";
 import { vapiWebhookHandler } from "./webhooks/handlers/vapi";
@@ -24,6 +26,13 @@ http.route({
   path: MUSIC_GENERATION_CALLBACK_PATH,
   method: "POST",
   handler: sunoMusicGenerationCallback,
+});
+
+// Route: Kie.ai video generation callback
+http.route({
+  path: VIDEO_GENERATION_CALLBACK_PATH,
+  method: "POST",
+  handler: kieVideoGenerationCallback,
 });
 
 // Route: Clerk user creation webhook

@@ -1,11 +1,12 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityIndicator, Alert, FlatList, Image, Pressable, Text, View, Animated } from 'react-native';
 import { useMutation, useQuery } from 'convex/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
 import Reanimated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { useNavigation } from '@react-navigation/native';
 
 import { useThemeColors } from '../theme/useThemeColors';
 import { api } from '@backend/convex';
@@ -15,9 +16,11 @@ import TrackPlayer from 'react-native-track-player';
 import { useTrackPlayerStore } from '../store/useTrackPlayerStore';
 import { useShareMusic } from '../hooks/useShareMusic';
 import { useMusicGenerationStatus } from '../store/useMusicGenerationStatus';
+import { PlaylistTabNavigationProp } from '../navigation/types';
 
 export const PlaylistScreen = () => {
   const colors = useThemeColors();
+  const navigation = useNavigation<PlaylistTabNavigationProp>();
   const musicDocs = useQuery(api.music.listPlaylistMusic);
   const softDeleteMusic = useMutation(api.music.softDeleteMusic);
   const { shareMusic } = useShareMusic();
@@ -129,6 +132,7 @@ export const PlaylistScreen = () => {
               <PlaylistRow
                 item={item}
                 colors={colors}
+                navigation={navigation}
                 onPress={async () => {
                   if (!item.canPlay || !item.audioUrl) {
                     return;
@@ -225,18 +229,32 @@ const GeneratingRow = ({
 const PlaylistRow = ({
   item,
   colors,
+  navigation,
   onPress,
   onDelete,
   onShare,
 }: {
   item: PlaylistItem;
   colors: ReturnType<typeof useThemeColors>;
+  navigation: PlaylistTabNavigationProp;
   onPress: () => void;
   onDelete: () => void;
   onShare: () => void;
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const hasContent = !!item.diaryContent;
+
+  const handleDiaryPress = useCallback(() => {
+    if (item.diaryId) {
+      // Navigate to Diary tab, then to DiaryEdit screen
+      navigation.navigate('Diary', {
+        screen: 'DiaryEdit',
+        params: {
+          diaryId: item.diaryId,
+        },
+      });
+    }
+  }, [item.diaryId, navigation]);
 
   const handleLongPress = () => {
     if (item.canPlay) {
@@ -346,7 +364,10 @@ const PlaylistRow = ({
           exiting={FadeOut.duration(200)}
           className="px-3 pb-4"
         >
-          <View className="rounded-2xl p-4" style={{ backgroundColor: colors.card }}>
+          <View
+            className="rounded-2xl p-4"
+            style={{ backgroundColor: colors.card }}
+          >
             {item.diaryTitle && (
               <Text className="text-sm font-semibold mb-2" style={{ color: colors.textPrimary }}>
                 {item.diaryTitle}
@@ -355,6 +376,17 @@ const PlaylistRow = ({
             <Text className="text-sm leading-6" style={{ color: colors.textSecondary }} numberOfLines={5}>
               {item.diaryContent}
             </Text>
+            {item.diaryId && (
+              <Pressable
+                onPress={handleDiaryPress}
+                className="mt-3 flex-row items-center"
+              >
+                <Text className="text-sm font-medium" style={{ color: colors.accentMint }}>
+                  Read full diary
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.accentMint} style={{ marginLeft: 4 }} />
+              </Pressable>
+            )}
           </View>
         </Reanimated.View>
       )}

@@ -18,14 +18,18 @@ const ENV_CONFIG = {
   OPENAI_API_KEY: { required: true, description: "OpenAI API key for music prompt generation" },
   OPENAI_TIMEOUT: { required: false, description: "OpenAI API timeout in milliseconds" },
 
+  // Note: CONVEX_SITE_URL is provided automatically by Convex, no need to set it manually
+
   // Suno Integration
   SUNO_API_KEY: { required: true, description: "Suno API key for music generation" },
-  SUNO_CALLBACK_URL: { required: true, description: "Suno webhook callback URL" },
   SUNO_TIMEOUT: { required: false, description: "Suno API timeout in milliseconds" },
+
+  // Kie.ai Integration (Video Generation)
+  KIE_AI_API_KEY: { required: true, description: "Kie.ai API key for video generation using Sora 2" },
+  KIE_AI_TIMEOUT: { required: false, description: "Kie.ai API timeout in milliseconds" },
 
   // VAPI Integration
   VAPI_API_KEY: { required: true, description: "VAPI API key for voice calls" },
-  VAPI_WEBHOOK_URL: { required: true, description: "VAPI webhook callback URL" },
   VAPI_PHONE_NUMBER_ID: { required: true, description: "VAPI phone number identifier" },
   VAPI_WEBHOOK_SECRET: { required: true, description: "VAPI webhook authentication secret" },
   VAPI_TIMEOUT: { required: false, description: "VAPI API timeout in milliseconds" },

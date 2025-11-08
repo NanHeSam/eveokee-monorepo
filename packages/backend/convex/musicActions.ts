@@ -33,13 +33,15 @@ export const requestSunoGeneration = internalAction({
     });
 
     // Create Suno client for music generation
-    const sunoCallbackUrl = process.env.SUNO_CALLBACK_URL;
-    if (!sunoCallbackUrl) {
-      throw new Error("SUNO_CALLBACK_URL secret is not set");
+    // CONVEX_SITE_URL is provided automatically by Convex
+    const convexSiteUrl = process.env.CONVEX_SITE_URL;
+    if (!convexSiteUrl) {
+      throw new Error("CONVEX_SITE_URL is not available (this should be provided automatically by Convex)");
     }
     const sunoClient = createSunoClientFromEnv({
       SUNO_API_KEY: process.env.SUNO_API_KEY,
-      SUNO_CALLBACK_URL: sunoCallbackUrl + MUSIC_GENERATION_CALLBACK_PATH,
+      CONVEX_SITE_URL: convexSiteUrl,
+      CALLBACK_PATH: MUSIC_GENERATION_CALLBACK_PATH,
       SUNO_TIMEOUT: process.env.SUNO_TIMEOUT,
     });
 

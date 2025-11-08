@@ -132,14 +132,16 @@ export class SunoClient {
  *
  * @param env - Object containing Suno configuration environment variables:
  *   - `SUNO_API_KEY`: API key for authorization (required)
- *   - `SUNO_CALLBACK_URL`: callback URL for webhook notifications (required)
+ *   - `CONVEX_SITE_URL`: site URL of the Convex deployment (provided automatically by Convex)
+ *   - `CALLBACK_PATH`: callback path to append to site URL (required)
  *   - `SUNO_TIMEOUT`: optional request timeout in milliseconds
  * @returns A configured SunoClient instance
- * @throws Error if `SUNO_API_KEY` or `SUNO_CALLBACK_URL` is missing
+ * @throws Error if `SUNO_API_KEY`, `CONVEX_SITE_URL`, or `CALLBACK_PATH` is missing
  */
 export function createSunoClientFromEnv(env: {
   SUNO_API_KEY?: string;
-  SUNO_CALLBACK_URL?: string;
+  CONVEX_SITE_URL?: string;
+  CALLBACK_PATH?: string;
   SUNO_TIMEOUT?: string;
 }): SunoClient {
   const apiKey = env.SUNO_API_KEY;
@@ -147,10 +149,21 @@ export function createSunoClientFromEnv(env: {
     throw new Error("SUNO_API_KEY environment variable is not set");
   }
 
-  const callbackUrl = env.SUNO_CALLBACK_URL;
-  if (!callbackUrl) {
-    throw new Error("SUNO_CALLBACK_URL environment variable is not set");
+  const convexSiteUrl = env.CONVEX_SITE_URL;
+  if (!convexSiteUrl) {
+    throw new Error("CONVEX_SITE_URL is not available (this should be provided automatically by Convex)");
   }
+
+  const callbackPath = env.CALLBACK_PATH;
+  if (!callbackPath) {
+    throw new Error("CALLBACK_PATH is required");
+  }
+
+  // Construct full callback URL from site URL + path
+  // Ensure site URL doesn't end with / and path starts with /
+  const baseUrlNormalized = convexSiteUrl.replace(/\/$/, "");
+  const pathNormalized = callbackPath.startsWith("/") ? callbackPath : `/${callbackPath}`;
+  const callbackUrl = `${baseUrlNormalized}${pathNormalized}`;
 
   const timeout = env.SUNO_TIMEOUT ? parseInt(env.SUNO_TIMEOUT, 10) : undefined;
 

@@ -38,11 +38,10 @@ The following environment variables must be configured in the Convex Dashboard:
 - **Example**: `sk_live_abc123...`
 - **Where to get it**: VAPI Dashboard → Settings → API Keys
 
-#### `VAPI_WEBHOOK_URL`
-- **Description**: Public URL for VAPI to send webhook events
-- **Format**: Full HTTPS URL
-- **Example**: `https://your-convex-deployment.convex.cloud/webhooks/vapi`
-- **How to construct**: `https://<your-convex-deployment>.convex.cloud/webhooks/vapi`
+#### `CONVEX_SITE_URL` (Automatic)
+- **Description**: Site URL of your Convex deployment (automatically provided by Convex)
+- **Format**: Automatically set by Convex (e.g., `https://your-deployment.convex.site`)
+- **Note**: This variable is **automatically provided by Convex** - you do NOT need to set it manually. The system automatically constructs the full webhook URL by appending `/webhooks/vapi` to this site URL
 
 ### Optional Variables
 
@@ -73,9 +72,9 @@ The following environment variables must be configured in the Convex Dashboard:
 3. Add the required environment variables:
    ```
    VAPI_API_KEY=sk_live_your_api_key
-   VAPI_WEBHOOK_URL=https://your-deployment.convex.cloud/webhooks/vapi
    VAPI_ASSISTANT_ID=asst_your_assistant_id
    ```
+   **Note:** `CONVEX_SITE_URL` is automatically provided by Convex - no need to set it manually.
 
 ### 3. Configure VAPI Webhooks
 
@@ -251,7 +250,7 @@ Check Convex logs for:
 
 3. Check environment variables:
    - `VAPI_API_KEY` is set
-   - `VAPI_WEBHOOK_URL` is correct
+   - `CONVEX_SITE_URL` is available (automatically provided by Convex - webhook URL is constructed automatically)
 
 ### Webhooks Not Working
 

@@ -83,6 +83,7 @@ export default defineSchema({
     duration: v.optional(v.number()), // Duration in seconds
     audioUrl: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
+    primaryVideoId: v.optional(v.id("musicVideos")), // Primary/favorite music video
     status: v.union(
       v.literal("pending"),
       v.literal("ready"),
@@ -114,7 +115,39 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_createdAt", ["createdAt"])
     .index("by_audioId", ["audioId"])
-    .index("by_deletedAt", ["deletedAt"]),
+    .index("by_deletedAt", ["deletedAt"])
+    .index("by_primaryVideoId", ["primaryVideoId"]),
+
+  musicVideos: defineTable({
+    musicId: v.id("music"),
+    userId: v.id("users"),
+    kieTaskId: v.string(), // Task ID from Kie.ai API for webhook correlation
+    videoStorageId: v.optional(v.string()), // Convex storage ID for the video file
+    scriptPrompt: v.string(), // Generated script/prompt sent to Kie.ai
+    duration: v.optional(v.number()), // Video duration in seconds
+    status: v.union(
+      v.literal("pending"),
+      v.literal("ready"),
+      v.literal("failed"),
+    ),
+    metadata: v.optional(
+      v.object({
+        data: v.any(), // Full Kie.ai response data
+        videoUrl: v.optional(v.string()), // Original Kie.ai video URL
+        model: v.optional(v.string()), // Model used (e.g., "sora-2-text-to-video")
+        aspectRatio: v.optional(v.string()), // "portrait" or "landscape"
+        nFrames: v.optional(v.string()), // "10" or "15" seconds
+        errorMessage: v.optional(v.string()), // Error message when video generation fails
+      }),
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_musicId", ["musicId"])
+    .index("by_userId", ["userId"])
+    .index("by_status", ["status"])
+    .index("by_kieTaskId", ["kieTaskId"])
+    .index("by_userId_and_createdAt", ["userId", "createdAt"]),
 
   emailNotify: defineTable({
     email: v.string(),

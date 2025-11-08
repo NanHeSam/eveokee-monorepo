@@ -99,20 +99,30 @@ SUNO_API_KEY=xxxxxxxxxxxxxxxxxxxxx
 
 ---
 
-### SUNO_CALLBACK_URL
-**Purpose:** Webhook endpoint URL for Suno to send music generation status updates
+### CONVEX_SITE_URL (Automatic)
+**Purpose:** Site URL of the Convex deployment, used to construct callback URLs for webhooks
 
-**Used in:** `convex/musicActions.ts`
+**Used in:** `convex/musicActions.ts`, `convex/videoActions.ts`, `convex/integrations/vapi/integration.ts`
 
-**Format:** Should point to your Convex HTTP endpoint for Suno webhooks
+**Format:** Automatically provided by Convex (e.g., `https://your-deployment.convex.site`)
+
+**Note:** This variable is **automatically provided by Convex** - you do NOT need to set it manually. It replaces the previous `SUNO_CALLBACK_URL`, `KIE_CALLBACK_URL`, and `VAPI_WEBHOOK_URL` variables. The system automatically constructs the full callback URLs by appending the appropriate paths:
+- Suno: `CONVEX_SITE_URL` + `/callback/suno-music-generation`
+- Kie.ai: `CONVEX_SITE_URL` + `/callback/kie-video-generation`
+- VAPI: `CONVEX_SITE_URL` + `/webhooks/vapi`
+
+---
+
+### KIE_AI_API_KEY
+**Purpose:** Kie.ai API access for video generation using Sora 2 model
+
+**Used in:** `convex/videoActions.ts`
+
+**Where to find:** https://kie.ai (API Keys section)
 
 **Example:**
 ```bash
-# Production
-SUNO_CALLBACK_URL=https://your-convex-deployment.convex.cloud/http/suno-webhook
-
-# Local development (using ngrok or similar)
-SUNO_CALLBACK_URL=https://your-tunnel.ngrok.io/http/suno-webhook
+KIE_AI_API_KEY=xxxxxxxxxxxxxxxxxxxxx
 ```
 
 ---
@@ -127,24 +137,6 @@ SUNO_CALLBACK_URL=https://your-tunnel.ngrok.io/http/suno-webhook
 **Example:**
 ```bash
 VAPI_API_KEY=xxxxxxxxxxxxxxxxxxxxx
-```
-
----
-
-### VAPI_WEBHOOK_URL
-**Purpose:** Webhook callback URL for VAPI to send call status updates
-
-**Used in:** `convex/integrations/vapi/integration.ts`
-
-**Format:** Should point to your Convex HTTP endpoint for VAPI webhooks
-
-**Example:**
-```bash
-# Production
-VAPI_WEBHOOK_URL=https://your-convex-deployment.convex.cloud/http/vapi-webhook
-
-# Local development (using ngrok or similar)
-VAPI_WEBHOOK_URL=https://your-tunnel.ngrok.io/http/vapi-webhook
 ```
 
 ---
@@ -217,6 +209,18 @@ These variables have defaults or are only used for fine-tuning:
 **Example:**
 ```bash
 OPENAI_TIMEOUT=30000
+```
+
+---
+
+### KIE_AI_TIMEOUT
+**Purpose:** Timeout in milliseconds for Kie.ai API requests (optional)
+
+**Default:** 30000 (30 seconds)
+
+**Example:**
+```bash
+KIE_AI_TIMEOUT=60000
 ```
 
 ---
