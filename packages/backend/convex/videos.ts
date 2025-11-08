@@ -5,7 +5,7 @@
 
 import { mutation, query, internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
-import { ensureCurrentUser, getOptionalCurrentUser } from "./users";
+import { ensureCurrentUserHandler, getOptionalCurrentUser } from "./users";
 
 /**
  * List all videos for a specific music track
@@ -163,7 +163,7 @@ export const deleteVideo = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const { userId } = await ensureCurrentUser(ctx);
+    const { userId } = await ensureCurrentUserHandler(ctx);
 
     const video = await ctx.db.get(args.videoId);
     if (!video) {
@@ -201,7 +201,7 @@ export const setAsPrimaryVideo = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const { userId } = await ensureCurrentUser(ctx);
+    const { userId } = await ensureCurrentUserHandler(ctx);
 
     const video = await ctx.db.get(args.videoId);
     if (!video) {
