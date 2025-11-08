@@ -136,7 +136,7 @@ export const getCurrentUserOrThrow = async (
   return user;
 };
 
-export const ensureCurrentUserMutation = mutation({
+export const ensureCurrentUser = mutation({
   args: {},
   returns: v.object({
     userId: v.id("users"),
@@ -354,7 +354,6 @@ export const getUserIdByClerkId = internalQuery({
   },
 });
 
-export { ensureCurrentUserHandler as ensureCurrentUser };
 export { ensureCurrentUserHandler };
 export default ensureCurrentUserHandler;
 

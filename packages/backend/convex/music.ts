@@ -58,7 +58,7 @@ export const startDiaryMusicGeneration = action({
     }
 
     // Step 2: Authenticate user via mutation (actions cannot access DB directly)
-    const { userId } = await ctx.runMutation(api.users.ensureCurrentUserMutation, {});
+    const { userId } = await ctx.runMutation(api.users.ensureCurrentUser, {});
 
     // Step 3: Create or update diary entry
     let diaryId: Id<"diaries">;

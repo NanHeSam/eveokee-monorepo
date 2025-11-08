@@ -38,7 +38,7 @@ export const startVideoGeneration = action({
   }),
   handler: async (ctx, args) => {
     // Step 1: Authenticate user and get music record
-    const { userId } = await ctx.runMutation(api.users.ensureCurrentUserMutation, {});
+    const { userId } = await ctx.runMutation(api.users.ensureCurrentUser, {});
 
     const music = await ctx.runQuery(internal.videos.getMusicForVideoGeneration, {
       musicId: args.musicId,
