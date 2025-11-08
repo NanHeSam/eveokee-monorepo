@@ -287,4 +287,27 @@ export default defineSchema({
   })
     .index("by_userId_and_recordedAt", ["userId", "recordedAt"])
     .index("by_userId", ["userId"]),
+
+  generationQueue: defineTable({
+    type: v.union(v.literal("suno"), v.literal("kie")),
+    userId: v.id("users"),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("inFlight"),
+      v.literal("completed"),
+      v.literal("failed")
+    ),
+    payload: v.any(), // Request-specific data (diary content, music ID, etc.)
+    taskId: v.optional(v.string()), // External API task ID once request is sent
+    errorMessage: v.optional(v.string()),
+    createdAt: v.number(),
+    startedAt: v.optional(v.number()), // When request was sent to external API
+    completedAt: v.optional(v.number()),
+    updatedAt: v.number(),
+  })
+    .index("by_status_and_type", ["status", "type"])
+    .index("by_type_and_status", ["type", "status"])
+    .index("by_userId", ["userId"])
+    .index("by_taskId", ["taskId"])
+    .index("by_createdAt", ["createdAt"]),
 });

@@ -189,6 +189,14 @@ export const kieVideoGenerationCallback = httpAction(async (ctx, req) => {
       },
     });
     
+    await ctx.runMutation(internal.generationQueue.markRequestCompleted, {
+      taskId,
+    });
+    
+    await ctx.scheduler.runAfter(0, internal.generationQueue.processQueue, {
+      type: "kie",
+    });
+    
     logWebhookEvent(eventLogger, "kie-callback", "processed", {
       storageId,
       duration: videoData?.duration,

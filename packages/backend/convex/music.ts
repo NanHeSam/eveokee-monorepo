@@ -112,18 +112,26 @@ export const startDiaryMusicGeneration = action({
       };
     }
 
-    // Step 6: Schedule async music generation
-    await ctx.scheduler.runAfter(0, internal.musicActions.requestSunoGeneration, {
-      diary: {
-        diaryId,
-        userId,
-        content: trimmed,
+    // Step 6: Enqueue music generation request
+    await ctx.runMutation(internal.generationQueue.enqueueRequest, {
+      type: "suno",
+      userId,
+      payload: {
+        diary: {
+          diaryId,
+          userId,
+          content: trimmed,
+        },
+        usageResult: {
+          success: usageResult.success,
+          currentUsage: usageResult.currentUsage,
+          remainingQuota: usageResult.remainingQuota,
+        },
       },
-      usageResult: {
-        success: usageResult.success,
-        currentUsage: usageResult.currentUsage,
-        remainingQuota: usageResult.remainingQuota,
-      },
+    });
+
+    await ctx.scheduler.runAfter(0, internal.generationQueue.processQueue, {
+      type: "suno",
     });
 
     return {

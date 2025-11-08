@@ -98,18 +98,26 @@ export const startVideoGeneration = action({
       };
     }
 
-    // Step 4: Schedule async video generation
-    await ctx.scheduler.runAfter(0, internal.videoActions.requestKieVideoGeneration, {
-      musicId: args.musicId,
+    // Step 4: Enqueue video generation request
+    await ctx.runMutation(internal.generationQueue.enqueueRequest, {
+      type: "kie",
       userId,
-      lyric: music.lyric,
-      title: music.title,
-      diaryEntry: music.diaryContent,
-      usageResult: {
-        success: usageResult.success,
-        currentUsage: usageResult.currentUsage,
-        remainingQuota: usageResult.remainingQuota,
+      payload: {
+        musicId: args.musicId,
+        userId,
+        lyric: music.lyric,
+        title: music.title,
+        diaryEntry: music.diaryContent,
+        usageResult: {
+          success: usageResult.success,
+          currentUsage: usageResult.currentUsage,
+          remainingQuota: usageResult.remainingQuota,
+        },
       },
+    });
+
+    await ctx.scheduler.runAfter(0, internal.generationQueue.processQueue, {
+      type: "kie",
     });
 
     return {
