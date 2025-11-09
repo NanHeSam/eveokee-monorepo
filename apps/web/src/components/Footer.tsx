@@ -96,7 +96,7 @@ export default function Footer() {
               <li>
                 <a 
                   href="https://apps.apple.com/us/app/eveokee/id6754190123" 
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-full text-sm font-medium hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-accent-mint text-white rounded-full text-sm font-medium hover:bg-accent-mint/90 dark:bg-accent-mint dark:hover:bg-accent-mint/90 transition-colors"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
