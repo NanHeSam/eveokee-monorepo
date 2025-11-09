@@ -132,13 +132,13 @@ export default function FinalCTASection() {
           <div className="mt-8 space-y-4">
             <div className="flex flex-wrap gap-3 justify-center">
               <a
-                href="https://testflight.apple.com/join/aGT4PMED"
+                href="https://apps.apple.com/us/app/eveokee/id6754190123"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-full text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
               >
                 <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                📱 iOS TestFlight
+                📱 iOS App Store
               </a>
               <a
                 href={androidBetaLink}

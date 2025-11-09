@@ -101,12 +101,12 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
             <div className="mt-6 space-y-4">
               <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
                 <a
-                  href="https://testflight.apple.com/join/aGT4PMED"
+                  href="https://apps.apple.com/us/app/eveokee/id6754190123"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center px-4 py-2 bg-orange-100 text-orange-600 rounded-full text-sm font-medium hover:bg-orange-200/60 dark:bg-orange-900/30 dark:text-orange-300 dark:hover:bg-orange-900/50 transition-colors"
                 >
-                  📱 iOS TestFlight
+                  📱 iOS App Store
                 </a>
                 <a
                   href={androidBetaLink}

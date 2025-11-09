@@ -95,13 +95,13 @@ export default function Footer() {
             <ul className="space-y-2 text-gray-400 dark:text-gray-500">
               <li>
                 <a 
-                  href="https://testflight.apple.com/join/aGT4PMED" 
+                  href="https://apps.apple.com/us/app/eveokee/id6754190123" 
                   className="hover:text-gray-900 dark:hover:text-white transition-colors inline-flex items-center gap-2"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <Smartphone className="w-4 h-4" />
-                  iOS TestFlight
+                  iOS App Store
                 </a>
               </li>
               <li>
