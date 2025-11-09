@@ -1,4 +1,5 @@
 import { Play, Music, Pause, Book, Settings } from 'lucide-react';
+import { FaApple } from 'react-icons/fa';
 import { usePostHog } from 'posthog-js/react';
 import { useAudio } from '../contexts/AudioContext';
 import { getAndroidBetaLink } from '../utils/deviceUtils';
@@ -104,9 +105,10 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
                   href="https://apps.apple.com/us/app/eveokee/id6754190123"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center px-4 py-2 bg-orange-100 text-orange-600 rounded-full text-sm font-medium hover:bg-orange-200/60 dark:bg-orange-900/30 dark:text-orange-300 dark:hover:bg-orange-900/50 transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-full text-sm font-medium hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 transition-colors"
                 >
-                  📱 iOS App Store
+                  <FaApple className="w-4 h-4" />
+                  iOS App Store
                 </a>
                 <a
                   href={androidBetaLink}

@@ -1,6 +1,6 @@
 import { Heart, Twitter, Mail, Smartphone } from 'lucide-react';
 import { SiDiscord } from 'react-icons/si';
-import { FaInstagram } from 'react-icons/fa';
+import { FaInstagram, FaApple } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { getAndroidBetaLink } from '../utils/deviceUtils';
 import AndroidInviteForm from './AndroidInviteForm';
@@ -96,11 +96,11 @@ export default function Footer() {
               <li>
                 <a 
                   href="https://apps.apple.com/us/app/eveokee/id6754190123" 
-                  className="hover:text-gray-900 dark:hover:text-white transition-colors inline-flex items-center gap-2"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-full text-sm font-medium hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 transition-colors"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Smartphone className="w-4 h-4" />
+                  <FaApple className="w-4 h-4" />
                   iOS App Store
                 </a>
               </li>

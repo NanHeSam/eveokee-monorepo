@@ -4,6 +4,7 @@ import { useMutation } from 'convex/react';
 import { api } from '@backend/convex';
 import { isValidEmail } from '@/lib/utils';
 import { ArrowRight, CheckCircle } from 'lucide-react';
+import { FaApple } from 'react-icons/fa';
 import { getAndroidBetaLink } from '../utils/deviceUtils';
 import AndroidInviteForm from './AndroidInviteForm';
 
@@ -135,10 +136,10 @@ export default function FinalCTASection() {
                 href="https://apps.apple.com/us/app/eveokee/id6754190123"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-full text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-full text-sm font-medium hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 transition-colors"
               >
-                <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                📱 iOS App Store
+                <FaApple className="w-4 h-4" />
+                iOS App Store
               </a>
               <a
                 href={androidBetaLink}
