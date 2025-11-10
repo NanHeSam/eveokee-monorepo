@@ -62,7 +62,7 @@ const blogPosts: BlogPost[] = [
     slug: (typeof whatWereBuildingFrontmatter.slug === 'string' ? whatWereBuildingFrontmatter.slug : undefined) || 'what-were-really-building-at-evokee',
     excerpt: (typeof whatWereBuildingFrontmatter.excerpt === 'string' ? whatWereBuildingFrontmatter.excerpt : undefined) || "Memory is a crime scene, and you're the unreliable witness. We're building Evokee because we finally understand the difference between documentation and memory.",
     content: whatWereBuildingContentParsed,
-    publishedAt: (typeof whatWereBuildingFrontmatter.publishedAt === 'string' ? whatWereBuildingFrontmatter.publishedAt : undefined) || '2025-01-27',
+    publishedAt: (typeof whatWereBuildingFrontmatter.publishedAt === 'string' ? whatWereBuildingFrontmatter.publishedAt : undefined) || '2025-11-09',
     author: (typeof whatWereBuildingFrontmatter.author === 'string' ? whatWereBuildingFrontmatter.author : undefined) || 'Sam He',
     tags: Array.isArray(whatWereBuildingFrontmatter.tags) ? whatWereBuildingFrontmatter.tags : ['philosophy', 'memory', 'product', 'neuroscience', 'vision'],
     readTime: (typeof whatWereBuildingFrontmatter.readTime === 'string' ? parseInt(whatWereBuildingFrontmatter.readTime, 10) : typeof whatWereBuildingFrontmatter.readTime === 'number' ? whatWereBuildingFrontmatter.readTime : undefined) || 12,
