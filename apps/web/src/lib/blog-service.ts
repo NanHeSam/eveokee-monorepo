@@ -13,6 +13,7 @@ export interface BlogPost {
 // Import the actual markdown content
 import markdownContent from '../content/blog/diary-vibes-alpha-building-something-new.md?raw';
 import whyPeopleLoveContent from '../content/blog/why-people-fall-in-love-with-diary-vibes.md?raw';
+import whatWereBuildingContent from '../content/blog/what-were-really-building-at-evokee.md?raw';
 
 // Parse frontmatter from markdown
 function parseFrontmatter(content: string) {
@@ -52,8 +53,20 @@ function parseFrontmatter(content: string) {
 
 const { frontmatter, content } = parseFrontmatter(markdownContent);
 const { frontmatter: whyPeopleLoveFrontmatter, content: whyPeopleLoveContentParsed } = parseFrontmatter(whyPeopleLoveContent);
+const { frontmatter: whatWereBuildingFrontmatter, content: whatWereBuildingContentParsed } = parseFrontmatter(whatWereBuildingContent);
 
 const blogPosts: BlogPost[] = [
+  {
+    id: (typeof whatWereBuildingFrontmatter.slug === 'string' ? whatWereBuildingFrontmatter.slug : undefined) || 'what-were-really-building-at-evokee',
+    title: (typeof whatWereBuildingFrontmatter.title === 'string' ? whatWereBuildingFrontmatter.title : undefined) || "What We're Really Building at Evokee",
+    slug: (typeof whatWereBuildingFrontmatter.slug === 'string' ? whatWereBuildingFrontmatter.slug : undefined) || 'what-were-really-building-at-evokee',
+    excerpt: (typeof whatWereBuildingFrontmatter.excerpt === 'string' ? whatWereBuildingFrontmatter.excerpt : undefined) || "Memory is a crime scene, and you're the unreliable witness. We're building Evokee because we finally understand the difference between documentation and memory.",
+    content: whatWereBuildingContentParsed,
+    publishedAt: (typeof whatWereBuildingFrontmatter.publishedAt === 'string' ? whatWereBuildingFrontmatter.publishedAt : undefined) || '2025-11-09',
+    author: (typeof whatWereBuildingFrontmatter.author === 'string' ? whatWereBuildingFrontmatter.author : undefined) || 'Sam He',
+    tags: Array.isArray(whatWereBuildingFrontmatter.tags) ? whatWereBuildingFrontmatter.tags : ['philosophy', 'memory', 'product', 'neuroscience', 'vision'],
+    readTime: (typeof whatWereBuildingFrontmatter.readTime === 'string' ? parseInt(whatWereBuildingFrontmatter.readTime, 10) : typeof whatWereBuildingFrontmatter.readTime === 'number' ? whatWereBuildingFrontmatter.readTime : undefined) || 12,
+  },
   {
     id: (typeof whyPeopleLoveFrontmatter.slug === 'string' ? whyPeopleLoveFrontmatter.slug : undefined) || 'why-people-fall-in-love-with-eveokee',
     title: (typeof whyPeopleLoveFrontmatter.title === 'string' ? whyPeopleLoveFrontmatter.title : undefined) || 'Turning Your Journal into a Soundtrack',
