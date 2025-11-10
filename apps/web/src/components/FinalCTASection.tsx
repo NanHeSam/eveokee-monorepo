@@ -6,6 +6,7 @@ import { isValidEmail } from '@/lib/utils';
 import { ArrowRight, CheckCircle } from 'lucide-react';
 import { getAndroidBetaLink } from '../utils/deviceUtils';
 import AndroidInviteForm from './AndroidInviteForm';
+import IOSAppStoreButton from './IOSAppStoreButton';
 
 export default function FinalCTASection() {
   const [email, setEmail] = useState('');
@@ -131,15 +132,7 @@ export default function FinalCTASection() {
           {/* App Beta Links */}
           <div className="mt-8 space-y-4">
             <div className="flex flex-wrap gap-3 justify-center">
-              <a
-                href="https://testflight.apple.com/join/aGT4PMED"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-full text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              >
-                <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                📱 iOS TestFlight
-              </a>
+              <IOSAppStoreButton />
               <a
                 href={androidBetaLink}
                 target="_blank"

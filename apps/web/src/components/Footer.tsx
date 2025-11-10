@@ -4,6 +4,7 @@ import { FaInstagram } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { getAndroidBetaLink } from '../utils/deviceUtils';
 import AndroidInviteForm from './AndroidInviteForm';
+import IOSAppStoreButton from './IOSAppStoreButton';
 
 /**
  * Renders the eveokee site footer with branding, social links, quick navigation, and legal links.
@@ -94,15 +95,7 @@ export default function Footer() {
             <h4 className="font-semibold mb-4">Beta Testing</h4>
             <ul className="space-y-2 text-gray-400 dark:text-gray-500">
               <li>
-                <a 
-                  href="https://testflight.apple.com/join/aGT4PMED" 
-                  className="hover:text-gray-900 dark:hover:text-white transition-colors inline-flex items-center gap-2"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Smartphone className="w-4 h-4" />
-                  iOS TestFlight
-                </a>
+                <IOSAppStoreButton />
               </li>
               <li>
                 <a 

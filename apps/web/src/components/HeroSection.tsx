@@ -3,6 +3,7 @@ import { usePostHog } from 'posthog-js/react';
 import { useAudio } from '../contexts/AudioContext';
 import { getAndroidBetaLink } from '../utils/deviceUtils';
 import AndroidInviteForm from './AndroidInviteForm';
+import IOSAppStoreButton from './IOSAppStoreButton';
 
 interface HeroSectionProps {
   onHearDemo?: () => void;
@@ -100,14 +101,7 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
             {/* App Beta Links */}
             <div className="mt-6 space-y-4">
               <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-                <a
-                  href="https://testflight.apple.com/join/aGT4PMED"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center px-4 py-2 bg-orange-100 text-orange-600 rounded-full text-sm font-medium hover:bg-orange-200/60 dark:bg-orange-900/30 dark:text-orange-300 dark:hover:bg-orange-900/50 transition-colors"
-                >
-                  📱 iOS TestFlight
-                </a>
+                <IOSAppStoreButton />
                 <a
                   href={androidBetaLink}
                   target="_blank"
