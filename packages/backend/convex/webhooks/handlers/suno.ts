@@ -89,6 +89,15 @@ export const sunoMusicGenerationCallback = httpAction(async (ctx, req) => {
       taskId,
       tracks: tracksRaw,
     });
+    
+    await ctx.runMutation(internal.generationQueue.markRequestCompleted, {
+      taskId,
+    });
+    
+    await ctx.scheduler.runAfter(0, internal.generationQueue.processQueue, {
+      type: "suno",
+    });
+    
     logWebhookEvent(eventLogger, "suno-callback", "processed", {
       trackCount: tracksRaw.length,
     });
