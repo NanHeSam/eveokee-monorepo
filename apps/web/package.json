@@ -21,7 +21,7 @@
     "date-fns": "^4.1.0",
     "gray-matter": "^4.0.3",
     "lucide-react": "^0.511.0",
-    "posthog-js": "^1.273.0",
+    "posthog-js": "^1.290.0",
     "react": "^19.1.0",
     "react-confetti": "^6.1.0",
     "react-dom": "^19.1.0",

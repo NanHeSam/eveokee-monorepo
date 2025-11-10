@@ -332,8 +332,8 @@ importers:
         specifier: ^0.511.0
         version: 0.511.0(react@19.1.0)
       posthog-js:
-        specifier: ^1.273.0
-        version: 1.281.0
+        specifier: ^1.290.0
+        version: 1.290.0
       react:
         specifier: ^19.1.0
         version: 19.1.0
@@ -3306,6 +3306,12 @@ packages:
 
   /@posthog/core@1.4.0:
     resolution: {integrity: sha512-jmW8/I//YOHAfjzokqas+Qtc2T57Ux8d2uIJu7FLcMGxywckHsl6od59CD18jtUzKToQdjQhV6Y3429qj+KeNw==}
+    dev: false
+
+  /@posthog/core@1.5.2:
+    resolution: {integrity: sha512-iedUP3EnOPPxTA2VaIrsrd29lSZnUV+ZrMnvY56timRVeZAXoYCkmjfIs3KBAsF8OUT5h1GXLSkoQdrV0r31OQ==}
+    dependencies:
+      cross-spawn: 7.0.6
     dev: false
 
   /@react-native-async-storage/async-storage@2.2.0(react-native@0.81.4):
@@ -11308,10 +11314,10 @@ packages:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  /posthog-js@1.281.0:
-    resolution: {integrity: sha512-t3sAlgVozpU1W1ppiF5zLG6eBRPUs0hmtxN8R1V7P0qZFmnECshAAk2cBxCsxEanadT3iUpS8Z7crBytATqWQQ==}
+  /posthog-js@1.290.0:
+    resolution: {integrity: sha512-zavBwZkf+3JeiSDVE7ZDXBfzva/iOljicdhdJH+cZoqp0LsxjKxjnNhGOd3KpAhw0wqdwjhd7Lp1aJuI7DXyaw==}
     dependencies:
-      '@posthog/core': 1.4.0
+      '@posthog/core': 1.5.2
       core-js: 3.46.0
       fflate: 0.4.8
       preact: 10.27.2

@@ -49,6 +49,7 @@ export const PlaylistScreen = () => {
         canPlay: false,
         isPlaceholder: true,
         startedAt: entry.startedAt,
+        createdAt: entry.startedAt,
       }));
   }, [pendingGenerations, items]);
   const displayItems = useMemo(() => [...placeholderItems, ...items], [placeholderItems, items]);
@@ -127,7 +128,10 @@ export const PlaylistScreen = () => {
             showsVerticalScrollIndicator={false}
             renderItem={({ item }) => (
               item.isPlaceholder || item.status === 'pending' ? (
-                <GeneratingRow colors={colors} />
+                <GeneratingRow 
+                  colors={colors} 
+                  startedAt={item.isPlaceholder ? item.startedAt : (item.status === 'pending' ? item.createdAt : undefined)} 
+                />
               ) : (
               <PlaylistRow
                 item={item}
@@ -201,30 +205,85 @@ const mapMusicDocsToItems = (
     status: doc.status,
     canPlay: doc.status === 'ready' && !!doc.audioUrl,
     isPlaceholder: false,
+    createdAt: doc.createdAt,
   }));
 
 const GeneratingRow = ({
   colors,
+  startedAt,
 }: {
   colors: ReturnType<typeof useThemeColors>;
-}) => (
-  <View className="flex-row items-center py-3">
-    <View
-      className="h-14 w-14 items-center justify-center rounded-2xl"
-      style={{ backgroundColor: colors.surface }}
-    >
-      <ActivityIndicator size="small" color={colors.accentMint} />
+  startedAt?: number;
+}) => {
+  const [elapsedTime, setElapsedTime] = useState(0);
+
+  useEffect(() => {
+    if (!startedAt) {
+      setElapsedTime(0);
+      return;
+    }
+
+    // Calculate initial elapsed time
+    const initialElapsed = Math.floor((Date.now() - startedAt) / 1000);
+    setElapsedTime(initialElapsed);
+
+    // Update every second
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+      setElapsedTime(elapsed);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [startedAt]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const progress = Math.min((elapsedTime / 120) * 100, 95); // 2 minutes = 120 seconds, cap at 95%
+
+  return (
+    <View className="py-3">
+      <View className="flex-row items-center">
+        <View
+          className="h-14 w-14 items-center justify-center rounded-2xl"
+          style={{ backgroundColor: colors.surface }}
+        >
+          <ActivityIndicator size="small" color={colors.accentMint} />
+        </View>
+        <View className="ml-3 flex-1">
+          <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
+            Generating your music…
+          </Text>
+          <Text className="mt-0.5 text-xs" style={{ color: colors.textSecondary }}>
+            We&apos;re composing a new track. This usually takes about 2 minutes.
+          </Text>
+        </View>
+      </View>
+      
+      {/* Progress Bar */}
+      <View className="mt-3 ml-[68px] mr-3">
+        <View
+          className="h-1.5 rounded-full"
+          style={{ backgroundColor: colors.border || 'rgba(0,0,0,0.1)' }}
+        >
+          <View
+            className="h-1.5 rounded-full"
+            style={{
+              width: `${progress}%`,
+              backgroundColor: colors.accentMint,
+            }}
+          />
+        </View>
+        <Text className="mt-1.5 text-xs" style={{ color: colors.textSecondary }}>
+          {formatTime(elapsedTime)} / ~2:00
+        </Text>
+      </View>
     </View>
-    <View className="ml-3 flex-1">
-      <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
-        Generating your music…
-      </Text>
-      <Text className="mt-0.5 text-xs" style={{ color: colors.textSecondary }}>
-        We&apos;re composing a new track. This may take up to a minute.
-      </Text>
-    </View>
-  </View>
-);
+  );
+};
 
 const PlaylistRow = ({
   item,
