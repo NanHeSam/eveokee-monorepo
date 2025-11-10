@@ -1,9 +1,9 @@
 import { Play, Music, Pause, Book, Settings } from 'lucide-react';
-import { FaApple } from 'react-icons/fa';
 import { usePostHog } from 'posthog-js/react';
 import { useAudio } from '../contexts/AudioContext';
 import { getAndroidBetaLink } from '../utils/deviceUtils';
 import AndroidInviteForm from './AndroidInviteForm';
+import IOSAppStoreButton from './IOSAppStoreButton';
 
 interface HeroSectionProps {
   onHearDemo?: () => void;
@@ -101,15 +101,7 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
             {/* App Beta Links */}
             <div className="mt-6 space-y-4">
               <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-                <a
-                  href="https://apps.apple.com/us/app/eveokee/id6754190123"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-accent-mint text-white rounded-full text-sm font-medium hover:bg-accent-mint/90 dark:bg-accent-mint dark:hover:bg-accent-mint/90 transition-colors"
-                >
-                  <FaApple className="w-4 h-4" />
-                  iOS App Store
-                </a>
+                <IOSAppStoreButton />
                 <a
                   href={androidBetaLink}
                   target="_blank"

@@ -5,9 +5,9 @@ import { api } from "@backend/convex";
 import MusicPlayer from "@/components/MusicPlayer";
 import { formatDistanceToNow } from "date-fns";
 import toast from "react-hot-toast";
-import { FaApple } from "react-icons/fa";
 import { getAndroidBetaLink } from "@/utils/deviceUtils";
 import AndroidInviteForm from "@/components/AndroidInviteForm";
+import IOSAppStoreButton from "@/components/IOSAppStoreButton";
 
 const formatDuration = (seconds?: number): string => {
   if (!seconds) return "0:00";
@@ -234,15 +234,7 @@ export default function Share() {
                 
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start items-center">
-                    <a 
-                      href="https://apps.apple.com/us/app/eveokee/id6754190123"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-accent-mint text-white rounded-full text-sm font-medium hover:bg-accent-mint/90 dark:bg-accent-mint dark:hover:bg-accent-mint/90 transition-colors"
-                    >
-                      <FaApple className="w-4 h-4" />
-                      iOS App Store
-                    </a>
+                    <IOSAppStoreButton />
                     <a 
                       href={getAndroidBetaLink()}
                       target="_blank"

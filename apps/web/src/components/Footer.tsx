@@ -1,9 +1,10 @@
 import { Heart, Twitter, Mail, Smartphone } from 'lucide-react';
 import { SiDiscord } from 'react-icons/si';
-import { FaInstagram, FaApple } from 'react-icons/fa';
+import { FaInstagram } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { getAndroidBetaLink } from '../utils/deviceUtils';
 import AndroidInviteForm from './AndroidInviteForm';
+import IOSAppStoreButton from './IOSAppStoreButton';
 
 /**
  * Renders the eveokee site footer with branding, social links, quick navigation, and legal links.
@@ -94,15 +95,7 @@ export default function Footer() {
             <h4 className="font-semibold mb-4">Beta Testing</h4>
             <ul className="space-y-2 text-gray-400 dark:text-gray-500">
               <li>
-                <a 
-                  href="https://apps.apple.com/us/app/eveokee/id6754190123" 
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-accent-mint text-white rounded-full text-sm font-medium hover:bg-accent-mint/90 dark:bg-accent-mint dark:hover:bg-accent-mint/90 transition-colors"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <FaApple className="w-4 h-4" />
-                  iOS App Store
-                </a>
+                <IOSAppStoreButton />
               </li>
               <li>
                 <a 
