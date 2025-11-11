@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { BlogPost as BlogPostType } from '../lib/blog-service';
-import { parseMusicShortcodes, processMusicComponents } from '../utils/markdownUtils';
+import { parseMusicShortcodes, parseYouTubeEmbeds, processMusicComponents } from '../utils/markdownUtils';
 
 interface BlogPostProps {
   post: BlogPostType;
@@ -12,7 +12,10 @@ interface BlogPostProps {
 
 export default function BlogPost({ post, onBack }: BlogPostProps) {
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    // Parse date string (YYYY-MM-DD) as local date to avoid timezone issues
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -64,7 +67,9 @@ export default function BlogPost({ post, onBack }: BlogPostProps) {
       
       <div className="prose prose-lg max-w-none">
         {(() => {
-          const processedContent = parseMusicShortcodes(post.content);
+          // Preprocess content: convert <br> and <br/> tags to newlines for markdown
+          const contentWithLineBreaks = post.content.replace(/<br\s*\/?>/gi, '\n\n');
+          const processedContent = parseYouTubeEmbeds(parseMusicShortcodes(contentWithLineBreaks));
           const contentParts = processMusicComponents(processedContent);
           
           return contentParts.map((part, index) => {
@@ -94,13 +99,39 @@ export default function BlogPost({ post, onBack }: BlogPostProps) {
                       <em className="italic text-gray-800 dark:text-gray-200">{children}</em>
                     ),
                     ul: ({ children }) => (
-                      <ul className="list-disc list-inside mb-4 text-gray-700 dark:text-gray-300">{children}</ul>
+                      <ul className="list-disc list-outside mb-4 text-gray-700 dark:text-gray-300 ml-6 pl-2 space-y-2">{children}</ul>
                     ),
                     ol: ({ children }) => (
-                      <ol className="list-decimal list-inside mb-4 text-gray-700 dark:text-gray-300">{children}</ol>
+                      <ol className="list-decimal list-outside mb-4 text-gray-700 dark:text-gray-300 ml-6 pl-2 space-y-2">{children}</ol>
                     ),
                     li: ({ children }) => (
-                      <li className="mb-1">{children}</li>
+                      <li className="mb-1 pl-2">{children}</li>
+                    ),
+                    table: ({ children }) => (
+                      <div className="overflow-x-auto my-6">
+                        <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-600">
+                          {children}
+                        </table>
+                      </div>
+                    ),
+                    thead: ({ children }) => (
+                      <thead className="bg-gray-100 dark:bg-gray-800">{children}</thead>
+                    ),
+                    tbody: ({ children }) => (
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">{children}</tbody>
+                    ),
+                    tr: ({ children }) => (
+                      <tr className="border-b border-gray-200 dark:border-gray-700">{children}</tr>
+                    ),
+                    th: ({ children }) => (
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600">
+                        {children}
+                      </th>
+                    ),
+                    td: ({ children }) => (
+                      <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600">
+                        {children}
+                      </td>
                     ),
                     blockquote: ({ children }) => (
                       <blockquote className="border-l-4 border-accent-mint bg-accent-mint/5 dark:bg-accent-mint/10 pl-4 py-2 my-4 italic text-gray-700 dark:text-gray-300">
@@ -136,6 +167,21 @@ export default function BlogPost({ post, onBack }: BlogPostProps) {
                       >
                         {children}
                       </a>
+                    ),
+                    img: ({ src, alt, title }) => (
+                      <figure className="my-8">
+                        <img
+                          src={src}
+                          alt={alt || ''}
+                          title={title}
+                          className="w-full rounded-lg shadow-md"
+                        />
+                        {alt && (
+                          <figcaption className="mt-3 text-sm text-center text-gray-600 dark:text-gray-400 italic">
+                            {alt}
+                          </figcaption>
+                        )}
+                      </figure>
                     ),
                     hr: () => (
                       <div className="flex justify-center my-8">
