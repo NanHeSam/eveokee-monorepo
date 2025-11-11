@@ -30,6 +30,8 @@ import { usePostHogNavigation } from './app/hooks/usePostHogNavigation';
 import { useRevenueCatSync } from './app/hooks/useRevenueCatSync';
 import * as Sentry from '@sentry/react-native';
 import { configureRevenueCat } from './app/utils/revenueCat';
+import { usePushNotifications, getLastNotificationResponse, type NotificationData } from './app/utils/pushNotifications';
+import * as Notifications from 'expo-notifications';
 
 // Only initialize Sentry in production/preview builds (not local development)
 const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
@@ -125,8 +127,40 @@ if (!convexUrl) {
 
 const convexClient = new ConvexReactClient(convexUrl);
 
-const RootNavigator = () => {
+const RootNavigator = ({ navigationRef, onNotificationNavigation }: { 
+  navigationRef: React.RefObject<NavigationContainerRef<any>>;
+  onNotificationNavigation: (data: NotificationData) => void;
+}) => {
   const { isLoaded, isSignedIn } = useAuth();
+
+  // Handle notification taps and app opened from notification
+  useEffect(() => {
+    if (!isSignedIn || !isLoaded) {
+      return;
+    }
+
+    // Handle notification when app is opened from quit state
+    getLastNotificationResponse().then((response) => {
+      if (response) {
+        const data = response.notification.request.content.data as unknown;
+        if (data && typeof data === 'object' && 'type' in data) {
+          onNotificationNavigation(data as NotificationData);
+        }
+      }
+    });
+
+    // Listen for notification taps
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as unknown;
+      if (data && typeof data === 'object' && 'type' in data) {
+        onNotificationNavigation(data as NotificationData);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [isSignedIn, isLoaded, onNotificationNavigation]);
 
   if (!isLoaded) {
     return null;
@@ -162,6 +196,28 @@ function AppContent() {
   // Sync RevenueCat user identity with Convex auth
   useRevenueCatSync();
 
+  // Initialize push notifications (only when signed in)
+  usePushNotifications();
+
+  // Handle navigation based on notification data
+  const handleNotificationNavigation = (data: NotificationData) => {
+    if (!navigationRef.current) {
+      return;
+    }
+
+    if (data.type === 'music_ready' && data.musicId) {
+      // Navigate to Playlist tab
+      navigationRef.current.navigate('MainTabs', {
+        screen: 'Playlist',
+      });
+    } else if (data.type === 'video_ready' && data.musicId) {
+      // Navigate to Playlist tab (videos are shown in the music detail view)
+      navigationRef.current.navigate('MainTabs', {
+        screen: 'Playlist',
+      });
+    }
+  };
+
   const theme: Theme = colors.scheme === 'dark'
     ? {
         ...DarkTheme,
@@ -191,7 +247,7 @@ function AppContent() {
       <TrackPlayerProvider>
         <View style={{ flex: 1 }}>
           <NavigationContainer ref={navigationRef} theme={theme}>
-            <RootNavigator />
+            <RootNavigator navigationRef={navigationRef} onNotificationNavigation={handleNotificationNavigation} />
           </NavigationContainer>
           <MiniPlayer />
           <FullPlayer />

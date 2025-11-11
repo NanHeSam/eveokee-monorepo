@@ -34,6 +34,7 @@ import type * as models_webhooks_suno from "../models/webhooks/suno.js";
 import type * as models_webhooks_vapi from "../models/webhooks/vapi.js";
 import type * as music from "../music.js";
 import type * as musicActions from "../musicActions.js";
+import type * as pushNotifications from "../pushNotifications.js";
 import type * as revenueCatBilling from "../revenueCatBilling.js";
 import type * as service_vapi_executor from "../service/vapi/executor.js";
 import type * as sharing from "../sharing.js";
@@ -106,6 +107,7 @@ declare const fullApi: ApiFromModules<{
   "models/webhooks/vapi": typeof models_webhooks_vapi;
   music: typeof music;
   musicActions: typeof musicActions;
+  pushNotifications: typeof pushNotifications;
   revenueCatBilling: typeof revenueCatBilling;
   "service/vapi/executor": typeof service_vapi_executor;
   sharing: typeof sharing;

@@ -189,6 +189,32 @@ export const kieVideoGenerationCallback = httpAction(async (ctx, req) => {
       },
     });
     
+    // Get the video record to send push notification
+    const videoRecord = await ctx.runQuery(internal.videos.getVideoByTaskId, {
+      taskId,
+    });
+    
+    // Send push notification if video was successfully completed
+    if (videoRecord && videoRecord.status === "ready") {
+      try {
+        await ctx.runAction(internal.pushNotifications.sendPushNotification, {
+          userId: videoRecord.userId,
+          title: "Your video is ready!",
+          body: "Your music video has finished generating",
+          data: {
+            type: "video_ready",
+            videoId: videoRecord._id,
+            musicId: videoRecord.musicId,
+          },
+        });
+      } catch (notificationError) {
+        // Log but don't fail the webhook if notification fails
+        eventLogger.warn("Failed to send push notification", {
+          error: notificationError instanceof Error ? notificationError.message : "Unknown error",
+        });
+      }
+    }
+    
     logWebhookEvent(eventLogger, "kie-callback", "processed", {
       storageId,
       duration: videoData?.duration,

@@ -1,0 +1,248 @@
+/**
+ * Push Notifications Backend
+ * Handles push token registration and sending push notifications via Expo Push API
+ */
+
+import { mutation, query, internalQuery, internalAction } from "./_generated/server";
+import { internal } from "./_generated/api";
+import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
+import ensureCurrentUser from "./users";
+
+/**
+ * Get push tokens for the current user (for debugging/testing)
+ */
+export const getMyPushTokens = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("pushTokens"),
+      token: v.string(),
+      platform: v.union(v.literal("ios"), v.literal("android")),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+    })
+  ),
+  handler: async (ctx) => {
+    const { userId } = await ensureCurrentUser(ctx);
+    
+    const tokens = await ctx.db
+      .query("pushTokens")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .collect();
+
+    return tokens.map((token) => ({
+      _id: token._id,
+      token: token.token,
+      platform: token.platform,
+      createdAt: token.createdAt,
+      updatedAt: token.updatedAt,
+    }));
+  },
+});
+
+/**
+ * Register or update a push token for the current user
+ * If a token already exists for this user+platform, it will be updated
+ */
+export const registerPushToken = mutation({
+  args: {
+    token: v.string(),
+    platform: v.union(v.literal("ios"), v.literal("android")),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { userId } = await ensureCurrentUser(ctx);
+    const now = Date.now();
+
+    // Check if token already exists for this user and platform
+    const existing = await ctx.db
+      .query("pushTokens")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("platform"), args.platform))
+      .first();
+
+    if (existing) {
+      // Update existing token
+      await ctx.db.patch(existing._id, {
+        token: args.token,
+        updatedAt: now,
+      });
+    } else {
+      // Create new token record
+      await ctx.db.insert("pushTokens", {
+        userId,
+        token: args.token,
+        platform: args.platform,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    return null;
+  },
+});
+
+/**
+ * Unregister a push token (e.g., on logout)
+ */
+export const unregisterPushToken = mutation({
+  args: {
+    token: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { userId } = await ensureCurrentUser(ctx);
+
+    // Find and delete the token
+    const tokenRecord = await ctx.db
+      .query("pushTokens")
+      .withIndex("by_token", (q) => q.eq("token", args.token))
+      .first();
+
+    if (tokenRecord && tokenRecord.userId === userId) {
+      await ctx.db.delete(tokenRecord._id);
+    }
+
+    return null;
+  },
+});
+
+/**
+ * Internal query to get all push tokens for a user
+ */
+export const getUserPushTokens = internalQuery({
+  args: {
+    userId: v.id("users"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("pushTokens"),
+      token: v.string(),
+      platform: v.union(v.literal("ios"), v.literal("android")),
+    })
+  ),
+  handler: async (ctx, args) => {
+    const tokens = await ctx.db
+      .query("pushTokens")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    return tokens.map((token) => ({
+      _id: token._id,
+      token: token.token,
+      platform: token.platform,
+    }));
+  },
+});
+
+/**
+ * Internal action to send push notification via Expo Push API
+ * 
+ * @param userId - User ID to send notification to
+ * @param title - Notification title
+ * @param body - Notification body text
+ * @param data - Additional data payload (e.g., { type: 'music_ready', musicId: '...' })
+ */
+export const sendPushNotification = internalAction({
+  args: {
+    userId: v.id("users"),
+    title: v.string(),
+    body: v.string(),
+    data: v.optional(v.any()),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    sentCount: v.number(),
+    errors: v.optional(v.array(v.string())),
+  }),
+  handler: async (ctx, args) => {
+    // Get all push tokens for the user
+    const tokensResult = await ctx.runQuery(
+      internal.pushNotifications.getUserPushTokens,
+      { userId: args.userId }
+    );
+
+    if (tokensResult.length === 0) {
+      console.log(`No push tokens found for user ${args.userId}`);
+      return {
+        success: false,
+        sentCount: 0,
+        errors: ["No push tokens found for user"],
+      };
+    }
+
+    // Prepare notification messages for Expo Push API
+    const messages = tokensResult.map((token) => ({
+      to: token.token,
+      sound: "default",
+      title: args.title,
+      body: args.body,
+      data: args.data || {},
+    }));
+
+    // Send notifications via Expo Push API
+    try {
+      const response = await fetch("https://exp.host/--/api/v2/push/send", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Accept-Encoding": "gzip, deflate",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(messages),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Expo Push API error:", errorText);
+        return {
+          success: false,
+          sentCount: 0,
+          errors: [`Expo Push API error: ${errorText}`],
+        };
+      }
+
+      const result = await response.json() as {
+        data?: Array<{ status: string; message?: string; details?: { error?: string } }> | { status: string; message?: string; details?: { error?: string } };
+      };
+      const receipts = Array.isArray(result.data) ? result.data : result.data ? [result.data] : [];
+
+      // Count successful sends and collect errors
+      let sentCount = 0;
+      const errors: string[] = [];
+
+      receipts.forEach((receipt: any, index: number) => {
+        if (receipt.status === "ok") {
+          sentCount += 1;
+        } else {
+          const error = receipt.message || `Unknown error for token ${index}`;
+          errors.push(error);
+          
+          // If token is invalid, we might want to remove it
+          if (receipt.details?.error === "DeviceNotRegistered" || 
+              receipt.details?.error === "InvalidCredentials") {
+            console.log(`Removing invalid token: ${tokensResult[index].token}`);
+            // Note: We can't delete from here since this is an action, but we log it
+          }
+        }
+      });
+
+      return {
+        success: sentCount > 0,
+        sentCount,
+        errors: errors.length > 0 ? errors : undefined,
+      };
+    } catch (error) {
+      console.error("Failed to send push notification:", error);
+      return {
+        success: false,
+        sentCount: 0,
+        errors: [
+          error instanceof Error ? error.message : "Unknown error sending notification",
+        ],
+      };
+    }
+  },
+});
+

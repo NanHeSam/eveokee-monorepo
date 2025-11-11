@@ -15,6 +15,14 @@
       "expo-system-ui",
       "expo-web-browser",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#A8E6CF",
+          "sounds": []
+        }
+      ],
+      [
         "@sentry/react-native/expo",
         {
           "url": "https://sentry.io/",
@@ -47,7 +55,10 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.eveokee.app",
-      "supportsTablet": false
+      "supportsTablet": false,
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED"
+      ]
     },
     "scheme": "eveokee",
     "web": {
