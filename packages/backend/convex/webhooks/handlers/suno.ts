@@ -89,6 +89,34 @@ export const sunoMusicGenerationCallback = httpAction(async (ctx, req) => {
       taskId,
       tracks: tracksRaw,
     });
+    
+    // Get the music record to send push notification
+    const musicRecord = await ctx.runQuery(internal.music.getMusicByTaskId, {
+      taskId,
+    });
+    
+    // Send push notification if music was successfully completed
+    if (musicRecord && musicRecord.status === "ready") {
+      try {
+        const musicTitle = musicRecord.title || "Your music";
+        await ctx.runAction(internal.pushNotifications.sendPushNotification, {
+          userId: musicRecord.userId,
+          title: "Your music is ready!",
+          body: `"${musicTitle}" has finished generating`,
+          data: {
+            type: "music_ready",
+            musicId: musicRecord._id,
+            diaryId: musicRecord.diaryId,
+          },
+        });
+      } catch (notificationError) {
+        // Log but don't fail the webhook if notification fails
+        eventLogger.warn("Failed to send push notification", {
+          error: notificationError instanceof Error ? notificationError.message : "Unknown error",
+        });
+      }
+    }
+    
     logWebhookEvent(eventLogger, "suno-callback", "processed", {
       trackCount: tracksRaw.length,
     });

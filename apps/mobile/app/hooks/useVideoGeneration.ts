@@ -82,7 +82,8 @@ export function useVideoGeneration(musicId: Id<'music'> | null) {
         [{ text: 'OK' }]
       );
       
-      setState({ isGenerating: false, error: null });
+      // Keep isGenerating true until query confirms pending video exists
+      // This will be cleared automatically by useEffect when hasPendingVideo becomes true
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
       Alert.alert('Error', errorMessage);
@@ -127,8 +128,22 @@ export function useVideoGeneration(musicId: Id<'music'> | null) {
   const pendingVideo = videos?.find((v) => v.status === 'pending') ?? null;
   const hasPendingVideo = pendingVideo !== null;
 
+  // Check if there's any video (pending, ready, or failed)
+  const presentPending = videos?.some((v) => v.status === 'pending') ?? false;
+  const presentReady = videos?.some((v) => v.status === 'ready') ?? false;
+  const presentFailed = videos?.some((v) => v.status === 'failed') ?? false;
+  const hasAnyVideo = presentPending || presentReady || presentFailed;
+
   const [pendingElapsedSeconds, setPendingElapsedSeconds] = useState<number | null>(null);
   const pendingCreatedAt = pendingVideo?.createdAt ?? null;
+
+  // Clear isGenerating state when any video appears in query (pending, ready, or failed)
+  // This handles fast completions that might skip the pending state
+  useEffect(() => {
+    if (hasAnyVideo) {
+      setState({ isGenerating: false, error: null });
+    }
+  }, [hasAnyVideo]);
 
   useEffect(() => {
     if (pendingCreatedAt === null) {

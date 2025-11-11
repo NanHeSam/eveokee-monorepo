@@ -462,6 +462,51 @@ export const getMusicInternal = internalQuery({
   },
 });
 
+/**
+ * Internal query to get music record by taskId (returns the first musicIndex=0 record)
+ * Used for push notifications after music generation completes
+ */
+export const getMusicByTaskId = internalQuery({
+  args: {
+    taskId: v.string(),
+  },
+  returns: v.union(
+    v.object({
+      _id: v.id("music"),
+      userId: v.id("users"),
+      diaryId: v.optional(v.id("diaries")),
+      title: v.optional(v.string()),
+      status: v.union(
+        v.literal("pending"),
+        v.literal("ready"),
+        v.literal("failed"),
+      ),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const musicRecords = await ctx.db
+      .query("music")
+      .withIndex("by_taskId", (q) => q.eq("taskId", args.taskId))
+      .collect();
+
+    // Find the musicIndex=0 record (primary track)
+    const primaryMusic = musicRecords.find((m) => m.musicIndex === 0);
+    
+    if (!primaryMusic) {
+      return null;
+    }
+
+    return {
+      _id: primaryMusic._id,
+      userId: primaryMusic.userId,
+      diaryId: primaryMusic.diaryId,
+      title: primaryMusic.title,
+      status: primaryMusic.status,
+    };
+  },
+});
+
 export const listPlaylistMusic = query({
   args: {},
   returns: v.array(

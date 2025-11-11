@@ -287,4 +287,17 @@ export default defineSchema({
   })
     .index("by_userId_and_recordedAt", ["userId", "recordedAt"])
     .index("by_userId", ["userId"]),
+
+  pushTokens: defineTable({
+    userId: v.id("users"),
+    token: v.string(), // Expo push token
+    platform: v.union(
+      v.literal("ios"),
+      v.literal("android")
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_token", ["token"]),
 });

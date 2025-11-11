@@ -37,6 +37,7 @@ export const DiaryEditScreen = () => {
   const { showPaywall, paywallReason, setShowPaywall } = useSubscriptionUIStore();
   const { subscriptionStatus } = useRevenueCatSubscription();
   const addPendingGeneration = useMusicGenerationStatus((state) => state.addPendingGeneration);
+  const removePendingGeneration = useMusicGenerationStatus((state) => state.removePendingGeneration);
   
   // Get usage data from Convex to get effective limit (handles yearly monthly credits correctly)
   const usageData = useQuery(api.usage.getCurrentUserUsage);
@@ -136,6 +137,11 @@ export const DiaryEditScreen = () => {
       setIsSaving(false);
     }
 
+    // Add pending generation optimistically for immediate UI feedback
+    if (diaryId) {
+      addPendingGeneration(diaryId);
+    }
+
     // Start music generation (this handles usage tracking internally)
     try {
       setIsGenerating(true);
@@ -145,6 +151,10 @@ export const DiaryEditScreen = () => {
       });
 
       if (!result.success) {
+        // Remove pending generation if it failed (optimistic update rollback)
+        if (diaryId) {
+          removePendingGeneration(diaryId);
+        }
         // Handle limit reached or other errors
         if (result.code === 'USAGE_LIMIT_REACHED') {
           // Update navigation params with diaryId so user can return to edit this diary
@@ -214,14 +224,15 @@ export const DiaryEditScreen = () => {
           Alert.alert('Unable to start music generation', result.reason || 'Please try again.');
         }
       } else {
-        // Success - navigate back and go to playlist
-        if (diaryId) {
-          addPendingGeneration(diaryId);
-        }
+        // Success - pending generation already added optimistically, just navigate
         navigation.goBack();
         navigation.getParent()?.navigate('Playlist' as never);
       }
     } catch {
+      // Remove pending generation on error (optimistic update rollback)
+      if (diaryId) {
+        removePendingGeneration(diaryId);
+      }
       Alert.alert('Unable to start music generation', 'Please try again.');
     } finally {
       setIsGenerating(false);
