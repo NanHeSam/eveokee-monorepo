@@ -82,7 +82,8 @@ export function useVideoGeneration(musicId: Id<'music'> | null) {
         [{ text: 'OK' }]
       );
       
-      setState({ isGenerating: false, error: null });
+      // Keep isGenerating true until query confirms pending video exists
+      // This will be cleared automatically by useEffect when hasPendingVideo becomes true
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
       Alert.alert('Error', errorMessage);
@@ -129,6 +130,13 @@ export function useVideoGeneration(musicId: Id<'music'> | null) {
 
   const [pendingElapsedSeconds, setPendingElapsedSeconds] = useState<number | null>(null);
   const pendingCreatedAt = pendingVideo?.createdAt ?? null;
+
+  // Clear isGenerating state when pending video appears in query (seamless transition)
+  useEffect(() => {
+    if (hasPendingVideo && state.isGenerating) {
+      setState({ isGenerating: false, error: null });
+    }
+  }, [hasPendingVideo, state.isGenerating]);
 
   useEffect(() => {
     if (pendingCreatedAt === null) {
