@@ -209,15 +209,46 @@ export const sendPushNotification = internalAction({
 
     // Send notifications via Expo Push API
     try {
-      const response = await fetch("https://exp.host/--/api/v2/push/send", {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Accept-Encoding": "gzip, deflate",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(messages),
-      });
+      // Set up timeout with AbortController
+      const controller = new AbortController();
+      const timeoutMs = 10000; // 10 seconds timeout
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, timeoutMs);
+
+      let response: Response;
+      try {
+        response = await fetch("https://exp.host/--/api/v2/push/send", {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Accept-Encoding": "gzip, deflate",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(messages),
+          signal: controller.signal,
+        });
+        // Clear timeout once fetch completes
+        clearTimeout(timeoutId);
+      } catch (fetchError) {
+        // Clear timeout if fetch throws
+        clearTimeout(timeoutId);
+        
+        // Check if this is a timeout/abort error
+        if (
+          fetchError instanceof Error &&
+          fetchError.name === "AbortError"
+        ) {
+          console.error("Expo Push API request timed out");
+          return {
+            success: false,
+            sentCount: 0,
+            errors: ["Expo Push API request timed out"],
+          };
+        }
+        // Re-throw non-timeout errors to be handled by outer catch
+        throw fetchError;
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
