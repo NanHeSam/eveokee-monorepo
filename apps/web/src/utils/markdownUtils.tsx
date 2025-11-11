@@ -10,17 +10,25 @@ export const markdownComponents = {
 // Helper function to parse YouTube embeds from HTML divs
 export const parseYouTubeEmbeds = (content: string): string => {
   // Match <div data-youtube-video> with iframe inside (handles multiline iframes)
-  // This regex matches the div and extracts the video ID from the iframe src or data-youtube-video-id attribute
-  const youtubeRegex = /<div\s+data-youtube-video[^>]*>[\s\S]*?<iframe[\s\S]*?(?:src=["']https?:\/\/(?:www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]+)|data-youtube-video-id=["']([a-zA-Z0-9_-]+))[\s\S]*?<\/iframe>[\s\S]*?<\/div>/gi;
+  // This regex matches the div and extracts the video ID and title from the iframe
+  // Attributes can appear in any order, so we capture the iframe tag content and parse separately
+  const youtubeRegex = /<div\s+data-youtube-video[^>]*>[\s\S]*?(<iframe[\s\S]*?<\/iframe>)[\s\S]*?<\/div>/gi;
   
-  return content.replace(youtubeRegex, (fullMatch, videoIdFromSrc, videoIdFromAttr) => {
-    // Use video ID from src attribute first, fallback to data-youtube-video-id attribute
-    const videoId = videoIdFromSrc || videoIdFromAttr;
+  return content.replace(youtubeRegex, (fullMatch, iframeTag) => {
+    // Extract video ID from src attribute or data-youtube-video-id attribute
+    const videoIdMatch = iframeTag.match(/(?:src=["']https?:\/\/(?:www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]+)|data-youtube-video-id=["']([a-zA-Z0-9_-]+))/i);
+    const videoId = videoIdMatch ? (videoIdMatch[1] || videoIdMatch[2]) : null;
+    
     if (!videoId) {
       return fullMatch; // Return original if no video ID found
     }
+    
+    // Extract title from title attribute or data-title attribute (can appear anywhere in iframe tag)
+    const titleMatch = iframeTag.match(/(?:title=["']([^"']*)["']|data-title=["']([^"']*)["'])/i);
+    const title = titleMatch ? (titleMatch[1] || titleMatch[2]) : undefined;
+    
     // Create a unique placeholder that we can replace with React components
-    const youtubeData = JSON.stringify({ videoId });
+    const youtubeData = JSON.stringify({ videoId, ...(title && { title }) });
     const placeholder = `__YOUTUBE_COMPONENT__${youtubeData}__END_YOUTUBE__`;
     return placeholder;
   });
@@ -83,6 +91,7 @@ export const processMusicComponents = (content: string): (string | React.ReactEl
           <YouTubeEmbed
             key={`youtube-${index}`}
             videoId={youtubeData.videoId}
+            title={youtubeData.title}
           />
         );
         return youtubeComponent;
