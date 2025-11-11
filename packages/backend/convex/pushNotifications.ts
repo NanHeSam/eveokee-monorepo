@@ -237,8 +237,7 @@ export const sendPushNotification = internalAction({
         // Check if this is a timeout/abort error
         if (
           fetchError instanceof Error &&
-          (fetchError.name === "AbortError" ||
-            fetchError instanceof DOMException)
+          fetchError.name === "AbortError"
         ) {
           console.error("Expo Push API request timed out");
           return {
