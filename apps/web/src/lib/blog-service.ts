@@ -14,6 +14,7 @@ export interface BlogPost {
 import markdownContent from '../content/blog/diary-vibes-alpha-building-something-new.md?raw';
 import whyPeopleLoveContent from '../content/blog/why-people-fall-in-love-with-diary-vibes.md?raw';
 import whatWereBuildingContent from '../content/blog/what-were-really-building-at-evokee.md?raw';
+import memoryJournalingGuideContent from '../content/blog/memory-journaling-guide-2025.md?raw';
 
 // Parse frontmatter from markdown
 function parseFrontmatter(content: string) {
@@ -54,8 +55,20 @@ function parseFrontmatter(content: string) {
 const { frontmatter, content } = parseFrontmatter(markdownContent);
 const { frontmatter: whyPeopleLoveFrontmatter, content: whyPeopleLoveContentParsed } = parseFrontmatter(whyPeopleLoveContent);
 const { frontmatter: whatWereBuildingFrontmatter, content: whatWereBuildingContentParsed } = parseFrontmatter(whatWereBuildingContent);
+const { frontmatter: memoryJournalingGuideFrontmatter, content: memoryJournalingGuideContentParsed } = parseFrontmatter(memoryJournalingGuideContent);
 
 const blogPosts: BlogPost[] = [
+  {
+    id: (typeof memoryJournalingGuideFrontmatter.slug === 'string' ? memoryJournalingGuideFrontmatter.slug : undefined) || 'memory-journaling-guide-2025',
+    title: (typeof memoryJournalingGuideFrontmatter.title === 'string' ? memoryJournalingGuideFrontmatter.title : undefined) || "Memory Journaling Guide: Unlock Your Memories in 2025",
+    slug: (typeof memoryJournalingGuideFrontmatter.slug === 'string' ? memoryJournalingGuideFrontmatter.slug : undefined) || 'memory-journaling-guide-2025',
+    excerpt: (typeof memoryJournalingGuideFrontmatter.excerpt === 'string' ? memoryJournalingGuideFrontmatter.excerpt : undefined) || "Imagine holding your favorite memories in your hands, not as distant flashes but as living moments you can step into whenever you wish. This is the promise of memory journaling—a creative practice that helps you unlock, preserve, and cherish the details that matter most.",
+    content: memoryJournalingGuideContentParsed,
+    publishedAt: (typeof memoryJournalingGuideFrontmatter.publishedAt === 'string' ? memoryJournalingGuideFrontmatter.publishedAt : undefined) || '2025-11-11',
+    author: (typeof memoryJournalingGuideFrontmatter.author === 'string' ? memoryJournalingGuideFrontmatter.author : undefined) || 'Sam He',
+    tags: Array.isArray(memoryJournalingGuideFrontmatter.tags) ? memoryJournalingGuideFrontmatter.tags : ['journaling', 'memory', 'guide', 'self-improvement', 'wellness'],
+    readTime: (typeof memoryJournalingGuideFrontmatter.readTime === 'string' ? parseInt(memoryJournalingGuideFrontmatter.readTime, 10) : typeof memoryJournalingGuideFrontmatter.readTime === 'number' ? memoryJournalingGuideFrontmatter.readTime : undefined) || 18,
+  },
   {
     id: (typeof whatWereBuildingFrontmatter.slug === 'string' ? whatWereBuildingFrontmatter.slug : undefined) || 'what-were-really-building-at-evokee',
     title: (typeof whatWereBuildingFrontmatter.title === 'string' ? whatWereBuildingFrontmatter.title : undefined) || "What We're Really Building at Evokee",
