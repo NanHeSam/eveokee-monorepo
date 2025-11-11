@@ -223,14 +223,14 @@ const GeneratingRow = ({
       return;
     }
 
-    // Calculate initial elapsed time
+    // Calculate initial elapsed time, clamped to zero
     const initialElapsed = Math.floor((Date.now() - startedAt) / 1000);
-    setElapsedTime(initialElapsed);
+    setElapsedTime(Math.max(0, initialElapsed));
 
     // Update every second
     const interval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-      setElapsedTime(elapsed);
+      const calculatedElapsed = Math.floor((Date.now() - startedAt) / 1000);
+      setElapsedTime(Math.max(0, calculatedElapsed));
     }, 1000);
 
     return () => clearInterval(interval);
@@ -242,7 +242,8 @@ const GeneratingRow = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const progress = Math.min((elapsedTime / 120) * 100, 95); // 2 minutes = 120 seconds, cap at 95%
+  const clampedElapsed = Math.max(0, elapsedTime);
+  const progress = Math.min((clampedElapsed / 120) * 100, 95); // 2 minutes = 120 seconds, cap at 95%
 
   return (
     <View className="py-3">
@@ -278,7 +279,7 @@ const GeneratingRow = ({
           />
         </View>
         <Text className="mt-1.5 text-xs" style={{ color: colors.textSecondary }}>
-          {formatTime(elapsedTime)} / ~2:00
+          {formatTime(clampedElapsed)} / ~2:00
         </Text>
       </View>
     </View>

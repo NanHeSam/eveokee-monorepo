@@ -3,7 +3,7 @@
  * Handles push token registration and sending push notifications via Expo Push API
  */
 
-import { mutation, query, internalQuery, internalAction } from "./_generated/server";
+import { mutation, query, internalQuery, internalAction, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
@@ -137,19 +137,45 @@ export const getUserPushTokens = internalQuery({
 });
 
 /**
+ * Schema validator for notification data payload
+ * Matches the NotificationData interface used in the mobile app
+ */
+const notificationDataValidator = v.optional(
+  v.object({
+    type: v.union(v.literal("music_ready"), v.literal("video_ready")),
+    musicId: v.optional(v.string()),
+    videoId: v.optional(v.string()),
+    diaryId: v.optional(v.string()),
+  })
+);
+
+/**
+ * Internal mutation to remove invalid push tokens
+ * Called when tokens are detected as invalid (DeviceNotRegistered, InvalidCredentials)
+ */
+export const removeInvalidToken = internalMutation({
+  args: {
+    tokenId: v.id("pushTokens"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.tokenId);
+  },
+});
+
+/**
  * Internal action to send push notification via Expo Push API
  * 
  * @param userId - User ID to send notification to
  * @param title - Notification title
  * @param body - Notification body text
- * @param data - Additional data payload (e.g., { type: 'music_ready', musicId: '...' })
+ * @param data - Additional data payload matching NotificationData interface
  */
 export const sendPushNotification = internalAction({
   args: {
     userId: v.id("users"),
     title: v.string(),
     body: v.string(),
-    data: v.optional(v.any()),
+    data: notificationDataValidator,
   },
   returns: v.object({
     success: v.boolean(),
@@ -219,11 +245,13 @@ export const sendPushNotification = internalAction({
           const error = receipt.message || `Unknown error for token ${index}`;
           errors.push(error);
           
-          // If token is invalid, we might want to remove it
+          // Schedule token removal for invalid credentials
           if (receipt.details?.error === "DeviceNotRegistered" || 
               receipt.details?.error === "InvalidCredentials") {
-            console.log(`Removing invalid token: ${tokensResult[index].token}`);
-            // Note: We can't delete from here since this is an action, but we log it
+            // Schedule mutation to remove invalid token
+            ctx.scheduler.runAfter(0, internal.pushNotifications.removeInvalidToken, {
+              tokenId: tokensResult[index]._id,
+            });
           }
         }
       });
