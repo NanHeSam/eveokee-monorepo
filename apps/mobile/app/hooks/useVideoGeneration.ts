@@ -128,15 +128,22 @@ export function useVideoGeneration(musicId: Id<'music'> | null) {
   const pendingVideo = videos?.find((v) => v.status === 'pending') ?? null;
   const hasPendingVideo = pendingVideo !== null;
 
+  // Check if there's any video (pending, ready, or failed)
+  const presentPending = videos?.some((v) => v.status === 'pending') ?? false;
+  const presentReady = videos?.some((v) => v.status === 'ready') ?? false;
+  const presentFailed = videos?.some((v) => v.status === 'failed') ?? false;
+  const hasAnyVideo = presentPending || presentReady || presentFailed;
+
   const [pendingElapsedSeconds, setPendingElapsedSeconds] = useState<number | null>(null);
   const pendingCreatedAt = pendingVideo?.createdAt ?? null;
 
-  // Clear isGenerating state when pending video appears in query (seamless transition)
+  // Clear isGenerating state when any video appears in query (pending, ready, or failed)
+  // This handles fast completions that might skip the pending state
   useEffect(() => {
-    if (hasPendingVideo && state.isGenerating) {
+    if (hasAnyVideo) {
       setState({ isGenerating: false, error: null });
     }
-  }, [hasPendingVideo, state.isGenerating]);
+  }, [hasAnyVideo]);
 
   useEffect(() => {
     if (pendingCreatedAt === null) {

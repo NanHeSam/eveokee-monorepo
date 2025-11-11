@@ -6,7 +6,6 @@
 import { mutation, query, internalQuery, internalAction, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
 import ensureCurrentUser from "./users";
 
 /**
@@ -43,7 +42,8 @@ export const getMyPushTokens = query({
 
 /**
  * Register or update a push token for the current user
- * If a token already exists for this user+platform, it will be updated
+ * Reassigns existing tokens by value (handles multi-account logins on same device)
+ * Allows multiple devices per platform per user
  */
 export const registerPushToken = mutation({
   args: {
@@ -55,29 +55,29 @@ export const registerPushToken = mutation({
     const { userId } = await ensureCurrentUser(ctx);
     const now = Date.now();
 
-    // Check if token already exists for this user and platform
-    const existing = await ctx.db
+    // Reassign existing tokens by value (handles multi-account logins)
+    const tokenRecord = await ctx.db
       .query("pushTokens")
-      .withIndex("by_userId", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("platform"), args.platform))
+      .withIndex("by_token", (q) => q.eq("token", args.token))
       .first();
 
-    if (existing) {
-      // Update existing token
-      await ctx.db.patch(existing._id, {
-        token: args.token,
-        updatedAt: now,
-      });
-    } else {
-      // Create new token record
-      await ctx.db.insert("pushTokens", {
+    if (tokenRecord) {
+      await ctx.db.patch(tokenRecord._id, {
         userId,
-        token: args.token,
         platform: args.platform,
-        createdAt: now,
         updatedAt: now,
       });
+      return null;
     }
+
+    // Store new device token (allow multiple devices per user)
+    await ctx.db.insert("pushTokens", {
+      userId,
+      token: args.token,
+      platform: args.platform,
+      createdAt: now,
+      updatedAt: now,
+    });
 
     return null;
   },
