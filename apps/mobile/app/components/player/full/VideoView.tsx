@@ -1,8 +1,10 @@
-import { type ReactNode, useMemo, useState } from 'react';
-import { ActivityIndicator, ImageBackground, Pressable, StyleSheet, View } from 'react-native';
+import { type ComponentProps, type ReactNode, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, ImageBackground, Pressable, StyleSheet, View, Platform } from 'react-native';
 import Video from 'react-native-video';
+import TrackPlayer from 'react-native-track-player';
 
 import { useThemeColors } from '../../../theme/useThemeColors';
+import { TRACK_PLAYER_OPTIONS } from '../../../providers/TrackPlayerProvider';
 
 /**
  * VideoView Component
@@ -46,8 +48,55 @@ export const VideoView = ({
   const [isBuffering, setIsBuffering] = useState(true);
   // Force video remount when URL or theme changes
   const videoKey = useMemo(() => `${videoUrl}-${colors.scheme}`, [videoUrl, colors.scheme]);
+  const disabledAudioTrack = useMemo(() => ({ type: 'disabled' } as const), []);
+  const iosVideoProps = useMemo<Partial<ComponentProps<typeof Video>>>(() => {
+    if (Platform.OS !== 'ios') {
+      return {};
+    }
+    return {
+      enterPictureInPictureOnLeave: false,
+      ignoreSilentSwitch: 'obey' as const,
+    } as Partial<ComponentProps<typeof Video>>;
+  }, []);
 
-  const handleReady = () => setIsBuffering(false);
+  const handleReady = () => {
+    setIsBuffering(false);
+
+    void (async () => {
+      try {
+        await TrackPlayer.updateOptions(TRACK_PLAYER_OPTIONS);
+        const playbackState = await TrackPlayer.getPlaybackState();
+        console.log('[VideoView] TrackPlayer state after video ready', playbackState);
+      } catch (error) {
+        console.warn('[VideoView] Failed to refresh TrackPlayer options after video ready', error);
+      }
+    })();
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const logPlaybackState = async () => {
+      try {
+        const playbackState = await TrackPlayer.getPlaybackState();
+        if (!isMounted) {
+          return;
+        }
+        console.log('[VideoView] TrackPlayer state on mount', playbackState);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+        console.warn('[VideoView] Failed to read TrackPlayer state on mount', error);
+      }
+    };
+
+    void logPlaybackState();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const renderBackground = () => {
     if (!artwork) {
@@ -79,6 +128,15 @@ export const VideoView = ({
         paused={false}
         onLoad={handleReady}
         onReadyForDisplay={handleReady}
+        // Ensure the decorative video never steals the system audio session
+        disableFocus
+        volume={0}
+        controls={false}
+        playInBackground={false}
+        playWhenInactive={false}
+        allowsExternalPlayback={false}
+        selectedAudioTrack={disabledAudioTrack as unknown as ComponentProps<typeof Video>['selectedAudioTrack']}
+        {...iosVideoProps}
       />
       {isBuffering ? (
         <View style={[StyleSheet.absoluteFillObject, styles.centerContent]}>
