@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   ActivityIndicator,
-  ImageBackground,
   GestureResponderEvent,
   PanResponder,
   PanResponderGestureState,
@@ -29,13 +28,8 @@ import { useTrackPlayerStore } from '../../store/useTrackPlayerStore';
 import { useThemeColors } from '../../theme/useThemeColors';
 import { useShareMusic } from '../../hooks/useShareMusic';
 import { useVideoGeneration } from '../../hooks/useVideoGeneration';
-import { FullPlayerHeader } from './full/FullPlayerHeader';
-import { FullPlayerMetadata } from './full/FullPlayerMetadata';
-import { FullPlayerViewTabs } from './full/FullPlayerViewTabs';
-import { PlaybackProgressBar } from './full/PlaybackProgressBar';
-import { PlaybackControls } from './full/PlaybackControls';
-import { LyricView } from './full/LyricView';
-import { VideoView } from './full/VideoView';
+import { VideoPlayerView } from './full/VideoPlayerView';
+import { LyricsPlayerView } from './full/LyricsPlayerView';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
 
 // Note: We evaluated community lyric overlays such as `react-native-lyric` and `react-native-lrc`,
@@ -83,11 +77,6 @@ export const FullPlayer = () => {
       setIsOverlayVisible(true);
     }
   }, [activeView]);
-
-  const overlayColor = useMemo(
-    () => (colors.scheme === 'dark' ? 'rgba(0,0,0,0.65)' : 'rgba(255,255,255,0.72)'),
-    [colors.scheme]
-  );
 
   const togglePlayback = useCallback(async () => {
     try {
@@ -143,6 +132,18 @@ export const FullPlayer = () => {
     setIsOverlayVisible((prev) => !prev);
   }, [activeView, hasVideo]);
 
+  const handleGenerateVideo = useCallback(() => {
+    if (!canGenerate) {
+      Alert.alert(
+        'Insufficient Credits',
+        `Video generation requires 3 credits. You have ${remainingCredits} remaining.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    void generateVideo();
+  }, [canGenerate, remainingCredits, generateVideo]);
+
   const handleShare = useCallback(() => {
     if (!currentTrack) return;
 
@@ -187,15 +188,7 @@ export const FullPlayer = () => {
       <Pressable
         onPress={(event) => {
           event.stopPropagation();
-          if (!canGenerate) {
-            Alert.alert(
-              'Insufficient Credits',
-              `Video generation requires 3 credits. You have ${remainingCredits} remaining.`,
-              [{ text: 'OK' }]
-            );
-            return;
-          }
-          void generateVideo();
+          handleGenerateVideo();
         }}
         className="flex-row items-center justify-center rounded-full px-6 py-3"
         style={{ backgroundColor: colors.accentMint }}
@@ -205,7 +198,7 @@ export const FullPlayer = () => {
         </Text>
       </Pressable>
     );
-  }, [isGenerating, colors.surface, colors.textSecondary, pendingElapsedSeconds, colors.accentMint, canGenerate, remainingCredits, generateVideo, colors.background, primaryVideo]);
+  }, [isGenerating, colors.surface, colors.textSecondary, pendingElapsedSeconds, colors.accentMint, colors.background, primaryVideo, handleGenerateVideo]);
 
   useEffect(() => {
     translateY.value = 0;
@@ -259,33 +252,6 @@ export const FullPlayer = () => {
   const disablePrevious = currentTrackIndex <= 0;
   const disableNext = currentTrackIndex >= playlist.length - 1;
 
-  const renderProgressBar = () => (
-    <PlaybackProgressBar duration={duration} position={position} onSeek={handleSeek} />
-  );
-
-  const renderControls = () => (
-    <PlaybackControls
-      isPlaying={isPlaying}
-      onTogglePlayback={togglePlayback}
-      onSkipNext={skipToNext}
-      onSkipPrevious={skipToPrevious}
-      disableNext={disableNext}
-      disablePrevious={disablePrevious}
-    />
-  );
-
-  const renderHeaderAndTabs = () => (
-    <>
-      <FullPlayerHeader onClose={hideFullPlayer} onShare={handleShare} topInset={headerTopInset} />
-      <FullPlayerViewTabs
-        activeTab={activeView}
-        onChange={setActiveView}
-        showVideoTab={hasVideo}
-        topInset={8}
-      />
-    </>
-  );
-
   return (
     <Animated.View
       {...panResponder.panHandlers}
@@ -295,148 +261,58 @@ export const FullPlayer = () => {
     >
       <StatusBar style={colors.scheme === 'dark' ? 'light' : 'dark'} translucent />
       {activeView === 'video' && primaryVideo?.videoUrl ? (
-        <VideoView
+        <VideoPlayerView
           videoUrl={primaryVideo.videoUrl}
           artwork={currentTrack.artwork}
+          title={currentTrack.title}
+          artist={currentTrack.artist}
+          duration={duration}
+          position={position}
+          isPlaying={isPlaying}
+          disableNext={disableNext}
+          disablePrevious={disablePrevious}
+          headerTopInset={headerTopInset}
+          hasVideo={hasVideo}
           onToggleOverlay={handleToggleOverlay}
-        >
-          {isOverlayVisible ? (
-            <>
-              <View
-                style={[StyleSheet.absoluteFillObject, { backgroundColor: overlayColor }]}
-                pointerEvents="none"
-              />
-              <View
-                style={[
-                  styles.videoOverlayContainer,
-                  { paddingBottom: insets.bottom + 32 },
-                ]}
-                pointerEvents="box-none"
-              >
-                <View style={styles.videoOverlayTop} pointerEvents="auto">
-                  {renderHeaderAndTabs()}
-                  <View style={styles.videoMetadataWrapper}>
-                    <FullPlayerMetadata title={currentTrack.title} artist={currentTrack.artist} />
-                  </View>
-                  <View style={styles.videoActionWrapper}>{videoAction}</View>
-                </View>
-                <View style={styles.videoOverlayBottom} pointerEvents="auto">
-                  {renderControls()}
-                  {renderProgressBar()}
-                </View>
-              </View>
-            </>
-          ) : (
-            <View
-              style={[
-                styles.minimalProgressContainer,
-                { paddingBottom: insets.bottom + 32 },
-              ]}
-              pointerEvents="box-none"
-            >
-              {renderProgressBar()}
-            </View>
-          )}
-        </VideoView>
+          onSeek={handleSeek}
+          onTogglePlayback={togglePlayback}
+          onSkipNext={skipToNext}
+          onSkipPrevious={skipToPrevious}
+          onClose={hideFullPlayer}
+          onShare={handleShare}
+          onViewChange={setActiveView}
+          videoAction={videoAction}
+          isOverlayVisible={isOverlayVisible}
+        />
       ) : (
-        <View style={styles.lyricBackdrop}>
-          <View style={StyleSheet.absoluteFill}>
-            <Pressable
-              onPress={(event) => {
-                event.stopPropagation();
-                handleToggleOverlay();
-              }}
-              style={StyleSheet.absoluteFill}
-              android_disableSound
-            >
-              {currentTrack.artwork ? (
-                <ImageBackground
-                  source={{ uri: currentTrack.artwork }}
-                  style={StyleSheet.absoluteFill}
-                  imageStyle={{ opacity: isOverlayVisible ? 0.45 : 0.28 }}
-                  resizeMode="cover"
-                />
-              ) : (
-                <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.surface }]} />
-              )}
-            </Pressable>
-          </View>
-          <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-            {isOverlayVisible ? (
-              <View style={styles.lyricOverlayContainer} pointerEvents="box-none">
-                <View
-                  style={[StyleSheet.absoluteFillObject, { backgroundColor: overlayColor }]}
-                  pointerEvents="none"
-                />
-                <View
-                  style={[
-                    styles.lyricOverlayContent,
-                    { paddingBottom: insets.bottom + 56, paddingHorizontal: 24 },
-                  ]}
-                  pointerEvents="auto"
-                >
-                  {renderHeaderAndTabs()}
-                  <View style={styles.lyricOverlayLyrics}>
-                    <LyricView
-                      artwork={currentTrack.artwork}
-                      lyrics={currentTrack.lyrics}
-                      onPressArtwork={handleToggleOverlay}
-                      showArtwork={false}
-                    />
-                  </View>
-                </View>
-                <Pressable
-                  onPress={(event) => {
-                    event.stopPropagation();
-                    handleToggleOverlay();
-                  }}
-                  style={[
-                    styles.lyricOverlayProgress,
-                    { paddingBottom: insets.bottom + 24, paddingHorizontal: 24 },
-                  ]}
-                  pointerEvents="auto"
-                >
-                  {renderProgressBar()}
-                </Pressable>
-              </View>
-            ) : (
-              <View
-                style={[
-                  styles.lyricDetailContainer,
-                  { paddingBottom: insets.bottom + 32 },
-                ]}
-                pointerEvents="auto"
-              >
-                {renderHeaderAndTabs()}
-                <FullPlayerMetadata title={currentTrack.title} artist={currentTrack.artist} />
-                <View style={styles.detailLyricWrapper}>
-                  <LyricView
-                    artwork={currentTrack.artwork}
-                    lyrics={currentTrack.lyrics}
-                    onPressArtwork={handleToggleOverlay}
-                    hasVideo={hasVideo}
-                    onGenerateVideo={() => {
-                      if (!canGenerate) {
-                        Alert.alert(
-                          'Insufficient Credits',
-                          `Video generation requires 3 credits. You have ${remainingCredits} remaining.`,
-                          [{ text: 'OK' }]
-                        );
-                        return;
-                      }
-                      void generateVideo();
-                    }}
-                    isGenerating={isGenerating}
-                    canGenerate={canGenerate}
-                    remainingCredits={remainingCredits}
-                  />
-                </View>
-                {renderControls()}
-                {renderProgressBar()}
-              </View>
-            )}
-          </View>
-        </View>
+        <LyricsPlayerView
+          artwork={currentTrack.artwork}
+          title={currentTrack.title}
+          artist={currentTrack.artist}
+          lyrics={currentTrack.lyrics}
+          duration={duration}
+          position={position}
+          isPlaying={isPlaying}
+          disableNext={disableNext}
+          disablePrevious={disablePrevious}
+          headerTopInset={headerTopInset}
+          hasVideo={hasVideo}
+          isOverlayVisible={isOverlayVisible}
+          activeView={activeView}
+          canGenerate={canGenerate}
+          remainingCredits={remainingCredits}
+          isGenerating={isGenerating}
+          pendingElapsedSeconds={pendingElapsedSeconds}
+          onToggleOverlay={handleToggleOverlay}
+          onSeek={handleSeek}
+          onTogglePlayback={togglePlayback}
+          onSkipNext={skipToNext}
+          onSkipPrevious={skipToPrevious}
+          onClose={hideFullPlayer}
+          onShare={handleShare}
+          onGenerateVideo={handleGenerateVideo}
+          onViewChange={setActiveView}
+        />
       )}
     </Animated.View>
   );
@@ -450,54 +326,5 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 1000,
-  },
-  videoOverlayContainer: {
-    flex: 1,
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-  },
-  videoOverlayTop: {
-    gap: 12,
-  },
-  videoOverlayBottom: {
-    gap: 12,
-  },
-  videoActionWrapper: {
-    marginTop: 12,
-  },
-  videoMetadataWrapper: {
-    marginTop: 8,
-  },
-  lyricBackdrop: {
-    flex: 1,
-  },
-  lyricOverlayContainer: {
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  lyricOverlayContent: {
-    flex: 1,
-    justifyContent: 'flex-start',
-    gap: 16,
-  },
-  lyricOverlayLyrics: {
-    flex: 1,
-  },
-  lyricOverlayProgress: {
-    justifyContent: 'flex-end',
-  },
-  lyricDetailContainer: {
-    flex: 1,
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    gap: 16,
-  },
-  detailLyricWrapper: {
-    flex: 1,
-  },
-  minimalProgressContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    paddingHorizontal: 24,
   },
 });
