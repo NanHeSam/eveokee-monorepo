@@ -3,12 +3,35 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useThemeColors } from '../../../theme/useThemeColors';
 
+/**
+ * PlaybackControls Component
+ *
+ * Standard three-button playback control bar (Previous | Play/Pause | Next).
+ *
+ * Layout:
+ * - Previous button (32px icon, 64px touch area)
+ * - Center play/pause button (40px icon, 80px touch area, accentMint background)
+ * - Next button (32px icon, 64px touch area)
+ *
+ * Implicit Behaviors:
+ * - event.stopPropagation() prevents taps from triggering overlay toggle
+ * - Disabled buttons show textMuted color instead of textPrimary
+ * - Play icon has 2px left margin for visual centering in circular button
+ * - Skip buttons disabled when at playlist boundaries (first/last track)
+ */
+
 interface PlaybackControlsProps {
+  /** Whether track is currently playing */
   isPlaying: boolean;
+  /** Toggle play/pause */
   onTogglePlayback: () => void;
+  /** Skip to next track */
   onSkipNext: () => void;
+  /** Skip to previous track */
   onSkipPrevious: () => void;
+  /** Disable next button (at end of playlist) */
   disableNext: boolean;
+  /** Disable previous button (at start of playlist) */
   disablePrevious: boolean;
 }
 

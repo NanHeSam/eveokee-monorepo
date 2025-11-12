@@ -9,6 +9,34 @@ import { FullPlayerMetadata } from './FullPlayerMetadata';
 import { PlaybackProgressBar } from './PlaybackProgressBar';
 import { PlaybackControls } from './PlaybackControls';
 
+/**
+ * VideoPlayerView Component
+ *
+ * Full-screen video player view with toggle-able overlay controls.
+ *
+ * Modes:
+ * 1. Overlay Visible (isOverlayVisible=true):
+ *    - Semi-transparent overlay with all controls
+ *    - Header, view tabs, metadata, video action (generate status)
+ *    - Playback controls and progress bar at bottom
+ *    - Tapping video toggles overlay off
+ *
+ * 2. Overlay Hidden (isOverlayVisible=false):
+ *    - Clean video playback with minimal progress bar at bottom
+ *    - Only progress bar shown for scrubbing
+ *    - Tapping video toggles overlay on
+ *
+ * Background:
+ * - VideoView handles video playback with artwork backdrop
+ * - Semi-transparent overlay (dark: rgba(0,0,0,0.65), light: rgba(255,255,255,0.72))
+ *
+ * Implicit Behaviors:
+ * - pointerEvents="box-none" allows tap-through for overlay toggle
+ * - pointerEvents="auto" on overlay elements to prevent tap-through
+ * - Safe area insets applied to bottom padding
+ * - videoAction slot for generate video UI (passed from parent)
+ */
+
 type PlayerView = 'lyrics' | 'video';
 
 interface VideoPlayerViewProps {

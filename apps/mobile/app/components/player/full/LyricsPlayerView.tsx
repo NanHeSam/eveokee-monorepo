@@ -9,6 +9,34 @@ import { LyricView } from './LyricView';
 import { PlaybackProgressBar } from './PlaybackProgressBar';
 import { PlaybackControls } from './PlaybackControls';
 
+/**
+ * LyricsPlayerView Component
+ *
+ * Full-screen lyrics-focused player view with two layout modes.
+ *
+ * Modes:
+ * 1. Overlay Mode (isOverlayVisible=true):
+ *    - Full-screen scrollable lyrics with semi-transparent overlay
+ *    - Header, view tabs, and progress bar visible
+ *    - Tapping background or lyrics toggles overlay off
+ *
+ * 2. Detail Mode (isOverlayVisible=false):
+ *    - Standard player layout with all UI controls
+ *    - Header, tabs, metadata, artwork, video generation CTA
+ *    - Playback controls and progress bar at bottom
+ *
+ * Background:
+ * - Artwork shown as backdrop with reduced opacity (45% overlay, 28% detail)
+ * - Falls back to solid surface color if no artwork
+ * - Semi-transparent overlay (dark: rgba(0,0,0,0.65), light: rgba(255,255,255,0.72))
+ *
+ * Implicit Behaviors:
+ * - event.stopPropagation() on various elements prevents unwanted overlay toggles
+ * - pointerEvents="box-none" allows tap-through to children while maintaining layer structure
+ * - Safe area insets applied to bottom padding
+ * - Overlay mode designed for immersive lyric reading experience
+ */
+
 type PlayerView = 'lyrics' | 'video';
 
 interface LyricsPlayerViewProps {

@@ -3,15 +3,52 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useThemeColors } from '../../../theme/useThemeColors';
 
+/**
+ * LyricView Component
+ *
+ * Displays lyrics and artwork with optional video generation CTA.
+ * Has two distinct modes controlled by showArtwork prop.
+ *
+ * Modes:
+ * 1. Artwork Mode (showArtwork=true):
+ *    - Shows artwork (32% of screen height, rounded-3xl)
+ *    - Optional "Generate Video" button below artwork
+ *    - Artwork pressable to toggle overlay (if onPressArtwork provided)
+ *
+ * 2. Overlay Mode (showArtwork=false):
+ *    - Full-screen scrollable lyrics with large text (24px, line-height 34px)
+ *    - Lyrics pressable to toggle back to artwork mode
+ *    - Used when overlay is visible in LyricsPlayerView
+ *
+ * Video Generation CTA:
+ * - Only shown when !hasVideo && onGenerateVideo provided
+ * - Shows loading state while isGenerating
+ * - Disabled state when !canGenerate (insufficient credits)
+ * - Button text includes credit cost (3) and remaining credits
+ *
+ * Implicit Behaviors:
+ * - Artwork size dynamically calculated as 32% of screen height
+ * - Fallback musical-notes icon shown when no artwork available
+ * - event.stopPropagation() prevents tap-through on artwork/buttons
+ * - Lyrics text shadow for better readability over varied backgrounds
+ */
+
 interface LyricViewProps {
   artwork?: string | null;
   lyrics?: string | null;
+  /** Callback to toggle between artwork and overlay modes */
   onPressArtwork?: () => void;
+  /** Show artwork or full-screen scrollable lyrics */
   showArtwork?: boolean;
+  /** Whether video already exists (hides generate button) */
   hasVideo?: boolean;
+  /** Callback to generate video */
   onGenerateVideo?: () => void;
+  /** Whether video is currently generating */
   isGenerating?: boolean;
+  /** Whether user has enough credits to generate */
   canGenerate?: boolean;
+  /** Remaining video generation credits */
   remainingCredits?: number;
 }
 

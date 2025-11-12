@@ -3,12 +3,29 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useThemeColors } from '../../../theme/useThemeColors';
 
+/**
+ * FullPlayerHeader Component
+ *
+ * Top navigation bar for the full player with minimize and share actions.
+ *
+ * Layout:
+ * - Left: Chevron-down button to minimize/dismiss player
+ * - Center: "Now Playing" label
+ * - Right: Share button for track/artwork sharing
+ *
+ * Implicit Behaviors:
+ * - event.stopPropagation() prevents tap-through to underlying video/lyrics views
+ * - topInset allows dynamic spacing for safe area (status bar height)
+ * - HIT_SLOP expands touch target by 12px in all directions for better mobile UX
+ */
+
 interface FullPlayerHeaderProps {
   onClose: () => void;
   onShare: () => void;
   topInset?: number;
 }
 
+/** Expands touch targets for better mobile usability */
 const HIT_SLOP = { top: 12, right: 12, bottom: 12, left: 12 } as const;
 
 export const FullPlayerHeader = ({ onClose, onShare, topInset = 0 }: FullPlayerHeaderProps) => {

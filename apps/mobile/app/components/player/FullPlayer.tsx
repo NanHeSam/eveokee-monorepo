@@ -32,8 +32,93 @@ import { VideoPlayerView } from './full/VideoPlayerView';
 import { LyricsPlayerView } from './full/LyricsPlayerView';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
 
-// Note: We evaluated community lyric overlays such as `react-native-lyric` and `react-native-lrc`,
-// but they are unmaintained and not compatible with Expo, so we provide our own themed implementation.
+/**
+ * FullPlayer Component
+ *
+ * A full-screen music player with dual-view support for lyrics and video playback.
+ * This component serves as the orchestrator for the complete playback experience,
+ * managing state, gestures, and routing to the appropriate view based on content availability.
+ *
+ * Component Hierarchy:
+ * ```
+ * <FullPlayer>                                    // orchestrator
+ *   <Animated.View>                               // drag-to-dismiss gesture, slide animations
+ *     <StatusBar />                               // theme-aware
+ *
+ *     {hasVideo && activeView === 'video' ? (
+ *       <VideoPlayerView>
+ *         <VideoView>                             // video playback + artwork backdrop
+ *           <Video />                             // react-native-video, looping muted
+ *
+ *           {isOverlayVisible && (
+ *             <>
+ *               <FullPlayerHeader />              // minimize, share
+ *               <FullPlayerViewTabs />            // lyrics/video tabs
+ *               <FullPlayerMetadata />            // title, artist
+ *               {videoAction}                     // generate/regenerate CTA
+ *               <PlaybackControls />              // prev, play/pause, next
+ *               <PlaybackProgressBar />           // seekable
+ *             </>
+ *           )}
+ *
+ *           {!isOverlayVisible && (
+ *             <PlaybackProgressBar />             // minimal progress bar
+ *           )}
+ *         </VideoView>
+ *       </VideoPlayerView>
+ *     ) : (
+ *       <LyricsPlayerView>
+ *         <ImageBackground />                     // artwork backdrop with opacity
+ *
+ *         {isOverlayVisible ? (
+ *           <>                                    // Overlay Mode - immersive lyrics
+ *             <FullPlayerHeader />
+ *             <FullPlayerViewTabs />
+ *             <LyricView showArtwork={false} />   // full-screen scrollable lyrics
+ *             <PlaybackProgressBar />
+ *           </>
+ *         ) : (
+ *           <>                                    // Detail Mode - standard layout
+ *             <FullPlayerHeader />
+ *             <FullPlayerViewTabs />
+ *             <FullPlayerMetadata />
+ *             <LyricView showArtwork={true} />    // artwork + generate CTA
+ *             <PlaybackControls />
+ *             <PlaybackProgressBar />
+ *           </>
+ *         )}
+ *       </LyricsPlayerView>
+ *     )}
+ *   </Animated.View>
+ * </FullPlayer>
+ * ```
+ *
+ * Architecture:
+ * - Delegates rendering to VideoPlayerView or LyricsPlayerView based on activeView and video availability
+ * - Implements drag-to-dismiss gesture from the top header area
+ * - Manages video generation flow with credit gating
+ * - Handles all playback controls (play/pause/skip/seek)
+ * - Provides share functionality for tracks
+ *
+ * View Logic:
+ * - Shows VideoPlayerView when activeView='video' AND primaryVideo exists
+ * - Shows LyricsPlayerView when activeView='lyrics' OR no video available
+ * - Automatically switches to lyrics view if no video exists (lines 115-120)
+ *
+ * Gesture Handling:
+ * - Drag from top area (HEADER_TOUCH_AREA_HEIGHT=96px) to dismiss
+ * - Requires vertical-dominant gesture (dy > dx)
+ * - Dismisses if dragged past DISMISS_THRESHOLD_PX (140px) or velocity exceeds threshold
+ * - Smooth spring-back animation if gesture cancelled
+ * - Only active when overlay is NOT visible (prevents conflict with UI interactions)
+ *
+ * Note: We evaluated community lyric overlay libraries (react-native-lyric, react-native-lrc)
+ * but they are unmaintained and incompatible with Expo, so we provide a custom implementation.
+ *
+ * @example
+ * // FullPlayer is rendered conditionally based on isFullPlayerVisible in the store
+ * {isFullPlayerVisible && <FullPlayer />}
+ */
 
 type PlayerView = 'lyrics' | 'video';
 
@@ -69,6 +154,7 @@ export const FullPlayer = () => {
   const hasVideo = Boolean(primaryVideo?.videoUrl);
   const headerTopInset = insets.top + 16;
 
+  // Auto-switch to lyrics view when no video is available
   useEffect(() => {
     if (!hasVideo || activeView === 'lyrics') {
       setActiveView('lyrics');
@@ -170,6 +256,7 @@ export const FullPlayer = () => {
     );
   }, [currentTrack, shareMusic]);
 
+  // Video generation UI - shown in VideoPlayerView overlay
   const videoAction = useMemo(() => {
     if (isGenerating) {
       return (
@@ -206,6 +293,7 @@ export const FullPlayer = () => {
     translateY.value = 0;
   }, [isFullPlayerVisible, translateY]);
 
+  // Drag-to-dismiss gesture handler - only active from top header area
   const panResponder = useMemo(
     () =>
       PanResponder.create({
@@ -254,6 +342,7 @@ export const FullPlayer = () => {
   const disablePrevious = currentTrackIndex <= 0;
   const disableNext = currentTrackIndex >= playlist.length - 1;
 
+  // View routing: VideoPlayerView when video available AND active, otherwise LyricsPlayerView
   return (
     <Animated.View
       {...panResponder.panHandlers}

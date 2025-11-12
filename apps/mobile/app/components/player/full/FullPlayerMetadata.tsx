@@ -2,6 +2,21 @@ import { View, Text } from 'react-native';
 
 import { useThemeColors } from '../../../theme/useThemeColors';
 
+/**
+ * FullPlayerMetadata Component
+ *
+ * Displays track title and optional artist name with centered, styled text.
+ *
+ * Layout:
+ * - Title: Large, bold text (text-2xl font-bold)
+ * - Artist: Smaller, secondary text below title (conditional)
+ *
+ * Implicit Behaviors:
+ * - Artist only shown if provided (not null/undefined)
+ * - Centered text alignment for both title and artist
+ * - Uses theme colors for dynamic light/dark mode support
+ */
+
 interface FullPlayerMetadataProps {
   title: string;
   artist?: string | null;
