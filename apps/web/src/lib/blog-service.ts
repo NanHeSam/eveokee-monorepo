@@ -15,6 +15,7 @@ import markdownContent from '../content/blog/diary-vibes-alpha-building-somethin
 import whyPeopleLoveContent from '../content/blog/why-people-fall-in-love-with-diary-vibes.md?raw';
 import whatWereBuildingContent from '../content/blog/what-were-really-building-at-evokee.md?raw';
 import memoryJournalingGuideContent from '../content/blog/memory-journaling-guide-2025.md?raw';
+import memorySoundtrackContent from '../content/blog/memory-soundtrack.md?raw';
 
 // Parse frontmatter from markdown
 function parseFrontmatter(content: string) {
@@ -56,8 +57,20 @@ const { frontmatter, content } = parseFrontmatter(markdownContent);
 const { frontmatter: whyPeopleLoveFrontmatter, content: whyPeopleLoveContentParsed } = parseFrontmatter(whyPeopleLoveContent);
 const { frontmatter: whatWereBuildingFrontmatter, content: whatWereBuildingContentParsed } = parseFrontmatter(whatWereBuildingContent);
 const { frontmatter: memoryJournalingGuideFrontmatter, content: memoryJournalingGuideContentParsed } = parseFrontmatter(memoryJournalingGuideContent);
+const { frontmatter: memorySoundtrackFrontmatter, content: memorySoundtrackContentParsed } = parseFrontmatter(memorySoundtrackContent);
 
 const blogPosts: BlogPost[] = [
+  {
+    id: (typeof memorySoundtrackFrontmatter.slug === 'string' ? memorySoundtrackFrontmatter.slug : undefined) || 'memory-soundtrack',
+    title: (typeof memorySoundtrackFrontmatter.title === 'string' ? memorySoundtrackFrontmatter.title : undefined) || "Ultimate Guide to the Memory Soundtrack (2025 Edition)",
+    slug: (typeof memorySoundtrackFrontmatter.slug === 'string' ? memorySoundtrackFrontmatter.slug : undefined) || 'memory-soundtrack',
+    excerpt: (typeof memorySoundtrackFrontmatter.excerpt === 'string' ? memorySoundtrackFrontmatter.excerpt : undefined) || "Rediscover every emotion with our Memory Soundtrack guide Dive into track breakdowns composer insights and listening tips that make every note unforgettable",
+    content: memorySoundtrackContentParsed,
+    publishedAt: (typeof memorySoundtrackFrontmatter.publishedAt === 'string' ? memorySoundtrackFrontmatter.publishedAt : undefined) || '2025-11-12',
+    author: (typeof memorySoundtrackFrontmatter.author === 'string' ? memorySoundtrackFrontmatter.author : undefined) || 'Sam He',
+    tags: Array.isArray(memorySoundtrackFrontmatter.tags) ? memorySoundtrackFrontmatter.tags : ['music', 'soundtrack', 'film', 'memory', 'guide'],
+    readTime: (typeof memorySoundtrackFrontmatter.readTime === 'string' ? parseInt(memorySoundtrackFrontmatter.readTime, 10) : typeof memorySoundtrackFrontmatter.readTime === 'number' ? memorySoundtrackFrontmatter.readTime : undefined) || 15,
+  },
   {
     id: (typeof memoryJournalingGuideFrontmatter.slug === 'string' ? memoryJournalingGuideFrontmatter.slug : undefined) || 'memory-journaling-guide-2025',
     title: (typeof memoryJournalingGuideFrontmatter.title === 'string' ? memoryJournalingGuideFrontmatter.title : undefined) || "Memory Journaling Guide: Unlock Your Memories in 2025",
