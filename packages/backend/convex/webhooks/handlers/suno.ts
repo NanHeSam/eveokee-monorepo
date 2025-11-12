@@ -90,6 +90,16 @@ export const sunoMusicGenerationCallback = httpAction(async (ctx, req) => {
       tracks: tracksRaw,
     });
     
+    try {
+      await ctx.runAction(internal.music.fetchAndStoreTimedLyrics, {
+        taskId,
+      });
+    } catch (lyricsError) {
+      eventLogger.warn("Failed to fetch timed lyrics", {
+        error: lyricsError instanceof Error ? lyricsError.message : "Unknown error",
+      });
+    }
+    
     // Get the music record to send push notification
     const musicRecord = await ctx.runQuery(internal.music.getMusicByTaskId, {
       taskId,
@@ -110,7 +120,6 @@ export const sunoMusicGenerationCallback = httpAction(async (ctx, req) => {
           },
         });
       } catch (notificationError) {
-        // Log but don't fail the webhook if notification fails
         eventLogger.warn("Failed to send push notification", {
           error: notificationError instanceof Error ? notificationError.message : "Unknown error",
         });

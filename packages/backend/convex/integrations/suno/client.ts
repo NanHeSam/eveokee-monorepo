@@ -35,7 +35,34 @@ export interface SunoClientResponse {
   taskId: string;
 }
 
+export interface SunoLyricsResponse {
+  code: number;
+  msg: string;
+  data?: {
+    alignedWords?: Array<{
+      word: string;
+      startS: number;
+      endS: number;
+      palign: number;
+    }>;
+    waveformData?: number[];
+    hootCer?: number;
+  };
+}
+
+export interface SunoTimedLyrics {
+  alignedWords: Array<{
+    word: string;
+    startS: number;
+    endS: number;
+    palign: number;
+  }>;
+  waveformData: number[];
+  hootCer: number;
+}
+
 const DEFAULT_TIMEOUT_MS = 30000; // 30 seconds
+const SUNO_LYRICS_API_ENDPOINT = "https://api.sunoapi.org/api/v1/lyrics/record-info";
 
 /**
  * Suno client for music generation
@@ -116,6 +143,67 @@ export class SunoClient {
 
       // Wrap unknown errors
       throw new Error(`Suno API request failed: ${String(error)}`);
+    }
+  }
+
+  /**
+   * Get timed lyrics for a generated audio track
+   * @param audioId - The audio ID from Suno generation
+   * @returns Promise resolving to timed lyrics data or null if not available
+   * @throws Error if the API call fails or times out
+   */
+  async getLyrics(audioId: string): Promise<SunoTimedLyrics | null> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
+
+    try {
+      const url = `${SUNO_LYRICS_API_ENDPOINT}?audioId=${encodeURIComponent(audioId)}`;
+      
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${this.config.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Suno Lyrics API request failed: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const data = (await response.json()) as SunoLyricsResponse;
+
+      if (data.code !== HTTP_STATUS_OK) {
+        throw new Error(`Suno Lyrics API returned error code ${data.code}: ${data.msg}`);
+      }
+
+      if (!data.data || !data.data.alignedWords || !data.data.waveformData || data.data.hootCer === undefined) {
+        return null;
+      }
+
+      return {
+        alignedWords: data.data.alignedWords,
+        waveformData: data.data.waveformData,
+        hootCer: data.data.hootCer,
+      };
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error(`Suno Lyrics API request timed out after ${this.config.timeout}ms`);
+      }
+
+      // Re-throw the error if it's already an Error instance
+      if (error instanceof Error) {
+        throw error;
+      }
+
+      // Wrap unknown errors
+      throw new Error(`Suno Lyrics API request failed: ${String(error)}`);
     }
   }
 

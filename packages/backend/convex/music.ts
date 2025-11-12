@@ -1,9 +1,11 @@
-import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { action, internalAction, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { internal, api } from "./_generated/api";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import ensureCurrentUser, { getOptionalCurrentUser } from "./users";
 import { MAX_SAFE_MUSIC_INDEX } from "./utils/constants";
+import { createSunoClientFromEnv } from "./integrations/suno/client";
+import { MUSIC_GENERATION_CALLBACK_PATH } from "./utils/constants/music";
 
 const sunoTrackValidator = v.object({
   id: v.optional(v.string()),
@@ -357,6 +359,98 @@ export const completeSunoTask = internalMutation({
     }
 
     return null;
+  },
+});
+
+export const updateMusicWithTimedLyrics = internalMutation({
+  args: {
+    musicId: v.id("music"),
+    lyricWithTime: v.object({
+      alignedWords: v.array(
+        v.object({
+          word: v.string(),
+          startS: v.number(),
+          endS: v.number(),
+          palign: v.number(),
+        }),
+      ),
+      waveformData: v.array(v.number()),
+      hootCer: v.number(),
+    }),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    await ctx.db.patch(args.musicId, {
+      lyricWithTime: args.lyricWithTime,
+      updatedAt: now,
+    });
+    return null;
+  },
+});
+
+export const fetchAndStoreTimedLyrics = internalAction({
+  args: {
+    taskId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const sunoClient = createSunoClientFromEnv({
+      SUNO_API_KEY: process.env.SUNO_API_KEY,
+      CONVEX_SITE_URL: process.env.CONVEX_SITE_URL,
+      CALLBACK_PATH: MUSIC_GENERATION_CALLBACK_PATH,
+      SUNO_TIMEOUT: process.env.SUNO_TIMEOUT,
+    });
+
+    const musicRecords = await ctx.runQuery(internal.music.getMusicRecordsByTaskId, {
+      taskId: args.taskId,
+    });
+
+    await Promise.all(
+      musicRecords.map(async (record) => {
+        if (!record.audioId) {
+          return;
+        }
+
+        try {
+          const timedLyrics = await sunoClient.getLyrics(record.audioId);
+          
+          if (timedLyrics) {
+            await ctx.runMutation(internal.music.updateMusicWithTimedLyrics, {
+              musicId: record._id,
+              lyricWithTime: timedLyrics,
+            });
+          }
+        } catch (error) {
+          console.error(`Failed to fetch timed lyrics for audioId ${record.audioId}:`, error);
+        }
+      }),
+    );
+
+    return null;
+  },
+});
+
+export const getMusicRecordsByTaskId = internalQuery({
+  args: {
+    taskId: v.string(),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("music"),
+      audioId: v.optional(v.string()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const musicRecords = await ctx.db
+      .query("music")
+      .withIndex("by_taskId", (q) => q.eq("taskId", args.taskId))
+      .collect();
+
+    return musicRecords.map((record) => ({
+      _id: record._id,
+      audioId: record.audioId,
+    }));
   },
 });
 
