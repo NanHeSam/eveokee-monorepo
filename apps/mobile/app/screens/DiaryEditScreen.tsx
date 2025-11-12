@@ -79,6 +79,7 @@ export const DiaryEditScreen = () => {
     audioUrl: diaryMusic.audioUrl,
     duration: diaryMusic.duration,
     lyric: diaryMusic.lyric,
+    lyricWithTime: diaryMusic.lyricWithTime,
     status: diaryMusic.status,
   } : undefined);
 
@@ -250,6 +251,7 @@ export const DiaryEditScreen = () => {
         artist: currentDiary?.date ? format(new Date(currentDiary.date), 'PPP') : 'Music Diary',
         artwork: primaryMusic.imageUrl,
         lyrics: primaryMusic.lyric,
+        lyricWithTime: primaryMusic.lyricWithTime || currentDiary?.primaryMusic?.lyricWithTime,
       };
 
       // Reset queue and add track

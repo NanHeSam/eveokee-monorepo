@@ -10,8 +10,10 @@ import TrackPlayer, {
 
 import { useTrackPlayerStore } from '../store/useTrackPlayerStore';
 
-const TRACK_PLAYER_OPTIONS = {
+export const TRACK_PLAYER_OPTIONS = {
   waitForBuffer: true,
+  stoppingAppPausesPlayback: false,
+  alwaysPauseOnInterruption: false,
   capabilities: [
     Capability.Play,
     Capability.Pause,
@@ -21,6 +23,8 @@ const TRACK_PLAYER_OPTIONS = {
     Capability.SkipToPrevious,
   ],
   compactCapabilities: [Capability.Play, Capability.Pause, Capability.SkipToNext, Capability.SkipToPrevious],
+  iosCategory: 'playback' as const,
+  iosCategoryOptions: ['allowBluetooth', 'allowBluetoothA2DP'] as const,
 };
 
 export const TrackPlayerProvider = ({ children }: PropsWithChildren) => {
@@ -50,7 +54,7 @@ export const TrackPlayerProvider = ({ children }: PropsWithChildren) => {
       const setupTrackPlayer = async () => {
         try {
           await TrackPlayer.setupPlayer({
-            autoHandleInterruptions: true,
+            autoHandleInterruptions: false,
           });
           await TrackPlayer.updateOptions(TRACK_PLAYER_OPTIONS);
 

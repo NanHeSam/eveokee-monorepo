@@ -7,6 +7,16 @@ export type TrackPlayerTrack = {
   artwork?: string;
   url: string;
   lyrics?: string;
+  lyricWithTime?: {
+    alignedWords: {
+      word: string;
+      startS: number;
+      endS: number;
+      palign: number;
+    }[];
+    waveformData: number[];
+    hootCer: number;
+  };
 };
 
 type TrackPlayerState = {

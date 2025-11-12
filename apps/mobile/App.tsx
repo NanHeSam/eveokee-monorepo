@@ -1,6 +1,6 @@
 import './global.css';
 
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { ConvexReactClient } from 'convex/react';
@@ -200,7 +200,6 @@ function AppContent() {
   usePushNotifications();
 
   // Handle navigation based on notification data
-  // Memoized to prevent unnecessary re-subscriptions in RootNavigator effect
   const handleNotificationNavigation = useCallback((data: NotificationData) => {
     if (!navigationRef.current) {
       return;
@@ -217,7 +216,7 @@ function AppContent() {
         screen: 'Playlist',
       });
     }
-  }, []); // Empty deps: only uses navigationRef.current (ref is stable)
+  }, []);
 
   const theme: Theme = colors.scheme === 'dark'
     ? {

@@ -174,6 +174,20 @@ export const listDiaries = query({
           audioUrl: v.optional(v.string()),
           duration: v.optional(v.number()),
           lyric: v.optional(v.string()),
+          lyricWithTime: v.optional(
+            v.object({
+              alignedWords: v.array(
+                v.object({
+                  word: v.string(),
+                  startS: v.number(),
+                  endS: v.number(),
+                  palign: v.number(),
+                }),
+              ),
+              waveformData: v.array(v.number()),
+              hootCer: v.number(),
+            }),
+          ),
           status: v.union(
             v.literal("pending"),
             v.literal("ready"),
@@ -212,6 +226,16 @@ export const listDiaries = query({
       audioUrl?: string;
       duration?: number;
       lyric?: string;
+      lyricWithTime?: {
+        alignedWords: Array<{
+          word: string;
+          startS: number;
+          endS: number;
+          palign: number;
+        }>;
+        waveformData: number[];
+        hootCer: number;
+      };
       status: "pending" | "ready" | "failed";
     }>();
 
@@ -232,6 +256,7 @@ export const listDiaries = query({
             audioUrl: audioUrl,
             duration: music.duration,
             lyric: music.lyric,
+            lyricWithTime: music.lyricWithTime,
             status: music.status,
           });
         }
