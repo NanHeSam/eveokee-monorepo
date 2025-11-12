@@ -8,12 +8,12 @@ export type TrackPlayerTrack = {
   url: string;
   lyrics?: string;
   lyricWithTime?: {
-    alignedWords: Array<{
+    alignedWords: {
       word: string;
       startS: number;
       endS: number;
       palign: number;
-    }>;
+    }[];
     waveformData: number[];
     hootCer: number;
   };

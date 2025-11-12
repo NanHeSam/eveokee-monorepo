@@ -45,12 +45,12 @@ interface LyricsPlayerViewProps {
   artist?: string | null;
   lyrics?: string | null;
   lyricWithTime?: {
-    alignedWords: Array<{
+    alignedWords: {
       word: string;
       startS: number;
       endS: number;
       palign: number;
-    }>;
+    }[];
     waveformData: number[];
     hootCer: number;
   };

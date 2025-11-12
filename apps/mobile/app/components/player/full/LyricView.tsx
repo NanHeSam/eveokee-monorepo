@@ -39,12 +39,12 @@ interface LyricViewProps {
   lyrics?: string | null;
   /** Timed lyrics with word-level timestamps for karaoke-style display */
   lyricWithTime?: {
-    alignedWords: Array<{
+    alignedWords: {
       word: string;
       startS: number;
       endS: number;
       palign: number;
-    }>;
+    }[];
     waveformData: number[];
     hootCer: number;
   };
@@ -89,7 +89,6 @@ export const LyricView = ({
   const lastScrollIndexRef = useRef<number>(-1);
   const textContainerRef = useRef<View | null>(null);
   const [textContainerHeight, setTextContainerHeight] = useState<number>(0);
-  const [textContainerY, setTextContainerY] = useState<number>(0);
   const sentenceLayoutsRef = useRef<Map<number, { y: number; height: number }>>(new Map());
   const HARD_SYNC_OFFSET = 1.0;
   const [syncOffset, setSyncOffset] = useState(HARD_SYNC_OFFSET);
@@ -103,7 +102,6 @@ export const LyricView = ({
     lastValidWordIndexRef.current = -1;
     lastScrollIndexRef.current = -1;
     setTextContainerHeight(0);
-    setTextContainerY(0);
     sentenceLayoutsRef.current.clear();
     setSyncOffset(HARD_SYNC_OFFSET);
   }, [lyricWithTime]);
@@ -113,7 +111,7 @@ export const LyricView = ({
     if (!lyricWithTime?.alignedWords) return [];
     
     const words = lyricWithTime.alignedWords;
-    const sentenceGroups: Array<{ startIndex: number; endIndex: number; startTime: number; endTime: number }> = [];
+    const sentenceGroups: { startIndex: number; endIndex: number; startTime: number; endTime: number }[] = [];
     let currentSentenceStart = 0;
     
     for (let i = 0; i < words.length; i++) {
@@ -217,14 +215,10 @@ export const LyricView = ({
     };
   }, [lyricWithTime, position, sentences, syncOffset]);
 
-  // Get current word index from sentence progress
-  const currentWordIndex = sentenceProgress.currentWordIndex;
-
   // Measure text container to get actual dimensions
   const handleTextContainerLayout = (event: any) => {
-    const { height, y } = event.nativeEvent.layout;
+    const { height } = event.nativeEvent.layout;
     setTextContainerHeight(height);
-    setTextContainerY(y);
   };
 
   // Auto-scroll to keep current word visible and centered
@@ -256,7 +250,7 @@ export const LyricView = ({
       }, 100);
       return () => clearTimeout(timeoutId);
     }
-  }, [sentenceProgress.currentWordIndex, sentenceProgress.currentSentenceIndex, sentenceProgress.progress, screenHeight, screenWidth, textContainerHeight, lyricWithTime, fontSize, lineHeight]);
+  }, [sentenceProgress, screenHeight, screenWidth, textContainerHeight, lyricWithTime, fontSize, lineHeight]);
 
   
 
@@ -267,7 +261,7 @@ export const LyricView = ({
     }
 
     const words = lyricWithTime.alignedWords;
-    const { currentSentenceIndex, progress, currentWordIndex } = sentenceProgress;
+    const { currentSentenceIndex, currentWordIndex } = sentenceProgress;
     const textColor = colors.scheme === 'dark' ? 'rgba(255,255,255,0.96)' : 'rgba(12,12,12,0.88)';
     const highlightedColor = colors.accentMint;
 
