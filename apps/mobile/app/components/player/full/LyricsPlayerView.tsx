@@ -44,6 +44,16 @@ interface LyricsPlayerViewProps {
   title: string;
   artist?: string | null;
   lyrics?: string | null;
+  lyricWithTime?: {
+    alignedWords: Array<{
+      word: string;
+      startS: number;
+      endS: number;
+      palign: number;
+    }>;
+    waveformData: number[];
+    hootCer: number;
+  };
   duration: number;
   position: number;
   isPlaying: boolean;
@@ -73,6 +83,7 @@ export const LyricsPlayerView = ({
   title,
   artist,
   lyrics,
+  lyricWithTime,
   duration,
   position,
   isPlaying,
@@ -133,7 +144,7 @@ export const LyricsPlayerView = ({
             <View
               style={[
                 styles.overlayContent,
-                { paddingBottom: insets.bottom + 56, paddingHorizontal: 24 },
+                { paddingBottom: insets.bottom + 24, paddingHorizontal: 24 },
               ]}
               pointerEvents="auto"
             >
@@ -148,10 +159,22 @@ export const LyricsPlayerView = ({
                 <LyricView
                   artwork={artwork}
                   lyrics={lyrics}
+                  lyricWithTime={lyricWithTime}
+                  position={position}
                   onPressArtwork={onToggleOverlay}
                   showArtwork={false}
                 />
               </View>
+            </View>
+            <View style={styles.controlsWrapper} pointerEvents="auto">
+              <PlaybackControls
+                isPlaying={isPlaying}
+                onTogglePlayback={onTogglePlayback}
+                onSkipNext={onSkipNext}
+                onSkipPrevious={onSkipPrevious}
+                disableNext={disableNext}
+                disablePrevious={disablePrevious}
+              />
             </View>
             <Pressable
               onPress={(event) => {
@@ -187,10 +210,13 @@ export const LyricsPlayerView = ({
               <LyricView
                 artwork={artwork}
                 lyrics={lyrics}
+                lyricWithTime={lyricWithTime}
+                position={position}
                 onPressArtwork={onToggleOverlay}
                 hasVideo={hasVideo}
                 onGenerateVideo={onGenerateVideo}
                 isGenerating={isGenerating}
+                pendingElapsedSeconds={pendingElapsedSeconds}
                 canGenerate={canGenerate}
                 remainingCredits={remainingCredits}
               />
@@ -230,6 +256,10 @@ const styles = StyleSheet.create({
   progressContainer: {
     justifyContent: 'flex-end',
   },
+  controlsWrapper: {
+    paddingHorizontal: 24,
+    paddingBottom: 8,
+  },
   detailContainer: {
     flex: 1,
     justifyContent: 'space-between',
@@ -240,4 +270,3 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
-

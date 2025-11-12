@@ -156,11 +156,11 @@ export const FullPlayer = () => {
 
   // Auto-switch to lyrics view when no video is available
   useEffect(() => {
-    if (!hasVideo || activeView === 'lyrics') {
+    if (!hasVideo) {
       setActiveView('lyrics');
-      setIsOverlayVisible(true);
+      setIsOverlayVisible(false);
     }
-  }, [hasVideo, activeView]);
+  }, [hasVideo]);
 
   const togglePlayback = useCallback(async () => {
     try {
@@ -381,6 +381,7 @@ export const FullPlayer = () => {
           title={currentTrack.title}
           artist={currentTrack.artist}
           lyrics={currentTrack.lyrics}
+          lyricWithTime={currentTrack.lyricWithTime}
           duration={duration}
           position={position}
           isPlaying={isPlaying}

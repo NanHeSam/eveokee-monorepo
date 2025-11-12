@@ -361,6 +361,43 @@ export const completeSunoTask = internalMutation({
 });
 
 /**
+ * Update lyricWithTime field for a music record
+ * Used internally after fetching timestamped lyrics from Suno API
+ */
+export const updateLyricWithTime = internalMutation({
+  args: {
+    musicId: v.id("music"),
+    lyricWithTime: v.object({
+      alignedWords: v.array(
+        v.object({
+          word: v.string(),
+          startS: v.number(),
+          endS: v.number(),
+          palign: v.number(),
+        }),
+      ),
+      waveformData: v.array(v.number()),
+      hootCer: v.number(),
+    }),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const music = await ctx.db.get(args.musicId);
+    if (!music) {
+      console.warn(`Music record ${args.musicId} not found`);
+      return null;
+    }
+
+    await ctx.db.patch(args.musicId, {
+      lyricWithTime: args.lyricWithTime,
+      updatedAt: Date.now(),
+    });
+
+    return null;
+  },
+});
+
+/**
  * Soft delete a music track (mark as deleted without removing from database)
  * 
  * Steps:
@@ -463,6 +500,35 @@ export const getMusicInternal = internalQuery({
 });
 
 /**
+ * Internal query to get all music records by taskId with audioId
+ * Used for fetching timed lyrics after music generation completes
+ */
+export const getAllMusicByTaskId = internalQuery({
+  args: {
+    taskId: v.string(),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("music"),
+      audioId: v.optional(v.string()),
+      musicIndex: v.optional(v.number()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    const musicRecords = await ctx.db
+      .query("music")
+      .withIndex("by_taskId", (q) => q.eq("taskId", args.taskId))
+      .collect();
+
+    return musicRecords.map((m) => ({
+      _id: m._id,
+      audioId: m.audioId,
+      musicIndex: m.musicIndex,
+    }));
+  },
+});
+
+/**
  * Internal query to get music record by taskId (returns the first musicIndex=0 record)
  * Used for push notifications after music generation completes
  */
@@ -518,6 +584,20 @@ export const listPlaylistMusic = query({
       audioUrl: v.optional(v.string()),
       duration: v.optional(v.number()),
       lyric: v.optional(v.string()),
+      lyricWithTime: v.optional(
+        v.object({
+          alignedWords: v.array(
+            v.object({
+              word: v.string(),
+              startS: v.number(),
+              endS: v.number(),
+              palign: v.number(),
+            }),
+          ),
+          waveformData: v.array(v.number()),
+          hootCer: v.number(),
+        }),
+      ),
       status: v.union(
         v.literal("pending"),
         v.literal("ready"),
@@ -598,6 +678,7 @@ export const listPlaylistMusic = query({
         audioUrl: audioUrl ?? undefined,
         duration: doc.duration ?? undefined,
         lyric: doc.lyric ?? undefined,
+        lyricWithTime: doc.lyricWithTime ?? undefined,
         status: doc.status,
         createdAt: doc.createdAt,
         updatedAt: doc.updatedAt,
@@ -608,4 +689,3 @@ export const listPlaylistMusic = query({
     });
   },
 });
-

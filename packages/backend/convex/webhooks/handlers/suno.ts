@@ -21,8 +21,10 @@ import {
   HTTP_STATUS_OK,
   HTTP_STATUS_BAD_REQUEST,
   HTTP_STATUS_INTERNAL_SERVER_ERROR,
+  MUSIC_GENERATION_CALLBACK_PATH,
 } from "../../utils/constants";
 import { logWebhookEvent } from "../../utils/logger";
+import { createSunoClientFromEnv } from "../../integrations/suno/client";
 
 /**
  * Handle Suno music generation callback webhook
@@ -89,6 +91,79 @@ export const sunoMusicGenerationCallback = httpAction(async (ctx, req) => {
       taskId,
       tracks: tracksRaw,
     });
+    
+    // Step 8: Fetch timed lyrics for each track
+    try {
+      const musicRecords = await ctx.runQuery(internal.music.getAllMusicByTaskId, {
+        taskId,
+      });
+
+      // Create Suno client for fetching timed lyrics
+      const convexSiteUrl = process.env.CONVEX_SITE_URL;
+      if (!convexSiteUrl) {
+        eventLogger.warn("CONVEX_SITE_URL not available, skipping timed lyrics fetch");
+      } else {
+        const sunoClient = createSunoClientFromEnv({
+          SUNO_API_KEY: process.env.SUNO_API_KEY,
+          CONVEX_SITE_URL: convexSiteUrl,
+          CALLBACK_PATH: MUSIC_GENERATION_CALLBACK_PATH,
+          SUNO_TIMEOUT: process.env.SUNO_TIMEOUT,
+        });
+
+        // Fetch timed lyrics for each track
+        await Promise.all(
+          tracksRaw.map(async (track, index) => {
+            const audioId = track.id;
+            if (!audioId) {
+              eventLogger.warn("Track missing audioId, skipping timed lyrics fetch", {
+                trackIndex: index,
+              });
+              return;
+            }
+
+            // Find matching music record by audioId
+            const musicRecord = musicRecords.find((m) => m.audioId === audioId);
+            if (!musicRecord) {
+              eventLogger.warn("No music record found for audioId", {
+                audioId,
+                trackIndex: index,
+              });
+              return;
+            }
+
+            try {
+              const timedLyrics = await sunoClient.getTimestampedLyrics({
+                taskId,
+                audioId,
+              });
+
+              // Update music record with timed lyrics
+              await ctx.runMutation(internal.music.updateLyricWithTime, {
+                musicId: musicRecord._id,
+                lyricWithTime: timedLyrics,
+              });
+
+              eventLogger.debug("Successfully fetched and stored timed lyrics", {
+                audioId,
+                musicId: musicRecord._id,
+              });
+            } catch (lyricsError) {
+              // Log but don't fail the webhook if timed lyrics fetch fails
+              eventLogger.warn("Failed to fetch timed lyrics", {
+                audioId,
+                musicId: musicRecord._id,
+                error: lyricsError instanceof Error ? lyricsError.message : "Unknown error",
+              });
+            }
+          }),
+        );
+      }
+    } catch (lyricsError) {
+      // Log but don't fail the webhook if timed lyrics processing fails
+      eventLogger.warn("Failed to process timed lyrics", {
+        error: lyricsError instanceof Error ? lyricsError.message : "Unknown error",
+      });
+    }
     
     // Get the music record to send push notification
     const musicRecord = await ctx.runQuery(internal.music.getMusicByTaskId, {

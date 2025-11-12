@@ -152,6 +152,7 @@ export const PlaylistScreen = () => {
                     artist: i.diaryDateLabel ?? 'Music Diary',
                     artwork: i.imageUrl,
                     lyrics: i.lyric,
+                    lyricWithTime: i.lyricWithTime,
                   }));
 
                   try {
@@ -202,6 +203,7 @@ const mapMusicDocsToItems = (
     diaryTitle: doc.diaryTitle,
     audioUrl: doc.audioUrl,
     lyric: doc.lyric,
+    lyricWithTime: doc.lyricWithTime,
     status: doc.status,
     canPlay: doc.status === 'ready' && !!doc.audioUrl,
     isPlaceholder: false,
