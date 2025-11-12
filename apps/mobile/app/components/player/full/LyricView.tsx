@@ -134,12 +134,13 @@ export const LyricView = ({
           event.stopPropagation();
           onGenerateVideo();
         }}
+        disabled={!canGenerate}
         className="flex-row items-center justify-center rounded-full px-6 py-3 mt-4"
-        style={{ backgroundColor: colors.accentMint }}
+        style={{ backgroundColor: canGenerate ? colors.accentMint : colors.surface }}
       >
-        <Ionicons name="videocam" size={20} color={colors.background} style={{ marginRight: 8 }} />
-        <Text className="text-base font-semibold" style={{ color: colors.background }}>
-          Generate Video (3 credits)
+        <Ionicons name="videocam" size={20} color={canGenerate ? colors.background : colors.textMuted} style={{ marginRight: 8 }} />
+        <Text className="text-base font-semibold" style={{ color: canGenerate ? colors.background : colors.textMuted }}>
+          Generate Video (3 credits){remainingCredits > 0 ? ` • ${remainingCredits} left` : ''}
         </Text>
       </Pressable>
     );

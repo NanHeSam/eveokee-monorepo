@@ -70,17 +70,11 @@ export const FullPlayer = () => {
   const headerTopInset = insets.top + 16;
 
   useEffect(() => {
-    if (!hasVideo) {
+    if (!hasVideo || activeView === 'lyrics') {
       setActiveView('lyrics');
       setIsOverlayVisible(true);
     }
-  }, [hasVideo]);
-
-  useEffect(() => {
-    if (activeView === 'lyrics') {
-      setIsOverlayVisible(true);
-    }
-  }, [activeView]);
+  }, [hasVideo, activeView]);
 
   const togglePlayback = useCallback(async () => {
     try {
