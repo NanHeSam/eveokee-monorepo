@@ -1,25 +1,132 @@
-import { useCallback, useState } from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet, Dimensions, Alert, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import Animated, { Easing, FadeIn, SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  ActivityIndicator,
+  GestureResponderEvent,
+  PanResponder,
+  PanResponderGestureState,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import Animated, {
+  Easing,
+  SlideInDown,
+  SlideOutDown,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import TrackPlayer, { State, usePlaybackState } from 'react-native-track-player';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 import { useTrackPlayerStore } from '../../store/useTrackPlayerStore';
 import { useThemeColors } from '../../theme/useThemeColors';
 import { useShareMusic } from '../../hooks/useShareMusic';
 import { useVideoGeneration } from '../../hooks/useVideoGeneration';
-import { VideoPlayerModal } from './VideoPlayerModal';
+import { VideoPlayerView } from './full/VideoPlayerView';
+import { LyricsPlayerView } from './full/LyricsPlayerView';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+/**
+ * FullPlayer Component
+ *
+ * A full-screen music player with dual-view support for lyrics and video playback.
+ * This component serves as the orchestrator for the complete playback experience,
+ * managing state, gestures, and routing to the appropriate view based on content availability.
+ *
+ * Component Hierarchy:
+ * ```
+ * <FullPlayer>                                    // orchestrator
+ *   <Animated.View>                               // drag-to-dismiss gesture, slide animations
+ *     <StatusBar />                               // theme-aware
+ *
+ *     {hasVideo && activeView === 'video' ? (
+ *       <VideoPlayerView>
+ *         <VideoView>                             // video playback + artwork backdrop
+ *           <Video />                             // react-native-video, looping muted
+ *
+ *           {isOverlayVisible && (
+ *             <>
+ *               <FullPlayerHeader />              // minimize, share
+ *               <FullPlayerViewTabs />            // lyrics/video tabs
+ *               <FullPlayerMetadata />            // title, artist
+ *               {videoAction}                     // generate/regenerate CTA
+ *               <PlaybackControls />              // prev, play/pause, next
+ *               <PlaybackProgressBar />           // seekable
+ *             </>
+ *           )}
+ *
+ *           {!isOverlayVisible && (
+ *             <PlaybackProgressBar />             // minimal progress bar
+ *           )}
+ *         </VideoView>
+ *       </VideoPlayerView>
+ *     ) : (
+ *       <LyricsPlayerView>
+ *         <ImageBackground />                     // artwork backdrop with opacity
+ *
+ *         {isOverlayVisible ? (
+ *           <>                                    // Overlay Mode - immersive lyrics
+ *             <FullPlayerHeader />
+ *             <FullPlayerViewTabs />
+ *             <LyricView showArtwork={false} />   // full-screen scrollable lyrics
+ *             <PlaybackProgressBar />
+ *           </>
+ *         ) : (
+ *           <>                                    // Detail Mode - standard layout
+ *             <FullPlayerHeader />
+ *             <FullPlayerViewTabs />
+ *             <FullPlayerMetadata />
+ *             <LyricView showArtwork={true} />    // artwork + generate CTA
+ *             <PlaybackControls />
+ *             <PlaybackProgressBar />
+ *           </>
+ *         )}
+ *       </LyricsPlayerView>
+ *     )}
+ *   </Animated.View>
+ * </FullPlayer>
+ * ```
+ *
+ * Architecture:
+ * - Delegates rendering to VideoPlayerView or LyricsPlayerView based on activeView and video availability
+ * - Implements drag-to-dismiss gesture from the top header area
+ * - Manages video generation flow with credit gating
+ * - Handles all playback controls (play/pause/skip/seek)
+ * - Provides share functionality for tracks
+ *
+ * View Logic:
+ * - Shows VideoPlayerView when activeView='video' AND primaryVideo exists
+ * - Shows LyricsPlayerView when activeView='lyrics' OR no video available
+ * - Automatically switches to lyrics view if no video exists (lines 115-120)
+ *
+ * Gesture Handling:
+ * - Drag from top area (HEADER_TOUCH_AREA_HEIGHT=96px) to dismiss
+ * - Requires vertical-dominant gesture (dy > dx)
+ * - Dismisses if dragged past DISMISS_THRESHOLD_PX (140px) or velocity exceeds threshold
+ * - Smooth spring-back animation if gesture cancelled
+ * - Only active when overlay is NOT visible (prevents conflict with UI interactions)
+ *
+ * Note: We evaluated community lyric overlay libraries (react-native-lyric, react-native-lrc)
+ * but they are unmaintained and incompatible with Expo, so we provide a custom implementation.
+ *
+ * @example
+ * // FullPlayer is rendered conditionally based on isFullPlayerVisible in the store
+ * {isFullPlayerVisible && <FullPlayer />}
+ */
 
-const formatTime = (seconds: number) => {
-  const wholeSeconds = Math.floor(Math.max(0, seconds));
-  const minutes = Math.floor(wholeSeconds / 60);
-  const remaining = wholeSeconds % 60;
-  return `${minutes}:${remaining.toString().padStart(2, '0')}`;
-};
+type PlayerView = 'lyrics' | 'video';
+
+// Gesture constants for drag-to-dismiss
+const HEADER_TOUCH_AREA_HEIGHT = 96;
+const DISMISS_THRESHOLD_PX = 140;
+const DISMISS_VELOCITY_THRESHOLD = 1.2;
+const DISMISS_ANIMATION_DURATION = 220;
 
 export const FullPlayer = () => {
   const colors = useThemeColors();
@@ -28,11 +135,12 @@ export const FullPlayer = () => {
   const playbackState = usePlaybackState();
   const hideFullPlayer = useTrackPlayerStore((state) => state.hideFullPlayer);
   const setCurrentTrack = useTrackPlayerStore((state) => state.setCurrentTrack);
-  const [progressBarWidth, setProgressBarWidth] = useState(0);
-  const [isVideoModalVisible, setIsVideoModalVisible] = useState(false);
+  const [activeView, setActiveView] = useState<PlayerView>('video');
+  const [isOverlayVisible, setIsOverlayVisible] = useState(false);
   const { shareMusic } = useShareMusic();
-  
-  // Video generation hook
+  const { height: screenHeight } = useWindowDimensions();
+  const translateY = useSharedValue(0);
+
   const musicId = currentTrack?.id as Id<'music'> | null;
   const {
     isGenerating,
@@ -43,13 +151,23 @@ export const FullPlayer = () => {
     pendingElapsedSeconds,
   } = useVideoGeneration(musicId);
 
+  const hasVideo = Boolean(primaryVideo?.videoUrl);
+  const headerTopInset = insets.top + 16;
+
+  // Auto-switch to lyrics view when no video is available
+  useEffect(() => {
+    if (!hasVideo || activeView === 'lyrics') {
+      setActiveView('lyrics');
+      setIsOverlayVisible(true);
+    }
+  }, [hasVideo, activeView]);
+
   const togglePlayback = useCallback(async () => {
     try {
       const state = await TrackPlayer.getPlaybackState();
       if (state.state === State.Playing) {
         await TrackPlayer.pause();
       } else {
-        // If track has finished (position at or near the end), seek to beginning before playing
         if (duration > 0 && position >= duration - 0.5) {
           await TrackPlayer.seekTo(0);
         }
@@ -57,7 +175,6 @@ export const FullPlayer = () => {
       }
     } catch (error) {
       console.error('Failed to toggle playback', error);
-      // If track index is out of bounds, hide the player
       if (error instanceof Error && error.message.includes('out of bounds')) {
         hideFullPlayer();
       }
@@ -88,245 +205,206 @@ export const FullPlayer = () => {
     }
   }, [playlist, setCurrentTrack]);
 
-  const handleProgressBarPress = useCallback((event: any) => {
-    if (progressBarWidth > 0 && duration > 0) {
-      const touchX = event.nativeEvent.locationX;
-      const percentage = Math.max(0, Math.min(1, touchX / progressBarWidth));
-      const newPosition = percentage * duration;
-      TrackPlayer.seekTo(newPosition);
+  const handleSeek = useCallback(async (newPosition: number) => {
+    try {
+      await TrackPlayer.seekTo(newPosition);
+    } catch (error) {
+      console.error('Failed to seek', error);
     }
-  }, [duration, progressBarWidth]);
+  }, []);
+
+  const handleToggleOverlay = useCallback(() => {
+    if (activeView === 'video' && !hasVideo) {
+      return;
+    }
+    setIsOverlayVisible((prev) => !prev);
+  }, [activeView, hasVideo]);
+
+  const handleGenerateVideo = useCallback(() => {
+    if (!canGenerate) {
+      Alert.alert(
+        'Insufficient Credits',
+        `Video generation requires 3 credits. You have ${remainingCredits} remaining.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    void generateVideo();
+  }, [canGenerate, remainingCredits, generateVideo]);
+
+  const handleShare = useCallback(() => {
+    if (!currentTrack) return;
+
+    Alert.alert(
+      'Share Music',
+      'Choose how to share this music',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Share Link',
+          onPress: () => {
+            void shareMusic(currentTrack.id as Id<'music'>, currentTrack.title);
+          },
+        },
+        {
+          text: 'Share Artwork Card',
+          onPress: () => {
+            Alert.alert('Coming Soon', 'Artwork card sharing will be available soon!');
+          },
+        },
+      ]
+    );
+  }, [currentTrack, shareMusic]);
+
+  // Video generation UI - shown in VideoPlayerView overlay
+  const videoAction = useMemo(() => {
+    if (isGenerating) {
+      return (
+        <View
+          className="flex-row items-center justify-center rounded-full px-6 py-3"
+          style={{ backgroundColor: colors.surface }}
+        >
+          <ActivityIndicator size="small" color={colors.accentMint} />
+          <Text className="ml-2 text-sm font-medium" style={{ color: colors.textSecondary }}>
+            Generating video
+            {pendingElapsedSeconds !== null ? ` • ${pendingElapsedSeconds}s elapsed` : '...'}
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <Pressable
+        onPress={(event) => {
+          event.stopPropagation();
+          handleGenerateVideo();
+        }}
+        className="flex-row items-center justify-center rounded-full px-6 py-3"
+        style={{ backgroundColor: colors.accentMint }}
+      >
+        <Text className="text-base font-semibold" style={{ color: colors.background }}>
+          {primaryVideo ? 'Regenerate Video (3 credits)' : 'Generate Video (3 credits)'}
+        </Text>
+      </Pressable>
+    );
+  }, [isGenerating, colors.surface, colors.textSecondary, pendingElapsedSeconds, colors.accentMint, colors.background, primaryVideo, handleGenerateVideo]);
+
+  useEffect(() => {
+    translateY.value = 0;
+  }, [isFullPlayerVisible, translateY]);
+
+  // Drag-to-dismiss gesture handler - only active from top header area
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_: GestureResponderEvent, gesture: PanResponderGestureState) => {
+          if (isOverlayVisible || gesture.dy <= 0) {
+            return false;
+          }
+          const startedNearTop = gesture.y0 <= headerTopInset + HEADER_TOUCH_AREA_HEIGHT;
+          const verticalDominant = Math.abs(gesture.dy) > Math.abs(gesture.dx);
+          return verticalDominant && startedNearTop;
+        },
+        onPanResponderMove: (_: GestureResponderEvent, gesture: PanResponderGestureState) => {
+          if (gesture.dy > 0) {
+            translateY.value = gesture.dy;
+          }
+        },
+        onPanResponderRelease: (_: GestureResponderEvent, gesture: PanResponderGestureState) => {
+          const shouldDismiss = gesture.dy > DISMISS_THRESHOLD_PX || gesture.vy > DISMISS_VELOCITY_THRESHOLD;
+          if (shouldDismiss) {
+            translateY.value = withTiming(screenHeight, { duration: DISMISS_ANIMATION_DURATION }, (finished) => {
+              if (finished) {
+                runOnJS(hideFullPlayer)();
+              }
+            });
+          } else {
+            translateY.value = withTiming(0, { duration: DISMISS_ANIMATION_DURATION });
+          }
+        },
+        onPanResponderTerminate: () => {
+          translateY.value = withTiming(0, { duration: DISMISS_ANIMATION_DURATION });
+        },
+        onPanResponderTerminationRequest: () => false,
+      }),
+    [headerTopInset, hideFullPlayer, isOverlayVisible, screenHeight, translateY]
+  );
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
 
   if (!currentTrack || !isFullPlayerVisible) {
     return null;
   }
 
   const isPlaying = playbackState.state === State.Playing;
-  const progressPercentage = duration > 0 ? Math.min(100, (position / duration) * 100) : 0;
+  const disablePrevious = currentTrackIndex <= 0;
+  const disableNext = currentTrackIndex >= playlist.length - 1;
 
+  // View routing: VideoPlayerView when video available AND active, otherwise LyricsPlayerView
   return (
     <Animated.View
+      {...panResponder.panHandlers}
       entering={SlideInDown.duration(240).easing(Easing.out(Easing.cubic))}
       exiting={SlideOutDown.duration(240).easing(Easing.in(Easing.cubic))}
-      style={[
-        styles.container,
-        { backgroundColor: colors.background, paddingTop: insets.top }
-      ]}
+      style={[styles.container, { backgroundColor: colors.background }, animatedStyle]}
     >
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-6 py-4">
-        <Pressable onPress={hideFullPlayer} className="h-10 w-10 items-center justify-center">
-          <Ionicons name="chevron-down" size={28} color={colors.textPrimary} />
-        </Pressable>
-        <Text className="text-sm font-medium" style={{ color: colors.textSecondary }}>
-          Now Playing
-        </Text>
-        <Pressable 
-          onPress={() => {
-            if (!currentTrack) return;
-            Alert.alert(
-              'Share Music',
-              'Choose how to share this music',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Share Link', onPress: () => { void shareMusic(currentTrack.id as Id<"music">, currentTrack.title) } },
-                { text: 'Share Artwork Card', onPress: () => {
-                  Alert.alert('Coming Soon', 'Artwork card sharing will be available soon!');
-                }},
-              ]
-            );
-          }}
-          className="h-10 w-10 items-center justify-center"
-        >
-          <Ionicons name="share-social-outline" size={24} color={colors.textPrimary} />
-        </Pressable>
-      </View>
-
-      {/* Artwork / Video */}
-      <View className="items-center px-8 py-4">
-        {currentTrack.artwork ? (
-          <Pressable onPress={() => primaryVideo && setIsVideoModalVisible(true)}>
-            <Animated.Image
-              entering={FadeIn}
-              source={{ uri: currentTrack.artwork }}
-              className="rounded-3xl"
-              style={{
-                width: SCREEN_HEIGHT * 0.32,
-                height: SCREEN_HEIGHT * 0.32,
-                shadowColor: colors.accentMint,
-                shadowOpacity: 0.3,
-                shadowRadius: 20,
-                shadowOffset: { width: 0, height: 10 },
-              }}
-            />
-            {/* Video play overlay */}
-            {primaryVideo && (
-              <View style={StyleSheet.absoluteFill} className="items-center justify-center rounded-3xl">
-                <View 
-                  className="h-16 w-16 items-center justify-center rounded-full"
-                  style={{ backgroundColor: `${colors.background}DD` }}
-                >
-                  <Ionicons name="play" size={32} color={colors.accentMint} style={{ marginLeft: 4 }} />
-                </View>
-              </View>
-            )}
-          </Pressable>
-        ) : (
-          <View
-            className="items-center justify-center rounded-3xl"
-            style={{
-              width: SCREEN_HEIGHT * 0.32,
-              height: SCREEN_HEIGHT * 0.32,
-              backgroundColor: colors.surface,
-            }}
-          >
-            <Ionicons name="musical-notes" size={80} color={colors.textSecondary} />
-          </View>
-        )}
-        
-        {/* Generate / Regenerate Video Button */}
-        {!isGenerating && (
-          <Pressable
-            onPress={() => {
-              if (!canGenerate) {
-                Alert.alert(
-                  'Insufficient Credits',
-                  `Video generation requires 3 credits. You have ${remainingCredits} remaining.`,
-                  [{ text: 'OK' }]
-                );
-                return;
-              }
-              void generateVideo();
-            }}
-            className="mt-4 flex-row items-center rounded-full px-6 py-3"
-            style={{ backgroundColor: colors.accentMint }}
-          >
-            <Ionicons name="videocam" size={20} color={colors.background} />
-            <Text className="ml-2 font-semibold" style={{ color: colors.background }}>
-              {primaryVideo ? 'Regenerate Video (3 credits)' : 'Generate Video (3 credits)'}
-            </Text>
-          </Pressable>
-        )}
-        
-        {/* Generating indicator */}
-        {isGenerating && (
-          <View className="mt-4 flex-row items-center rounded-full px-6 py-3" style={{ backgroundColor: colors.surface }}>
-            <ActivityIndicator size="small" color={colors.accentMint} />
-            <Text className="ml-2 text-sm" style={{ color: colors.textSecondary }}>
-              Generating video{pendingElapsedSeconds !== null ? ` • ${pendingElapsedSeconds}s elapsed` : '...'}
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {/* Song Info */}
-      <View className="px-8 py-3">
-        <Text className="text-center text-2xl font-bold" style={{ color: colors.textPrimary }}>
-          {currentTrack.title}
-        </Text>
-        {currentTrack.artist ? (
-          <Text className="mt-2 text-center text-base" style={{ color: colors.textSecondary }}>
-            {currentTrack.artist}
-          </Text>
-        ) : null}
-      </View>
-
-      {/* Progress Bar */}
-      <View className="px-8 py-3">
-        <Pressable
-          onPress={handleProgressBarPress}
-          onLayout={(event) => {
-            setProgressBarWidth(event.nativeEvent.layout.width);
-          }}
-        >
-          <View className="mb-2 h-3 justify-center">
-            <View className="h-1 overflow-hidden rounded-full" style={{ backgroundColor: colors.card }}>
-              <View
-                className="h-full rounded-full"
-                style={{
-                  width: `${progressPercentage}%`,
-                  backgroundColor: colors.accentMint,
-                }}
-              />
-            </View>
-          </View>
-        </Pressable>
-        <View className="flex-row items-center justify-between">
-          <Text className="text-xs" style={{ color: colors.textMuted }}>
-            {formatTime(position)}
-          </Text>
-          <Text className="text-xs" style={{ color: colors.textMuted }}>
-            {formatTime(duration)}
-          </Text>
-        </View>
-      </View>
-
-      {/* Controls */}
-      <View className="flex-row items-center justify-center gap-8 px-8 py-4">
-        <Pressable
-          onPress={skipToPrevious}
-          className="h-16 w-16 items-center justify-center"
-          disabled={currentTrackIndex <= 0}
-        >
-          <Ionicons
-            name="play-skip-back"
-            size={32}
-            color={currentTrackIndex <= 0 ? colors.textMuted : colors.textPrimary}
-          />
-        </Pressable>
-
-        <Pressable
-          onPress={togglePlayback}
-          className="h-20 w-20 items-center justify-center rounded-full"
-          style={{ backgroundColor: colors.accentMint }}
-        >
-          <View style={{ marginLeft: isPlaying ? 0 : 2 }}>
-            <Ionicons name={isPlaying ? 'pause' : 'play'} size={40} color={colors.background} />
-          </View>
-        </Pressable>
-
-        <Pressable
-          onPress={skipToNext}
-          className="h-16 w-16 items-center justify-center"
-          disabled={currentTrackIndex >= playlist.length - 1}
-        >
-          <Ionicons
-            name="play-skip-forward"
-            size={32}
-            color={currentTrackIndex >= playlist.length - 1 ? colors.textMuted : colors.textPrimary}
-          />
-        </Pressable>
-      </View>
-
-      {/* Lyrics Section */}
-      <View className="flex-1 px-8 pb-6">
-        <Text className="mb-3 text-lg font-semibold" style={{ color: colors.textPrimary }}>
-          Lyrics
-        </Text>
-        <ScrollView
-          className="flex-1 rounded-2xl p-4"
-          style={{ backgroundColor: colors.surface }}
-          showsVerticalScrollIndicator={false}
-        >
-          {currentTrack.lyrics ? (
-            <Text className="text-base leading-7" style={{ color: colors.textSecondary }}>
-              {currentTrack.lyrics}
-            </Text>
-          ) : (
-            <Text className="text-base text-center" style={{ color: colors.textMuted }}>
-              No lyrics available
-            </Text>
-          )}
-        </ScrollView>
-      </View>
-      
-      {/* Video Player Modal */}
-      <VideoPlayerModal
-        visible={isVideoModalVisible}
-        videoUrl={primaryVideo?.videoUrl ?? null}
-        title={currentTrack?.title}
-        onClose={() => setIsVideoModalVisible(false)}
-      />
+      <StatusBar style={colors.scheme === 'dark' ? 'light' : 'dark'} translucent />
+      {activeView === 'video' && primaryVideo?.videoUrl ? (
+        <VideoPlayerView
+          videoUrl={primaryVideo.videoUrl}
+          artwork={currentTrack.artwork}
+          title={currentTrack.title}
+          artist={currentTrack.artist}
+          duration={duration}
+          position={position}
+          isPlaying={isPlaying}
+          disableNext={disableNext}
+          disablePrevious={disablePrevious}
+          headerTopInset={headerTopInset}
+          hasVideo={hasVideo}
+          onToggleOverlay={handleToggleOverlay}
+          onSeek={handleSeek}
+          onTogglePlayback={togglePlayback}
+          onSkipNext={skipToNext}
+          onSkipPrevious={skipToPrevious}
+          onClose={hideFullPlayer}
+          onShare={handleShare}
+          onViewChange={setActiveView}
+          videoAction={videoAction}
+          isOverlayVisible={isOverlayVisible}
+        />
+      ) : (
+        <LyricsPlayerView
+          artwork={currentTrack.artwork}
+          title={currentTrack.title}
+          artist={currentTrack.artist}
+          lyrics={currentTrack.lyrics}
+          duration={duration}
+          position={position}
+          isPlaying={isPlaying}
+          disableNext={disableNext}
+          disablePrevious={disablePrevious}
+          headerTopInset={headerTopInset}
+          hasVideo={hasVideo}
+          isOverlayVisible={isOverlayVisible}
+          activeView={activeView}
+          canGenerate={canGenerate}
+          remainingCredits={remainingCredits}
+          isGenerating={isGenerating}
+          pendingElapsedSeconds={pendingElapsedSeconds}
+          onToggleOverlay={handleToggleOverlay}
+          onSeek={handleSeek}
+          onTogglePlayback={togglePlayback}
+          onSkipNext={skipToNext}
+          onSkipPrevious={skipToPrevious}
+          onClose={hideFullPlayer}
+          onShare={handleShare}
+          onGenerateVideo={handleGenerateVideo}
+          onViewChange={setActiveView}
+        />
+      )}
     </Animated.View>
   );
 };
