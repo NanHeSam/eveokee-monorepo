@@ -1,9 +1,7 @@
-import { ActivityIndicator, Dimensions, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useThemeColors } from '../../../theme/useThemeColors';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface LyricViewProps {
   artwork?: string | null;
@@ -29,6 +27,7 @@ export const LyricView = ({
   remainingCredits = 0,
 }: LyricViewProps) => {
   const colors = useThemeColors();
+  const { height: screenHeight } = useWindowDimensions();
   const overlayText = (
     <Text
       className="text-center"
@@ -67,13 +66,15 @@ export const LyricView = ({
   }
 
   const renderArtwork = () => {
+    const artworkSize = screenHeight * 0.32;
+
     if (!artwork) {
       return (
         <View
           className="items-center justify-center rounded-3xl"
           style={{
-            width: SCREEN_HEIGHT * 0.32,
-            height: SCREEN_HEIGHT * 0.32,
+            width: artworkSize,
+            height: artworkSize,
             backgroundColor: colors.surface,
           }}
         >
@@ -85,7 +86,7 @@ export const LyricView = ({
     const artworkContent = (
       <ImageBackground
         source={{ uri: artwork }}
-        style={[styles.artwork, { width: SCREEN_HEIGHT * 0.32, height: SCREEN_HEIGHT * 0.32 }]}
+        style={[styles.artwork, { width: artworkSize, height: artworkSize }]}
         imageStyle={styles.artworkImage}
         resizeMode="cover"
       />
@@ -109,7 +110,7 @@ export const LyricView = ({
   };
 
   const renderGenerateVideoButton = () => {
-    if (hasVideo || !onGenerateVideo || !showArtwork) {
+    if (hasVideo || !onGenerateVideo) {
       return null;
     }
 
@@ -169,9 +170,6 @@ const styles = StyleSheet.create({
   artworkWrapper: {
     paddingTop: 16,
   },
-  lyricsContainer: {
-    flex: 1,
-  },
   overlayContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -183,11 +181,6 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.25)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
-  },
-  detailText: {
-    fontSize: 18,
-    lineHeight: 26,
-    fontWeight: '500',
   },
 });
 

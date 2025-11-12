@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { PanResponder, Text, View, type GestureResponderEvent } from 'react-native';
 
 import { useThemeColors } from '../../../theme/useThemeColors';
@@ -24,13 +24,13 @@ export const PlaybackProgressBar = ({ duration, position, onSeek }: PlaybackProg
   const colors = useThemeColors();
   const [progressWidth, setProgressWidth] = useState(0);
 
-  const handleSeekFromGesture = (event: GestureResponderEvent) => {
+  const handleSeekFromGesture = useCallback((event: GestureResponderEvent) => {
     event.stopPropagation?.();
     if (duration <= 0 || progressWidth <= 0) return;
     const touchX = clamp(event.nativeEvent.locationX, 0, progressWidth);
     const percentage = touchX / progressWidth;
     onSeek(percentage * duration);
-  };
+  }, [duration, progressWidth, onSeek]);
 
   const panResponder = useMemo(() => {
     return PanResponder.create({
@@ -39,7 +39,7 @@ export const PlaybackProgressBar = ({ duration, position, onSeek }: PlaybackProg
       onPanResponderGrant: (event) => handleSeekFromGesture(event),
       onPanResponderMove: (event) => handleSeekFromGesture(event),
     });
-  }, [duration, progressWidth]);
+  }, [handleSeekFromGesture]);
 
   const progressPercentage = duration > 0 ? clamp((position / duration) * 100, 0, 100) : 0;
 

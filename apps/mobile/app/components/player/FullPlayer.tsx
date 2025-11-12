@@ -37,6 +37,12 @@ import { Id } from '@backend/convex/convex/_generated/dataModel';
 
 type PlayerView = 'lyrics' | 'video';
 
+// Gesture constants for drag-to-dismiss
+const HEADER_TOUCH_AREA_HEIGHT = 96;
+const DISMISS_THRESHOLD_PX = 140;
+const DISMISS_VELOCITY_THRESHOLD = 1.2;
+const DISMISS_ANIMATION_DURATION = 220;
+
 export const FullPlayer = () => {
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
@@ -64,13 +70,11 @@ export const FullPlayer = () => {
   const headerTopInset = insets.top + 16;
 
   useEffect(() => {
-    if (!hasVideo && activeView === 'video') {
-      setActiveView('lyrics');
-    }
     if (!hasVideo) {
+      setActiveView('lyrics');
       setIsOverlayVisible(true);
     }
-  }, [hasVideo, activeView]);
+  }, [hasVideo]);
 
   useEffect(() => {
     if (activeView === 'lyrics') {
@@ -121,8 +125,12 @@ export const FullPlayer = () => {
     }
   }, [playlist, setCurrentTrack]);
 
-  const handleSeek = useCallback((newPosition: number) => {
-    void TrackPlayer.seekTo(newPosition);
+  const handleSeek = useCallback(async (newPosition: number) => {
+    try {
+      await TrackPlayer.seekTo(newPosition);
+    } catch (error) {
+      console.error('Failed to seek', error);
+    }
   }, []);
 
   const handleToggleOverlay = useCallback(() => {
@@ -211,7 +219,7 @@ export const FullPlayer = () => {
           if (isOverlayVisible || gesture.dy <= 0) {
             return false;
           }
-          const startedNearTop = gesture.y0 <= headerTopInset + 96;
+          const startedNearTop = gesture.y0 <= headerTopInset + HEADER_TOUCH_AREA_HEIGHT;
           const verticalDominant = Math.abs(gesture.dy) > Math.abs(gesture.dx);
           return verticalDominant && startedNearTop;
         },
@@ -221,19 +229,19 @@ export const FullPlayer = () => {
           }
         },
         onPanResponderRelease: (_: GestureResponderEvent, gesture: PanResponderGestureState) => {
-          const shouldDismiss = gesture.dy > 140 || gesture.vy > 1.2;
+          const shouldDismiss = gesture.dy > DISMISS_THRESHOLD_PX || gesture.vy > DISMISS_VELOCITY_THRESHOLD;
           if (shouldDismiss) {
-            translateY.value = withTiming(screenHeight, { duration: 220 }, (finished) => {
+            translateY.value = withTiming(screenHeight, { duration: DISMISS_ANIMATION_DURATION }, (finished) => {
               if (finished) {
                 runOnJS(hideFullPlayer)();
               }
             });
           } else {
-            translateY.value = withTiming(0, { duration: 220 });
+            translateY.value = withTiming(0, { duration: DISMISS_ANIMATION_DURATION });
           }
         },
         onPanResponderTerminate: () => {
-          translateY.value = withTiming(0, { duration: 220 });
+          translateY.value = withTiming(0, { duration: DISMISS_ANIMATION_DURATION });
         },
         onPanResponderTerminationRequest: () => false,
       }),
