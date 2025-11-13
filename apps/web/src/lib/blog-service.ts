@@ -19,6 +19,7 @@ export interface BlogPost {
   tags: string[];
   readingTime?: number;
   canonicalUrl?: string;
+  featuredImage?: string; // Featured image URL from RankPill
   redirectFrom?: string[];
   updatedAt: number;
 }

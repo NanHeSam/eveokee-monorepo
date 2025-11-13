@@ -316,6 +316,7 @@ export default defineSchema({
     tags: v.array(v.string()),
     readingTime: v.optional(v.number()), // Reading time in minutes
     canonicalUrl: v.optional(v.string()),
+    featuredImage: v.optional(v.string()), // Featured image URL from RankPill
     redirectFrom: v.optional(v.array(v.string())), // Array of old slugs that redirect here
     draftPreviewToken: v.optional(v.string()), // Token for previewing drafts (for RankPill review flow)
     createdAt: v.optional(v.number()), // DEPRECATED: Use _creationTime instead. Will be removed after migration.

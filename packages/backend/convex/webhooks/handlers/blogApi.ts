@@ -152,8 +152,8 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
   if (payload.title && payload.content_html && !payload.operation) {
     logger.info("Detected RankPill article format, creating draft for review");
     
-    // Generate slug from title (for when it gets approved)
-    const slug = generateSlug(payload.title);
+    // Use RankPill's slug if provided, otherwise generate from title
+    const slug = payload.slug || generateSlug(payload.title);
     
     // Generate preview token for draft access using cryptographically secure randomness
     // Use action to access Node.js crypto APIs (httpAction bundling doesn't support crypto directly)
@@ -168,11 +168,27 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
     // Extract metadata from RankPill payload
     const author = payload.author || "Sam He";
     const tags = normalizeTagsField(payload);
-    const excerpt = payload.excerpt || payload.description || undefined;
-    const canonicalUrl = payload.canonical_url || payload.canonicalUrl || undefined;
+    // Use meta_description as excerpt if excerpt/description not provided
+    const excerpt = payload.excerpt || payload.description || payload.meta_description || undefined;
+    // Use published_url as canonicalUrl if canonical_url/canonicalUrl not provided
+    const canonicalUrl = payload.canonical_url || payload.canonicalUrl || payload.published_url || undefined;
+    
+    // Convert published_at ISO string to timestamp if provided
+    let publishedAt: number | undefined = undefined;
+    if (payload.published_at) {
+      try {
+        publishedAt = new Date(payload.published_at).getTime();
+        if (isNaN(publishedAt)) {
+          logger.warn("Invalid published_at format, ignoring", { published_at: payload.published_at });
+          publishedAt = undefined;
+        }
+      } catch (error) {
+        logger.warn("Failed to parse published_at, ignoring", { published_at: payload.published_at });
+      }
+    }
     
     try {
-      // Create draft with preview token
+      // Create draft with preview token and all RankPill metadata
       const { postId } = await ctx.runMutation(api.blog.createDraft, {
         title: payload.title,
         bodyMarkdown,
@@ -181,6 +197,9 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
         tags,
         readingTime: payload.reading_time || undefined,
         canonicalUrl,
+        slug, // Use RankPill's slug
+        featuredImage: payload.featured_image || undefined, // Store featured image
+        publishedAt, // Store published_at timestamp
         draftPreviewToken: previewToken,
       });
 

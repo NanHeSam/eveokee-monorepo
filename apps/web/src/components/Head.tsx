@@ -10,7 +10,6 @@ interface HeadProps {
   description?: string;
   canonicalUrl?: string;
   ogImage?: string;
-  rssUrl?: string;
 }
 
 /**
@@ -21,7 +20,6 @@ export function Head({
   description,
   canonicalUrl,
   ogImage,
-  rssUrl,
 }: HeadProps) {
   useEffect(() => {
     // Update title

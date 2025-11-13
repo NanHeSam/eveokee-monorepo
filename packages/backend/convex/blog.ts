@@ -24,6 +24,7 @@ export const listPublished = query({
       tags: v.array(v.string()),
       readingTime: v.optional(v.number()),
       canonicalUrl: v.optional(v.string()),
+      featuredImage: v.optional(v.string()),
       updatedAt: v.number(),
     })
   ),
@@ -51,6 +52,7 @@ export const listPublished = query({
         tags: post.tags,
         readingTime: post.readingTime,
         canonicalUrl: post.canonicalUrl,
+        featuredImage: post.featuredImage,
         updatedAt: post.updatedAt,
       }));
   },
@@ -115,6 +117,7 @@ export const getBySlug = query({
       tags: v.array(v.string()),
       readingTime: v.optional(v.number()),
       canonicalUrl: v.optional(v.string()),
+      featuredImage: v.optional(v.string()),
       redirectFrom: v.optional(v.array(v.string())),
       updatedAt: v.number(),
     }),
@@ -141,6 +144,7 @@ export const getBySlug = query({
         tags: directMatch.tags,
         readingTime: directMatch.readingTime,
         canonicalUrl: directMatch.canonicalUrl,
+        featuredImage: directMatch.featuredImage,
         redirectFrom: directMatch.redirectFrom,
         updatedAt: directMatch.updatedAt,
       };
@@ -173,6 +177,7 @@ export const getBySlug = query({
         tags: redirectMatch.tags,
         readingTime: redirectMatch.readingTime,
         canonicalUrl: redirectMatch.canonicalUrl,
+        featuredImage: redirectMatch.featuredImage,
         redirectFrom: redirectMatch.redirectFrom,
         updatedAt: redirectMatch.updatedAt,
       };
@@ -209,6 +214,7 @@ export const listAllForPrerender = internalQuery({
       tags: v.array(v.string()),
       readingTime: v.optional(v.number()),
       canonicalUrl: v.optional(v.string()),
+      featuredImage: v.optional(v.string()),
       redirectFrom: v.optional(v.array(v.string())),
       updatedAt: v.number(),
     })
@@ -241,6 +247,7 @@ export const getPostForPrerender = internalQuery({
       tags: v.array(v.string()),
       readingTime: v.optional(v.number()),
       canonicalUrl: v.optional(v.string()),
+      featuredImage: v.optional(v.string()),
       redirectFrom: v.optional(v.array(v.string())),
       updatedAt: v.number(),
     }),
@@ -280,6 +287,7 @@ export const getDraftByPreviewToken = query({
       tags: v.array(v.string()),
       readingTime: v.optional(v.number()),
       canonicalUrl: v.optional(v.string()),
+      featuredImage: v.optional(v.string()),
       redirectFrom: v.optional(v.array(v.string())),
       updatedAt: v.number(),
     }),
@@ -306,6 +314,7 @@ export const getDraftByPreviewToken = query({
         tags: post.tags,
         readingTime: post.readingTime,
         canonicalUrl: post.canonicalUrl,
+        featuredImage: post.featuredImage,
         redirectFrom: post.redirectFrom,
         updatedAt: post.updatedAt,
       };
@@ -332,6 +341,9 @@ export const createDraft = mutation({
     tags: v.array(v.string()),
     readingTime: v.optional(v.number()),
     canonicalUrl: v.optional(v.string()),
+    slug: v.optional(v.string()), // Optional slug (e.g., from RankPill)
+    featuredImage: v.optional(v.string()), // Optional featured image URL (e.g., from RankPill)
+    publishedAt: v.optional(v.number()), // Optional publishedAt timestamp (e.g., from RankPill)
     draftPreviewToken: v.optional(v.string()), // Optional preview token for draft review flow
   },
   returns: v.object({
@@ -341,16 +353,17 @@ export const createDraft = mutation({
     const now = Date.now();
 
     const postId = await ctx.db.insert("blogPosts", {
-      slug: undefined, // Nullable for drafts
+      slug: args.slug, // Can be provided (e.g., from RankPill) or undefined for drafts
       title: args.title,
       bodyMarkdown: args.bodyMarkdown,
       excerpt: args.excerpt,
       status: "draft",
-      publishedAt: undefined,
+      publishedAt: args.publishedAt, // Store publishedAt even for drafts (e.g., from RankPill)
       author: args.author,
       tags: args.tags,
       readingTime: args.readingTime,
       canonicalUrl: args.canonicalUrl,
+      featuredImage: args.featuredImage,
       redirectFrom: undefined,
       draftPreviewToken: args.draftPreviewToken,
       updatedAt: now,
@@ -374,6 +387,7 @@ export const updateDraft = mutation({
     tags: v.optional(v.array(v.string())),
     readingTime: v.optional(v.number()),
     canonicalUrl: v.optional(v.string()),
+    featuredImage: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -393,6 +407,7 @@ export const updateDraft = mutation({
     if (args.tags !== undefined) updates.tags = args.tags;
     if (args.readingTime !== undefined) updates.readingTime = args.readingTime;
     if (args.canonicalUrl !== undefined) updates.canonicalUrl = args.canonicalUrl;
+    if (args.featuredImage !== undefined) updates.featuredImage = args.featuredImage;
 
     await ctx.db.patch(args.postId, updates);
 
