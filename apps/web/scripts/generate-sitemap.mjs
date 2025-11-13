@@ -16,6 +16,12 @@ import { fileURLToPath, pathToFileURL } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/**
+ * Generate sitemap.xml by combining predefined static pages with published blog posts from Convex and write it to public/sitemap.xml.
+ *
+ * Attempts to load the Convex-generated API, queries published blog posts, builds a sitemap (escaping XML where needed and using post updatedAt/publishedAt for lastmod when available), ensures the public directory exists, and writes the resulting sitemap file.
+ *
+ * On fatal errors (missing Convex URL, failure to import the Convex API, or failure to fetch posts) the process exits with a non-zero code.
 async function generateSitemap() {
   console.log("🚀 Starting sitemap generation...");
 
@@ -133,6 +139,11 @@ async function generateSitemap() {
   console.log(`   - ${blogPosts.length} blog posts`);
 }
 
+/**
+ * Escape special XML characters in the given value.
+ * @param {any} text - Value to escape; it will be converted to a string if necessary.
+ * @returns {string} The input converted to a string with `&`, `<`, `>`, `"` and `'` replaced by their XML entities.
+ */
 function escapeXml(text) {
   return String(text)
     .replace(/&/g, "&amp;")
@@ -151,4 +162,3 @@ if (import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
 }
 
 export { generateSitemap };
-

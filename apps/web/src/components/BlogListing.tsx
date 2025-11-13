@@ -7,8 +7,14 @@ interface BlogListingProps {
 }
 
 /**
- * Blog listing component that displays a list of blog posts
- * Used for both client-side rendering and SSR
+ * Render the blog listing with a hero section and a stacked list of post cards.
+ *
+ * Displays an empty-state message when no posts are provided. For each post, shows optional tags,
+ * title (linked when a slug is present), excerpt, author, published date, reading time, and a
+ * "Read full post" link when applicable.
+ *
+ * @param posts - Array of blog posts to display
+ * @returns A JSX element containing the blog listing UI
  */
 export default function BlogListing({ posts }: BlogListingProps) {
   return (
@@ -116,4 +122,3 @@ export default function BlogListing({ posts }: BlogListingProps) {
     </>
   );
 }
-

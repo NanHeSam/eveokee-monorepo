@@ -46,9 +46,13 @@ function SSRAudioProvider({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Render a blog post to an HTML string
+ * Render a blog post to an HTML string suitable for static prerendering.
+ *
+ * The rendered output is produced in an SSR-safe environment: a mock audio context is provided
+ * and the `onBack` handler used by the component is replaced with a no-op.
+ *
  * @param post - The blog post data to render
- * @returns HTML string of the rendered blog post
+ * @returns The HTML string of the rendered blog post
  */
 export function renderBlogPost(post: BlogPostType): string {
   // No-op handler for SSR (back button won't work in static HTML)
@@ -77,5 +81,4 @@ export function renderBlogListing(posts: BlogPostType[]): string {
     )
   );
 }
-
 

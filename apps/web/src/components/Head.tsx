@@ -13,7 +13,18 @@ interface HeadProps {
 }
 
 /**
- * Updates document head with provided metadata
+ * Manage document head metadata (title, meta description, canonical link, and Open Graph image) from the provided props.
+ *
+ * When `title` is provided, replaces `document.title` and restores the previous title when the component unmounts or `title` changes.
+ * When `description` is provided, creates or updates the page meta description and leaves it set (no automatic restoration).
+ * When `canonicalUrl` is provided, creates or updates a `link[rel="canonical"]` element with the given href.
+ * When `ogImage` is provided, creates or updates a `meta[property="og:image"]` element with the given content.
+ *
+ * @param title - The document title to set
+ * @param description - The content for the meta description tag
+ * @param canonicalUrl - The URL to set on a `link[rel="canonical"]` element
+ * @param ogImage - The URL to set on a `meta[property="og:image"]` element
+ * @returns Null; this component does not render any DOM nodes
  */
 export function Head({
   title,
@@ -81,4 +92,3 @@ export function Head({
 
   return null; // This component doesn't render anything
 }
-
