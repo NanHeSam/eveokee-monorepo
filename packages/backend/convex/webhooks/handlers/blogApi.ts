@@ -206,6 +206,7 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
           previewUrl,
           approveUrl,
           dismissUrl,
+          previewToken,
         });
         logger.info("Slack notification sent successfully");
       } catch (slackError) {

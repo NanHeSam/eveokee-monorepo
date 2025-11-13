@@ -72,8 +72,9 @@ export const sendDraftReviewNotification = action({
     postId: v.id("blogPosts"),
     title: v.string(),
     previewUrl: v.string(),
-    approveUrl: v.string(),
-    dismissUrl: v.string(),
+    approveUrl: v.string(), // Kept for backward compatibility but not used in buttons
+    dismissUrl: v.string(), // Kept for backward compatibility but not used in buttons
+    previewToken: v.string(), // Token needed for interactive buttons
   },
   returns: v.object({
     success: v.boolean(),
@@ -87,6 +88,9 @@ export const sendDraftReviewNotification = action({
     }
 
     try {
+      // Button value format: "postId:token"
+      const buttonValue = `${args.postId}:${args.previewToken}`;
+
       const blocks = [
         {
           type: "header",
@@ -121,7 +125,8 @@ export const sendDraftReviewNotification = action({
                 emoji: true,
               },
               style: "primary",
-              url: args.approveUrl,
+              action_id: "approve_draft",
+              value: buttonValue,
             },
             {
               type: "button",
@@ -131,7 +136,8 @@ export const sendDraftReviewNotification = action({
                 emoji: true,
               },
               style: "danger",
-              url: args.dismissUrl,
+              action_id: "dismiss_draft",
+              value: buttonValue,
             },
           ],
         },

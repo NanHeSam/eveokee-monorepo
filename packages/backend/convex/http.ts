@@ -14,6 +14,7 @@ import {
   BLOG_API_PATH,
   BLOG_DRAFT_APPROVE_PATH,
   BLOG_DRAFT_DISMISS_PATH,
+  SLACK_INTERACTIVE_PATH,
 } from "./utils/constants";
 import { sunoMusicGenerationCallback } from "./webhooks/handlers/suno";
 import { kieVideoGenerationCallback } from "./webhooks/handlers/kie";
@@ -22,7 +23,11 @@ import { revenueCatWebhookHandler } from "./webhooks/handlers/revenuecat";
 import { vapiWebhookHandler } from "./webhooks/handlers/vapi";
 import { vapiAssistantRequestHandler } from "./webhooks/handlers/vapiAssistantRequest";
 import { blogApiHandler } from "./webhooks/handlers/blogApi";
-import { approveDraftHandler, dismissDraftHandler } from "./webhooks/handlers/blogDraftReview";
+import {
+  approveDraftHandler,
+  dismissDraftHandler,
+  slackInteractiveHandler,
+} from "./webhooks/handlers/blogDraftReview";
 
 const http = httpRouter();
 
@@ -87,6 +92,13 @@ http.route({
   path: BLOG_DRAFT_DISMISS_PATH,
   method: "GET",
   handler: dismissDraftHandler,
+});
+
+// Route: Slack interactive components (button clicks)
+http.route({
+  path: SLACK_INTERACTIVE_PATH,
+  method: "POST",
+  handler: slackInteractiveHandler,
 });
 
 export default http;
