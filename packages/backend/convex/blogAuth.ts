@@ -7,7 +7,7 @@
 
 import { action } from "./_generated/server";
 import { v } from "convex/values";
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHmac, timingSafeEqual, randomUUID } from "crypto";
 
 const TEN_MINUTES_MS = 10 * 60 * 1000;
 
@@ -112,6 +112,18 @@ export const verifyRankPillSignature = action({
     } catch (error) {
       return { valid: false, error: `signature verification failed: ${error instanceof Error ? error.message : "unknown error"}` };
     }
+  },
+});
+
+/**
+ * Generate a cryptographically secure preview token for draft posts
+ * Uses crypto.randomUUID() for secure randomness
+ */
+export const generatePreviewToken = action({
+  args: {},
+  returns: v.string(),
+  handler: async () => {
+    return randomUUID();
   },
 });
 

@@ -67,9 +67,10 @@ export const removeCreatedAtFromPosts = internalMutation({
             newPostId = await ctx.db.insert("blogPosts", postWithoutCreatedAt);
           }
         } else {
-          // No slug, create new post (draft posts might not have slugs)
-          // For posts without slugs, we can't match to existing new posts, so always create
-          newPostId = await ctx.db.insert("blogPosts", postWithoutCreatedAt);
+          // No slug - skip to avoid potential duplicates on re-run
+          // Draft posts without slugs should be handled manually if needed
+          console.warn(`Post ${oldPostId} has no slug, skipping migration to avoid duplicates`);
+          continue;
         }
 
         // Migrate revisions to new post (idempotent)
@@ -84,13 +85,14 @@ export const removeCreatedAtFromPosts = internalMutation({
           .withIndex("by_postId", (q) => q.eq("postId", newPostId))
           .collect();
 
-        const existingRevisionCreatedAts = new Set(
-          existingRevisions.map((r) => r.createdAt)
+        const existingRevisionKeys = new Set(
+          existingRevisions.map((r) => `${r.createdAt}-${r.title}-${r.bodyMarkdown.substring(0, 50)}`)
         );
 
         for (const revision of oldRevisions) {
           // Only migrate if this revision doesn't already exist for the new post
-          if (!existingRevisionCreatedAts.has(revision.createdAt)) {
+          const revisionKey = `${revision.createdAt}-${revision.title}-${revision.bodyMarkdown.substring(0, 50)}`;
+          if (!existingRevisionKeys.has(revisionKey)) {
             // Preserve all revision fields except _id, _creationTime, and update postId
             const {
               _id: _oldRevisionId,
@@ -209,12 +211,13 @@ export const removeCreatedAtFromPosts = internalMutation({
             .withIndex("by_postId", (q) => q.eq("postId", newPostId))
             .collect();
 
-          const existingRevisionCreatedAts = new Set(
-            existingRevisions.map((r) => r.createdAt)
+          const existingRevisionKeys = new Set(
+            existingRevisions.map((r) => `${r.createdAt}-${r.title}-${r.bodyMarkdown.substring(0, 50)}`)
           );
 
           for (const revision of oldRevisions) {
-            if (!existingRevisionCreatedAts.has(revision.createdAt)) {
+            const revisionKey = `${revision.createdAt}-${revision.title}-${revision.bodyMarkdown.substring(0, 50)}`;
+            if (!existingRevisionKeys.has(revisionKey)) {
               const {
                 _id: _oldRevisionId,
                 _creationTime: _oldRevisionCreationTime,

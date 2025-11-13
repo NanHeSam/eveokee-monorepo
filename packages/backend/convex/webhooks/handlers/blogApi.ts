@@ -2,7 +2,6 @@
  * Blog API HTTP endpoint with HMAC authentication
  * Allows external automation to manage blog posts
  */
-
 import { httpAction } from "../../_generated/server";
 import { api } from "../../_generated/api";
 import { internal } from "../../_generated/api";
@@ -147,25 +146,9 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
     // Generate slug from title (for when it gets approved)
     const slug = generateSlug(payload.title);
     
-    // Generate preview token for draft access
-    // NOTE: Using Math.random() instead of crypto.randomUUID() because Convex runtime
-    // may not have access to Node.js crypto module. While Math.random() provides ~53 bits
-    // of entropy (less than cryptographically secure), preview tokens are:
-    // 1. Temporary (only used until draft is approved/dismissed)
-    // 2. Low-risk (worst case: unauthorized preview of unpublished blog draft)
-    // 3. Single-use (token is invalidated after approval/dismissal)
-    // For higher security needs, consider using Convex's built-in ID generation or
-    // implementing a cryptographically secure random generator if available in runtime.
-    const generatePreviewToken = (): string => {
-      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-      let token = "";
-      for (let i = 0; i < 32; i++) {
-        token += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return token;
-    };
-
-    const previewToken = generatePreviewToken();
+    // Generate preview token for draft access using cryptographically secure randomness
+    // Use action to access Node.js crypto APIs (httpAction bundling doesn't support crypto directly)
+    const previewToken = await ctx.runAction(internal.blogAuth.generatePreviewToken);
 
     // Convert content to markdown
     // NOTE: If RankPill sends content_html instead of content_markdown, the HTML will be
