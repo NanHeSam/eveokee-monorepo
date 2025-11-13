@@ -148,7 +148,7 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
   });
 
   if (!verification.valid) {
-    logger.error("Blog API auth failed", {
+    logger.error("Blog API auth failed", undefined, {
       error: verification.error,
       signatureLength: signature.length,
     });
@@ -170,6 +170,16 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
   } catch (error) {
     logger.error("Failed to parse JSON body", error);
     return errorResponse("Invalid JSON body", HTTP_STATUS_BAD_REQUEST);
+  }
+
+  // Step 6.5: Validate payload is a non-null object (not array or primitive)
+  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
+    logger.error("Invalid payload type", {
+      payloadType: typeof payload,
+      isArray: Array.isArray(payload),
+      isNull: payload === null,
+    });
+    return errorResponse("Payload must be a non-null object", HTTP_STATUS_BAD_REQUEST);
   }
 
   // Step 7: Handle RankPill format (article data without operation field)
@@ -269,7 +279,6 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
       logWebhookEvent(logger, "blogApi", "processed", {
         operation: "rankpillDraft",
         postId,
-        previewToken,
       });
       
       return successResponse({ 

@@ -36,13 +36,34 @@ declare global {
   }
 }
 
-// Initialize Convex client
-const convexUrl = import.meta.env.VITE_CONVEX_URL;
-if (!convexUrl) {
-  throw new Error("VITE_CONVEX_URL environment variable is not set");
+// Lazy client initialization to support tests/SSR environments
+let client: ConvexHttpClient | null = null;
+
+/**
+ * Get or create the Convex client instance.
+ * Allows injection for testing and defers initialization until first use.
+ */
+function getClient(): ConvexHttpClient {
+  if (client) {
+    return client;
+  }
+
+  const convexUrl = import.meta.env.VITE_CONVEX_URL;
+  if (!convexUrl) {
+    throw new Error("VITE_CONVEX_URL environment variable is not set");
+  }
+
+  client = new ConvexHttpClient(convexUrl);
+  return client;
 }
 
-const client = new ConvexHttpClient(convexUrl);
+/**
+ * Set a custom Convex client instance (useful for testing).
+ * @internal
+ */
+export function setClient(customClient: ConvexHttpClient | null): void {
+  client = customClient;
+}
 
 /**
  * Retrieve all published blog posts.
@@ -51,7 +72,7 @@ const client = new ConvexHttpClient(convexUrl);
  */
 export async function getAllPosts(): Promise<BlogPost[]> {
   try {
-    const posts = await client.query(api.blog.listPublished, {});
+    const posts = await getClient().query(api.blog.listPublished, {});
     return posts;
   } catch (error) {
     console.error("Error fetching blog posts:", error);
@@ -83,7 +104,7 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
 
   // Fetch from Convex
   try {
-    const post = await client.query(api.blog.getBySlug, { slug });
+    const post = await getClient().query(api.blog.getBySlug, { slug });
     return post;
   } catch (error) {
     console.error(`Error fetching blog post ${slug}:`, error);
@@ -93,19 +114,15 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
 
 /**
  * Retrieve a limited list of the most recently published blog posts.
+ * Uses server-side sorting and limiting for better performance.
  *
  * @param limit - Maximum number of posts to return (defaults to 3)
  * @returns An array of published blog posts ordered newest first, containing at most `limit` items
  */
 export async function getRecentPosts(limit: number = 3): Promise<BlogPost[]> {
   try {
-    const posts = await client.query(api.blog.listPublished, {});
-    const sortedPosts = [...posts].sort((a, b) => {
-      const aDate = a.publishedAt ?? 0;
-      const bDate = b.publishedAt ?? 0;
-      return bDate - aDate;
-    });
-    return sortedPosts.slice(0, limit);
+    const posts = await getClient().query(api.blog.listRecent, { limit });
+    return posts;
   } catch (error) {
     console.error("Error fetching recent posts:", error);
     return [];
@@ -114,16 +131,15 @@ export async function getRecentPosts(limit: number = 3): Promise<BlogPost[]> {
 
 /**
  * Retrieve published blog posts that include the specified tag (case-insensitive).
+ * Uses server-side filtering for better performance.
  *
  * @param tag - The tag to match against each post's tags (comparison is case-insensitive).
  * @returns An array of `BlogPost` objects whose `tags` include `tag`. Returns an empty array if there are no matches or if an error occurs.
  */
 export async function getPostsByTag(tag: string): Promise<BlogPost[]> {
   try {
-    const posts = await client.query(api.blog.listPublished, {});
-    return posts.filter((post) =>
-      post.tags.some((t) => t.toLowerCase() === tag.toLowerCase())
-    );
+    const posts = await getClient().query(api.blog.listByTag, { tag });
+    return posts;
   } catch (error) {
     console.error(`Error fetching posts by tag ${tag}:`, error);
     return [];
@@ -138,7 +154,7 @@ export async function getPostsByTag(tag: string): Promise<BlogPost[]> {
  */
 export async function getDraftByPreviewToken(previewToken: string): Promise<BlogPost | null> {
   try {
-    const post = await client.query(api.blog.getDraftByPreviewToken, { previewToken });
+    const post = await getClient().query(api.blog.getDraftByPreviewToken, { previewToken });
     return post;
   } catch (error) {
     console.error(`Error fetching draft by preview token:`, error);
@@ -157,37 +173,11 @@ export async function getDraftByPreviewToken(previewToken: string): Promise<Blog
 export async function trackView(postId: Id<"blogPosts">): Promise<void> {
   try {
     const date = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-    await client.mutation(api.blog.incrementViewCount, {
+    await getClient().mutation(api.blog.incrementViewCount, {
       postId,
       date,
     });
   } catch (error) {
     console.error(`Error tracking view for post ${postId}:`, error);
-  }
-}
-
-// Legacy export for backward compatibility
-export class BlogService {
-  static async getAllPosts(): Promise<BlogPost[]> {
-    return getAllPosts();
-  }
-
-  static async getPostBySlug(slug: string): Promise<BlogPost | null> {
-    return getPostBySlug(slug);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  static async getPostById(_id: string): Promise<BlogPost | null> {
-    // ID-based lookup not supported in new API, use slug instead
-    console.warn("getPostById is deprecated, use getPostBySlug instead");
-    return null;
-  }
-
-  static async getRecentPosts(limit: number = 3): Promise<BlogPost[]> {
-    return getRecentPosts(limit);
-  }
-
-  static async getPostsByTag(tag: string): Promise<BlogPost[]> {
-    return getPostsByTag(tag);
   }
 }

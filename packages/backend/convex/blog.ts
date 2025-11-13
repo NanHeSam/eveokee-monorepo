@@ -59,6 +59,119 @@ export const listPublished = query({
 });
 
 /**
+ * Get the N most recently published blog posts, sorted by publishedAt descending
+ * More efficient than fetching all posts and sorting client-side
+ */
+export const listRecent = query({
+  args: { limit: v.optional(v.number()) },
+  returns: v.array(
+    v.object({
+      _id: v.id("blogPosts"),
+      _creationTime: v.number(),
+      slug: v.string(),
+      title: v.string(),
+      bodyMarkdown: v.string(),
+      excerpt: v.optional(v.string()),
+      publishedAt: v.number(),
+      author: v.string(),
+      tags: v.array(v.string()),
+      readingTime: v.optional(v.number()),
+      canonicalUrl: v.optional(v.string()),
+      featuredImage: v.optional(v.string()),
+      updatedAt: v.number(),
+    })
+  ),
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 3;
+    const posts = await ctx.db
+      .query("blogPosts")
+      .withIndex("by_status_and_publishedAt", (q) =>
+        q.eq("status", "published")
+      )
+      .order("desc")
+      .take(limit);
+
+    // Filter out posts without slug or publishedAt (shouldn't happen but defensive)
+    return posts
+      .filter((post) => post.slug && post.publishedAt)
+      .map((post) => ({
+        _id: post._id,
+        _creationTime: post._creationTime,
+        slug: post.slug!,
+        title: post.title,
+        bodyMarkdown: post.bodyMarkdown,
+        excerpt: post.excerpt,
+        publishedAt: post.publishedAt!,
+        author: post.author,
+        tags: post.tags,
+        readingTime: post.readingTime,
+        canonicalUrl: post.canonicalUrl,
+        featuredImage: post.featuredImage,
+        updatedAt: post.updatedAt,
+      }));
+  },
+});
+
+/**
+ * Get published blog posts that include the specified tag (case-insensitive)
+ * More efficient than fetching all posts and filtering client-side
+ */
+export const listByTag = query({
+  args: { tag: v.string() },
+  returns: v.array(
+    v.object({
+      _id: v.id("blogPosts"),
+      _creationTime: v.number(),
+      slug: v.string(),
+      title: v.string(),
+      bodyMarkdown: v.string(),
+      excerpt: v.optional(v.string()),
+      publishedAt: v.number(),
+      author: v.string(),
+      tags: v.array(v.string()),
+      readingTime: v.optional(v.number()),
+      canonicalUrl: v.optional(v.string()),
+      featuredImage: v.optional(v.string()),
+      updatedAt: v.number(),
+    })
+  ),
+  handler: async (ctx, args) => {
+    const tagLower = args.tag.toLowerCase();
+    const posts = await ctx.db
+      .query("blogPosts")
+      .withIndex("by_status_and_publishedAt", (q) =>
+        q.eq("status", "published")
+      )
+      .order("desc")
+      .collect();
+
+    // Filter by tag (case-insensitive) and ensure slug/publishedAt exist
+    return posts
+      .filter(
+        (post) =>
+          post.slug &&
+          post.publishedAt &&
+          post.tags.some((t) => t.toLowerCase() === tagLower)
+      )
+      .map((post) => ({
+        _id: post._id,
+        _creationTime: post._creationTime,
+        slug: post.slug!,
+        title: post.title,
+        bodyMarkdown: post.bodyMarkdown,
+        excerpt: post.excerpt,
+        publishedAt: post.publishedAt!,
+        author: post.author,
+        tags: post.tags,
+        readingTime: post.readingTime,
+        canonicalUrl: post.canonicalUrl,
+        featuredImage: post.featuredImage,
+        updatedAt: post.updatedAt,
+      }));
+  },
+});
+
+/**
  * Get a post by slug for seeding/admin purposes (includes drafts)
  * This is a public query but should only be used for seeding/admin operations
  */
