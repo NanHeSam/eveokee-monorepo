@@ -329,14 +329,24 @@ export const slackInteractiveHandler = httpAction(async (ctx, request) => {
     }
 
     // Extract postId and token from button value
-    // Format: "postId:token"
+    // Format: "postId:token" (must contain exactly one colon)
     const buttonValue = action.value as string;
-    const [postId, token] = buttonValue.split(":");
-
-    if (!postId || !token) {
-      logger.warn("Invalid button value format", { buttonValue });
+    
+    // Verify the string contains exactly one colon
+    const colonCount = (buttonValue.match(/:/g) || []).length;
+    if (colonCount !== 1) {
+      logger.warn("Invalid button value format - must contain exactly one colon", { buttonValue, colonCount });
       return errorResponse("Invalid button value", HTTP_STATUS_BAD_REQUEST);
     }
+    
+    // Split with limit of 2 and verify we get exactly 2 parts, both non-empty
+    const parts = buttonValue.split(":", 2);
+    if (parts.length !== 2 || !parts[0] || !parts[1]) {
+      logger.warn("Invalid button value format - missing postId or token", { buttonValue, partsLength: parts.length });
+      return errorResponse("Invalid button value", HTTP_STATUS_BAD_REQUEST);
+    }
+
+    const [postId, token] = parts;
 
     const actionId = action.action_id;
 

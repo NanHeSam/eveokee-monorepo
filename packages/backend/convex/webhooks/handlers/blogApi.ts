@@ -19,10 +19,17 @@ import {
   BLOG_DRAFT_DISMISS_PATH,
 } from "../../utils/constants/webhooks";
 import { logWebhookEvent } from "../../utils/logger";
-import { generateSlug } from "../../utils/blogHelpers";
+import { generateSlug, normalizeTagsField } from "../../utils/blogHelpers";
 import TurndownService from "turndown";
 
-const turndownService = new TurndownService();
+// Configure TurndownService with options optimized for blog content
+const turndownService = new TurndownService({
+  headingStyle: "atx", // Use # for headings (more consistent)
+  bulletListMarker: "-", // Use - for bullet lists
+  codeBlockStyle: "fenced", // Use ``` for code blocks
+  emDelimiter: "*", // Use * for emphasis
+  strongDelimiter: "**", // Use ** for strong
+});
 
 /**
  * Blog API HTTP handler
@@ -156,22 +163,11 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
     // Prioritize content_markdown if available, otherwise convert content_html to Markdown
     // using turndown. This ensures ReactMarkdown can properly render the content.
     const bodyMarkdown = payload.content_markdown || 
-      (payload.content_html ? turndownService.turndown(payload.content_html) : "") || 
-      "";
+      (payload.content_html ? turndownService.turndown(payload.content_html) : "");
     
     // Extract metadata from RankPill payload
     const author = payload.author || "Sam He";
-    // Ensure tags is always an array
-    let tags: string[] = [];
-    if (Array.isArray(payload.tags)) {
-      tags = payload.tags;
-    } else if (Array.isArray(payload.tag)) {
-      tags = payload.tag;
-    } else if (payload.tags && typeof payload.tags === "string") {
-      tags = [payload.tags];
-    } else if (payload.tag && typeof payload.tag === "string") {
-      tags = [payload.tag];
-    }
+    const tags = normalizeTagsField(payload);
     const excerpt = payload.excerpt || payload.description || undefined;
     const canonicalUrl = payload.canonical_url || payload.canonicalUrl || undefined;
     
@@ -194,7 +190,12 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
       const previewUrl = `${frontendBaseUrl}/blog/preview/${previewToken}`;
       
       // Approve/dismiss URLs should use the backend URL since they're API endpoints
-      const backendBaseUrl = process.env.CONVEX_SITE_URL || "https://eveokee.com";
+      // CONVEX_SITE_URL is provided automatically by Convex - fail fast if missing to prevent incorrect URLs
+      const backendBaseUrl = process.env.CONVEX_SITE_URL;
+      if (!backendBaseUrl) {
+        logger.error("CONVEX_SITE_URL is not available (this should be provided automatically by Convex)");
+        throw new Error("CONVEX_SITE_URL is not available (this should be provided automatically by Convex). Cannot generate approve/dismiss URLs.");
+      }
       const approveUrl = `${backendBaseUrl}${BLOG_DRAFT_APPROVE_PATH}?postId=${postId}&token=${previewToken}`;
       const dismissUrl = `${backendBaseUrl}${BLOG_DRAFT_DISMISS_PATH}?postId=${postId}&token=${previewToken}`;
 
@@ -232,16 +233,17 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
         } 
       });
     } catch (error: any) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to create draft";
       logger.error("Failed to create RankPill draft", error, {
         title: payload.title,
         slug,
       });
       logWebhookEvent(logger, "blogApi", "failed", {
         operation: "rankpillDraft",
-        error: error.message || "Failed to create draft",
+        error: errorMessage,
       });
       return errorResponse(
-        error.message || "Failed to create draft",
+        errorMessage,
         HTTP_STATUS_INTERNAL_SERVER_ERROR
       );
     }
@@ -288,16 +290,17 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
     });
     return successResponse({ success: true, result });
   } catch (error: any) {
+    const errorMessage = error instanceof Error ? error.message : "Operation failed";
     operationLogger.error("Blog API operation failed", error, {
       operation,
       params: Object.keys(params),
     });
     logWebhookEvent(operationLogger, "blogApi", "failed", {
       operation,
-      error: error.message || "Operation failed",
+      error: errorMessage,
     });
     return errorResponse(
-      error.message || "Operation failed",
+      errorMessage,
       HTTP_STATUS_INTERNAL_SERVER_ERROR
     );
   }
