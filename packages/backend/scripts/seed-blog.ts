@@ -37,6 +37,14 @@ interface ParsedMarkdown {
   content: string;
 }
 
+/**
+ * Extracts YAML-like frontmatter from a Markdown string and returns the parsed frontmatter with the remaining Markdown body.
+ *
+ * Parses a leading frontmatter block bounded by `---` lines. Simple `key: value` pairs are parsed into the returned `frontmatter` object; values enclosed in `[]` are parsed as string arrays, `readTime` is parsed as a number, and quoted values have surrounding quotes removed. If no frontmatter block is present, returns an empty `frontmatter` and the original `content`.
+ *
+ * @param content - The full Markdown file content to parse
+ * @returns An object with `frontmatter` containing parsed fields and `content` containing the Markdown body (without the frontmatter block)
+ */
 function parseFrontmatter(content: string): ParsedMarkdown {
   const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
   const match = content.match(frontmatterRegex);
@@ -78,11 +86,29 @@ function parseFrontmatter(content: string): ParsedMarkdown {
   return { frontmatter, content: markdownContent };
 }
 
+/**
+ * Derives a slug by removing the trailing `.md` extension from a filename.
+ *
+ * @param filename - The markdown filename, including the `.md` extension
+ * @returns The filename without the trailing `.md` extension
+ */
 function deriveSlugFromFilename(filename: string): string {
   // Remove .md extension and use as slug
   return filename.replace(/\.md$/, "");
 }
 
+/**
+ * Seeds Convex with blog posts parsed from Markdown files in apps/web/src/content/blog.
+ *
+ * Reads all `.md` files from the project's blog content directory, parses YAML frontmatter and body, and upserts posts into Convex via the HTTP client.
+ * - Requires the CONVEX_URL environment variable; exits if unset.
+ * - Supports the `--delete-existing` CLI flag to delete posts (by slug) before importing.
+ * - Derives a slug from frontmatter.slug or the filename.
+ * - Skips files missing required frontmatter fields `title` or `author`.
+ * - For each file: if a post exists (and not deleting) it updates the draft and preserves or applies published state/dates; otherwise it creates a draft and publishes immediately when `publishedAt` is provided.
+ * - Converts `publishedAt` (YYYY-MM-DD) to UTC midnight timestamps when publishing.
+ * - Logs progress, per-file successes/errors, and a final completion message.
+ */
 async function seedBlogPosts() {
   const convexUrl = process.env.CONVEX_URL;
   if (!convexUrl) {
@@ -245,4 +271,3 @@ seedBlogPosts().catch((error) => {
   console.error("Fatal error:", error);
   process.exit(1);
 });
-

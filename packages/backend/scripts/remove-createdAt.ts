@@ -13,6 +13,14 @@
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api";
 
+/**
+ * Verifies whether any blog posts have a defined `createdAt` field and reports findings to stdout.
+ *
+ * Requires the CONVEX_URL environment variable. If CONVEX_URL is missing or the backend query fails,
+ * the function logs the error and exits the process with code 1. If posts with `createdAt` are found,
+ * it lists each post by `slug` or `_id` and suggests running `pnpm seed:blog:clean`; otherwise it
+ * prints a confirmation that no `createdAt` fields remain.
+ */
 async function checkCreatedAt() {
   const convexUrl = process.env.CONVEX_URL;
   if (!convexUrl) {
@@ -53,4 +61,3 @@ checkCreatedAt().catch((error) => {
   console.error("Fatal error:", error);
   process.exit(1);
 });
-

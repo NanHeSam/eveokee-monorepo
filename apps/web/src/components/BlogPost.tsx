@@ -11,6 +11,18 @@ interface BlogPostProps {
   onBack: () => void;
 }
 
+/**
+ * Render a complete blog post view including header, metadata, tags and processed body content.
+ *
+ * The component displays the post title, author, optional publish date and reading time, tag pills,
+ * and a back button that invokes `onBack`. The post body is preprocessed for line breaks, music
+ * shortcodes, and YouTube embeds, then rendered as Markdown with support for syntax highlighting,
+ * custom block components (e.g., music embeds), and styled HTML elements.
+ *
+ * @param post - The blog post data (title, author, publishedAt, readingTime, tags, and bodyMarkdown).
+ * @param onBack - Callback invoked when the "Back to Blog" button is clicked.
+ * @returns The JSX element representing the blog post view.
+ */
 export default function BlogPost({ post, onBack }: BlogPostProps) {
 
   return (
