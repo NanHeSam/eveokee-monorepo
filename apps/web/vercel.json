@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd ../.. && pnpm install && pnpm --filter web build",
+  "buildCommand": "cd ../.. && pnpm install && pnpm --filter web build:prerender",
   "outputDirectory": "dist",
   "installCommand": "pnpm install",
   "framework": "vite",

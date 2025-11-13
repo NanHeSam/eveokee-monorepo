@@ -6,6 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:ssr": "node scripts/build-ssr-entry.mjs",
+    "type-check:ssr": "tsc -p tsconfig.ssr.json --noEmit",
+    "prerender:blog": "node scripts/prerender-blog.mjs",
+    "build:prerender": "tsc -b && vite build && pnpm build:ssr && pnpm prerender:blog",
     "lint": "eslint .",
     "preview": "vite preview",
     "type-check": "tsc -b --noEmit",
@@ -13,8 +17,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@clerk/clerk-react": "^5.50.0",
     "@backend/convex": "workspace:*",
+    "@clerk/clerk-react": "^5.50.0",
     "@sentry/react": "^10.17.0",
     "clsx": "^2.1.1",
     "convex": "^1.27.3",
@@ -46,6 +50,7 @@
     "@vitest/coverage-v8": "^2.1.4",
     "autoprefixer": "^10.4.21",
     "babel-plugin-react-dev-locator": "^1.0.0",
+    "esbuild": "^0.27.0",
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",

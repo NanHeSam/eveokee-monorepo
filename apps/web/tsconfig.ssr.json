@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "target": "ES2020",
+    "jsx": "react-jsx",
+    "outDir": "./dist-ssr",
+    "declaration": false,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true
+  },
+  "include": ["src/entry-blog-ssr.tsx", "src/vite-env.d.ts"]
+}
+
