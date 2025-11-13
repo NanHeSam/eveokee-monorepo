@@ -41,7 +41,13 @@ const escapeSlackMarkdown = (value: string): string => {
   return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/>/g, "&gt;")
+    .replace(/\*/g, "\\*")  // Escape bold
+    .replace(/_/g, "\\_")   // Escape italic
+    .replace(/~/g, "\\~")   // Escape strikethrough
+    .replace(/`/g, "\\`")   // Escape code
+    .replace(/\[/g, "\\[")  // Escape link opening
+    .replace(/\]/g, "\\]"); // Escape link closing
 };
 
 /**

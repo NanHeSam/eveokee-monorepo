@@ -70,7 +70,6 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
     url: request.url,
     headers,
     bodyLength: body.length,
-    bodyPreview: body.substring(0, 200), // First 200 chars for debugging
   });
 
   // Step 3: Get HMAC secret from environment
