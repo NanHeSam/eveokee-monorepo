@@ -8,7 +8,7 @@ import { api } from "@backend/convex";
 import type { Id } from "@backend/convex/convex/_generated/dataModel";
 
 export interface BlogPost {
-  _id: string;
+  _id: Id<"blogPosts">;
   _creationTime: number; // Use Convex's built-in _creationTime instead of createdAt
   slug?: string; // Optional for drafts
   title: string;
@@ -100,7 +100,12 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
 export async function getRecentPosts(limit: number = 3): Promise<BlogPost[]> {
   try {
     const posts = await client.query(api.blog.listPublished, {});
-    return posts.slice(0, limit);
+    const sortedPosts = [...posts].sort((a, b) => {
+      const aDate = a.publishedAt ?? 0;
+      const bDate = b.publishedAt ?? 0;
+      return bDate - aDate;
+    });
+    return sortedPosts.slice(0, limit);
   } catch (error) {
     console.error("Error fetching recent posts:", error);
     return [];
@@ -149,11 +154,11 @@ export async function getDraftByPreviewToken(previewToken: string): Promise<Blog
  *
  * @param postId - The `_id` of the blog post to increment the view count for
  */
-export async function trackView(postId: string): Promise<void> {
+export async function trackView(postId: Id<"blogPosts">): Promise<void> {
   try {
     const date = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
     await client.mutation(api.blog.incrementViewCount, {
-      postId: postId as Id<"blogPosts">,
+      postId,
       date,
     });
   } catch (error) {

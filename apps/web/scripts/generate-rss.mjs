@@ -90,7 +90,7 @@ async function generateRSS() {
     
     const postUrl = `${baseUrl}/blog/${post.slug}`;
     const pubDate = new Date(post.publishedAt).toUTCString();
-    const description = post.excerpt || stripMarkdown(post.bodyMarkdown).substring(0, 300) + "...";
+    const description = post.excerpt || stripMarkdown(post.bodyMarkdown || "").substring(0, 300) + "…";
     
     rss += `    <item>
       <title>${escapeXml(post.title)}</title>
@@ -153,7 +153,7 @@ function stripMarkdown(markdown) {
 }
 
 // Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === new URL(process.argv[1] ? process.argv[1] : '', import.meta.url).href) {
   generateRSS().catch((error) => {
     console.error("❌ Fatal error:", error);
     process.exit(1);

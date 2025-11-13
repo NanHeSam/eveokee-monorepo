@@ -339,6 +339,12 @@ async function prerenderBlog() {
   console.log("\nFiles are ready for deployment:");
   console.log(`  - Blog listing: /blog/index.html`);
   console.log(`  - Blog posts: /blog/[slug]/index.html`);
+
+  // Exit with error status if any pages failed to prerender
+  if (errorCount > 0) {
+    process.exit(1);
+  }
+  process.exit(0);
 }
 
 // Run if executed directly

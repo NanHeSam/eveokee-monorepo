@@ -22,6 +22,31 @@ import { logWebhookEvent } from "../../utils/logger";
 import { generateSlug, normalizeTagsField } from "../../utils/blogHelpers";
 import TurndownService from "turndown";
 
+/**
+ * RankPill webhook payload format
+ * Represents the article data structure sent by RankPill
+ */
+interface RankPillPayload {
+  title: string;
+  content_html: string;
+  content_markdown?: string;
+  slug?: string;
+  meta_description?: string;
+  status?: string;
+  featured_image?: string;
+  published_url?: string;
+  published_at?: string; // ISO date string
+  test?: boolean;
+  author?: string;
+  tags?: string | string[];
+  tag?: string | string[];
+  excerpt?: string;
+  description?: string;
+  canonical_url?: string;
+  canonicalUrl?: string;
+  reading_time?: number;
+}
+
 // Configure TurndownService with options optimized for blog content
 const turndownService = new TurndownService({
   headingStyle: "atx", // Use # for headings (more consistent)
@@ -139,7 +164,7 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
   logger.debug("HMAC signature verification successful");
 
   // Step 6: Parse JSON body
-  let payload: any;
+  let payload: RankPillPayload | { operation: string; [key: string]: unknown };
   try {
     payload = JSON.parse(body);
   } catch (error) {
@@ -149,7 +174,12 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
 
   // Step 7: Handle RankPill format (article data without operation field)
   // RankPill sends: { title, content_html, ... } instead of { operation, ... }
-  if (payload.title && payload.content_html && !payload.operation) {
+  // Type guard: check if payload is RankPillPayload (has title and content_html, no operation)
+  const isRankPillPayload = (p: typeof payload): p is RankPillPayload => {
+    return "title" in p && "content_html" in p && !("operation" in p);
+  };
+  
+  if (isRankPillPayload(payload)) {
     logger.info("Detected RankPill article format, creating draft for review");
     
     // Use RankPill's slug if provided, otherwise generate from title
@@ -269,6 +299,17 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
   }
 
   // Step 8: Handle standard API format with operation field
+  // At this point, payload is not RankPillPayload, so it must have operation
+  if (!("operation" in payload) || typeof payload.operation !== "string") {
+    logger.warn("Payload missing operation field and is not RankPill format", {
+      payloadKeys: Object.keys(payload),
+    });
+    return errorResponse(
+      "Missing operation field. Expected operation field or RankPill article format.",
+      HTTP_STATUS_BAD_REQUEST
+    );
+  }
+  
   const { operation, ...params } = payload;
 
   // Add operation context to logger

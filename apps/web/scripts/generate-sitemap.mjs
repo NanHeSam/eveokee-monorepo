@@ -11,7 +11,7 @@
 import { ConvexHttpClient } from "convex/browser";
 import * as fs from "fs";
 import * as path from "path";
-import { fileURLToPath } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -143,7 +143,7 @@ function escapeXml(text) {
 }
 
 // Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   generateSitemap().catch((error) => {
     console.error("❌ Fatal error:", error);
     process.exit(1);

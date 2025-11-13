@@ -76,8 +76,3 @@ createRoot(document.getElementById('root')!).render(
     </PostHogProvider>
   </StrictMode>,
 )
-
-// Dispatch render event for vite-plugin-prerender
-if (typeof window !== 'undefined') {
-  window.dispatchEvent(new Event('render-event'));
-}
