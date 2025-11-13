@@ -4,6 +4,7 @@ import { Calendar, Clock, User, Search } from 'lucide-react';
 import BlogPost from '@/components/BlogPost';
 import { getAllPosts, getPostBySlug, getDraftByPreviewToken, trackView, BlogPost as BlogPostType } from '@/lib/blog-service';
 import { formatDate } from '@/utils/formatting';
+import { StructuredData, generateBlogStructuredData } from '@/components/StructuredData';
 
 /**
  * Render the blog listing or a single post view based on route parameters.
@@ -142,8 +143,12 @@ export default function Blog() {
     );
   }
 
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://eveokee.com";
+  const blogStructuredData = generateBlogStructuredData(posts, baseUrl);
+
   return (
     <>
+      <StructuredData data={blogStructuredData} />
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-accent-mint/10 to-accent-coral/10 dark:from-accent-mint/5 dark:to-accent-coral/5 py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">

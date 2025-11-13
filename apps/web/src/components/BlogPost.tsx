@@ -5,6 +5,7 @@ import rehypeHighlight from 'rehype-highlight';
 import { BlogPost as BlogPostType } from '../lib/blog-service';
 import { parseMusicShortcodes, parseYouTubeEmbeds, processMusicComponents } from '../utils/markdownUtils';
 import { formatDate } from '../utils/formatting';
+import { StructuredData, generateArticleStructuredData } from './StructuredData';
 
 interface BlogPostProps {
   post: BlogPostType;
@@ -24,9 +25,12 @@ interface BlogPostProps {
  * @returns The JSX element representing the blog post view.
  */
 export default function BlogPost({ post, onBack }: BlogPostProps) {
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://eveokee.com";
+  const articleStructuredData = generateArticleStructuredData(post, baseUrl);
 
   return (
     <article className="max-w-4xl mx-auto px-4 py-8">
+      <StructuredData data={articleStructuredData} />
       <button 
         onClick={onBack}
         className="inline-flex items-center text-accent-mint hover:text-accent-mint/80 mb-6 transition-colors"
