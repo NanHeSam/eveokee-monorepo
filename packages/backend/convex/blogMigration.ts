@@ -44,6 +44,20 @@ export const removeCreatedAtFromPosts = internalMutation({
           ...postWithoutCreatedAt
         } = post as any;
 
+        // Idempotency check: if a post with this slug already exists and lacks createdAt,
+        // it means we already inserted it in a previous failed run - skip to avoid duplicates
+        if (postWithoutCreatedAt.slug) {
+          const existingPost = await ctx.db
+            .query("blogPosts")
+            .withIndex("by_slug", (q) => q.eq("slug", postWithoutCreatedAt.slug))
+            .first();
+
+          if (existingPost && !('createdAt' in existingPost)) {
+            // Already migrated in a previous run, skip processing
+            continue;
+          }
+        }
+
         const newPostId = await ctx.db.insert("blogPosts", postWithoutCreatedAt);
 
         // Migrate revisions to new post

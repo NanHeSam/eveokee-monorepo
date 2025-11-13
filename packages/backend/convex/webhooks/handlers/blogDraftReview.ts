@@ -29,7 +29,7 @@ const escapeHtml = (value: string): string => {
     '"': "&quot;",
     "'": "&#39;",
   };
-  return value.replace(/[&<>"']/g, (char) => htmlEscapeMap[char] || char);
+  return value.replace(/[&<>"']/g, (char) => htmlEscapeMap[char]!);
 };
 
 /**
