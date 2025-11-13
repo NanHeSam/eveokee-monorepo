@@ -37,3 +37,7 @@ pnpm-debug.log*
 
 # React Component Preview
 previewConfig.json
+
+# Generated files
+apps/web/public/sitemap.xml
+apps/web/public/rss.xml
