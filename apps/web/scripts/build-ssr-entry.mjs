@@ -19,6 +19,11 @@ const outDir = path.join(webRoot, "dist-ssr");
 const outfile = path.join(outDir, "entry-blog-ssr.js");
 const tsconfigPath = path.join(webRoot, "tsconfig.ssr.json");
 
+/**
+ * Builds the server-side rendering entry: runs a TypeScript type check using tsconfig.ssr.json, then bundles the SSR entry with esbuild into the configured output file.
+ *
+ * Ensures the output directory exists, prepends "// @ts-nocheck" to the generated bundle, and logs progress. On any failure the function logs the error (and stack if available) and exits the process with code 1.
+ */
 async function build() {
   try {
     // Step 1: Type check with tsconfig.ssr.json
@@ -59,4 +64,3 @@ async function build() {
 }
 
 build();
-

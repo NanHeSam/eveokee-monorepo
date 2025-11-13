@@ -20,7 +20,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /**
- * Escape HTML special characters to prevent XSS
+ * Escape characters in a string to their HTML entity equivalents to make it safe for insertion into HTML content.
+ * @param {string} text - Input string that may contain HTML-sensitive characters.
+ * @returns {string} The input string with &, <, >, ", and ' replaced by their HTML entities.
  */
 function escapeHtml(text) {
   const map = {
@@ -34,13 +36,25 @@ function escapeHtml(text) {
 }
 
 /**
- * Escape JSON string to prevent script tag injection issues
+ * Escape a serialized JSON string for safe embedding inside a <script> tag.
+ * @param {string} jsonString - A JSON string produced by JSON.stringify.
+ * @returns {string} The input with every `<` character replaced by `\u003c` to prevent `</script>`-style tag injection.
  */
 function escapeJsonForScript(jsonString) {
   // Replace < with \u003c to prevent </script> from breaking the tag
   return jsonString.replace(/</g, "\\u003c");
 }
 
+/**
+ * Prerenders blog listing and individual post pages into the dist/blog directory using SSR and Convex data.
+ *
+ * Connects to a Convex deployment (via CONVEX_URL or VITE_CONVEX_URL), dynamically loads the generated Convex API
+ * and the compiled SSR entry, fetches published posts, SSR-renders each post and the listing page, injects
+ * hydration data and meta tags, and writes the resulting HTML files to dist/blog/[slug]/index.html and dist/blog/index.html.
+ *
+ * Side effects: performs network requests to Convex, reads dist/index.html, writes files under dist/blog, and calls process.exit()
+ * with a non-zero code if required resources are missing or if any prerendering errors occur.
+ */
 async function prerenderBlog() {
   console.log("🚀 Starting blog prerender...");
 
@@ -355,4 +369,3 @@ prerenderBlog().catch((error) => {
   }
   process.exit(1);
 });
-

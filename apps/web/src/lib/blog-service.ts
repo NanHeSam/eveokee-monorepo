@@ -40,8 +40,10 @@ declare global {
 let client: ConvexHttpClient | null = null;
 
 /**
- * Get or create the Convex client instance.
- * Allows injection for testing and defers initialization until first use.
+ * Return the singleton Convex HTTP client, creating it on first use.
+ *
+ * @returns The module-scoped ConvexHttpClient instance
+ * @throws Error if the VITE_CONVEX_URL environment variable is not set
  */
 function getClient(): ConvexHttpClient {
   if (client) {
@@ -81,14 +83,11 @@ export async function getAllPosts(): Promise<BlogPost[]> {
 }
 
 /**
- * Retrieve a blog post by its slug, using prerendered data when available.
+ * Get a blog post by slug, favoring any matching prerendered post and invalidating it.
  *
- * If a matching prerendered post exists on `window.__BLOG_INITIAL__`, that post
- * is returned and the prerendered data is cleared so subsequent requests will
- * fetch fresh data. If no matching prerendered data exists, the function fetches
- * the post from the backend.
+ * If `window.__BLOG_INITIAL__` exists and its slug matches the requested slug, the prerendered post is returned and `__BLOG_INITIAL__` is deleted so future calls fetch fresh data; otherwise the post is fetched from the backend.
  *
- * @param slug - The slug identifier for the blog post to retrieve
+ * @param slug - The slug identifier of the blog post to retrieve
  * @returns The matching `BlogPost` if found, `null` otherwise
  */
 export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
@@ -113,8 +112,7 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
 }
 
 /**
- * Retrieve a limited list of the most recently published blog posts.
- * Uses server-side sorting and limiting for better performance.
+ * Get the most recently published blog posts, limited by count.
  *
  * @param limit - Maximum number of posts to return (defaults to 3)
  * @returns An array of published blog posts ordered newest first, containing at most `limit` items
@@ -130,11 +128,10 @@ export async function getRecentPosts(limit: number = 3): Promise<BlogPost[]> {
 }
 
 /**
- * Retrieve published blog posts that include the specified tag (case-insensitive).
- * Uses server-side filtering for better performance.
+ * Get published blog posts that contain the specified tag (case-insensitive).
  *
- * @param tag - The tag to match against each post's tags (comparison is case-insensitive).
- * @returns An array of `BlogPost` objects whose `tags` include `tag`. Returns an empty array if there are no matches or if an error occurs.
+ * @param tag - Tag to match against each post's `tags` (comparison is case-insensitive)
+ * @returns An array of posts whose `tags` include `tag`. Returns an empty array if no matches are found or if an error occurs
  */
 export async function getPostsByTag(tag: string): Promise<BlogPost[]> {
   try {
@@ -163,12 +160,12 @@ export async function getDraftByPreviewToken(previewToken: string): Promise<Blog
 }
 
 /**
- * Increment the view count for a blog post for the current date.
+ * Record a daily view for a blog post.
  *
- * Calls the backend mutation to record a daily view using the date formatted as `YYYY-MM-DD`.
- * Errors are logged to the console and are not propagated.
+ * Attempts to increment the post's view count for the current date (formatted as `YYYY-MM-DD`).
+ * Errors are logged to the console and are not thrown.
  *
- * @param postId - The `_id` of the blog post to increment the view count for
+ * @param postId - The blog post's `_id`
  */
 export async function trackView(postId: Id<"blogPosts">): Promise<void> {
   try {

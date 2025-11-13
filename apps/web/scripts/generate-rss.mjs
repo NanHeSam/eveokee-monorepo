@@ -16,6 +16,19 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+/**
+ * Generate an RSS 2.0 feed for published blog posts and write it to public/rss.xml.
+ *
+ * Builds the feed by fetching up to 20 published posts from a Convex backend, converting
+ * post content to safe plaintext for descriptions, and creating an RSS XML document.
+ * The script reads Convex connection and base URL configuration from the environment:
+ * - CONVEX_URL or VITE_CONVEX_URL (required)
+ * - VITE_BASE_URL or BASE_URL (optional; defaults to "https://eveokee.com")
+ *
+ * This function performs filesystem side effects (creates the public directory if missing
+ * and writes public/rss.xml) and will call process.exit(1) on fatal errors such as
+ * missing configuration, failure to import the generated Convex API, or failure to fetch posts.
+ */
 async function generateRSS() {
   console.log("🚀 Starting RSS feed generation...");
 
@@ -129,6 +142,11 @@ async function generateRSS() {
   console.log(`   - ${blogPosts.length} blog posts included`);
 }
 
+/**
+ * Escape characters that are significant in XML so the value can be safely embedded in XML content.
+ * @param {any} text - Value to escape; converted to a string.
+ * @returns {string} The input converted to a string with &, <, >, ", and ' replaced by their XML entities.
+ */
 function escapeXml(text) {
   return String(text)
     .replace(/&/g, "&amp;")
@@ -138,6 +156,15 @@ function escapeXml(text) {
     .replace(/'/g, "&apos;");
 }
 
+/**
+ * Convert Markdown text to a concise plaintext summary by removing common Markdown constructs.
+ *
+ * Removes headers, images, code blocks, inline code, emphasis, and link targets (keeping link text),
+ * collapses consecutive newlines to single spaces, and trims surrounding whitespace.
+ *
+ * @param {string} markdown - The Markdown input to sanitize.
+ * @returns {string} Plaintext with Markdown formatting removed and whitespace normalized.
+ */
 function stripMarkdown(markdown) {
   // Simple markdown stripping - remove headers, links, images, etc.
   return markdown
@@ -161,4 +188,3 @@ if (import.meta.url === new URL(process.argv[1] ? process.argv[1] : '', import.m
 }
 
 export { generateRSS };
-
