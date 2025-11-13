@@ -30,65 +30,55 @@ export const removeCreatedAtFromPosts = internalMutation({
 
     for (const post of posts) {
       try {
-        // Create new post without createdAt
-        const newPostId = await ctx.db.insert("blogPosts", {
-          slug: post.slug,
-          title: post.title,
-          bodyMarkdown: post.bodyMarkdown,
-          excerpt: post.excerpt,
-          status: post.status,
-          publishedAt: post.publishedAt,
-          author: post.author,
-          tags: post.tags,
-          readingTime: post.readingTime,
-          canonicalUrl: post.canonicalUrl,
-          redirectFrom: post.redirectFrom,
-          updatedAt: post.updatedAt,
-          // Intentionally omit createdAt
-        });
+        // Create new post without createdAt, preserving all other fields
+        // Destructure to remove _id, _creationTime, and createdAt
+        const {
+          _id: oldPostId,
+          _creationTime: _legacyCreationTime,
+          createdAt: _legacyCreatedAt,
+          ...postWithoutCreatedAt
+        } = post as any;
+
+        const newPostId = await ctx.db.insert("blogPosts", postWithoutCreatedAt);
 
         // Migrate revisions to new post
         const revisions = await ctx.db
           .query("blogPostRevisions")
-          .withIndex("by_postId", (q) => q.eq("postId", post._id))
+          .withIndex("by_postId", (q) => q.eq("postId", oldPostId))
           .collect();
 
         for (const revision of revisions) {
+          // Preserve all revision fields except _id, _creationTime, and update postId
+          const { _id: _oldRevisionId, _creationTime: _oldRevisionCreationTime, postId: _oldRevisionPostId, ...revisionData } = revision as any;
           await ctx.db.insert("blogPostRevisions", {
+            ...revisionData,
             postId: newPostId,
-            bodyMarkdown: revision.bodyMarkdown,
-            title: revision.title,
-            excerpt: revision.excerpt,
-            author: revision.author,
-            tags: revision.tags,
-            createdAt: revision.createdAt,
           });
         }
 
         // Migrate analytics to new post
         const analytics = await ctx.db
           .query("blogPostAnalytics")
-          .withIndex("by_postId", (q) => q.eq("postId", post._id))
+          .withIndex("by_postId", (q) => q.eq("postId", oldPostId))
           .collect();
 
         for (const analytic of analytics) {
+          // Preserve all analytics fields except _id, _creationTime, and update postId
+          const { _id: _oldAnalyticId, _creationTime: _oldAnalyticCreationTime, postId: _oldAnalyticPostId, ...analyticsData } = analytic as any;
           await ctx.db.insert("blogPostAnalytics", {
+            ...analyticsData,
             postId: newPostId,
-            date: analytic.date,
-            viewCount: analytic.viewCount,
-            updatedAt: analytic.updatedAt,
           });
         }
 
-        // Delete old post (this will cascade delete revisions/analytics via foreign key constraints)
-        // Actually, we need to delete them manually first
+        // Delete old post and related data
         for (const revision of revisions) {
           await ctx.db.delete(revision._id);
         }
         for (const analytic of analytics) {
           await ctx.db.delete(analytic._id);
         }
-        await ctx.db.delete(post._id);
+        await ctx.db.delete(oldPostId);
 
         migrated++;
       } catch (error) {

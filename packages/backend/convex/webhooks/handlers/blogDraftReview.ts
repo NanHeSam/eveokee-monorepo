@@ -19,6 +19,20 @@ import {
 import { logWebhookEvent } from "../../utils/logger";
 
 /**
+ * Escape HTML special characters to prevent XSS attacks
+ */
+const escapeHtml = (value: string): string => {
+  const htmlEscapeMap: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  };
+  return value.replace(/[&<>"']/g, (char) => htmlEscapeMap[char] || char);
+};
+
+/**
  * Approve a draft post (publish it)
  * GET /api/blog/draft/approve?postId=...&token=...
  */
@@ -88,6 +102,10 @@ export const approveDraftHandler = httpAction(async (ctx, request) => {
     const frontendBaseUrl = process.env.SHARE_BASE_URL || "http://localhost:5173";
     const publishedPostUrl = `${frontendBaseUrl}/blog/${slug}`;
 
+    // Escape HTML to prevent XSS
+    const safeTitle = escapeHtml(post.title);
+    const safePublishedPostUrl = escapeHtml(publishedPostUrl);
+
     // Return HTML response for Slack button click
     return new Response(
       `<!DOCTYPE html>
@@ -100,8 +118,8 @@ export const approveDraftHandler = httpAction(async (ctx, request) => {
 <body>
   <div style="font-family: sans-serif; max-width: 600px; margin: 50px auto; padding: 20px;">
     <h1>✅ Draft Approved</h1>
-    <p>The blog post "<strong>${post.title}</strong>" has been published.</p>
-    <p><a href="${publishedPostUrl}">View Published Post</a></p>
+    <p>The blog post "<strong>${safeTitle}</strong>" has been published.</p>
+    <p><a href="${safePublishedPostUrl}">View Published Post</a></p>
   </div>
 </body>
 </html>`,
@@ -174,6 +192,9 @@ export const dismissDraftHandler = httpAction(async (ctx, request) => {
       postId: post._id,
     });
 
+    // Escape HTML to prevent XSS
+    const safeTitle = escapeHtml(post.title);
+
     // Return HTML response for Slack button click
     return new Response(
       `<!DOCTYPE html>
@@ -186,7 +207,7 @@ export const dismissDraftHandler = httpAction(async (ctx, request) => {
 <body>
   <div style="font-family: sans-serif; max-width: 600px; margin: 50px auto; padding: 20px;">
     <h1>❌ Draft Dismissed</h1>
-    <p>The blog post "<strong>${post.title}</strong>" has been deleted.</p>
+    <p>The blog post "<strong>${safeTitle}</strong>" has been deleted.</p>
   </div>
 </body>
 </html>`,

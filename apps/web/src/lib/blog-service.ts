@@ -10,11 +10,11 @@ import type { Id } from "@backend/convex/convex/_generated/dataModel";
 export interface BlogPost {
   _id: string;
   _creationTime: number; // Use Convex's built-in _creationTime instead of createdAt
-  slug: string;
+  slug?: string; // Optional for drafts
   title: string;
   bodyMarkdown: string;
   excerpt?: string;
-  publishedAt: number;
+  publishedAt?: number; // Optional for drafts
   author: string;
   tags: string[];
   readingTime?: number;

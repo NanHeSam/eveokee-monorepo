@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Calendar, Clock, User, Search } from 'lucide-react';
 import BlogPost from '@/components/BlogPost';
 import { getAllPosts, getPostBySlug, getDraftByPreviewToken, trackView, BlogPost as BlogPostType } from '@/lib/blog-service';
+import { formatDate } from '@/utils/formatting';
 
 export default function Blog() {
   const { slug, token } = useParams();
@@ -105,14 +106,6 @@ export default function Blog() {
     post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -191,12 +184,16 @@ export default function Blog() {
 
                     {/* Title */}
                     <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
-                      <Link 
-                        to={`/blog/${post.slug}`}
-                        className="hover:text-accent-mint transition-colors"
-                      >
-                        {post.title}
-                      </Link>
+                      {post.slug ? (
+                        <Link
+                          to={`/blog/${post.slug}`}
+                          className="hover:text-accent-mint transition-colors"
+                        >
+                          {post.title}
+                        </Link>
+                      ) : (
+                        <span>{post.title}</span>
+                      )}
                     </h2>
 
                     {/* Excerpt */}
@@ -212,10 +209,12 @@ export default function Blog() {
                         <User className="w-4 h-4" />
                         <span>{post.author}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        <span>{formatDate(post.publishedAt)}</span>
-                      </div>
+                      {post.publishedAt && (
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          <span>{formatDate(post.publishedAt, { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                        </div>
+                      )}
                       {post.readingTime && (
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4" />
@@ -225,12 +224,14 @@ export default function Blog() {
                     </div>
 
                     {/* Read More */}
-                    <Link 
-                      to={`/blog/${post.slug}`}
-                      className="inline-flex items-center text-accent-mint hover:text-accent-mint/80 transition-colors font-medium"
-                    >
-                      Read full post →
-                    </Link>
+                    {post.slug && (
+                      <Link
+                        to={`/blog/${post.slug}`}
+                        className="inline-flex items-center text-accent-mint hover:text-accent-mint/80 transition-colors font-medium"
+                      >
+                        Read full post →
+                      </Link>
+                    )}
                   </div>
                 </article>
               ))}

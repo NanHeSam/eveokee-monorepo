@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { BlogPost as BlogPostType } from '../lib/blog-service';
 import { parseMusicShortcodes, parseYouTubeEmbeds, processMusicComponents } from '../utils/markdownUtils';
+import { formatDate } from '../utils/formatting';
 
 interface BlogPostProps {
   post: BlogPostType;
@@ -11,13 +12,6 @@ interface BlogPostProps {
 }
 
 export default function BlogPost({ post, onBack }: BlogPostProps) {
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
 
   return (
     <article className="max-w-4xl mx-auto px-4 py-8">
@@ -39,10 +33,12 @@ export default function BlogPost({ post, onBack }: BlogPostProps) {
             <User className="w-4 h-4 mr-1" />
             {post.author}
           </div>
-          <div className="flex items-center">
-            <Calendar className="w-4 h-4 mr-1" />
-            {formatDate(post.publishedAt)}
-          </div>
+          {post.publishedAt && (
+            <div className="flex items-center">
+              <Calendar className="w-4 h-4 mr-1" />
+              {formatDate(post.publishedAt, { year: 'numeric', month: 'long', day: 'numeric' })}
+            </div>
+          )}
           {post.readingTime && (
             <div className="flex items-center">
               <Clock className="w-4 h-4 mr-1" />

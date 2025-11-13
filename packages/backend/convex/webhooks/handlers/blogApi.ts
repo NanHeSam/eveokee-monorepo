@@ -157,6 +157,14 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
     const slug = generateSlug(payload.title);
     
     // Generate preview token for draft access
+    // NOTE: Using Math.random() instead of crypto.randomUUID() because Convex runtime
+    // may not have access to Node.js crypto module. While Math.random() provides ~53 bits
+    // of entropy (less than cryptographically secure), preview tokens are:
+    // 1. Temporary (only used until draft is approved/dismissed)
+    // 2. Low-risk (worst case: unauthorized preview of unpublished blog draft)
+    // 3. Single-use (token is invalidated after approval/dismissal)
+    // For higher security needs, consider using Convex's built-in ID generation or
+    // implementing a cryptographically secure random generator if available in runtime.
     const generatePreviewToken = (): string => {
       const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
       let token = "";
@@ -167,9 +175,14 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
     };
 
     const previewToken = generatePreviewToken();
-    
-    // Convert HTML to markdown (markdown supports HTML, so we can use HTML directly)
-    // Or if RankPill provides markdown, use that instead
+
+    // Convert content to markdown
+    // NOTE: If RankPill sends content_html instead of content_markdown, the HTML will be
+    // passed through as-is. ReactMarkdown (used in the frontend) will render some HTML tags,
+    // but may escape others. For proper HTML rendering, the frontend would need rehypeRaw plugin
+    // with sanitization. Currently prioritizing content_markdown if available.
+    // TODO: Consider adding HTML-to-Markdown conversion library (e.g., turndown) if RankPill
+    // consistently sends HTML instead of Markdown.
     const bodyMarkdown = payload.content_markdown || payload.content_html || "";
     
     // Extract metadata from RankPill payload

@@ -29,6 +29,7 @@ interface Frontmatter {
   tags?: string[];
   readTime?: number;
   coverImage?: string;
+  canonicalUrl?: string;
 }
 
 interface ParsedMarkdown {
@@ -170,7 +171,7 @@ async function seedBlogPosts() {
           author: frontmatter.author,
           tags: frontmatter.tags || [],
           readingTime: frontmatter.readTime,
-          canonicalUrl: frontmatter.coverImage, // Using coverImage as canonicalUrl for now
+          canonicalUrl: frontmatter.canonicalUrl,
         });
 
         // If post is published, ensure it stays published with correct date
@@ -204,7 +205,7 @@ async function seedBlogPosts() {
           author: frontmatter.author!,
           tags: frontmatter.tags || [],
           readingTime: frontmatter.readTime,
-          canonicalUrl: frontmatter.coverImage,
+          canonicalUrl: frontmatter.canonicalUrl,
         });
 
         // Publish immediately if publishedAt is set
