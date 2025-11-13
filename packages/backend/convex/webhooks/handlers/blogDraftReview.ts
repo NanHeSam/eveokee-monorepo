@@ -86,6 +86,11 @@ export const approveDraftHandler = httpAction(async (ctx, request) => {
 
     const slug = post.slug || generateSlug(post.title);
 
+    if (!slug) {
+      logger.warn("Generated slug is empty", { postId: post._id, title: post.title });
+      return errorResponse("Unable to generate valid slug from title", HTTP_STATUS_BAD_REQUEST);
+    }
+
     // Approve (publish) the draft
     await ctx.runMutation(internal.blog.approveDraft, {
       postId: post._id,

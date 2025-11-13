@@ -30,6 +30,11 @@ export const removeCreatedAtFromPosts = internalMutation({
 
     for (const post of posts) {
       try {
+        // Skip posts that have already been migrated (no createdAt field)
+        if (!('createdAt' in post)) {
+          continue;
+        }
+
         // Create new post without createdAt, preserving all other fields
         // Destructure to remove _id, _creationTime, and createdAt
         const {

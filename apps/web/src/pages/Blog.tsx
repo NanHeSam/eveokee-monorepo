@@ -111,11 +111,15 @@ export default function Blog() {
   }
 
   // Show blog listing
-  const filteredPosts = posts.filter(post =>
-    post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.excerpt?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredPosts = posts.filter(post => {
+    const searchLower = searchTerm.toLowerCase();
+    const excerpt = post.excerpt ? post.excerpt.toLowerCase() : '';
+    return (
+      post.title.toLowerCase().includes(searchLower) ||
+      excerpt.includes(searchLower) ||
+      post.tags.some(tag => tag.toLowerCase().includes(searchLower))
+    );
+  });
 
   if (loading) {
     return (
