@@ -5,6 +5,17 @@ import BlogPost from '@/components/BlogPost';
 import { getAllPosts, getPostBySlug, getDraftByPreviewToken, trackView, BlogPost as BlogPostType } from '@/lib/blog-service';
 import { formatDate } from '@/utils/formatting';
 
+/**
+ * Render the blog listing or a single post view based on route parameters.
+ *
+ * Loads all posts for the listing view, or loads a single published post by slug
+ * or an unpublished draft by preview token when those params are present.
+ * While fetching, displays loading placeholders; if a post/draft cannot be found,
+ * displays a not-found message with a Back to Blog link. When rendering a draft
+ * preview, shows an informational banner. Opening a published post records a view.
+ *
+ * @returns The blog page JSX: either the searchable posts listing, a single post view (with optional draft preview banner), or loading/not-found UI.
+ */
 export default function Blog() {
   const { slug, token } = useParams();
   const navigate = useNavigate();

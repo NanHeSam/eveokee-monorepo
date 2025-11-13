@@ -44,7 +44,9 @@ if (!convexUrl) {
 const client = new ConvexHttpClient(convexUrl);
 
 /**
- * Get all published blog posts
+ * Retrieve all published blog posts.
+ *
+ * @returns An array of published BlogPost objects; `[]` if fetching fails.
  */
 export async function getAllPosts(): Promise<BlogPost[]> {
   try {
@@ -57,8 +59,15 @@ export async function getAllPosts(): Promise<BlogPost[]> {
 }
 
 /**
- * Get a single blog post by slug
- * Checks window.__BLOG_INITIAL__ first to avoid refetch
+ * Retrieve a blog post by its slug, using prerendered data when available.
+ *
+ * If a matching prerendered post exists on `window.__BLOG_INITIAL__`, that post
+ * is returned and the prerendered data is cleared so subsequent requests will
+ * fetch fresh data. If no matching prerendered data exists, the function fetches
+ * the post from the backend.
+ *
+ * @param slug - The slug identifier for the blog post to retrieve
+ * @returns The matching `BlogPost` if found, `null` otherwise
  */
 export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
   // Check if we have prerendered data
@@ -82,7 +91,10 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
 }
 
 /**
- * Get recent posts (limited)
+ * Retrieve a limited list of the most recently published blog posts.
+ *
+ * @param limit - Maximum number of posts to return (defaults to 3)
+ * @returns An array of published blog posts ordered newest first, containing at most `limit` items
  */
 export async function getRecentPosts(limit: number = 3): Promise<BlogPost[]> {
   try {
@@ -95,7 +107,10 @@ export async function getRecentPosts(limit: number = 3): Promise<BlogPost[]> {
 }
 
 /**
- * Get posts by tag
+ * Retrieve published blog posts that include the specified tag (case-insensitive).
+ *
+ * @param tag - The tag to match against each post's tags (comparison is case-insensitive).
+ * @returns An array of `BlogPost` objects whose `tags` include `tag`. Returns an empty array if there are no matches or if an error occurs.
  */
 export async function getPostsByTag(tag: string): Promise<BlogPost[]> {
   try {
@@ -110,7 +125,10 @@ export async function getPostsByTag(tag: string): Promise<BlogPost[]> {
 }
 
 /**
- * Get a draft post by preview token
+ * Retrieve a draft blog post associated with a preview token.
+ *
+ * @param previewToken - The preview token used to look up the draft post.
+ * @returns The matching `BlogPost`, or `null` if no draft is found or on failure.
  */
 export async function getDraftByPreviewToken(previewToken: string): Promise<BlogPost | null> {
   try {
@@ -123,7 +141,12 @@ export async function getDraftByPreviewToken(previewToken: string): Promise<Blog
 }
 
 /**
- * Track a view for a blog post
+ * Increment the view count for a blog post for the current date.
+ *
+ * Calls the backend mutation to record a daily view using the date formatted as `YYYY-MM-DD`.
+ * Errors are logged to the console and are not propagated.
+ *
+ * @param postId - The `_id` of the blog post to increment the view count for
  */
 export async function trackView(postId: string): Promise<void> {
   try {
