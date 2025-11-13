@@ -300,7 +300,8 @@ export const slackInteractiveHandler = httpAction(async (ctx, request) => {
   try {
     // Slack sends interactive payloads as form-encoded data
     const formData = await request.formData();
-    const payloadStr = formData.get("payload") as string;
+    // Type assertion for compatibility: FormData.get() exists in Web API but mobile TS may not recognize it
+    const payloadStr = (formData as unknown as { get: (key: string) => string | null }).get("payload");
 
     if (!payloadStr) {
       logger.warn("Missing payload in form data");

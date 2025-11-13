@@ -72,8 +72,6 @@ export const sendDraftReviewNotification = action({
     postId: v.id("blogPosts"),
     title: v.string(),
     previewUrl: v.string(),
-    approveUrl: v.string(), // Kept for backward compatibility but not used in buttons
-    dismissUrl: v.string(), // Kept for backward compatibility but not used in buttons
     previewToken: v.string(), // Token needed for interactive buttons
   },
   returns: v.object({

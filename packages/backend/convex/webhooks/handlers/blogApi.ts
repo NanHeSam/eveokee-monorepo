@@ -20,6 +20,9 @@ import {
 } from "../../utils/constants/webhooks";
 import { logWebhookEvent } from "../../utils/logger";
 import { generateSlug } from "../../utils/blogHelpers";
+import TurndownService from "turndown";
+
+const turndownService = new TurndownService();
 
 /**
  * Blog API HTTP handler
@@ -151,13 +154,11 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
     const previewToken = await ctx.runAction(internal.blogAuth.generatePreviewToken);
 
     // Convert content to markdown
-    // NOTE: If RankPill sends content_html instead of content_markdown, the HTML will be
-    // passed through as-is. ReactMarkdown (used in the frontend) will render some HTML tags,
-    // but may escape others. For proper HTML rendering, the frontend would need rehypeRaw plugin
-    // with sanitization. Currently prioritizing content_markdown if available.
-    // TODO: Consider adding HTML-to-Markdown conversion library (e.g., turndown) if RankPill
-    // consistently sends HTML instead of Markdown.
-    const bodyMarkdown = payload.content_markdown || payload.content_html || "";
+    // Prioritize content_markdown if available, otherwise convert content_html to Markdown
+    // using turndown. This ensures ReactMarkdown can properly render the content.
+    const bodyMarkdown = payload.content_markdown || 
+      (payload.content_html ? turndownService.turndown(payload.content_html) : "") || 
+      "";
     
     // Extract metadata from RankPill payload
     const author = payload.author || "Sam He";

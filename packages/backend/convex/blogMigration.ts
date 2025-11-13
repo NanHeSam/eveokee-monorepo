@@ -85,14 +85,24 @@ export const removeCreatedAtFromPosts = internalMutation({
           .withIndex("by_postId", (q) => q.eq("postId", newPostId))
           .collect();
 
-        const existingRevisionKeys = new Set(
-          existingRevisions.map((r) => `${r.createdAt}-${r.title}-${r.bodyMarkdown.substring(0, 50)}`)
+        const revisionSignature = (rev: (typeof existingRevisions)[number]) =>
+          JSON.stringify({
+            createdAt: rev.createdAt ?? null,
+            title: rev.title ?? null,
+            bodyMarkdown: rev.bodyMarkdown,
+            excerpt: rev.excerpt ?? null,
+            author: rev.author ?? null,
+            tags: rev.tags ?? [],
+          });
+
+        const existingRevisionSignatures = new Set(
+          existingRevisions.map(revisionSignature)
         );
 
         for (const revision of oldRevisions) {
           // Only migrate if this revision doesn't already exist for the new post
-          const revisionKey = `${revision.createdAt}-${revision.title}-${revision.bodyMarkdown.substring(0, 50)}`;
-          if (!existingRevisionKeys.has(revisionKey)) {
+          const signature = revisionSignature(revision);
+          if (!existingRevisionSignatures.has(signature)) {
             // Preserve all revision fields except _id, _creationTime, and update postId
             const {
               _id: _oldRevisionId,
@@ -104,6 +114,7 @@ export const removeCreatedAtFromPosts = internalMutation({
               ...revisionData,
               postId: newPostId,
             });
+            existingRevisionSignatures.add(signature);
           }
         }
 
@@ -211,13 +222,23 @@ export const removeCreatedAtFromPosts = internalMutation({
             .withIndex("by_postId", (q) => q.eq("postId", newPostId))
             .collect();
 
-          const existingRevisionKeys = new Set(
-            existingRevisions.map((r) => `${r.createdAt}-${r.title}-${r.bodyMarkdown.substring(0, 50)}`)
+          const revisionSignature = (rev: (typeof existingRevisions)[number]) =>
+            JSON.stringify({
+              createdAt: rev.createdAt ?? null,
+              title: rev.title ?? null,
+              bodyMarkdown: rev.bodyMarkdown,
+              excerpt: rev.excerpt ?? null,
+              author: rev.author ?? null,
+              tags: rev.tags ?? [],
+            });
+
+          const existingRevisionSignatures = new Set(
+            existingRevisions.map(revisionSignature)
           );
 
           for (const revision of oldRevisions) {
-            const revisionKey = `${revision.createdAt}-${revision.title}-${revision.bodyMarkdown.substring(0, 50)}`;
-            if (!existingRevisionKeys.has(revisionKey)) {
+            const signature = revisionSignature(revision);
+            if (!existingRevisionSignatures.has(signature)) {
               const {
                 _id: _oldRevisionId,
                 _creationTime: _oldRevisionCreationTime,
@@ -228,6 +249,7 @@ export const removeCreatedAtFromPosts = internalMutation({
                 ...revisionData,
                 postId: newPostId,
               });
+              existingRevisionSignatures.add(signature);
             }
           }
 
