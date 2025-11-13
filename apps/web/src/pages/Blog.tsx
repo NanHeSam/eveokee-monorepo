@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Calendar, Clock, User, Search } from 'lucide-react';
 import BlogPost from '@/components/BlogPost';
-import { BlogService, BlogPost as BlogPostType } from '@/lib/blog-service';
+import { getAllPosts, getPostBySlug, getDraftByPreviewToken, trackView, BlogPost as BlogPostType } from '@/lib/blog-service';
 
 export default function Blog() {
-  const { slug } = useParams();
+  const { slug, token } = useParams();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [posts, setPosts] = useState<BlogPostType[]>([]);
@@ -20,11 +20,22 @@ export default function Blog() {
     const loadData = async () => {
       setLoading(true);
       try {
-        if (slug) {
-          const post = await BlogService.getPostBySlug(slug);
+        // Check if this is a draft preview (path: /blog/preview/:token)
+        if (token) {
+          const post = await getDraftByPreviewToken(token);
           setCurrentPost(post || null);
+        } else if (slug) {
+          const post = await getPostBySlug(slug);
+          setCurrentPost(post || null);
+          
+          // Track view if post exists
+          if (post) {
+            trackView(post._id).catch(err => 
+              console.error('Failed to track view:', err)
+            );
+          }
         } else {
-          const allPosts = await BlogService.getAllPosts();
+          const allPosts = await getAllPosts();
           setPosts(allPosts);
         }
       } catch (error) {
@@ -35,10 +46,10 @@ export default function Blog() {
     };
 
     loadData();
-  }, [slug]);
+  }, [slug, token]);
   
-  // If we have a slug, show individual blog post
-  if (slug) {
+  // If we have a post (from slug or preview token), show individual blog post
+  if (slug || token) {
     if (loading) {
       return (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
@@ -53,8 +64,14 @@ export default function Blog() {
     if (!currentPost) {
       return (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Post Not Found</h1>
-          <p className="text-gray-600 dark:text-gray-300 mb-8">The blog post you're looking for doesn't exist.</p>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            {token ? 'Draft Not Found' : 'Post Not Found'}
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 mb-8">
+            {token 
+              ? 'The draft you\'re looking for doesn\'t exist or has already been published.'
+              : 'The blog post you\'re looking for doesn\'t exist.'}
+          </p>
           <Link 
             to="/blog" 
             className="bg-accent-mint text-white px-6 py-3 rounded-lg font-medium hover:bg-accent-mint/90 transition-colors"
@@ -66,19 +83,30 @@ export default function Blog() {
     }
 
     return (
-      <BlogPost post={currentPost} onBack={handleBackToBlog} />
+      <div>
+        {token && (
+          <div className="bg-yellow-100 dark:bg-yellow-900/20 border-l-4 border-yellow-500 p-4 mb-6">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+              <p className="text-yellow-800 dark:text-yellow-200 text-sm font-medium">
+                📝 Draft Preview - This post is not yet published
+              </p>
+            </div>
+          </div>
+        )}
+        <BlogPost post={currentPost} onBack={handleBackToBlog} />
+      </div>
     );
   }
 
   // Show blog listing
   const filteredPosts = posts.filter(post =>
     post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    post.excerpt?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -145,7 +173,7 @@ export default function Blog() {
             <div className="space-y-12">
               {filteredPosts.map((post) => (
                 <article 
-                  key={post.id}
+                  key={post._id}
                   className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow"
                 >
                   <div className="p-8">
@@ -172,9 +200,11 @@ export default function Blog() {
                     </h2>
 
                     {/* Excerpt */}
-                    <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed mb-6">
-                      {post.excerpt}
-                    </p>
+                    {post.excerpt && (
+                      <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed mb-6">
+                        {post.excerpt}
+                      </p>
+                    )}
 
                     {/* Meta Info */}
                     <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500 dark:text-gray-400 mb-6">
@@ -186,10 +216,12 @@ export default function Blog() {
                         <Calendar className="w-4 h-4" />
                         <span>{formatDate(post.publishedAt)}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        <span>{post.readTime} min read</span>
-                      </div>
+                      {post.readingTime && (
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          <span>{post.readingTime} min read</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Read More */}

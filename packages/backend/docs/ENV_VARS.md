@@ -197,6 +197,44 @@ REVENUECAT_WEBHOOK_SECRET=xxxxxxxxxxxxxxxxxxxxx
 
 ---
 
+### BLOG_WEBHOOK_HMAC_SECRET
+**Purpose:** HMAC secret key for authenticating blog API webhook requests
+
+**Used in:** `convex/webhooks/handlers/blogApi.ts`
+
+**Description:** This secret is used to verify HMAC SHA-256 signatures sent in the `X-Signature` header along with the `X-Timestamp` header. The webhook handler validates that requests are authentic and not tampered with.
+
+**Where to find:** Configure this in your external blog automation service (e.g., RankPill) when setting up the webhook integration.
+
+**Example:**
+```bash
+BLOG_WEBHOOK_HMAC_SECRET=your-hmac-secret-key-here
+```
+
+---
+
+### SLACK_WEBHOOK_URL
+**Purpose:** Slack webhook URL for sending notifications (optional)
+
+**Used in:** `convex/utils/slack.ts`
+
+**Description:** Used to send Slack notifications when RankPill creates new blog drafts for review. If not set, Slack notifications will be skipped but the draft will still be created.
+
+**Where to find:** 
+1. Go to https://api.slack.com/apps
+2. Create a new app or select an existing one
+3. Go to "Incoming Webhooks" and activate it
+4. Click "Add New Webhook to Workspace"
+5. Select the channel where you want notifications
+6. Copy the webhook URL
+
+**Example:**
+```bash
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+```
+
+---
+
 ## Optional Environment Variables
 
 These variables have defaults or are only used for fine-tuning:

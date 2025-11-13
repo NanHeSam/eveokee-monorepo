@@ -60,6 +60,7 @@ export default function App() {
               <Route path="terms" element={<TermsAndConditions />} />
               <Route path="privacy" element={<PrivacyPolicy />} />
               <Route path="blog" element={<Blog />} />
+              <Route path="blog/preview/:token" element={<Blog />} />
               <Route path="blog/:slug" element={<Blog />} />
             </Route>
             

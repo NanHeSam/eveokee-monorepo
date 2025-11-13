@@ -9,6 +9,9 @@
  */
 
 import type * as billing from "../billing.js";
+import type * as blog from "../blog.js";
+import type * as blogAuth from "../blogAuth.js";
+import type * as blogMigration from "../blogMigration.js";
 import type * as callDiaryWorkflow from "../callDiaryWorkflow.js";
 import type * as callJobs from "../callJobs.js";
 import type * as callSettings from "../callSettings.js";
@@ -55,9 +58,12 @@ import type * as utils_contextHelpers from "../utils/contextHelpers.js";
 import type * as utils_envValidation from "../utils/envValidation.js";
 import type * as utils_logger from "../utils/logger.js";
 import type * as utils_phoneHelpers from "../utils/phoneHelpers.js";
+import type * as utils_slack from "../utils/slack.js";
 import type * as utils_timezoneHelpers from "../utils/timezoneHelpers.js";
 import type * as videoActions from "../videoActions.js";
 import type * as videos from "../videos.js";
+import type * as webhooks_handlers_blogApi from "../webhooks/handlers/blogApi.js";
+import type * as webhooks_handlers_blogDraftReview from "../webhooks/handlers/blogDraftReview.js";
 import type * as webhooks_handlers_clerk from "../webhooks/handlers/clerk.js";
 import type * as webhooks_handlers_kie from "../webhooks/handlers/kie.js";
 import type * as webhooks_handlers_revenuecat from "../webhooks/handlers/revenuecat.js";
@@ -82,6 +88,9 @@ import type {
  */
 declare const fullApi: ApiFromModules<{
   billing: typeof billing;
+  blog: typeof blog;
+  blogAuth: typeof blogAuth;
+  blogMigration: typeof blogMigration;
   callDiaryWorkflow: typeof callDiaryWorkflow;
   callJobs: typeof callJobs;
   callSettings: typeof callSettings;
@@ -128,9 +137,12 @@ declare const fullApi: ApiFromModules<{
   "utils/envValidation": typeof utils_envValidation;
   "utils/logger": typeof utils_logger;
   "utils/phoneHelpers": typeof utils_phoneHelpers;
+  "utils/slack": typeof utils_slack;
   "utils/timezoneHelpers": typeof utils_timezoneHelpers;
   videoActions: typeof videoActions;
   videos: typeof videos;
+  "webhooks/handlers/blogApi": typeof webhooks_handlers_blogApi;
+  "webhooks/handlers/blogDraftReview": typeof webhooks_handlers_blogDraftReview;
   "webhooks/handlers/clerk": typeof webhooks_handlers_clerk;
   "webhooks/handlers/kie": typeof webhooks_handlers_kie;
   "webhooks/handlers/revenuecat": typeof webhooks_handlers_revenuecat;

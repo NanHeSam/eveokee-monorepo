@@ -1,157 +1,162 @@
+/**
+ * Blog service - fetches blog posts from Convex
+ * Checks window.__BLOG_INITIAL__ for prerendered data before fetching
+ */
+
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "@backend/convex";
+
 export interface BlogPost {
-  id: string;
-  title: string;
+  _id: string;
+  _creationTime: number; // Use Convex's built-in _creationTime instead of createdAt
   slug: string;
-  excerpt: string;
-  content: string;
-  publishedAt: string;
+  title: string;
+  bodyMarkdown: string;
+  excerpt?: string;
+  publishedAt: number;
   author: string;
   tags: string[];
-  readTime: number;
+  readingTime?: number;
+  canonicalUrl?: string;
+  redirectFrom?: string[];
+  updatedAt: number;
 }
 
-// Import the actual markdown content
-import markdownContent from '../content/blog/diary-vibes-alpha-building-something-new.md?raw';
-import whyPeopleLoveContent from '../content/blog/why-people-fall-in-love-with-diary-vibes.md?raw';
-import whatWereBuildingContent from '../content/blog/what-were-really-building-at-evokee.md?raw';
-import memoryJournalingGuideContent from '../content/blog/memory-journaling-guide-2025.md?raw';
-import memorySoundtrackContent from '../content/blog/memory-soundtrack.md?raw';
+// Prerendered data structure
+interface BlogInitialData {
+  slug: string;
+  post: BlogPost;
+}
 
-// Parse frontmatter from markdown
-function parseFrontmatter(content: string) {
-  const frontmatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
-  const match = content.match(frontmatterRegex);
-  
-  if (!match) {
-    return { frontmatter: {}, content };
+declare global {
+  interface Window {
+    __BLOG_INITIAL__?: BlogInitialData;
   }
-  
-  const [, frontmatterStr, markdownContent] = match;
-  const frontmatter: Record<string, string | string[]> = {};
-  
-  // Parse YAML-like frontmatter
-  frontmatterStr.split('\n').forEach(line => {
-    const colonIndex = line.indexOf(':');
-    if (colonIndex > 0) {
-      const key = line.substring(0, colonIndex).trim();
-      let value = line.substring(colonIndex + 1).trim();
-      
-      // Remove quotes if present
-      if (value.startsWith('"') && value.endsWith('"')) {
-        value = value.slice(1, -1);
-      }
-      
-      // Handle arrays (tags)
-      if (value.startsWith('[') && value.endsWith(']')) {
-        frontmatter[key] = value.slice(1, -1).split(',').map(item => item.trim().replace(/"/g, ''));
-      } else {
-        frontmatter[key] = value;
-      }
+}
+
+// Initialize Convex client
+const convexUrl = import.meta.env.VITE_CONVEX_URL;
+if (!convexUrl) {
+  throw new Error("VITE_CONVEX_URL environment variable is not set");
+}
+
+const client = new ConvexHttpClient(convexUrl);
+
+/**
+ * Get all published blog posts
+ */
+export async function getAllPosts(): Promise<BlogPost[]> {
+  try {
+    const posts = await client.query(api.blog.listPublished, {});
+    return posts;
+  } catch (error) {
+    console.error("Error fetching blog posts:", error);
+    return [];
+  }
+}
+
+/**
+ * Get a single blog post by slug
+ * Checks window.__BLOG_INITIAL__ first to avoid refetch
+ */
+export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
+  // Check if we have prerendered data
+  if (typeof window !== "undefined" && window.__BLOG_INITIAL__) {
+    const initialData = window.__BLOG_INITIAL__;
+    if (initialData.slug === slug) {
+      // Clear the initial data so subsequent navigations fetch fresh data
+      delete window.__BLOG_INITIAL__;
+      return initialData.post;
     }
-  });
-  
-  return { frontmatter, content: markdownContent };
-}
-
-const { frontmatter, content } = parseFrontmatter(markdownContent);
-const { frontmatter: whyPeopleLoveFrontmatter, content: whyPeopleLoveContentParsed } = parseFrontmatter(whyPeopleLoveContent);
-const { frontmatter: whatWereBuildingFrontmatter, content: whatWereBuildingContentParsed } = parseFrontmatter(whatWereBuildingContent);
-const { frontmatter: memoryJournalingGuideFrontmatter, content: memoryJournalingGuideContentParsed } = parseFrontmatter(memoryJournalingGuideContent);
-const { frontmatter: memorySoundtrackFrontmatter, content: memorySoundtrackContentParsed } = parseFrontmatter(memorySoundtrackContent);
-
-const blogPosts: BlogPost[] = [
-  {
-    id: (typeof memorySoundtrackFrontmatter.slug === 'string' ? memorySoundtrackFrontmatter.slug : undefined) || 'memory-soundtrack',
-    title: (typeof memorySoundtrackFrontmatter.title === 'string' ? memorySoundtrackFrontmatter.title : undefined) || "Ultimate Guide to the Memory Soundtrack (2025 Edition)",
-    slug: (typeof memorySoundtrackFrontmatter.slug === 'string' ? memorySoundtrackFrontmatter.slug : undefined) || 'memory-soundtrack',
-    excerpt: (typeof memorySoundtrackFrontmatter.excerpt === 'string' ? memorySoundtrackFrontmatter.excerpt : undefined) || "Rediscover every emotion with our Memory Soundtrack guide Dive into track breakdowns composer insights and listening tips that make every note unforgettable",
-    content: memorySoundtrackContentParsed,
-    publishedAt: (typeof memorySoundtrackFrontmatter.publishedAt === 'string' ? memorySoundtrackFrontmatter.publishedAt : undefined) || '2025-11-12',
-    author: (typeof memorySoundtrackFrontmatter.author === 'string' ? memorySoundtrackFrontmatter.author : undefined) || 'Sam He',
-    tags: Array.isArray(memorySoundtrackFrontmatter.tags) ? memorySoundtrackFrontmatter.tags : ['music', 'soundtrack', 'film', 'memory', 'guide'],
-    readTime: (typeof memorySoundtrackFrontmatter.readTime === 'string' ? parseInt(memorySoundtrackFrontmatter.readTime, 10) : typeof memorySoundtrackFrontmatter.readTime === 'number' ? memorySoundtrackFrontmatter.readTime : undefined) || 15,
-  },
-  {
-    id: (typeof memoryJournalingGuideFrontmatter.slug === 'string' ? memoryJournalingGuideFrontmatter.slug : undefined) || 'memory-journaling-guide-2025',
-    title: (typeof memoryJournalingGuideFrontmatter.title === 'string' ? memoryJournalingGuideFrontmatter.title : undefined) || "Memory Journaling Guide: Unlock Your Memories in 2025",
-    slug: (typeof memoryJournalingGuideFrontmatter.slug === 'string' ? memoryJournalingGuideFrontmatter.slug : undefined) || 'memory-journaling-guide-2025',
-    excerpt: (typeof memoryJournalingGuideFrontmatter.excerpt === 'string' ? memoryJournalingGuideFrontmatter.excerpt : undefined) || "Imagine holding your favorite memories in your hands, not as distant flashes but as living moments you can step into whenever you wish. This is the promise of memory journaling—a creative practice that helps you unlock, preserve, and cherish the details that matter most.",
-    content: memoryJournalingGuideContentParsed,
-    publishedAt: (typeof memoryJournalingGuideFrontmatter.publishedAt === 'string' ? memoryJournalingGuideFrontmatter.publishedAt : undefined) || '2025-11-11',
-    author: (typeof memoryJournalingGuideFrontmatter.author === 'string' ? memoryJournalingGuideFrontmatter.author : undefined) || 'Sam He',
-    tags: Array.isArray(memoryJournalingGuideFrontmatter.tags) ? memoryJournalingGuideFrontmatter.tags : ['journaling', 'memory', 'guide', 'self-improvement', 'wellness'],
-    readTime: (typeof memoryJournalingGuideFrontmatter.readTime === 'string' ? parseInt(memoryJournalingGuideFrontmatter.readTime, 10) : typeof memoryJournalingGuideFrontmatter.readTime === 'number' ? memoryJournalingGuideFrontmatter.readTime : undefined) || 18,
-  },
-  {
-    id: (typeof whatWereBuildingFrontmatter.slug === 'string' ? whatWereBuildingFrontmatter.slug : undefined) || 'what-were-really-building-at-evokee',
-    title: (typeof whatWereBuildingFrontmatter.title === 'string' ? whatWereBuildingFrontmatter.title : undefined) || "What We're Really Building at Evokee",
-    slug: (typeof whatWereBuildingFrontmatter.slug === 'string' ? whatWereBuildingFrontmatter.slug : undefined) || 'what-were-really-building-at-evokee',
-    excerpt: (typeof whatWereBuildingFrontmatter.excerpt === 'string' ? whatWereBuildingFrontmatter.excerpt : undefined) || "Memory is a crime scene, and you're the unreliable witness. We're building Evokee because we finally understand the difference between documentation and memory.",
-    content: whatWereBuildingContentParsed,
-    publishedAt: (typeof whatWereBuildingFrontmatter.publishedAt === 'string' ? whatWereBuildingFrontmatter.publishedAt : undefined) || '2025-11-09',
-    author: (typeof whatWereBuildingFrontmatter.author === 'string' ? whatWereBuildingFrontmatter.author : undefined) || 'Sam He',
-    tags: Array.isArray(whatWereBuildingFrontmatter.tags) ? whatWereBuildingFrontmatter.tags : ['philosophy', 'memory', 'product', 'neuroscience', 'vision'],
-    readTime: (typeof whatWereBuildingFrontmatter.readTime === 'string' ? parseInt(whatWereBuildingFrontmatter.readTime, 10) : typeof whatWereBuildingFrontmatter.readTime === 'number' ? whatWereBuildingFrontmatter.readTime : undefined) || 12,
-  },
-  {
-    id: (typeof whyPeopleLoveFrontmatter.slug === 'string' ? whyPeopleLoveFrontmatter.slug : undefined) || 'why-people-fall-in-love-with-eveokee',
-    title: (typeof whyPeopleLoveFrontmatter.title === 'string' ? whyPeopleLoveFrontmatter.title : undefined) || 'Turning Your Journal into a Soundtrack',
-    slug: (typeof whyPeopleLoveFrontmatter.slug === 'string' ? whyPeopleLoveFrontmatter.slug : undefined) || 'why-people-fall-in-love-with-eveokee',
-    excerpt: (typeof whyPeopleLoveFrontmatter.excerpt === 'string' ? whyPeopleLoveFrontmatter.excerpt : undefined) || 'Eight stories about why people fall in love with Eveokee.',
-    content: whyPeopleLoveContentParsed,
-    publishedAt: (typeof whyPeopleLoveFrontmatter.publishedAt === 'string' ? whyPeopleLoveFrontmatter.publishedAt : undefined) || '2025-10-16',
-    author: (typeof whyPeopleLoveFrontmatter.author === 'string' ? whyPeopleLoveFrontmatter.author : undefined) || 'Sam He',
-    tags: Array.isArray(whyPeopleLoveFrontmatter.tags) ? whyPeopleLoveFrontmatter.tags : ['stories', 'music', 'journaling', 'emotional-tech', 'user-stories'],
-    readTime: (typeof whyPeopleLoveFrontmatter.readTime === 'string' ? parseInt(whyPeopleLoveFrontmatter.readTime, 10) : typeof whyPeopleLoveFrontmatter.readTime === 'number' ? whyPeopleLoveFrontmatter.readTime : undefined) || 8,
-  },
-  {
-    id: (typeof frontmatter.slug === 'string' ? frontmatter.slug : undefined) || 'eveokee-alpha-building-something-new',
-    title: (typeof frontmatter.title === 'string' ? frontmatter.title : undefined) || 'Eveokee Alpha: Building Something New',
-    slug: (typeof frontmatter.slug === 'string' ? frontmatter.slug : undefined) || 'eveokee-alpha-building-something-new',
-    excerpt: (typeof frontmatter.excerpt === 'string' ? frontmatter.excerpt : undefined) || 'The journey of creating an app that transforms your personal thoughts and experiences into personalized music.',
-    content: content,
-    publishedAt: (typeof frontmatter.publishedAt === 'string' ? frontmatter.publishedAt : undefined) || '2024-10-15',
-    author: (typeof frontmatter.author === 'string' ? frontmatter.author : undefined) || 'Sam He',
-    tags: Array.isArray(frontmatter.tags) ? frontmatter.tags : ['launch', 'alpha', 'music', 'journaling', 'personal'],
-    readTime: (typeof frontmatter.readTime === 'string' ? parseInt(frontmatter.readTime, 10) : typeof frontmatter.readTime === 'number' ? frontmatter.readTime : undefined) || 5,
   }
-];
 
-// Simple blog service without markdown loading for now
-async function loadBlogPosts(): Promise<BlogPost[]> {
-  // Simulate async loading
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(blogPosts), 100);
-  });
+  // Fetch from Convex
+  try {
+    const post = await client.query(api.blog.getBySlug, { slug });
+    return post;
+  } catch (error) {
+    console.error(`Error fetching blog post ${slug}:`, error);
+    return null;
+  }
 }
 
+/**
+ * Get recent posts (limited)
+ */
+export async function getRecentPosts(limit: number = 3): Promise<BlogPost[]> {
+  try {
+    const posts = await client.query(api.blog.listPublished, {});
+    return posts.slice(0, limit);
+  } catch (error) {
+    console.error("Error fetching recent posts:", error);
+    return [];
+  }
+}
+
+/**
+ * Get posts by tag
+ */
+export async function getPostsByTag(tag: string): Promise<BlogPost[]> {
+  try {
+    const posts = await client.query(api.blog.listPublished, {});
+    return posts.filter((post) =>
+      post.tags.some((t) => t.toLowerCase() === tag.toLowerCase())
+    );
+  } catch (error) {
+    console.error(`Error fetching posts by tag ${tag}:`, error);
+    return [];
+  }
+}
+
+/**
+ * Get a draft post by preview token
+ */
+export async function getDraftByPreviewToken(previewToken: string): Promise<BlogPost | null> {
+  try {
+    const post = await client.query(api.blog.getDraftByPreviewToken, { previewToken });
+    return post;
+  } catch (error) {
+    console.error(`Error fetching draft by preview token:`, error);
+    return null;
+  }
+}
+
+/**
+ * Track a view for a blog post
+ */
+export async function trackView(postId: string): Promise<void> {
+  try {
+    const date = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+    await client.mutation(api.blog.incrementViewCount, {
+      postId: postId as any, // Type assertion for Id<"blogPosts">
+      date,
+    });
+  } catch (error) {
+    console.error(`Error tracking view for post ${postId}:`, error);
+  }
+}
+
+// Legacy export for backward compatibility
 export class BlogService {
   static async getAllPosts(): Promise<BlogPost[]> {
-    const posts = await loadBlogPosts();
-    return posts.sort((a, b) => 
-      new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-    );
+    return getAllPosts();
   }
 
-  static async getPostBySlug(slug: string): Promise<BlogPost | undefined> {
-    const posts = await loadBlogPosts();
-    return posts.find(post => post.slug === slug);
+  static async getPostBySlug(slug: string): Promise<BlogPost | null> {
+    return getPostBySlug(slug);
   }
 
-  static async getPostById(id: string): Promise<BlogPost | undefined> {
-    const posts = await loadBlogPosts();
-    return posts.find(post => post.id === id);
+  static async getPostById(id: string): Promise<BlogPost | null> {
+    // ID-based lookup not supported in new API, use slug instead
+    console.warn("getPostById is deprecated, use getPostBySlug instead");
+    return null;
   }
 
   static async getRecentPosts(limit: number = 3): Promise<BlogPost[]> {
-    const posts = await this.getAllPosts();
-    return posts.slice(0, limit);
+    return getRecentPosts(limit);
   }
 
   static async getPostsByTag(tag: string): Promise<BlogPost[]> {
-    const posts = await loadBlogPosts();
-    return posts.filter(post => 
-      post.tags.some(t => t.toLowerCase() === tag.toLowerCase())
-    );
+    return getPostsByTag(tag);
   }
 }

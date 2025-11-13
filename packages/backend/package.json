@@ -9,7 +9,9 @@
     "deploy": "npx convex deploy",
     "type-check": "echo 'Skipping type-check for backend (requires Convex runtime types)'",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "seed:blog": "npx tsx scripts/seed-blog.ts",
+    "seed:blog:clean": "npx tsx scripts/seed-blog.ts --delete-existing"
   },
   "dependencies": {
     "@clerk/backend": "^2.17.2",

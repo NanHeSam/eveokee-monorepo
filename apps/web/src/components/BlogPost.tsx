@@ -11,11 +11,8 @@ interface BlogPostProps {
 }
 
 export default function BlogPost({ post, onBack }: BlogPostProps) {
-  const formatDate = (dateString: string) => {
-    // Parse date string (YYYY-MM-DD) as local date to avoid timezone issues
-    const [year, month, day] = dateString.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString('en-US', {
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -46,10 +43,12 @@ export default function BlogPost({ post, onBack }: BlogPostProps) {
             <Calendar className="w-4 h-4 mr-1" />
             {formatDate(post.publishedAt)}
           </div>
-          <div className="flex items-center">
-            <Clock className="w-4 h-4 mr-1" />
-            {post.readTime} min read
-          </div>
+          {post.readingTime && (
+            <div className="flex items-center">
+              <Clock className="w-4 h-4 mr-1" />
+              {post.readingTime} min read
+            </div>
+          )}
         </div>
         
         <div className="flex flex-wrap gap-2">
@@ -68,7 +67,7 @@ export default function BlogPost({ post, onBack }: BlogPostProps) {
       <div className="prose prose-lg max-w-none">
         {(() => {
           // Preprocess content: convert <br> and <br/> tags to newlines for markdown
-          const contentWithLineBreaks = post.content.replace(/<br\s*\/?>/gi, '\n\n');
+          const contentWithLineBreaks = post.bodyMarkdown.replace(/<br\s*\/?>/gi, '\n\n');
           const processedContent = parseYouTubeEmbeds(parseMusicShortcodes(contentWithLineBreaks));
           const contentParts = processMusicComponents(processedContent);
           
