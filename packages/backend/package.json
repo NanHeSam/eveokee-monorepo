@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@clerk/backend": "^2.17.2",
+    "@sindresorhus/slugify": "^3.0.0",
     "@vapi-ai/server-sdk": "^0.10.2",
     "convex": "^1.28.0",
     "date-fns": "^3.6.0",

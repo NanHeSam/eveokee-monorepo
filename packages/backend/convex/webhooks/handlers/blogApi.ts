@@ -20,6 +20,7 @@ import {
   BLOG_DRAFT_DISMISS_PATH,
 } from "../../utils/constants/webhooks";
 import { logWebhookEvent } from "../../utils/logger";
+import { generateSlug } from "../../utils/blogHelpers";
 
 /**
  * Blog API HTTP handler
@@ -144,16 +145,6 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
     logger.info("Detected RankPill article format, creating draft for review");
     
     // Generate slug from title (for when it gets approved)
-    const generateSlug = (title: string): string => {
-      return title
-        .toLowerCase()
-        .trim()
-        .replace(/[^\w\s-]/g, "") // Remove special characters
-        .replace(/\s+/g, "-") // Replace spaces with hyphens
-        .replace(/-+/g, "-") // Replace multiple hyphens with single
-        .replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
-    };
-
     const slug = generateSlug(payload.title);
     
     // Generate preview token for draft access

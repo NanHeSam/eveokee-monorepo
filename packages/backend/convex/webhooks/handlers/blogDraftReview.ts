@@ -17,6 +17,7 @@ import {
   HTTP_STATUS_INTERNAL_SERVER_ERROR,
 } from "../../utils/constants/webhooks";
 import { logWebhookEvent } from "../../utils/logger";
+import { generateSlug } from "../../utils/blogHelpers";
 
 /**
  * Escape HTML special characters to prevent XSS attacks
@@ -74,16 +75,6 @@ export const approveDraftHandler = httpAction(async (ctx, request) => {
     }
 
     // Generate slug from title if not already set
-    const generateSlug = (title: string): string => {
-      return title
-        .toLowerCase()
-        .trim()
-        .replace(/[^\w\s-]/g, "") // Remove special characters
-        .replace(/\s+/g, "-") // Replace spaces with hyphens
-        .replace(/-+/g, "-") // Replace multiple hyphens with single
-        .replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
-    };
-
     const slug = post.slug || generateSlug(post.title);
 
     if (!slug) {
