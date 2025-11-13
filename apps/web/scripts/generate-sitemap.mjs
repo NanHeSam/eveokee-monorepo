@@ -22,6 +22,7 @@ const __dirname = path.dirname(__filename);
  * Attempts to load the Convex-generated API, queries published blog posts, builds a sitemap (escaping XML where needed and using post updatedAt/publishedAt for lastmod when available), ensures the public directory exists, and writes the resulting sitemap file.
  *
  * On fatal errors (missing Convex URL, failure to import the Convex API, or failure to fetch posts) the process exits with a non-zero code.
+ */
 async function generateSitemap() {
   console.log("🚀 Starting sitemap generation...");
 
