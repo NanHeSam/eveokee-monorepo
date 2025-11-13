@@ -5,6 +5,7 @@
 
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@backend/convex";
+import type { Id } from "@backend/convex/convex/_generated/dataModel";
 
 export interface BlogPost {
   _id: string;
@@ -128,7 +129,7 @@ export async function trackView(postId: string): Promise<void> {
   try {
     const date = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
     await client.mutation(api.blog.incrementViewCount, {
-      postId: postId as any, // Type assertion for Id<"blogPosts">
+      postId: postId as Id<"blogPosts">,
       date,
     });
   } catch (error) {
@@ -146,7 +147,8 @@ export class BlogService {
     return getPostBySlug(slug);
   }
 
-  static async getPostById(id: string): Promise<BlogPost | null> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  static async getPostById(_id: string): Promise<BlogPost | null> {
     // ID-based lookup not supported in new API, use slug instead
     console.warn("getPostById is deprecated, use getPostBySlug instead");
     return null;

@@ -78,7 +78,8 @@ export const approveDraftHandler = httpAction(async (ctx, request) => {
       slug,
     });
 
-    logWebhookEvent(logger, "blogDraftReview", "approved", {
+    logWebhookEvent(logger, "blogDraftReview", "processed", {
+      action: "approved",
       postId: post._id,
       slug,
     });
@@ -168,7 +169,8 @@ export const dismissDraftHandler = httpAction(async (ctx, request) => {
       postId: post._id,
     });
 
-    logWebhookEvent(logger, "blogDraftReview", "dismissed", {
+    logWebhookEvent(logger, "blogDraftReview", "processed", {
+      action: "dismissed",
       postId: post._id,
     });
 
