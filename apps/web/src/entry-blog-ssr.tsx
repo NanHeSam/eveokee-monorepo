@@ -8,9 +8,42 @@ import { renderToString } from "react-dom/server";
 import BlogPost from "./components/BlogPost";
 import BlogListing from "./components/BlogListing";
 import { BlogPost as BlogPostType } from "./lib/blog-service";
+import { AudioContext } from "./contexts/AudioContext";
 
 // Re-export the BlogPost type for use in prerender script
 export type { BlogPost as BlogPostType } from "./lib/blog-service";
+
+/**
+ * Mock AudioManager for SSR - provides no-op implementations
+ * since audio functionality requires browser APIs
+ */
+const mockAudioManager = {
+  currentAudioId: null as string | null,
+  isPlaying: false,
+  isLoading: false,
+  error: null as string | null,
+  currentTime: 0,
+  duration: 0,
+  currentTrack: null,
+  playAudio: async () => {},
+  pauseAudio: () => {},
+  toggleAudio: async () => {},
+  seekTo: () => {},
+  isCurrentAudio: () => false,
+  setCurrentTrack: () => {},
+};
+
+/**
+ * SSR-safe AudioProvider wrapper component
+ * Provides a mock AudioManager context for SSR rendering
+ */
+function SSRAudioProvider({ children }: { children: React.ReactNode }) {
+  return React.createElement(
+    AudioContext.Provider,
+    { value: mockAudioManager },
+    children
+  );
+}
 
 /**
  * Render a blog post to an HTML string
@@ -22,7 +55,10 @@ export function renderBlogPost(post: BlogPostType): string {
   const noOpHandler = () => {};
   
   const html = renderToString(
-    React.createElement(BlogPost, { post, onBack: noOpHandler })
+    React.createElement(
+      SSRAudioProvider,
+      { children: React.createElement(BlogPost, { post, onBack: noOpHandler }) }
+    )
   );
   
   return html;
@@ -34,7 +70,12 @@ export function renderBlogPost(post: BlogPostType): string {
  * @returns HTML string of the rendered blog listing
  */
 export function renderBlogListing(posts: BlogPostType[]): string {
-  return renderToString(React.createElement(BlogListing, { posts }));
+  return renderToString(
+    React.createElement(
+      SSRAudioProvider,
+      { children: React.createElement(BlogListing, { posts }) }
+    )
+  );
 }
 
 

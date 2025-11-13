@@ -26,7 +26,7 @@ export interface TrackMetadata {
   audioUrl: string;
 }
 
-const AudioContext = createContext<AudioManager | null>(null);
+export const AudioContext = createContext<AudioManager | null>(null);
 
 export function AudioProvider({ children }: { children: ReactNode }) {
   const audioManager = useAudioManager();
