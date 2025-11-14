@@ -43,13 +43,13 @@ import { logWebhookEvent } from "../../utils/logger";
 import { generateSlug } from "../../utils/blogHelpers";
 
 // ============================================================================
-// Type Definitions
+// Type Definitions (exported for testing)
 // ============================================================================
 
 /**
  * Slack button text structure
  */
-interface SlackButtonText {
+export interface SlackButtonText {
   type: "plain_text";
   text: string;
   emoji?: boolean;
@@ -59,7 +59,7 @@ interface SlackButtonText {
  * Slack button action structure
  * Received when a user clicks an interactive button
  */
-interface SlackButtonAction {
+export interface SlackButtonAction {
   type: "button";
   action_id: "approve_draft" | "dismiss_draft";
   block_id: string;
@@ -72,7 +72,7 @@ interface SlackButtonAction {
 /**
  * Slack user information
  */
-interface SlackUser {
+export interface SlackUser {
   id: string;
   username: string;
   name: string;
@@ -82,7 +82,7 @@ interface SlackUser {
 /**
  * Slack team information
  */
-interface SlackTeam {
+export interface SlackTeam {
   id: string;
   domain: string;
 }
@@ -90,7 +90,7 @@ interface SlackTeam {
 /**
  * Slack channel information
  */
-interface SlackChannel {
+export interface SlackChannel {
   id: string;
   name: string;
 }
@@ -98,7 +98,7 @@ interface SlackChannel {
 /**
  * Slack message container information
  */
-interface SlackContainer {
+export interface SlackContainer {
   type: "message";
   message_ts: string;
   channel_id: string;
@@ -108,7 +108,7 @@ interface SlackContainer {
 /**
  * Slack message structure in the payload
  */
-interface SlackMessage {
+export interface SlackMessage {
   type: "message";
   subtype?: "bot_message";
   text: string;
@@ -124,7 +124,7 @@ interface SlackMessage {
  * This matches the actual structure received from Slack when
  * a user clicks approve or dismiss buttons.
  */
-interface SlackInteractivePayload {
+export interface SlackInteractivePayload {
   type: "block_actions"; // We only handle button interactions
   user: SlackUser;
   api_app_id: string;
@@ -147,15 +147,16 @@ interface SlackInteractivePayload {
  * Parsed button value containing post identification
  * Format: "postId:token"
  */
-interface ButtonValue {
+export interface ButtonValue {
   postId: string;
   token: string;
 }
 
 /**
  * Escape Slack markdown special characters
+ * Exported for testing
  */
-const escapeSlackMarkdown = (value: string): string => {
+export const escapeSlackMarkdown = (value: string): string => {
   return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -318,8 +319,9 @@ const parseSlackPayload = (formData: FormData, logger: any): SlackInteractivePay
 /**
  * Validate that the payload is a button action
  * Returns the action object or null if invalid
+ * Exported for testing
  */
-const validateButtonAction = (payload: SlackInteractivePayload, logger: any): SlackButtonAction | null => {
+export const validateButtonAction = (payload: SlackInteractivePayload, logger: any): SlackButtonAction | null => {
   // Verify this is a button click (not a different interactive component)
   if (payload.type !== "block_actions") {
     logger.warn("Ignoring non-button interaction", { type: payload.type });
@@ -339,8 +341,9 @@ const validateButtonAction = (payload: SlackInteractivePayload, logger: any): Sl
  * Extract postId and token from button value
  * Format: "postId:token" (must contain exactly one colon)
  * Returns { postId, token } or null if invalid
+ * Exported for testing
  */
-const parseButtonValue = (buttonValue: string, logger: any): ButtonValue | null => {
+export const parseButtonValue = (buttonValue: string, logger: any): ButtonValue | null => {
   // Verify the string contains exactly one colon
   const colonCount = (buttonValue.match(/:/g) || []).length;
   if (colonCount !== 1) {
@@ -405,8 +408,9 @@ const createEphemeralErrorResponse = (error: string) => {
 /**
  * Extract user info and timestamp from payload
  * Returns formatted user ID and timestamp for display
+ * Exported for testing
  */
-const extractUserMetadata = (payload: SlackInteractivePayload) => {
+export const extractUserMetadata = (payload: SlackInteractivePayload) => {
   const userId = payload.user?.id || payload.user?.name || "someone";
   const timestamp = new Date().toLocaleString("en-US", {
     month: "short",

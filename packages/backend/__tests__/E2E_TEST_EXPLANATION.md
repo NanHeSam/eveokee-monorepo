@@ -10,7 +10,7 @@ The E2E tests in `blogDraftReview.e2e.test.ts` simulate the complete blog draft 
 
 ### 1. **Full RankPill → Slack Flow** (Main E2E Test)
 Tests the complete workflow:
-```
+```text
 RankPill Webhook → Create Draft → Send Slack Notification → Interactive Buttons
 ```
 

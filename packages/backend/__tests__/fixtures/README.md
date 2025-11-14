@@ -15,7 +15,7 @@ Real Slack interactive payload captured when a user clicks the "Approve & Publis
 - `response_url`: Slack webhook URL for async updates
 
 **Example button value:**
-```
+```text
 "m97ednkpx6m0hwgmsgg5bagpds7vcddb:1d6ef830-35af-4f63-8dc8-bb786552247a"
 ```
 
@@ -30,7 +30,7 @@ Real Slack interactive payload captured when a user clicks the "Dismiss" button 
 - `response_url`: Slack webhook URL for async updates
 
 **Example button value:**
-```
+```text
 "m9745mmkrqjhp355ef5v946bss7vcbac:a99401b5-cc97-467b-9b2b-6846bbdaf104"
 ```
 

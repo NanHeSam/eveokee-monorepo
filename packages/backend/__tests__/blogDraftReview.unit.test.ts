@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
+import {
+  parseButtonValue,
+  validateButtonAction,
+  extractUserMetadata,
+  escapeSlackMarkdown,
+  type SlackInteractivePayload,
+  type ButtonValue,
+} from "../convex/webhooks/handlers/blogDraftReview";
 
 /**
  * Unit Tests for Blog Draft Review Helper Functions
@@ -12,33 +20,11 @@ import { join } from "path";
 // Load real Slack payloads from fixtures
 const approvePayload = JSON.parse(
   readFileSync(join(__dirname, "fixtures/slack-approve-payload.json"), "utf-8")
-);
+) as SlackInteractivePayload;
 
 const dismissPayload = JSON.parse(
   readFileSync(join(__dirname, "fixtures/slack-dismiss-payload.json"), "utf-8")
-);
-
-// Type definitions (matching the handler file)
-interface SlackInteractivePayload {
-  type: "block_actions";
-  user: {
-    id: string;
-    username: string;
-    name: string;
-    team_id: string;
-  };
-  actions: Array<{
-    action_id: "approve_draft" | "dismiss_draft";
-    value: string;
-    type: string;
-  }>;
-  response_url: string;
-}
-
-interface ButtonValue {
-  postId: string;
-  token: string;
-}
+) as SlackInteractivePayload;
 
 describe("Slack Payload Validation", () => {
   describe("Real Payload Structure", () => {
@@ -90,22 +76,6 @@ describe("Helper Functions", () => {
       error: vi.fn(),
       info: vi.fn(),
     });
-
-    const parseButtonValue = (buttonValue: string, logger: any): ButtonValue | null => {
-      const colonCount = (buttonValue.match(/:/g) || []).length;
-      if (colonCount !== 1) {
-        logger.warn("Invalid button value format - must contain exactly one colon", { buttonValue, colonCount });
-        return null;
-      }
-
-      const parts = buttonValue.split(":", 2);
-      if (parts.length !== 2 || !parts[0] || !parts[1]) {
-        logger.warn("Invalid button value format - missing postId or token", { buttonValue, partsLength: parts.length });
-        return null;
-      }
-
-      return { postId: parts[0], token: parts[1] };
-    };
 
     it("should parse valid button value from approve payload", () => {
       const logger = createLogger();
@@ -169,21 +139,6 @@ describe("Helper Functions", () => {
       info: vi.fn(),
     });
 
-    const validateButtonAction = (payload: SlackInteractivePayload, logger: any) => {
-      if (payload.type !== "block_actions") {
-        logger.warn("Ignoring non-button interaction", { type: payload.type });
-        return null;
-      }
-
-      const action = payload.actions?.[0];
-      if (!action || action.type !== "button") {
-        logger.warn("Invalid action in payload", { action });
-        return null;
-      }
-
-      return action;
-    };
-
     it("should validate approve action from real payload", () => {
       const logger = createLogger();
       const action = validateButtonAction(approvePayload, logger);
@@ -227,17 +182,6 @@ describe("Helper Functions", () => {
   });
 
   describe("extractUserMetadata", () => {
-    const extractUserMetadata = (payload: SlackInteractivePayload) => {
-      const userId = payload.user?.id || payload.user?.name || "someone";
-      const timestamp = new Date().toLocaleString("en-US", {
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      });
-      return { userId, timestamp };
-    };
-
     it("should extract user ID from approve payload", () => {
       const result = extractUserMetadata(approvePayload);
 
@@ -282,19 +226,6 @@ describe("Helper Functions", () => {
   });
 
   describe("escapeSlackMarkdown", () => {
-    const escapeSlackMarkdown = (value: string): string => {
-      return value
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/\*/g, "\\*")
-        .replace(/_/g, "\\_")
-        .replace(/~/g, "\\~")
-        .replace(/`/g, "\\`")
-        .replace(/\[/g, "\\[")
-        .replace(/\]/g, "\\]");
-    };
-
     it("should escape special characters", () => {
       const input = "Test <script>alert('xss')</script>";
       const result = escapeSlackMarkdown(input);

@@ -20,13 +20,16 @@ import { createHmac } from "crypto";
 describe("Blog Draft Review E2E Flow", () => {
   // Mock Slack webhook to avoid sending real notifications during tests
   const originalFetch = global.fetch;
-  const originalEnv = process.env.SLACK_WEBHOOK_URL;
+  const originalSlackWebhookUrl = process.env.SLACK_WEBHOOK_URL;
+  const originalShareBaseUrl = process.env.SHARE_BASE_URL;
   let slackCalls: Array<{ url: string; payload: any }> = [];
 
   beforeEach(() => {
     slackCalls = [];
     // Set fake Slack webhook URL for tests
     process.env.SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/TEST/WEBHOOK/URL";
+    // Set localhost URL to ensure [dev] prefix is added consistently
+    process.env.SHARE_BASE_URL = "http://localhost:5173";
 
     global.fetch = vi.fn((url: string | URL, options?: RequestInit) => {
       if (typeof url === "string" && url.includes("slack")) {
@@ -46,7 +49,8 @@ describe("Blog Draft Review E2E Flow", () => {
 
   afterEach(() => {
     global.fetch = originalFetch;
-    process.env.SLACK_WEBHOOK_URL = originalEnv;
+    process.env.SLACK_WEBHOOK_URL = originalSlackWebhookUrl;
+    process.env.SHARE_BASE_URL = originalShareBaseUrl;
     vi.restoreAllMocks();
   });
 
