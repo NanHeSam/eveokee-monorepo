@@ -437,6 +437,60 @@ export const getDraftByPreviewToken = query({
   },
 });
 
+/**
+ * Find a draft post by slug or title (for RankPill deduplication)
+ * Internal query for webhook handlers
+ */
+export const findDraftBySlugOrTitle = internalQuery({
+  args: {
+    slug: v.optional(v.string()),
+    title: v.string(),
+  },
+  returns: v.union(
+    v.object({
+      _id: v.id("blogPosts"),
+      slug: v.optional(v.string()),
+      title: v.string(),
+      status: v.union(
+        v.literal("draft"),
+        v.literal("published"),
+        v.literal("archived")
+      ),
+      draftPreviewToken: v.optional(v.string()),
+    }),
+    v.null()
+  ),
+  handler: async (ctx, args) => {
+    // Query all drafts and find match by slug or title
+    const drafts = await ctx.db
+      .query("blogPosts")
+      .withIndex("by_status", (q) => q.eq("status", "draft"))
+      .collect();
+
+    const titleLower = args.title.toLowerCase();
+    const match = drafts.find((post) => {
+      // If slug is provided, match by slug
+      if (args.slug && post.slug === args.slug) {
+        return true;
+      }
+      // Otherwise, match by title (case-insensitive)
+      return post.title.toLowerCase() === titleLower;
+    });
+
+    if (match) {
+      return {
+        _id: match._id,
+        slug: match.slug,
+        title: match.title,
+        status: match.status,
+        draftPreviewToken: match.draftPreviewToken,
+      };
+    }
+
+    return null;
+  },
+});
+
 // ============================================================================
 // MUTATIONS
 // ============================================================================
@@ -501,6 +555,7 @@ export const updateDraft = mutation({
     readingTime: v.optional(v.number()),
     canonicalUrl: v.optional(v.string()),
     featuredImage: v.optional(v.string()),
+    draftPreviewToken: v.optional(v.string()), // Optional preview token for draft review flow
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -521,6 +576,7 @@ export const updateDraft = mutation({
     if (args.readingTime !== undefined) updates.readingTime = args.readingTime;
     if (args.canonicalUrl !== undefined) updates.canonicalUrl = args.canonicalUrl;
     if (args.featuredImage !== undefined) updates.featuredImage = args.featuredImage;
+    if (args.draftPreviewToken !== undefined) updates.draftPreviewToken = args.draftPreviewToken;
 
     await ctx.db.patch(args.postId, updates);
 

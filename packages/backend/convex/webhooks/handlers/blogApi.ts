@@ -228,25 +228,68 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
     }
     
     try {
-      // Create draft with preview token and all RankPill metadata
-      const { postId } = await ctx.runMutation(api.blog.createDraft, {
+      // Check for existing draft by slug or title to avoid duplicates
+      const existingDraft = await ctx.runQuery(internal.blog.findDraftBySlugOrTitle, {
+        slug: payload.slug, // May be undefined
         title: payload.title,
-        bodyMarkdown,
-        excerpt,
-        author,
-        tags,
-        readingTime: payload.reading_time || undefined,
-        canonicalUrl,
-        slug, // Use RankPill's slug
-        featuredImage: payload.featured_image || undefined, // Store featured image
-        publishedAt, // Store published_at timestamp
-        draftPreviewToken: previewToken,
       });
+
+      let postId: string;
+      let operation: string;
+      let tokenToUse: string;
+
+      if (existingDraft) {
+        // Update existing draft instead of creating a new one
+        logger.info("Found existing draft, updating instead of creating", {
+          existingPostId: existingDraft._id,
+          matchedBy: existingDraft.slug === slug ? "slug" : "title",
+        });
+
+        // Use existing preview token if available, otherwise generate new one
+        tokenToUse = existingDraft.draftPreviewToken || await ctx.runAction(internal.blogAuth.generatePreviewToken);
+
+        await ctx.runMutation(api.blog.updateDraft, {
+          postId: existingDraft._id,
+          title: payload.title,
+          bodyMarkdown,
+          excerpt,
+          author,
+          tags,
+          readingTime: payload.reading_time || undefined,
+          canonicalUrl,
+          featuredImage: payload.featured_image || undefined,
+          draftPreviewToken: tokenToUse, // Persist the preview token
+        });
+
+        postId = existingDraft._id;
+        operation = "rankpillUpdate";
+      } else {
+        // Create new draft with preview token and all RankPill metadata
+        logger.info("No existing draft found, creating new draft");
+        
+        const result = await ctx.runMutation(api.blog.createDraft, {
+          title: payload.title,
+          bodyMarkdown,
+          excerpt,
+          author,
+          tags,
+          readingTime: payload.reading_time || undefined,
+          canonicalUrl,
+          slug, // Use RankPill's slug
+          featuredImage: payload.featured_image || undefined, // Store featured image
+          publishedAt, // Store published_at timestamp
+          draftPreviewToken: previewToken,
+        });
+        
+        postId = result.postId;
+        operation = "rankpillDraft";
+        tokenToUse = previewToken;
+      }
 
       // Get frontend base URL for preview links (use SHARE_BASE_URL which is already configured for frontend)
       // SHARE_BASE_URL is set to http://localhost:5173 for local dev and production domain for prod
       const frontendBaseUrl = process.env.SHARE_BASE_URL || "http://localhost:5173";
-      const previewUrl = `${frontendBaseUrl}/blog/preview/${previewToken}`;
+      const previewUrl = `${frontendBaseUrl}/blog/preview/${tokenToUse}`;
       
       // Approve/dismiss URLs should use the backend URL since they're API endpoints
       // CONVEX_SITE_URL is provided automatically by Convex - fail fast if missing to prevent incorrect URLs
@@ -255,8 +298,8 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
         logger.error("CONVEX_SITE_URL is not available (this should be provided automatically by Convex)");
         throw new Error("CONVEX_SITE_URL is not available (this should be provided automatically by Convex). Cannot generate approve/dismiss URLs.");
       }
-      const approveUrl = `${backendBaseUrl}${BLOG_DRAFT_APPROVE_PATH}?postId=${postId}&token=${previewToken}`;
-      const dismissUrl = `${backendBaseUrl}${BLOG_DRAFT_DISMISS_PATH}?postId=${postId}&token=${previewToken}`;
+      const approveUrl = `${backendBaseUrl}${BLOG_DRAFT_APPROVE_PATH}?postId=${postId}&token=${tokenToUse}`;
+      const dismissUrl = `${backendBaseUrl}${BLOG_DRAFT_DISMISS_PATH}?postId=${postId}&token=${tokenToUse}`;
 
       // Send Slack notification
       try {
@@ -266,7 +309,7 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
           previewUrl,
           approveUrl,
           dismissUrl,
-          previewToken,
+          previewToken: tokenToUse,
         });
         logger.info("Slack notification sent successfully");
       } catch (slackError) {
@@ -277,7 +320,7 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
       }
 
       logWebhookEvent(logger, "blogApi", "processed", {
-        operation: "rankpillDraft",
+        operation,
         postId,
       });
       
@@ -286,13 +329,14 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
         result: { 
           postId, 
           status: "draft",
-          previewToken,
+          previewToken: tokenToUse,
           previewUrl,
+          updated: !!existingDraft,
         } 
       });
     } catch (error: any) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to create draft";
-      logger.error("Failed to create RankPill draft", error, {
+      const errorMessage = error instanceof Error ? error.message : "Failed to create/update draft";
+      logger.error("Failed to create/update RankPill draft", error, {
         title: payload.title,
         slug,
       });
