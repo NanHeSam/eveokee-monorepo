@@ -15,11 +15,9 @@ import {
   HTTP_STATUS_BAD_REQUEST,
   HTTP_STATUS_UNAUTHORIZED,
   HTTP_STATUS_INTERNAL_SERVER_ERROR,
-  BLOG_DRAFT_APPROVE_PATH,
-  BLOG_DRAFT_DISMISS_PATH,
 } from "../../utils/constants/webhooks";
 import { logWebhookEvent } from "../../utils/logger";
-import { generateSlug, normalizeTagsField } from "../../utils/blogHelpers";
+import { generateSlug, normalizeTagsField, calculateReadingTime } from "../../utils/blogHelpers";
 import TurndownService from "turndown";
 
 /**
@@ -202,12 +200,39 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
     // Convert content to markdown
     // Prioritize content_markdown if available, otherwise convert content_html to Markdown
     // using turndown. This ensures ReactMarkdown can properly render the content.
-    const bodyMarkdown = payload.content_markdown || 
+    const bodyMarkdown = payload.content_markdown ||
       (payload.content_html ? turndownService.turndown(payload.content_html) : "");
-    
+
     // Extract metadata from RankPill payload
     const author = payload.author || "Sam He";
-    const tags = normalizeTagsField(payload);
+
+    // Extract tags (normalize from various formats, use AI extraction if not provided)
+    let tags = normalizeTagsField(payload);
+    if (tags.length === 0) {
+      logger.info("No tags provided by RankPill, using AI to extract tags from content");
+      try {
+        tags = await ctx.runAction(internal.blogActions.extractTagsFromContent, {
+          title: payload.title,
+          content: bodyMarkdown,
+        });
+        logger.info("AI extracted tags successfully", { tags });
+      } catch (error) {
+        logger.warn("AI tag extraction failed, using default tags", {
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+        tags = ["AI"]; // Fallback to default
+      }
+    }
+
+    // Calculate reading time if not provided by RankPill
+    const readingTime = payload.reading_time || calculateReadingTime(bodyMarkdown);
+    if (!payload.reading_time) {
+      logger.info("Reading time not provided by RankPill, calculated from content", {
+        readingTime,
+        wordCount: bodyMarkdown.split(/\s+/).length
+      });
+    }
+
     // Use meta_description as excerpt if excerpt/description not provided
     const excerpt = payload.excerpt || payload.description || payload.meta_description || undefined;
     // Use published_url as canonicalUrl if canonical_url/canonicalUrl not provided
@@ -255,7 +280,7 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
           excerpt,
           author,
           tags,
-          readingTime: payload.reading_time || undefined,
+          readingTime,
           canonicalUrl,
           featuredImage: payload.featured_image || undefined,
           draftPreviewToken: tokenToUse, // Persist the preview token
@@ -273,7 +298,7 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
           excerpt,
           author,
           tags,
-          readingTime: payload.reading_time || undefined,
+          readingTime,
           canonicalUrl,
           slug, // Use RankPill's slug
           featuredImage: payload.featured_image || undefined, // Store featured image
@@ -290,16 +315,6 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
       // SHARE_BASE_URL is set to http://localhost:5173 for local dev and production domain for prod
       const frontendBaseUrl = process.env.SHARE_BASE_URL || "http://localhost:5173";
       const previewUrl = `${frontendBaseUrl}/blog/preview/${tokenToUse}`;
-      
-      // Approve/dismiss URLs should use the backend URL since they're API endpoints
-      // CONVEX_SITE_URL is provided automatically by Convex - fail fast if missing to prevent incorrect URLs
-      const backendBaseUrl = process.env.CONVEX_SITE_URL;
-      if (!backendBaseUrl) {
-        logger.error("CONVEX_SITE_URL is not available (this should be provided automatically by Convex)");
-        throw new Error("CONVEX_SITE_URL is not available (this should be provided automatically by Convex). Cannot generate approve/dismiss URLs.");
-      }
-      const approveUrl = `${backendBaseUrl}${BLOG_DRAFT_APPROVE_PATH}?postId=${postId}&token=${tokenToUse}`;
-      const dismissUrl = `${backendBaseUrl}${BLOG_DRAFT_DISMISS_PATH}?postId=${postId}&token=${tokenToUse}`;
 
       // Send Slack notification
       try {
@@ -307,8 +322,6 @@ export const blogApiHandler = httpAction(async (ctx, request) => {
           postId,
           title: payload.title,
           previewUrl,
-          approveUrl,
-          dismissUrl,
           previewToken: tokenToUse,
         });
         logger.info("Slack notification sent successfully");

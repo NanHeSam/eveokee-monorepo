@@ -4,7 +4,7 @@ import { internalAction, action } from "./_generated/server";
 import { v } from "convex/values";
 import { internal, api } from "./_generated/api";
 import { VIDEO_GENERATION_CALLBACK_PATH } from "./utils/constants";
-import { createOpenAIClientFromEnv } from "./integrations/openai/client";
+import { getOpenAIClient, type OpenAIClient } from "./integrations/openai/client";
 import { createKieClientFromEnv } from "./integrations/kie/client";
 
 /**
@@ -145,16 +145,13 @@ export const requestKieVideoGeneration = internalAction({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    // Create clients with refund protection
-    let openaiClient: ReturnType<typeof createOpenAIClientFromEnv>;
+    // Get clients with refund protection
+    let openaiClient: OpenAIClient;
     let kieClient: ReturnType<typeof createKieClientFromEnv>;
 
     try {
-      // Create OpenAI client for generating video script
-      openaiClient = createOpenAIClientFromEnv({
-        OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-        OPENAI_TIMEOUT: process.env.OPENAI_TIMEOUT,
-      });
+      // Get OpenAI client for generating video script
+      openaiClient = getOpenAIClient();
 
       // Create Kie.ai client for video generation
       // CONVEX_SITE_URL is provided automatically by Convex

@@ -6,7 +6,7 @@ import { internal } from "./_generated/api";
 import {
   MAX_TRANSCRIPT_LENGTH,
 } from "./utils/constants";
-import { createOpenAIClientFromEnv } from "./integrations/openai/client";
+import { getOpenAIClient } from "./integrations/openai/client";
 
 /**
  * Quality check helper to determine if diary/music should be generated from a call
@@ -108,15 +108,12 @@ export const generateDiaryFromCall = internalAction({
     error: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
-    // Create OpenAI client for generating diary content
+    // Get OpenAI client for generating diary content
     let openaiClient;
     try {
-      openaiClient = createOpenAIClientFromEnv({
-        OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-        OPENAI_TIMEOUT: process.env.OPENAI_TIMEOUT,
-      });
+      openaiClient = getOpenAIClient();
     } catch (error) {
-      console.error("Failed to create OpenAI client:", error);
+      console.error("Failed to get OpenAI client:", error);
       await ctx.runMutation(internal.callJobs.updateCallSessionMetadata, {
         callSessionId: args.callSessionId,
         metadata: { diaryError: "OPENAI_API_KEY not configured" },

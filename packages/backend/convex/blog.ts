@@ -438,6 +438,37 @@ export const getDraftByPreviewToken = query({
 });
 
 /**
+ * Get post status by ID (for checking if post exists and its status)
+ * Internal query for webhook handlers
+ */
+export const getPostStatusById = internalQuery({
+  args: {
+    postId: v.id("blogPosts"),
+  },
+  returns: v.union(
+    v.object({
+      _id: v.id("blogPosts"),
+      status: v.union(
+        v.literal("draft"),
+        v.literal("published"),
+        v.literal("archived")
+      ),
+    }),
+    v.null()
+  ),
+  handler: async (ctx, args) => {
+    const post = await ctx.db.get(args.postId);
+    if (!post) {
+      return null;
+    }
+    return {
+      _id: post._id,
+      status: post.status,
+    };
+  },
+});
+
+/**
  * Find a draft post by slug or title (for RankPill deduplication)
  * Internal query for webhook handlers
  */
