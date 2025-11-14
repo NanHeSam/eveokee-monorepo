@@ -79,6 +79,7 @@ async function generateSitemap() {
   const staticPages = [
     { url: "", changefreq: "weekly", priority: "1.0" },
     { url: "blog", changefreq: "weekly", priority: "0.9" },
+    { url: "pricing", changefreq: "monthly", priority: "0.8" },
     { url: "terms", changefreq: "monthly", priority: "0.5" },
     { url: "privacy", changefreq: "monthly", priority: "0.5" },
   ];
@@ -124,14 +125,18 @@ async function generateSitemap() {
 
   sitemap += `</urlset>`;
 
-  // Write sitemap to public directory
+  // Write sitemap to dist directory (for production builds) or public directory (for local dev)
   const webRoot = path.join(__dirname, "..");
+  const distDir = path.join(webRoot, "dist");
   const publicDir = path.join(webRoot, "public");
-  const sitemapPath = path.join(publicDir, "sitemap.xml");
+  
+  // Prefer dist directory if it exists (production build), otherwise use public (local dev)
+  const targetDir = fs.existsSync(distDir) ? distDir : publicDir;
+  const sitemapPath = path.join(targetDir, "sitemap.xml");
 
-  // Ensure public directory exists
-  if (!fs.existsSync(publicDir)) {
-    fs.mkdirSync(publicDir, { recursive: true });
+  // Ensure target directory exists
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir, { recursive: true });
   }
 
   fs.writeFileSync(sitemapPath, sitemap, "utf-8");

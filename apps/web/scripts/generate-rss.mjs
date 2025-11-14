@@ -127,14 +127,18 @@ async function generateRSS() {
   rss += `  </channel>
 </rss>`;
 
-  // Write RSS to public directory
+  // Write RSS to dist directory (for production builds) or public directory (for local dev)
   const webRoot = path.join(__dirname, "..");
+  const distDir = path.join(webRoot, "dist");
   const publicDir = path.join(webRoot, "public");
-  const rssPath = path.join(publicDir, "rss.xml");
+  
+  // Prefer dist directory if it exists (production build), otherwise use public (local dev)
+  const targetDir = fs.existsSync(distDir) ? distDir : publicDir;
+  const rssPath = path.join(targetDir, "rss.xml");
 
-  // Ensure public directory exists
-  if (!fs.existsSync(publicDir)) {
-    fs.mkdirSync(publicDir, { recursive: true });
+  // Ensure target directory exists
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir, { recursive: true });
   }
 
   fs.writeFileSync(rssPath, rss, "utf-8");
