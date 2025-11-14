@@ -10,9 +10,13 @@ const getPaywallBaseUrl = (): string | null => {
 /**
  * Builds the hosted RevenueCat paywall URL for the authenticated user.
  * Requires VITE_REVENUECAT_PAYWALL_BASE_URL to be set in environment variables.
+ * 
+ * @param appUserId - The user ID to append to the paywall URL
+ * @param billingCycle - Optional billing cycle (weekly/monthly/yearly) to pass as a query parameter
  */
 export const getRevenueCatPaywallUrl = (
   appUserId: string | null | undefined,
+  billingCycle?: "weekly" | "monthly" | "yearly",
 ): string | null => {
   if (!appUserId) {
     return null;
@@ -25,8 +29,24 @@ export const getRevenueCatPaywallUrl = (
   }
 
   // Ensure base URL doesn't end with a slash
-  const cleanBaseUrl = baseUrl.replace(/\/$/, "");
-  return `${cleanBaseUrl}/${encodeURIComponent(appUserId)}`;
+  const cleanBaseUrl = baseUrl.replace(/\/+$/, "");
+  let url = `${cleanBaseUrl}/${encodeURIComponent(appUserId)}`;
+  
+  // Append billing cycle as query parameter if provided
+  if (billingCycle) {
+    try {
+      const urlObj = new URL(url);
+      urlObj.searchParams.set("billing_cycle", billingCycle);
+      url = urlObj.toString();
+    } catch (error) {
+      // If URL construction fails, fall back to appending query string manually
+      // This handles edge cases where base URL might not be a full URL
+      const separator = url.includes("?") ? "&" : "?";
+      url = `${url}${separator}billing_cycle=${encodeURIComponent(billingCycle)}`;
+    }
+  }
+  
+  return url;
 };
 
 /**

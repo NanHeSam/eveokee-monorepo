@@ -95,7 +95,7 @@ export default function Pricing() {
       return;
     }
 
-    const url = getRevenueCatPaywallUrl(backendUserId);
+    const url = getRevenueCatPaywallUrl(backendUserId, billingCycle);
     if (!url) {
       toast.error("Unable to open checkout right now. Please try again.");
       return;
@@ -242,7 +242,8 @@ export default function Pricing() {
               ) : (
                 <button
                   onClick={handleUpgradeClick}
-                  className="mt-10 w-full inline-flex justify-center items-center gap-2 rounded-xl bg-accent-mint text-white py-3 text-base font-semibold shadow-lg shadow-accent-mint/40 hover:bg-accent-mint/90 transition-colors"
+                  disabled={profile === undefined}
+                  className="mt-10 w-full inline-flex justify-center items-center gap-2 rounded-xl bg-accent-mint text-white py-3 text-base font-semibold shadow-lg shadow-accent-mint/40 hover:bg-accent-mint/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-accent-mint"
                 >
                   <Zap className="w-5 h-5" />
                   {ctaLabel}
