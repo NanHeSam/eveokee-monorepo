@@ -16,7 +16,7 @@ interface StructuredDataProps {
  */
 export function StructuredData({ data }: StructuredDataProps) {
   return (
-    // eslint-disable-next-line react/no-danger -- Safe: content is JSON.stringify(data) for application/ld+json, not raw HTML/JS
+    // Safe: content is JSON.stringify(data) for application/ld+json, not raw HTML/JS
     <script
       type="application/ld+json"
       dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
