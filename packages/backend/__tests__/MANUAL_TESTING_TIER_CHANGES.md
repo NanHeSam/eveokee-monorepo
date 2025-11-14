@@ -27,7 +27,7 @@ This document outlines how to manually test the tier change usage reset feature 
      - `subscriptionTier` changes to the purchased tier
      - `musicGenerationsUsed` resets to 0
      - `lastResetAt` updates to current timestamp
-     - For yearly: `customMusicLimit` set to monthly credit (84)
+     - For yearly: `customMusicLimit` set to monthly credit (100)
      - For other tiers: `customMusicLimit` is undefined
 
 3. **Test Cross-Tier Upgrade (Weekly → Monthly):**
@@ -135,7 +135,7 @@ Use this checklist to ensure comprehensive testing:
 - `lastResetAt` → current timestamp
 - `subscriptionTier` → new tier
 - `customMusicLimit`:
-  - Yearly: set to 84 (1000 / 12 rounded up)
+  - Yearly: set to 100 (1200 / 12 rounded up)
   - Other tiers: undefined
 
 #### When Tier Doesn't Change (No Reset):
@@ -191,7 +191,7 @@ In `subscriptionLog` table:
 **Debug Steps:**
 1. Verify import at top of `revenueCatBilling.ts`
 2. Check tier change conditional includes yearly handling
-3. Verify `PLAN_CONFIG.yearly.musicLimit` is 1000
+3. Verify `PLAN_CONFIG.yearly.musicLimit` is 1200
 
 ### Issue: Usage Resetting When It Shouldn't
 

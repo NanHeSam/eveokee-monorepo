@@ -242,8 +242,8 @@ describe("getUserProfile", () => {
     expect(result).toBeDefined();
     expect(result?.subscription).toBeDefined();
     expect(result?.subscription?.tier).toBe("yearly");
-    expect(result?.subscription?.musicLimit).toBe(84); // Yearly tier monthly credit (1000 / 12 rounded up)
-    expect(result?.subscription?.remainingQuota).toBe(0); // 84 - 100 used = 0 (clamped)
+    expect(result?.subscription?.musicLimit).toBe(100); // Yearly tier monthly credit (1200 / 12 rounded up)
+    expect(result?.subscription?.remainingQuota).toBe(0); // 100 - 100 used = 0 (clamped)
     expect(result?.subscription?.isActive).toBe(true);
   });
 
