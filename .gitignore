@@ -34,3 +34,10 @@ pnpm-debug.log*
 
 # Turborepo
 .turbo/
+
+# React Component Preview
+previewConfig.json
+
+# Generated files
+apps/web/public/sitemap.xml
+apps/web/public/rss.xml

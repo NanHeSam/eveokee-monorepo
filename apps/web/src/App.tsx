@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useTheme } from "@/hooks/useTheme";
@@ -30,6 +30,13 @@ export default function App() {
   // Initialize theme globally
   useTheme();
   
+  // Dispatch render event for vite-plugin-prerender after mount and providers initialize
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('render-event'));
+    }
+  }, []);
+  
   const [isPlaylistOpen, setIsPlaylistOpen] = useState(false);
 
   return (
@@ -60,6 +67,7 @@ export default function App() {
               <Route path="terms" element={<TermsAndConditions />} />
               <Route path="privacy" element={<PrivacyPolicy />} />
               <Route path="blog" element={<Blog />} />
+              <Route path="blog/preview/:token" element={<Blog />} />
               <Route path="blog/:slug" element={<Blog />} />
             </Route>
             

@@ -6,6 +6,10 @@
 // Webhook Paths
 export const CLERK_WEBHOOK_PATH = "/webhooks/clerk";
 export const VAPI_ASSISTANT_REQUEST_PATH = "/webhooks/vapi/assistant-request";
+export const BLOG_API_PATH = "/api/blog";
+export const BLOG_DRAFT_APPROVE_PATH = "/api/blog/draft/approve";
+export const BLOG_DRAFT_DISMISS_PATH = "/api/blog/draft/dismiss";
+export const SLACK_INTERACTIVE_PATH = "/webhooks/slack/interactive";
 
 // HTTP Status Codes
 export const HTTP_STATUS_OK = 200;

@@ -300,4 +300,53 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_token", ["token"]),
+
+  blogPosts: defineTable({
+    slug: v.optional(v.string()), // Nullable for drafts, required on publish
+    title: v.string(),
+    bodyMarkdown: v.string(), // Store markdown directly, not in storage
+    excerpt: v.optional(v.string()),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("published"),
+      v.literal("archived")
+    ),
+    publishedAt: v.optional(v.number()), // Timestamp when published
+    author: v.string(),
+    tags: v.array(v.string()),
+    readingTime: v.optional(v.number()), // Reading time in minutes
+    canonicalUrl: v.optional(v.string()),
+    featuredImage: v.optional(v.string()), // Featured image URL from RankPill
+    redirectFrom: v.optional(v.array(v.string())), // Array of old slugs that redirect here
+    draftPreviewToken: v.optional(v.string()), // Token for previewing drafts (for RankPill review flow)
+    createdAt: v.optional(v.number()), // DEPRECATED: Use _creationTime instead. Will be removed after migration.
+    updatedAt: v.number(), // Use _creationTime for createdAt (provided by Convex)
+  })
+    .index("by_slug", ["slug"]) // Unique index enforced via logic for non-null slugs
+    .index("by_status", ["status"])
+    .index("by_publishedAt", ["publishedAt"])
+    .index("by_status_and_publishedAt", ["status", "publishedAt"])
+    .index("by_draftPreviewToken", ["draftPreviewToken"]),
+
+  blogPostRevisions: defineTable({
+    postId: v.id("blogPosts"),
+    bodyMarkdown: v.string(),
+    title: v.string(),
+    excerpt: v.optional(v.string()),
+    author: v.string(),
+    tags: v.array(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_postId", ["postId"])
+    .index("by_postId_and_createdAt", ["postId", "createdAt"]),
+
+  blogPostAnalytics: defineTable({
+    postId: v.id("blogPosts"),
+    date: v.string(), // YYYY-MM-DD format for aggregation
+    viewCount: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_postId", ["postId"])
+    .index("by_date", ["date"])
+    .index("by_postId_and_date", ["postId", "date"]),
 });

@@ -4,26 +4,33 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { BlogPost as BlogPostType } from '../lib/blog-service';
 import { parseMusicShortcodes, parseYouTubeEmbeds, processMusicComponents } from '../utils/markdownUtils';
+import { formatDate } from '../utils/formatting';
+import { StructuredData, generateArticleStructuredData } from './StructuredData';
 
 interface BlogPostProps {
   post: BlogPostType;
   onBack: () => void;
 }
 
+/**
+ * Render a complete blog post view including header, metadata, tags and processed body content.
+ *
+ * The component displays the post title, author, optional publish date and reading time, tag pills,
+ * and a back button that invokes `onBack`. The post body is preprocessed for line breaks, music
+ * shortcodes, and YouTube embeds, then rendered as Markdown with support for syntax highlighting,
+ * custom block components (e.g., music embeds), and styled HTML elements.
+ *
+ * @param post - The blog post data (title, author, publishedAt, readingTime, tags, and bodyMarkdown).
+ * @param onBack - Callback invoked when the "Back to Blog" button is clicked.
+ * @returns The JSX element representing the blog post view.
+ */
 export default function BlogPost({ post, onBack }: BlogPostProps) {
-  const formatDate = (dateString: string) => {
-    // Parse date string (YYYY-MM-DD) as local date to avoid timezone issues
-    const [year, month, day] = dateString.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://eveokee.com";
+  const articleStructuredData = generateArticleStructuredData(post, baseUrl);
 
   return (
     <article className="max-w-4xl mx-auto px-4 py-8">
+      <StructuredData data={articleStructuredData} />
       <button 
         onClick={onBack}
         className="inline-flex items-center text-accent-mint hover:text-accent-mint/80 mb-6 transition-colors"
@@ -42,14 +49,18 @@ export default function BlogPost({ post, onBack }: BlogPostProps) {
             <User className="w-4 h-4 mr-1" />
             {post.author}
           </div>
-          <div className="flex items-center">
-            <Calendar className="w-4 h-4 mr-1" />
-            {formatDate(post.publishedAt)}
-          </div>
-          <div className="flex items-center">
-            <Clock className="w-4 h-4 mr-1" />
-            {post.readTime} min read
-          </div>
+          {post.publishedAt && (
+            <div className="flex items-center">
+              <Calendar className="w-4 h-4 mr-1" />
+              {formatDate(post.publishedAt, { year: 'numeric', month: 'long', day: 'numeric' })}
+            </div>
+          )}
+          {post.readingTime && (
+            <div className="flex items-center">
+              <Clock className="w-4 h-4 mr-1" />
+              {post.readingTime} min read
+            </div>
+          )}
         </div>
         
         <div className="flex flex-wrap gap-2">
@@ -68,7 +79,7 @@ export default function BlogPost({ post, onBack }: BlogPostProps) {
       <div className="prose prose-lg max-w-none">
         {(() => {
           // Preprocess content: convert <br> and <br/> tags to newlines for markdown
-          const contentWithLineBreaks = post.content.replace(/<br\s*\/?>/gi, '\n\n');
+          const contentWithLineBreaks = post.bodyMarkdown.replace(/<br\s*\/?>/gi, '\n\n');
           const processedContent = parseYouTubeEmbeds(parseMusicShortcodes(contentWithLineBreaks));
           const contentParts = processMusicComponents(processedContent);
           

@@ -26,8 +26,17 @@ export interface TrackMetadata {
   audioUrl: string;
 }
 
-const AudioContext = createContext<AudioManager | null>(null);
+export const AudioContext = createContext<AudioManager | null>(null);
 
+/**
+ * Provides AudioManager state and actions to descendant components via React context.
+ *
+ * The provider supplies a combined AudioManager object (including current track state and a setter)
+ * to any component within its tree through AudioContext.
+ *
+ * @param children - The React nodes to render within the provider
+ * @returns A React element that provides the AudioManager value to descendant components
+ */
 export function AudioProvider({ children }: { children: ReactNode }) {
   const audioManager = useAudioManager();
   const [currentTrack, setCurrentTrack] = useState<TrackMetadata | null>(null);

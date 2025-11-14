@@ -47,6 +47,9 @@ build/
 out/
 *.local
 
+# Generated SEO files
+public/rss.xml
+
 # TypeScript
 *.tsbuildinfo
 .tscache/
