@@ -14,6 +14,7 @@ Environment variables
 - `VITE_CONVEX_URL`: Convex deployment URL.
 - `VITE_SENTRY_DSN`: Sentry DSN.
 - `VITE_BASE_URL` or `BASE_URL`: Base URL for sitemap and RSS generation (defaults to `https://eveokee.com`).
+- `VITE_REVENUECAT_PAYWALL_BASE_URL`: RevenueCat paywall base URL
 
 SEO Features
 - **Sitemap**: Automatically generated at `/sitemap.xml` during build. Run `pnpm generate:sitemap` to regenerate.

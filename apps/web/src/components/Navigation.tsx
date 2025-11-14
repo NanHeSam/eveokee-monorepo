@@ -67,6 +67,9 @@ export default function Navigation() {
               <Link to="/blog" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
                 Blog
               </Link>
+              <Link to="/pricing" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                Pricing
+              </Link>
               <SignedIn>
                 <Link to="/dashboard" className="bg-accent-mint/10 text-accent-mint dark:bg-accent-mint/20 px-3 py-2 rounded-md text-sm font-medium hover:bg-accent-mint/20 dark:hover:bg-accent-mint/30 transition-colors">
                   Dashboard
@@ -175,6 +178,13 @@ export default function Navigation() {
               onClick={() => setIsMenuOpen(false)}
             >
               Blog
+            </Link>
+            <Link 
+              to="/pricing" 
+              className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white block px-3 py-2 rounded-md text-base font-medium"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Pricing
             </Link>
             <SignedIn>
               <Link 

@@ -13,6 +13,10 @@ declare global {
       (command: 'js', date: Date): void
     }
   }
+
+  interface ImportMetaEnv {
+    readonly VITE_REVENUECAT_PAYWALL_BASE_URL?: string
+  }
 }
 
 export {}

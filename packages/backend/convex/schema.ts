@@ -259,6 +259,7 @@ export default defineSchema({
       v.literal("SUBSCRIPTION_UNPAUSED"),
       v.literal("SUBSCRIPTION_RESUMED"),
       v.literal("SUBSCRIPTION_REFUNDED"),
+      v.literal("INVOICE_ISSUANCE"),
       v.literal("TEST"),
       v.literal("RECONCILIATION")
     ),

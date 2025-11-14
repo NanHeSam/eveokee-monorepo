@@ -51,9 +51,9 @@ export const updateSubscriptionFromWebhook = internalMutation({
     eventType: v.string(),
     productId: v.string(),
     store: v.optional(v.string()),
-    // RevenueCat may send timestamps as string or number, normalize to number
-    expirationAtMs: v.optional(v.union(v.string(), v.number())),
-    purchasedAtMs: v.optional(v.union(v.string(), v.number())),
+    // RevenueCat may send timestamps as string, number, or null (some events don't have expiration)
+    expirationAtMs: v.optional(v.union(v.null(), v.string(), v.number())),
+    purchasedAtMs: v.optional(v.union(v.null(), v.string(), v.number())),
     isTrialConversion: v.optional(v.boolean()),
     entitlementIds: v.optional(v.array(v.string())),
     environment: v.optional(v.union(v.literal("SANDBOX"), v.literal("PRODUCTION"))),
