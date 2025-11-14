@@ -38,7 +38,7 @@ export const getRevenueCatPaywallUrl = (
       const urlObj = new URL(url);
       urlObj.searchParams.set("billing_cycle", billingCycle);
       url = urlObj.toString();
-    } catch (error) {
+    } catch {
       // If URL construction fails, fall back to appending query string manually
       // This handles edge cases where base URL might not be a full URL
       const separator = url.includes("?") ? "&" : "?";
