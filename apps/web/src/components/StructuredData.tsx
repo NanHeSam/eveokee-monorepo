@@ -16,6 +16,7 @@ interface StructuredDataProps {
  */
 export function StructuredData({ data }: StructuredDataProps) {
   return (
+    // eslint-disable-next-line react/no-danger -- Safe: content is JSON.stringify(data) for application/ld+json, not raw HTML/JS
     <script
       type="application/ld+json"
       dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
@@ -38,7 +39,7 @@ export function generateArticleStructuredData(
   post: BlogPost,
   baseUrl: string = typeof window !== "undefined" ? window.location.origin : "https://eveokee.com"
 ): Record<string, unknown> {
-  const postUrl = `${baseUrl}/blog/${post.slug}`;
+  const postUrl = post.slug ? `${baseUrl}/blog/${post.slug}` : baseUrl;
   const publishedDate = post.publishedAt 
     ? new Date(post.publishedAt).toISOString()
     : new Date(post._creationTime).toISOString();
@@ -46,12 +47,17 @@ export function generateArticleStructuredData(
     ? new Date(post.updatedAt).toISOString()
     : publishedDate;
 
+  // Prefer featuredImage, fall back to OG image, omit when canonical URL exists
+  const image = post.canonicalUrl 
+    ? undefined 
+    : (post.featuredImage || `${baseUrl}/og-image.png`);
+
   return {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: post.title,
     description: post.excerpt || post.title,
-    image: post.canonicalUrl ? undefined : `${baseUrl}/og-image.png`, // Add OG image if available
+    image,
     datePublished: publishedDate,
     dateModified: modifiedDate,
     author: {
@@ -108,20 +114,23 @@ export function generateBlogStructuredData(
     },
   };
 
-  // Only include blogPost array if there are posts
+  // Only include blogPost array if there are posts with slugs
   if (posts.length > 0) {
-    blogData.blogPost = posts.slice(0, 10).map((post) => ({
-      "@type": "BlogPosting",
-      headline: post.title,
-      url: `${baseUrl}/blog/${post.slug}`,
-      datePublished: post.publishedAt 
-        ? new Date(post.publishedAt).toISOString()
-        : new Date(post._creationTime).toISOString(),
-      author: {
-        "@type": "Person",
-        name: post.author,
-      },
-    }));
+    const postsWithSlugs = posts.filter((post) => post.slug);
+    if (postsWithSlugs.length > 0) {
+      blogData.blogPost = postsWithSlugs.slice(0, 10).map((post) => ({
+        "@type": "BlogPosting",
+        headline: post.title,
+        url: `${baseUrl}/blog/${post.slug}`,
+        datePublished: post.publishedAt 
+          ? new Date(post.publishedAt).toISOString()
+          : new Date(post._creationTime).toISOString(),
+        author: {
+          "@type": "Person",
+          name: post.author,
+        },
+      }));
+    }
   }
 
   return blogData;

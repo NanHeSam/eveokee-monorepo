@@ -11,7 +11,7 @@
 import { ConvexHttpClient } from "convex/browser";
 import * as fs from "fs";
 import * as path from "path";
-import { fileURLToPath } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -180,7 +180,7 @@ function stripMarkdown(markdown) {
 }
 
 // Run if called directly
-if (import.meta.url === new URL(process.argv[1] ? process.argv[1] : '', import.meta.url).href) {
+if (import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   generateRSS().catch((error) => {
     console.error("❌ Fatal error:", error);
     process.exit(1);
