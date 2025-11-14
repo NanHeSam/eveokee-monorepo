@@ -1,0 +1,111 @@
+{
+  "type": "block_actions",
+  "user": {
+    "id": "U08U8BQJ2RX",
+    "username": "sam",
+    "name": "sam",
+    "team_id": "T08U8BQHY1X"
+  },
+  "api_app_id": "A09SYTKJXED",
+  "token": "YaiShOFjVv9JSKiUFMZJppZB",
+  "container": {
+    "type": "message",
+    "message_ts": "1763110697.859759",
+    "channel_id": "C09SYU0978R",
+    "is_ephemeral": false
+  },
+  "trigger_id": "9908988907763.8960398610065.bd2867be059d53988b34ea19838ac809",
+  "team": {
+    "id": "T08U8BQHY1X",
+    "domain": "eveoky"
+  },
+  "enterprise": null,
+  "is_enterprise_install": false,
+  "channel": {
+    "id": "C09SYU0978R",
+    "name": "marketing"
+  },
+  "message": {
+    "subtype": "bot_message",
+    "text": "[dev] New blog draft ready for review: Test Article from RankPill",
+    "type": "message",
+    "ts": "1763110697.859759",
+    "bot_id": "B09S4HP6J87",
+    "blocks": [
+      {
+        "type": "header",
+        "block_id": "Vr7jm",
+        "text": {
+          "type": "plain_text",
+          "text": "[dev] :memo: New Blog Draft Ready for Review",
+          "emoji": true
+        }
+      },
+      {
+        "type": "section",
+        "block_id": "5c5lb",
+        "text": {
+          "type": "mrkdwn",
+          "text": "*Test Article from RankPill*\\n\\nA new blog post draft from RankPill is ready for your review.",
+          "verbatim": false
+        }
+      },
+      {
+        "type": "section",
+        "block_id": "l0feK",
+        "text": {
+          "type": "mrkdwn",
+          "text": "<http://localhost:5173/blog/preview/a99401b5-cc97-467b-9b2b-6846bbdaf104|:eyes: Preview Draft>",
+          "verbatim": false
+        }
+      },
+      {
+        "type": "actions",
+        "block_id": "iZbDy",
+        "elements": [
+          {
+            "type": "button",
+            "action_id": "approve_draft",
+            "text": {
+              "type": "plain_text",
+              "text": ":white_check_mark: Approve & Publish",
+              "emoji": true
+            },
+            "style": "primary",
+            "value": "m9745mmkrqjhp355ef5v946bss7vcbac:a99401b5-cc97-467b-9b2b-6846bbdaf104"
+          },
+          {
+            "type": "button",
+            "action_id": "dismiss_draft",
+            "text": {
+              "type": "plain_text",
+              "text": ":x: Dismiss",
+              "emoji": true
+            },
+            "style": "danger",
+            "value": "m9745mmkrqjhp355ef5v946bss7vcbac:a99401b5-cc97-467b-9b2b-6846bbdaf104"
+          }
+        ]
+      }
+    ]
+  },
+  "state": {
+    "values": {}
+  },
+  "response_url": "https://hooks.slack.com/actions/T08U8BQHY1X/9911934429317/y5Nqn3xvBdhkMNy8SkNMguC2",
+  "actions": [
+    {
+      "action_id": "dismiss_draft",
+      "block_id": "iZbDy",
+      "text": {
+        "type": "plain_text",
+        "text": ":x: Dismiss",
+        "emoji": true
+      },
+      "value": "m9745mmkrqjhp355ef5v946bss7vcbac:a99401b5-cc97-467b-9b2b-6846bbdaf104",
+      "style": "danger",
+      "type": "button",
+      "action_ts": "1763110699.867368"
+    }
+  ]
+}

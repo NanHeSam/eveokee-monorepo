@@ -5,7 +5,7 @@
  * Sends messages to Slack via webhook URL
  */
 
-import { action } from "../_generated/server";
+import { action, internalAction } from "../_generated/server";
 import { v } from "convex/values";
 
 /**
@@ -89,12 +89,17 @@ export const sendDraftReviewNotification = action({
       // Button value format: "postId:token"
       const buttonValue = `${args.postId}:${args.previewToken}`;
 
+      // Add [dev] prefix if running in development (check previewUrl for localhost)
+      // This works even when testing against deployed Convex if previewUrl points to localhost
+      const isDev = args.previewUrl?.includes("localhost") ?? false;
+      const devPrefix = isDev ? "[dev] " : "";
+
       const blocks = [
         {
           type: "header",
           text: {
             type: "plain_text",
-            text: "📝 New Blog Draft Ready for Review",
+            text: `${devPrefix}📝 New Blog Draft Ready for Review`,
             emoji: true,
           },
         },
@@ -142,7 +147,7 @@ export const sendDraftReviewNotification = action({
       ];
 
       const payload = {
-        text: `New blog draft ready for review: ${args.title}`,
+        text: `${devPrefix}New blog draft ready for review: ${args.title}`,
         blocks,
       };
 
@@ -166,6 +171,54 @@ export const sendDraftReviewNotification = action({
       return { success: true };
     } catch (error) {
       console.error("Failed to send Slack notification:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  },
+});
+
+/**
+ * Update a Slack message via response_url (for async updates after button clicks)
+ * Internal action for updating messages sent via incoming webhooks
+ */
+export const updateSlackMessage = internalAction({
+  args: {
+    responseUrl: v.string(),
+    message: v.object({
+      response_type: v.optional(v.string()),
+      replace_original: v.optional(v.boolean()),
+      text: v.string(),
+      blocks: v.optional(v.array(v.any())),
+    }),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    error: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    try {
+      const response = await fetch(args.responseUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(args.message),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Slack response_url update error:", errorText);
+        return {
+          success: false,
+          error: `Slack API error: ${response.status} ${errorText}`,
+        };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("Failed to update Slack message:", error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",

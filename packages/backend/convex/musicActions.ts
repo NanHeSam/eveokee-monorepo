@@ -8,7 +8,7 @@ import {
   SUNO_SONGS_PER_REQUEST,
   SUNO_DEFAULT_MODEL,
 } from "./utils/constants";
-import { createOpenAIClientFromEnv } from "./integrations/openai/client";
+import { getOpenAIClient } from "./integrations/openai/client";
 import { createSunoClientFromEnv } from "./integrations/suno/client";
 
 export const requestSunoGeneration = internalAction({
@@ -26,11 +26,8 @@ export const requestSunoGeneration = internalAction({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    // Create OpenAI client for generating song data
-    const openaiClient = createOpenAIClientFromEnv({
-      OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-      OPENAI_TIMEOUT: process.env.OPENAI_TIMEOUT,
-    });
+    // Get OpenAI client for generating song data
+    const openaiClient = getOpenAIClient();
 
     // Create Suno client for music generation
     // CONVEX_SITE_URL is provided automatically by Convex

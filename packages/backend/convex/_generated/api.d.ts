@@ -10,6 +10,7 @@
 
 import type * as billing from "../billing.js";
 import type * as blog from "../blog.js";
+import type * as blogActions from "../blogActions.js";
 import type * as blogAuth from "../blogAuth.js";
 import type * as blogMigration from "../blogMigration.js";
 import type * as callDiaryWorkflow from "../callDiaryWorkflow.js";
@@ -90,6 +91,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   billing: typeof billing;
   blog: typeof blog;
+  blogActions: typeof blogActions;
   blogAuth: typeof blogAuth;
   blogMigration: typeof blogMigration;
   callDiaryWorkflow: typeof callDiaryWorkflow;

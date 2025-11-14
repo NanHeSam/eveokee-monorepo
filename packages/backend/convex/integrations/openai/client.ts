@@ -39,6 +39,11 @@ export interface GenerateVideoScriptParams {
   diaryEntry?: string;
 }
 
+export interface ExtractTagsParams {
+  title: string;
+  content: string;
+}
+
 /**
  * OpenAI client for chat completions
  */
@@ -290,9 +295,110 @@ Your output should read like a film director's short shotlist written as prose, 
       throw new Error(`OpenAI video script generation failed: ${String(error)}`);
     }
   }
+
+  /**
+   * Extract relevant tags from blog post title and content
+   * Uses AI to identify 3-5 relevant tags that categorize the content
+   * @param params - Parameters including title and content
+   * @returns Array of 3-5 relevant tags
+   * @throws Error if the API call fails
+   */
+  async extractTags(params: ExtractTagsParams): Promise<string[]> {
+    try {
+      const completion = await this.client.chat.completions.create({
+        model: "gpt-4o-mini", // Using mini for fast, cost-effective tag extraction
+        messages: [
+          {
+            role: "system",
+            content: `You are a content categorization expert. Analyze the blog post title and content to extract 3-5 relevant tags.
+
+Tags should be:
+- Single words or short phrases (1-2 words max)
+- Relevant to the main topics and themes
+- Useful for categorization and search
+- Capitalized appropriately (e.g., "AI", "Machine Learning", "JavaScript")
+- Common industry terms or topics
+
+Return ONLY the tags as a JSON array of strings. No explanations, no extra text.`,
+          },
+          {
+            role: "user",
+            content: `Title: ${params.title}\n\nContent:\n${params.content}`,
+          },
+        ],
+        max_tokens: 100,
+        response_format: { type: "json_object" },
+      });
+
+      const content = completion.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error("Failed to extract tags: Empty response");
+      }
+
+      // Parse JSON response
+      let result: { tags?: string[] };
+      try {
+        result = JSON.parse(content);
+      } catch (parseError) {
+        throw new Error(
+          `Failed to parse OpenAI response as JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}`
+        );
+      }
+
+      // Extract tags array from various possible response formats
+      const tags = result.tags || [];
+
+      if (!Array.isArray(tags) || tags.length === 0) {
+        throw new Error("OpenAI response did not contain valid tags array");
+      }
+
+      // Return 3-5 tags, filter out empty strings
+      return tags.filter((tag: string) => tag && tag.trim().length > 0).slice(0, 5);
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`OpenAI tag extraction failed: ${error.message}`);
+      }
+      throw new Error(`OpenAI tag extraction failed: ${String(error)}`);
+    }
+  }
 }
 
 /**
+ * Singleton instance of OpenAIClient
+ * Lazily initialized on first use
+ */
+let openAIClientInstance: OpenAIClient | null = null;
+
+/**
+ * Get or create the singleton OpenAIClient instance.
+ * Uses environment variables for configuration.
+ *
+ * @returns A configured OpenAIClient instance
+ * @throws Error if `OPENAI_API_KEY` is not set in environment variables
+ */
+export function getOpenAIClient(): OpenAIClient {
+  if (!openAIClientInstance) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error("OPENAI_API_KEY environment variable is not set");
+    }
+
+    const timeout = process.env.OPENAI_TIMEOUT
+      ? parseInt(process.env.OPENAI_TIMEOUT, 10)
+      : undefined;
+
+    openAIClientInstance = new OpenAIClient({
+      apiKey,
+      timeout,
+    });
+  }
+
+  return openAIClientInstance;
+}
+
+/**
+ * @deprecated Use getOpenAIClient() instead. This function creates a new client instance each time.
+ *
  * Instantiate an OpenAIClient using OPENAI_API_KEY environment variable.
  *
  * @param env - Object containing OpenAI configuration environment variables:
