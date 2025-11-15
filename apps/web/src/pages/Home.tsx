@@ -24,12 +24,14 @@ export default function Home() {
       // Remove the # from the hash
       const anchor = location.hash.substring(1);
       // Small delay to ensure DOM is ready
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         const element = document.getElementById(anchor);
         if (element) {
           element.scrollIntoView({ behavior: 'smooth' });
         }
       }, 100);
+
+      return () => clearTimeout(timeoutId);
     }
   }, [location.hash]);
 

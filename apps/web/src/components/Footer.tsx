@@ -92,24 +92,27 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <button 
-                  onClick={() => handleAnchorClick('demo')} 
+                <button
+                  type="button"
+                  onClick={() => handleAnchorClick('demo')}
                   className="hover:text-gray-900 dark:hover:text-white transition-colors text-left"
                 >
                   Demo
                 </button>
               </li>
               <li>
-                <button 
-                  onClick={() => handleAnchorClick('how-it-works')} 
+                <button
+                  type="button"
+                  onClick={() => handleAnchorClick('how-it-works')}
                   className="hover:text-gray-900 dark:hover:text-white transition-colors text-left"
                 >
                   How it works
                 </button>
               </li>
               <li>
-                <button 
-                  onClick={() => handleAnchorClick('faq')} 
+                <button
+                  type="button"
+                  onClick={() => handleAnchorClick('faq')}
                   className="hover:text-gray-900 dark:hover:text-white transition-colors text-left"
                 >
                   FAQ
