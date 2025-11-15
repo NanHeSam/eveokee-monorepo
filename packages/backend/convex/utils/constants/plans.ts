@@ -20,7 +20,7 @@ export const PLAN_CONFIG = {
     price: 9.99,
   },
   yearly: {
-    musicLimit: 1000,
+    musicLimit: 1200,
     periodDays: 365,
     price: 99.99,
   },

@@ -20,6 +20,7 @@ import NewDashboard from "./pages/NewDashboard";
 import Profile from "./pages/Profile";
 import MemoryCompose from "./pages/MemoryCompose";
 import NotFound from "./pages/NotFound";
+import Pricing from "./pages/Pricing";
 
 /**
  * Initializes the global theme and renders the application's top-level UI, including global toast notifications and the routing structure.
@@ -69,6 +70,7 @@ export default function App() {
               <Route path="blog" element={<Blog />} />
               <Route path="blog/preview/:token" element={<Blog />} />
               <Route path="blog/:slug" element={<Blog />} />
+              <Route path="pricing" element={<Pricing />} />
             </Route>
             
             {/* Dashboard routes with authenticated navigation */}

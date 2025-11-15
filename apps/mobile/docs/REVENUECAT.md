@@ -225,7 +225,7 @@ The backend maintains subscription status through webhooks and reconciliation:
 
 The following product IDs map to subscription tiers:
 - `eveokee_premium_monthly` → monthly tier (90 generations/month)
-- `eveokee_premium_annual` → yearly tier (1000 generations/year)
+- `eveokee_premium_annual` → yearly tier (1200 generations/year)
 
 Make sure these product IDs match what you configure in App Store Connect and Google Play Console.
 

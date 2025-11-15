@@ -352,7 +352,7 @@ describe("Subscription Usage Accounting", () => {
       expect(monthlyResult.limit).toBe(90);
       expect(monthlyResult.remainingQuota).toBe(89);
 
-      // Yearly: 84 (monthly credit: 1000 / 12 rounded up)
+      // Yearly: 100 (monthly credit: 1200 / 12 rounded up)
       const { userId: yearlyUser } = await createTestUser(t, {
         tier: "yearly",
         musicGenerationsUsed: 0,
@@ -362,8 +362,8 @@ describe("Subscription Usage Accounting", () => {
         internal.usage.recordMusicGeneration,
         { userId: yearlyUser }
       );
-      expect(yearlyResult.limit).toBe(84);
-      expect(yearlyResult.remainingQuota).toBe(83);
+      expect(yearlyResult.limit).toBe(100);
+      expect(yearlyResult.remainingQuota).toBe(99);
     });
   });
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@backend/convex';
+import { useNavigate } from 'react-router-dom';
 import ConvexQueryBoundary from '@/components/ConvexQueryBoundary';
 import toast from 'react-hot-toast';
 
@@ -46,6 +47,7 @@ const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'F
  * @returns The React element for the profile page.
  */
 export default function Profile() {
+  const navigate = useNavigate();
   const profile = useQuery(api.users.getUserProfile);
   const upsertCallSettings = useMutation(api.callSettings.upsertCallSettings);
   
@@ -232,9 +234,19 @@ export default function Profile() {
 
               {/* Subscription Information Card */}
               <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  Subscription Status
-                </h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    Subscription Status
+                  </h2>
+                  {(!profile.subscription || !profile.subscription.isActive) && (
+                    <button
+                      onClick={() => navigate('/pricing')}
+                      className="px-4 py-2 bg-accent-mint text-white rounded-lg hover:bg-accent-mint/90 transition-colors text-sm font-semibold"
+                    >
+                      Subscribe
+                    </button>
+                  )}
+                </div>
                 {profile.subscription ? (
                   <div className="space-y-3">
                     <div>
@@ -286,7 +298,7 @@ export default function Profile() {
                   {!isEditing && (
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                      className="px-4 py-2 !bg-accent-mint text-white rounded-lg hover:!bg-accent-mint/90 transition-colors text-sm font-semibold"
                     >
                       Edit Settings
                     </button>
@@ -329,7 +341,7 @@ export default function Profile() {
                     <p className="text-gray-500 dark:text-gray-400 mb-4">No call settings configured</p>
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                      className="px-4 py-2 bg-accent-mint text-white rounded-lg hover:bg-accent-mint/90 transition-colors text-sm font-semibold"
                     >
                       Set Up Call Settings
                     </button>
@@ -451,7 +463,7 @@ export default function Profile() {
                       <button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 flex items-center"
+                        className="px-4 py-2 bg-accent-mint text-white rounded-lg hover:bg-accent-mint/90 transition-colors disabled:opacity-50 flex items-center text-sm font-semibold"
                       >
                         {isSaving && (
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>

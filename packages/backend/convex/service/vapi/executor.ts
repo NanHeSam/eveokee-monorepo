@@ -15,15 +15,15 @@ export const executeScheduledCalls = internalAction({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();
-    console.log("Executing scheduled calls at", new Date(now).toISOString());
     
     // Get settings ready to call
     const settingsToCall = await ctx.runMutation(
       internal.callSettings.getActiveCallSettingsForExecutor,
       { currentTime: now }
     );
-    
-    console.log(`Found ${settingsToCall.length} settings ready to call`);
+    if (settingsToCall.length > 0) {
+      console.log(`Found ${settingsToCall.length} settings ready to call`);
+    }
     
     for (const setting of settingsToCall) {
       try {

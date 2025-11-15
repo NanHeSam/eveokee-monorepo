@@ -24,7 +24,7 @@ const PLAN_CONFIG = {
   free: { musicLimit: 5, periodDays: 30 },
   weekly: { musicLimit: 20, periodDays: 7 },
   monthly: { musicLimit: 90, periodDays: 30 },
-  yearly: { musicLimit: 1000, periodDays: 365 },
+  yearly: { musicLimit: 1200, periodDays: 365 },
 } as const;
 
 /**
