@@ -7,6 +7,8 @@ const getPaywallBaseUrl = (): string | null => {
   return import.meta.env.VITE_REVENUECAT_PAYWALL_BASE_URL ?? null;
 };
 
+export type BillingCycle = "weekly" | "monthly" | "yearly";
+
 /**
  * Builds the hosted RevenueCat paywall URL for the authenticated user.
  * Requires VITE_REVENUECAT_PAYWALL_BASE_URL to be set in environment variables.
@@ -16,7 +18,7 @@ const getPaywallBaseUrl = (): string | null => {
  */
 export const getRevenueCatPaywallUrl = (
   appUserId: string | null | undefined,
-  billingCycle?: "weekly" | "monthly" | "yearly",
+  billingCycle?: BillingCycle,
 ): string | null => {
   if (!appUserId) {
     return null;

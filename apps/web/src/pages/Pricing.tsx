@@ -6,9 +6,11 @@ import toast from "react-hot-toast";
 import { useQuery } from "convex/react";
 import { api } from "@backend/convex";
 import { PLAN_CONFIG } from "@backend/convex/convex/utils/constants/plans";
-import { getRevenueCatEnvironmentLabel, getRevenueCatPaywallUrl } from "@/utils/revenueCatPaywall";
-
-type BillingCycle = "weekly" | "monthly" | "yearly";
+import {
+  type BillingCycle,
+  getRevenueCatEnvironmentLabel,
+  getRevenueCatPaywallUrl,
+} from "@/utils/revenueCatPaywall";
 
 const BILLING_OPTIONS: Array<{ key: BillingCycle; label: string; helper: string }> = [
   { key: "weekly", label: "Weekly", helper: "Quick boost" },
