@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import HeroSection from '../components/HeroSection';
 import DemoPreviewSection from '../components/DemoPreviewSection';
 import HowItWorksSection from '../components/HowItWorksSection';
@@ -14,6 +16,24 @@ export default function Home() {
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://eveokee.com";
   const organizationData = generateOrganizationStructuredData(baseUrl);
   const websiteData = generateWebsiteStructuredData(baseUrl);
+  const location = useLocation();
+
+  // Handle hash navigation when navigating from another page
+  useEffect(() => {
+    if (location.hash) {
+      // Remove the # from the hash
+      const anchor = location.hash.substring(1);
+      // Small delay to ensure DOM is ready
+      const timeoutId = setTimeout(() => {
+        const element = document.getElementById(anchor);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [location.hash]);
 
   return (
     <>

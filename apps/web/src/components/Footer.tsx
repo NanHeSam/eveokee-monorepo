@@ -1,7 +1,7 @@
 import { Heart, Twitter, Mail, Smartphone } from 'lucide-react';
 import { SiDiscord } from 'react-icons/si';
 import { FaInstagram } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { getAndroidBetaLink } from '../utils/deviceUtils';
 import AndroidInviteForm from './AndroidInviteForm';
 import IOSAppStoreButton from './IOSAppStoreButton';
@@ -16,6 +16,20 @@ import IOSAppStoreButton from './IOSAppStoreButton';
 export default function Footer() {
   const currentYear = new Date().getFullYear();
   const androidBetaLink = getAndroidBetaLink();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleAnchorClick = (anchor: string) => {
+    if (location.pathname !== '/') {
+      navigate(`/#${anchor}`);
+    } else {
+      // If already on home page, just scroll to the section
+      const element = document.getElementById(anchor);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
 
   return (
     <footer className="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
@@ -78,19 +92,31 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="#demo" className="hover:text-gray-900 dark:hover:text-white transition-colors">
+                <button
+                  type="button"
+                  onClick={() => handleAnchorClick('demo')}
+                  className="hover:text-gray-900 dark:hover:text-white transition-colors text-left"
+                >
                   Demo
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#how-it-works" className="hover:text-gray-900 dark:hover:text-white transition-colors">
+                <button
+                  type="button"
+                  onClick={() => handleAnchorClick('how-it-works')}
+                  className="hover:text-gray-900 dark:hover:text-white transition-colors text-left"
+                >
                   How it works
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#faq" className="hover:text-gray-900 dark:hover:text-white transition-colors">
+                <button
+                  type="button"
+                  onClick={() => handleAnchorClick('faq')}
+                  className="hover:text-gray-900 dark:hover:text-white transition-colors text-left"
+                >
                   FAQ
-                </a>
+                </button>
               </li>
             </ul>
           </div>
