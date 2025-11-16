@@ -178,44 +178,92 @@ export const migrateExistingMusic = internalMutation({
   }),
   handler: async (ctx, args) => {
     const batchSize = args.batchSize ?? 100;
+    const pageSize = 200; // Fetch 200 records per page to filter for primary tracks
     let processed = 0;
     let created = 0;
     let skipped = 0;
     let nextCursor: Id<"music"> | null = args.cursor ?? null;
 
-    // Query music records using the by_createdAt index for pagination
-    // We'll filter for musicIndex === 0 or undefined/null in memory
-    let query = ctx.db.query("music").withIndex("by_createdAt");
-    
-    // If we have a cursor, we need to find records after that point
-    // Since we can't directly query by cursor with filters, we'll:
-    // 1. Get a batch of records ordered by creation time
-    // 2. Filter for primary tracks (musicIndex === 0 or undefined/null) and not deleted
-    // 3. Process up to batchSize matching records
-    
-    const allMusic = await query.order("asc").collect();
-    
-    // Filter to only musicIndex === 0 or undefined/null, and not deleted
-    const primaryTracks = allMusic.filter(
-      (m) => 
-        (m.musicIndex === 0 || m.musicIndex === undefined || m.musicIndex === null) &&
-        !m.deletedAt
-    );
+    // Accumulate primary tracks across paginated queries
+    const primaryTracks: Array<{ _id: Id<"music">; userId: Id<"users">; musicIndex?: number }> = [];
+    let lastProcessedId: Id<"music"> | null = nextCursor;
+    let hasMorePages = true;
 
-    // If we have a cursor, start from that point
-    let startIndex = 0;
-    if (nextCursor) {
-      const cursorIndex = primaryTracks.findIndex((m) => m._id === nextCursor);
-      if (cursorIndex >= 0) {
-        startIndex = cursorIndex + 1;
+    // Paginate through music records using the by_createdAt index
+    // Filter each page for primary tracks (musicIndex === 0 or undefined/null) and not deleted
+    // Continue until we accumulate batchSize primary tracks or reach the end
+    while (primaryTracks.length < batchSize && hasMorePages) {
+      let pageQuery = ctx.db.query("music").withIndex("by_createdAt").order("asc");
+
+      // If we have a cursor, start from records after that point
+      // We'll filter by createdAt to continue from where we left off
+      if (lastProcessedId) {
+        const cursorDoc = await ctx.db.get(lastProcessedId);
+        if (cursorDoc) {
+          // Get records with createdAt > cursorDoc.createdAt, or
+          // (createdAt === cursorDoc.createdAt AND _id > lastProcessedId) to skip the cursor itself
+          pageQuery = pageQuery.filter((q) => 
+            q.or(
+              q.gt(q.field("createdAt"), cursorDoc.createdAt),
+              q.and(
+                q.eq(q.field("createdAt"), cursorDoc.createdAt),
+                q.gt(q.field("_id"), lastProcessedId)
+              )
+            )
+          );
+        } else {
+          // Cursor document not found, reset to start from beginning
+          lastProcessedId = null;
+        }
+      }
+
+      // Fetch a page of records (limited by take - never use collect())
+      const page = await pageQuery.take(pageSize);
+
+      if (page.length === 0) {
+        hasMorePages = false;
+        break;
+      }
+
+      // Filter this page for primary tracks (musicIndex === 0 or undefined/null) and not deleted
+      const pagePrimaryTracks = page.filter(
+        (m) =>
+          (m.musicIndex === 0 || m.musicIndex === undefined || m.musicIndex === null) &&
+          !m.deletedAt
+      );
+
+      // Add primary tracks from this page to our accumulator
+      for (const track of pagePrimaryTracks) {
+        if (primaryTracks.length >= batchSize) {
+          break;
+        }
+        primaryTracks.push({
+          _id: track._id,
+          userId: track.userId,
+          musicIndex: track.musicIndex,
+        });
+      }
+
+      // Update cursor to the last item in this page (even if not primary)
+      // This ensures we continue from the right position and don't reprocess records
+      lastProcessedId = page[page.length - 1]._id;
+
+      // If we got fewer records than pageSize, we've reached the end
+      if (page.length < pageSize) {
+        hasMorePages = false;
       }
     }
 
-    // Process batch
-    const batch = primaryTracks.slice(startIndex, startIndex + batchSize);
-    
-    for (const music of batch) {
+    // Process the accumulated primary tracks
+    for (const trackInfo of primaryTracks) {
       processed++;
+
+      // Get the full music record
+      const music = await ctx.db.get(trackInfo._id);
+      if (!music) {
+        skipped++;
+        continue;
+      }
 
       // Check if userSongs entry already exists
       const existing = await ctx.db
@@ -243,14 +291,22 @@ export const migrateExistingMusic = internalMutation({
     }
 
     // Determine next cursor and completion status
-    const lastProcessedIndex = startIndex + batch.length - 1;
-    if (lastProcessedIndex >= 0 && lastProcessedIndex < primaryTracks.length - 1) {
-      nextCursor = primaryTracks[lastProcessedIndex]._id;
-    } else {
+    if (!hasMorePages) {
+      // No more pages, migration is complete
       nextCursor = null;
+    } else if (primaryTracks.length > 0) {
+      // Use the last processed primary track as the cursor
+      // This ensures we continue from the right position
+      nextCursor = primaryTracks[primaryTracks.length - 1]._id;
+    } else {
+      // We didn't find any primary tracks in this iteration, but there are more pages
+      // Use the last processed ID to continue from where we left off
+      // This prevents infinite loops when pages contain no primary tracks
+      nextCursor = lastProcessedId;
     }
 
-    const isComplete = nextCursor === null;
+    // Migration is complete if there are no more pages
+    const isComplete = !hasMorePages;
 
     return {
       processed,

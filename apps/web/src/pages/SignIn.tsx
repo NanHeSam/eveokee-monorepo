@@ -1,9 +1,10 @@
 import { SignIn } from '@clerk/clerk-react'
 import { useSearchParams } from 'react-router-dom'
+import { normalizeRedirectPath } from '@/utils/redirectUtils'
 
 export default function SignInPage() {
   const [searchParams] = useSearchParams()
-  const redirectUrl = searchParams.get('redirect') || '/'
+  const redirectUrl = normalizeRedirectPath(searchParams.get('redirect'))
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 px-4">
