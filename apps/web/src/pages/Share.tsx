@@ -20,7 +20,7 @@ const formatDuration = (seconds?: number): string => {
 export default function Share() {
   const { shareId } = useParams<{ shareId: string }>();
   const navigate = useNavigate();
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, userId: currentClerkUserId } = useAuth();
   const sharedMusic = useQuery(api.sharing.getSharedMusic, shareId ? { shareId } : "skip");
   const recordShareView = useMutation(api.sharing.recordShareView);
   const addFromShare = useMutation(api.userSongs.addFromShare);
@@ -228,7 +228,9 @@ export default function Share() {
 
               {sharedMusic.userName && (
                 <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">
-                  by {sharedMusic.userName}
+                  {sharedMusic.found && sharedMusic.ownerClerkId === currentClerkUserId
+                    ? "by me"
+                    : `by ${sharedMusic.userName}`}
                 </p>
               )}
 
@@ -254,53 +256,55 @@ export default function Share() {
               )}
 
               {/* Add to My Music button */}
-              <div className="mb-8">
-                <SignedIn>
-                  <button
-                    onClick={handleAddToMyMusic}
-                    disabled={isAdding || isAdded}
-                    className={`w-full px-6 py-3 rounded-xl font-semibold transition-colors ${
-                      isAdded
-                        ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 cursor-not-allowed"
-                        : isAdding
-                        ? "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed"
-                        : "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-200"
-                    }`}
-                  >
-                    {isAdding ? (
-                      <span className="flex items-center justify-center">
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Adding...
-                      </span>
-                    ) : isAdded ? (
-                      <span className="flex items-center justify-center">
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        Added to Your Library
-                      </span>
-                    ) : (
-                      <span className="flex items-center justify-center">
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        Add to My Music
-                      </span>
-                    )}
-                  </button>
-                </SignedIn>
-                <SignedOut>
-                  <button
-                    onClick={handleSignInClick}
-                    className="w-full px-6 py-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
-                  >
-                    Sign in to Add to Your Library
-                  </button>
-                </SignedOut>
-              </div>
+              {sharedMusic.found && sharedMusic.ownerClerkId !== currentClerkUserId && (
+                <div className="mb-8">
+                  <SignedIn>
+                    <button
+                      onClick={handleAddToMyMusic}
+                      disabled={isAdding || isAdded}
+                      className={`w-full px-6 py-3 rounded-xl font-semibold transition-colors ${
+                        isAdded
+                          ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 cursor-not-allowed"
+                          : isAdding
+                          ? "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed"
+                          : "bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-200"
+                      }`}
+                    >
+                      {isAdding ? (
+                        <span className="flex items-center justify-center">
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Adding...
+                        </span>
+                      ) : isAdded ? (
+                        <span className="flex items-center justify-center">
+                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Added to Your Library
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-center">
+                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                          Add to My Music
+                        </span>
+                      )}
+                    </button>
+                  </SignedIn>
+                  <SignedOut>
+                    <button
+                      onClick={handleSignInClick}
+                      className="w-full px-6 py-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
+                    >
+                      Sign in to Add to Your Library
+                    </button>
+                  </SignedOut>
+                </div>
+              )}
 
               {/* Show lyrics below if no image, or as a separate section if image exists */}
               {sharedMusic.lyric && !sharedMusic.imageUrl && (

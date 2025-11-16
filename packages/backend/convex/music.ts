@@ -452,6 +452,47 @@ export const softDeleteMusic = mutation({
 });
 
 /**
+ * Internal helper to fetch owner names for shared tracks in a user's playlist.
+ * Returns a Map of owner user IDs to their names.
+ */
+async function getOwnerNamesForUserPlaylist(
+  ctx: { db: { query: (table: "userSongs") => any; get: (id: Id<"users">) => Promise<any> } },
+  userId: Id<"users">,
+): Promise<Map<Id<"users">, string>> {
+  // Query userSongs to find shared tracks
+  const userSongs = await ctx.db
+    .query("userSongs")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .collect();
+
+  // Collect unique owner user IDs from shared tracks
+  const ownerUserIds = new Set<Id<"users">>();
+  
+  for (const userSong of userSongs) {
+    if (userSong.sharedMusicId) {
+      const sharedMusic = await ctx.db.get(userSong.sharedMusicId);
+      if (sharedMusic && sharedMusic.isActive && !sharedMusic.isPrivate) {
+        ownerUserIds.add(sharedMusic.userId);
+      }
+    }
+  }
+
+  // Fetch owner names
+  const ownerNameById = new Map<Id<"users">, string>();
+  
+  await Promise.all(
+    Array.from(ownerUserIds).map(async (ownerUserId) => {
+      const owner = await ctx.db.get(ownerUserId);
+      if (owner && owner.name) {
+        ownerNameById.set(ownerUserId, owner.name);
+      }
+    }),
+  );
+
+  return ownerNameById;
+}
+
+/**
  * List all music tracks for the current user's playlist
  * 
  * Steps:
@@ -623,6 +664,7 @@ export const listPlaylistMusic = query({
       ownershipType: v.optional(v.union(v.literal("owned"), v.literal("shared"))),
       addedViaShareId: v.optional(v.string()),
       linkedFromMusicIndex: v.optional(v.number()),
+      ownerName: v.optional(v.string()),
     }),
   ),
   handler: async (ctx) => {
@@ -700,6 +742,9 @@ export const listPlaylistMusic = query({
       }),
     );
 
+    // Step 4b: Get owner names for shared tracks using shared helper
+    const ownerNameById = await getOwnerNamesForUserPlaylist(ctx, userId);
+
     // Step 5: Map to result format
     return musicRecords.map(({ userSong, music, sharedMusic }) => {
       // Use primary URLs with fallback to metadata URLs
@@ -714,6 +759,11 @@ export const listPlaylistMusic = query({
         userSong.ownershipType === "owned" && music.userId === userId && music.diaryId
           ? diaryDataById.get(music.diaryId)
           : undefined;
+
+      // Get owner name for shared tracks
+      const ownerName = sharedMusic
+        ? ownerNameById.get(sharedMusic.userId)
+        : undefined;
 
       return {
         _id: music._id,
@@ -735,7 +785,37 @@ export const listPlaylistMusic = query({
         ownershipType: userSong.ownershipType,
         addedViaShareId: sharedMusic?.shareId,
         linkedFromMusicIndex: userSong.linkedFromMusicIndex,
+        ownerName: ownerName ?? undefined,
       };
     });
+  },
+});
+
+/**
+ * Get a map of owner user IDs to owner names for shared tracks in the user's playlist.
+ * This can be used for filtering or displaying owner information in the frontend.
+ */
+export const getPlaylistOwnerNames = query({
+  args: {},
+  returns: v.record(v.string(), v.string()),
+  handler: async (ctx) => {
+    // Step 1: Authenticate user (optional)
+    const authResult = await getOptionalCurrentUser(ctx);
+    if (!authResult) {
+      // User deleted or not authenticated - return empty record
+      return {};
+    }
+    const { userId } = authResult;
+
+    // Step 2: Get owner names using shared helper
+    const ownerNameByIdMap = await getOwnerNamesForUserPlaylist(ctx, userId);
+
+    // Step 3: Convert Map to Record for serialization
+    const ownerNameById: Record<string, string> = {};
+    for (const [userId, name] of ownerNameByIdMap.entries()) {
+      ownerNameById[userId] = name;
+    }
+
+    return ownerNameById;
   },
 });
