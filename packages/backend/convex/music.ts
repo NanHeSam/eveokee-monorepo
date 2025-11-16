@@ -1,7 +1,17 @@
 import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import type { QueryCtx } from "./_generated/server";
 import { internal, api } from "./_generated/api";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
+
+/**
+ * Minimal context type for getOwnerNamesForUserPlaylist helper.
+ * Only includes the database property from QueryCtx, restricting access
+ * to only the database operations (not other QueryCtx properties like scheduler, etc).
+ */
+type PlaylistOwnerNamesCtx = {
+  db: QueryCtx["db"];
+};
 import ensureCurrentUser, { getOptionalCurrentUser } from "./users";
 import { MAX_SAFE_MUSIC_INDEX } from "./utils/constants";
 
@@ -456,7 +466,7 @@ export const softDeleteMusic = mutation({
  * Returns a Map of owner user IDs to their names.
  */
 async function getOwnerNamesForUserPlaylist(
-  ctx: { db: { query: (table: "userSongs") => any; get: (id: Id<"users">) => Promise<any> } },
+  ctx: PlaylistOwnerNamesCtx,
   userId: Id<"users">,
 ): Promise<Map<Id<"users">, string>> {
   // Query userSongs to find shared tracks

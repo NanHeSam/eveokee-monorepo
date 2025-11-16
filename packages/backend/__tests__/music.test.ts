@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { api, internal } from "../convex/_generated/api";
+import type { Doc } from "../convex/_generated/dataModel";
 import {
   createTestEnvironment,
   createTestUser,
@@ -166,7 +167,6 @@ describe("Music Generation Flow", () => {
 
       // Check that pending music exists for this diary
       const pendingMusic = await t.run(async (ctx) => {
-        // @ts-expect-error - Convex index types are runtime-validated
         return await ctx.db
           .query("music")
           .withIndex("by_diaryId", (q) => q.eq("diaryId", diaryId))
@@ -204,7 +204,6 @@ describe("Music Generation Flow", () => {
 
       // Check that no pending music exists
       const pendingMusic = await t.run(async (ctx) => {
-        // @ts-expect-error - Convex index types are runtime-validated
         return await ctx.db
           .query("music")
           .withIndex("by_diaryId", (q) => q.eq("diaryId", diaryId))
@@ -238,7 +237,6 @@ describe("Music Generation Flow", () => {
 
       // Check that no pending music exists
       const pendingMusic = await t.run(async (ctx) => {
-        // @ts-expect-error - Convex index types are runtime-validated
         return await ctx.db
           .query("music")
           .withIndex("by_diaryId", (q) => q.eq("diaryId", diaryId))
@@ -494,7 +492,7 @@ describe("Music Generation Flow", () => {
         ],
       });
 
-      const record = await t.run(async (ctx) => ctx.db.get(musicIds[0]));
+      const record = await t.run(async (ctx) => ctx.db.get(musicIds[0])) as Doc<"music"> | null;
 
       expect(record?.metadata).toBeDefined();
       expect(record?.metadata?.id).toBe("track-meta");
@@ -644,7 +642,7 @@ describe("Music Generation Flow", () => {
         tracks: [{ createTime: 1234567890 }],
       });
 
-      const record = await t.run(async (ctx) => ctx.db.get(musicIds[0]));
+      const record = await t.run(async (ctx) => ctx.db.get(musicIds[0])) as Doc<"music"> | null;
       expect(record?.metadata?.createTime).toBe(1234567890);
     });
 
@@ -670,7 +668,7 @@ describe("Music Generation Flow", () => {
         tracks: [{ createTime: "1234567890" }],
       });
 
-      const record = await t.run(async (ctx) => ctx.db.get(musicIds[0]));
+      const record = await t.run(async (ctx) => ctx.db.get(musicIds[0])) as Doc<"music"> | null;
       expect(record?.metadata?.createTime).toBe(1234567890);
     });
 
@@ -696,9 +694,71 @@ describe("Music Generation Flow", () => {
         tracks: [{ createTime: "2024-01-15T10:30:00Z" }],
       });
 
-      const record = await t.run(async (ctx) => ctx.db.get(musicIds[0]));
+      const record = await t.run(async (ctx) => ctx.db.get(musicIds[0])) as Doc<"music"> | null;
       expect(record?.metadata?.createTime).toBeDefined();
       expect(typeof record?.metadata?.createTime).toBe("number");
+    });
+  });
+
+  describe("getOwnerNamesForUserPlaylist", () => {
+    it("should fetch owner names for shared tracks including sharedMusic lookups", async () => {
+      const t = createTestEnvironment();
+      
+      // Create owner user
+      const { userId: ownerUserId, clerkId: ownerClerkId, email: ownerEmail, name: ownerName } = await createTestUser(t, {
+        name: "Music Owner",
+      });
+      
+      // Create recipient user
+      const { userId: recipientUserId, clerkId: recipientClerkId, email: recipientEmail, name: recipientName } = await createTestUser(t, {
+        name: "Music Recipient",
+      });
+
+      // Create music record owned by owner
+      const musicId = await t.run(async (ctx) => {
+        return await ctx.db.insert("music", {
+          userId: ownerUserId,
+          title: "Shared Track",
+          status: "ready",
+          musicIndex: 0,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        });
+      });
+
+      // Create sharedMusic record
+      const sharedMusicId = await t.run(async (ctx) => {
+        return await ctx.db.insert("sharedMusic", {
+          musicId,
+          userId: ownerUserId,
+          shareId: "test-share-id",
+          viewCount: 0,
+          isActive: true,
+          isPrivate: false,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        });
+      });
+
+      // Create userSong for recipient that references the sharedMusic
+      await t.run(async (ctx) => {
+        return await ctx.db.insert("userSongs", {
+          userId: recipientUserId,
+          musicId,
+          ownershipType: "shared",
+          sharedMusicId: sharedMusicId,
+          linkedFromMusicIndex: 0,
+          updatedAt: Date.now(),
+        });
+      });
+
+      // Call getPlaylistOwnerNames which uses getOwnerNamesForUserPlaylist
+      const asRecipient = withAuth(t, recipientClerkId, recipientEmail, recipientName);
+      const ownerNames = await asRecipient.query(api.music.getPlaylistOwnerNames, {});
+
+      // Verify owner name is returned
+      expect(ownerNames).toBeDefined();
+      expect(ownerNames[ownerUserId]).toBe(ownerName);
     });
   });
 });
