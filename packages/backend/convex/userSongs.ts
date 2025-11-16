@@ -294,14 +294,10 @@ export const migrateExistingMusic = internalMutation({
     if (!hasMorePages) {
       // No more pages, migration is complete
       nextCursor = null;
-    } else if (primaryTracks.length > 0) {
-      // Use the last processed primary track as the cursor
-      // This ensures we continue from the right position
-      nextCursor = primaryTracks[primaryTracks.length - 1]._id;
     } else {
-      // We didn't find any primary tracks in this iteration, but there are more pages
-      // Use the last processed ID to continue from where we left off
-      // This prevents infinite loops when pages contain no primary tracks
+      // When hasMorePages is true, always use lastProcessedId to ensure
+      // the next batch begins after the last processed record and avoids
+      // re-processing records filtered out in the current batch
       nextCursor = lastProcessedId;
     }
 
