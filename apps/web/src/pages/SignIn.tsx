@@ -1,6 +1,10 @@
 import { SignIn } from '@clerk/clerk-react'
+import { useSearchParams } from 'react-router-dom'
 
 export default function SignInPage() {
+  const [searchParams] = useSearchParams()
+  const redirectUrl = searchParams.get('redirect') || '/'
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50 px-4">
       <div className="w-full max-w-md">
@@ -24,7 +28,7 @@ export default function SignInPage() {
           routing="path"
           path="/sign-in"
           signUpUrl="/sign-up"
-          redirectUrl="/"
+          fallbackRedirectUrl={redirectUrl}
         />
       </div>
     </div>

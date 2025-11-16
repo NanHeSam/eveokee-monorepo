@@ -43,6 +43,7 @@ import type * as revenueCatBilling from "../revenueCatBilling.js";
 import type * as service_vapi_executor from "../service/vapi/executor.js";
 import type * as sharing from "../sharing.js";
 import type * as usage from "../usage.js";
+import type * as userSongs from "../userSongs.js";
 import type * as users from "../users.js";
 import type * as utils_blogHelpers from "../utils/blogHelpers.js";
 import type * as utils_cadenceHelpers from "../utils/cadenceHelpers.js";
@@ -124,6 +125,7 @@ declare const fullApi: ApiFromModules<{
   "service/vapi/executor": typeof service_vapi_executor;
   sharing: typeof sharing;
   usage: typeof usage;
+  userSongs: typeof userSongs;
   users: typeof users;
   "utils/blogHelpers": typeof utils_blogHelpers;
   "utils/cadenceHelpers": typeof utils_cadenceHelpers;
