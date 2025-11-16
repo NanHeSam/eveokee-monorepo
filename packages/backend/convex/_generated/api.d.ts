@@ -19,6 +19,7 @@ import type * as callSettings from "../callSettings.js";
 import type * as crons from "../crons.js";
 import type * as deleteAccount from "../deleteAccount.js";
 import type * as diaries from "../diaries.js";
+import type * as diaryMedia from "../diaryMedia.js";
 import type * as emailNotify from "../emailNotify.js";
 import type * as http from "../http.js";
 import type * as index from "../index.js";
@@ -102,6 +103,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   deleteAccount: typeof deleteAccount;
   diaries: typeof diaries;
+  diaryMedia: typeof diaryMedia;
   emailNotify: typeof emailNotify;
   http: typeof http;
   index: typeof index;

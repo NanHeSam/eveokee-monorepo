@@ -126,7 +126,17 @@ export const deleteDiary = mutation({
       musicRecords.map((music) => ctx.db.delete(music._id))
     );
 
-    // Step 4: Delete diary entry
+    // Step 4: Delete associated media records
+    const mediaRecords = await ctx.db
+      .query("diaryMedia")
+      .withIndex("by_diaryId", (q) => q.eq("diaryId", args.diaryId))
+      .collect();
+
+    await Promise.all(
+      mediaRecords.map((media) => ctx.db.delete(media._id))
+    );
+
+    // Step 5: Delete diary entry
     await ctx.db.delete(args.diaryId);
     return null;
   },

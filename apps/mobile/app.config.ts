@@ -43,6 +43,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "expo-dev-client",
     "expo-system-ui",
     "expo-web-browser",
+    "expo-image-picker",
+    "./plugins/with-expo-image-picker-autolinking",
     [
       "expo-notifications",
       {
@@ -73,7 +75,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       UIBackgroundModes: [
         "audio"
       ],
-      ITSAppUsesNonExemptEncryption: false
+      ITSAppUsesNonExemptEncryption: false,
+      NSPhotoLibraryUsageDescription: "We need access to your photo library to upload photos and videos to your diary entries.",
+      NSPhotoLibraryAddUsageDescription: "We need access to save photos and videos to your diary entries."
     },
     appleTeamId: "5KQ8K9W7XS"
   },
