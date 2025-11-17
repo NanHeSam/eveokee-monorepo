@@ -418,13 +418,20 @@ export const updateLyricWithTime = internalMutation({
 });
 
 /**
- * Soft delete a music track (mark as deleted without removing from database)
+ * Delete a music track from user's library or soft delete if user is the owner
+ * 
+ * Behavior:
+ * - If user is the owner: Soft delete the music track (sets deletedAt timestamp)
+ *   This will make the song unavailable for all users who have it in their library
+ * - If user is not the owner but has the song in their library: Remove the userSongs reference
+ *   This only removes the song from the user's library, not the actual music record
  * 
  * Steps:
  * 1. Authenticate user and get userId
- * 2. Fetch music record and verify ownership
- * 3. Check if already deleted
- * 4. Update record with deletedAt timestamp
+ * 2. Fetch music record
+ * 3. Check if user is the owner or has a reference in userSongs
+ * 4. If owner: Soft delete the music track
+ * 5. If not owner: Delete the userSongs reference
  */
 export const softDeleteMusic = mutation({
   args: {
@@ -435,27 +442,41 @@ export const softDeleteMusic = mutation({
     // Step 1: Authenticate user
     const { userId } = await ensureCurrentUser(ctx);
 
-    // Step 2: Fetch and verify ownership
+    // Step 2: Fetch music record
     const music = await ctx.db.get(args.musicId);
     if (!music) {
       throw new Error("Music not found");
     }
 
-    if (music.userId !== userId) {
-      throw new Error("Not authorized to delete this music");
-    }
+    // Step 3: Check if user is the owner
+    const isOwner = music.userId === userId;
 
-    // Step 3: Check if already deleted
-    if (music.deletedAt) {
-      throw new Error("Music already deleted");
-    }
+    if (isOwner) {
+      // Step 4: Owner deletion - soft delete the music track
+      if (music.deletedAt) {
+        throw new Error("Music already deleted");
+      }
 
-    // Step 4: Soft delete by setting deletedAt timestamp
-    const now = Date.now();
-    await ctx.db.patch(args.musicId, {
-      deletedAt: now,
-      updatedAt: now,
-    });
+      const now = Date.now();
+      await ctx.db.patch(args.musicId, {
+        deletedAt: now,
+        updatedAt: now,
+      });
+    } else {
+      // Step 5: Non-owner deletion - remove userSongs reference
+      const userSong = await ctx.db
+        .query("userSongs")
+        .withIndex("by_userId_and_musicId", (q) =>
+          q.eq("userId", userId).eq("musicId", args.musicId)
+        )
+        .first();
+
+      if (!userSong) {
+        throw new Error("Song not found in your library");
+      }
+
+      await ctx.db.delete(userSong._id);
+    }
 
     return null;
   },
@@ -675,6 +696,12 @@ export const listPlaylistMusic = query({
       addedViaShareId: v.optional(v.string()),
       linkedFromMusicIndex: v.optional(v.number()),
       ownerName: v.optional(v.string()),
+      // Availability flags for deleted/unshared songs
+      isUnavailable: v.optional(v.boolean()),
+      unavailableReason: v.optional(v.union(
+        v.literal("deleted"),
+        v.literal("unshared")
+      )),
     }),
   ),
   handler: async (ctx) => {
@@ -695,35 +722,52 @@ export const listPlaylistMusic = query({
     // Sort by _creationTime descending (newest first)
     userSongs.sort((a, b) => b._creationTime - a._creationTime);
 
-    // Step 3: Fetch music records and filter out deleted tracks
+    // Step 3: Fetch music records and check availability
     const musicRecords: Array<{
       userSong: typeof userSongs[0];
       music: Awaited<ReturnType<typeof ctx.db.get<"music">>>;
       sharedMusic: Awaited<ReturnType<typeof ctx.db.get<"sharedMusic">>> | null;
+      isUnavailable: boolean;
+      unavailableReason?: "deleted" | "unshared";
     }> = [];
 
     for (const userSong of userSongs) {
       const music = await ctx.db.get(userSong.musicId);
-      if (!music || music.deletedAt) {
-        continue; // Skip deleted tracks
+      if (!music) {
+        // Music record doesn't exist - skip
+        continue;
       }
 
-      // For shared tracks, check if the share is still active
+      // Check if music is deleted
+      const isDeleted = !!music.deletedAt;
+
+      // For shared tracks, check if the share is still active (only if music is not deleted)
       let sharedMusic = null;
-      if (userSong.sharedMusicId) {
+      let isUnshared = false;
+      if (!isDeleted && userSong.sharedMusicId) {
         sharedMusic = await ctx.db.get(userSong.sharedMusicId);
         if (!sharedMusic || !sharedMusic.isActive || sharedMusic.isPrivate) {
-          continue; // Skip tracks from inactive/private shares
+          isUnshared = true;
         }
+      } else if (userSong.sharedMusicId) {
+        // Music is deleted, but we still want to fetch sharedMusic for reference
+        sharedMusic = await ctx.db.get(userSong.sharedMusicId);
       }
 
-      musicRecords.push({ userSong, music, sharedMusic });
+      // Determine availability status (deleted takes precedence over unshared)
+      const isUnavailable = isDeleted || isUnshared;
+      const unavailableReason = isDeleted ? "deleted" as const : (isUnshared ? "unshared" as const : undefined);
+
+      musicRecords.push({ userSong, music, sharedMusic, isUnavailable, unavailableReason });
     }
 
-    // Step 4: Collect unique diary IDs (only for owned tracks where user is the music owner)
+    // Step 4: Collect unique diary IDs (only for owned tracks where user is the music owner and music is available)
     const diaryIds = musicRecords
-      .filter(({ userSong, music }) => 
-        userSong.ownershipType === "owned" && music.userId === userId && music.diaryId
+      .filter(({ userSong, music, isUnavailable }) => 
+        !isUnavailable &&
+        userSong.ownershipType === "owned" && 
+        music.userId === userId && 
+        music.diaryId
       )
       .map(({ music }) => music.diaryId)
       .filter((id): id is Id<"diaries"> => id !== undefined);
@@ -756,22 +800,28 @@ export const listPlaylistMusic = query({
     const ownerNameById = await getOwnerNamesForUserPlaylist(ctx, userId);
 
     // Step 5: Map to result format
-    return musicRecords.map(({ userSong, music, sharedMusic }) => {
-      // Use primary URLs with fallback to metadata URLs
-      const imageUrl = music.imageUrl ?? music.metadata?.source_image_url;
-      const audioUrl =
-        music.audioUrl ??
-        music.metadata?.stream_audio_url ??
-        music.metadata?.source_audio_url;
+    return musicRecords.map(({ userSong, music, sharedMusic, isUnavailable, unavailableReason }) => {
+      // Use primary URLs with fallback to metadata URLs (only if available)
+      const imageUrl = !isUnavailable 
+        ? (music.imageUrl ?? music.metadata?.source_image_url)
+        : undefined;
+      const audioUrl = !isUnavailable
+        ? (music.audioUrl ??
+          music.metadata?.stream_audio_url ??
+          music.metadata?.source_audio_url)
+        : undefined;
 
-      // Only include diary metadata if user owns the music
+      // Only include diary metadata if user owns the music and it's available
       const diaryData = 
-        userSong.ownershipType === "owned" && music.userId === userId && music.diaryId
+        !isUnavailable &&
+        userSong.ownershipType === "owned" && 
+        music.userId === userId && 
+        music.diaryId
           ? diaryDataById.get(music.diaryId)
           : undefined;
 
-      // Get owner name for shared tracks
-      const ownerName = sharedMusic
+      // Get owner name for shared tracks (only if share is still active)
+      const ownerName = sharedMusic && !isUnavailable
         ? ownerNameById.get(sharedMusic.userId)
         : undefined;
 
@@ -796,6 +846,9 @@ export const listPlaylistMusic = query({
         addedViaShareId: sharedMusic?.shareId,
         linkedFromMusicIndex: userSong.linkedFromMusicIndex,
         ownerName: ownerName ?? undefined,
+        // Availability flags
+        isUnavailable: isUnavailable || undefined,
+        unavailableReason: unavailableReason ?? undefined,
       };
     });
   },
