@@ -17,6 +17,8 @@ export type TrackPlayerTrack = {
     waveformData: number[];
     hootCer: number;
   };
+  ownershipType?: 'owned' | 'shared';
+  addedViaShareId?: string;
 };
 
 type TrackPlayerState = {

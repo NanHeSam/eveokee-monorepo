@@ -243,7 +243,7 @@ export const FullPlayer = () => {
         {
           text: 'Share Link',
           onPress: () => {
-            void shareMusic(currentTrack.id as Id<'music'>, currentTrack.title);
+            void shareMusic(currentTrack.id as Id<'music'>, currentTrack.title, currentTrack.addedViaShareId);
           },
         },
         {
@@ -257,7 +257,14 @@ export const FullPlayer = () => {
   }, [currentTrack, shareMusic]);
 
   // Video generation UI - shown in VideoPlayerView overlay
+  // Only show for owned music (not shared)
+  const isOwned = currentTrack?.ownershipType !== 'shared';
   const videoAction = useMemo(() => {
+    // Hide video generation button for shared music
+    if (!isOwned) {
+      return null;
+    }
+
     if (isGenerating) {
       return (
         <View
@@ -287,7 +294,7 @@ export const FullPlayer = () => {
         </Text>
       </Pressable>
     );
-  }, [isGenerating, colors.surface, colors.textSecondary, pendingElapsedSeconds, colors.accentMint, colors.background, primaryVideo, handleGenerateVideo]);
+  }, [isOwned, isGenerating, colors.surface, colors.textSecondary, pendingElapsedSeconds, colors.accentMint, colors.background, primaryVideo, handleGenerateVideo]);
 
   useEffect(() => {
     translateY.value = 0;
@@ -402,7 +409,7 @@ export const FullPlayer = () => {
           onSkipPrevious={skipToPrevious}
           onClose={hideFullPlayer}
           onShare={handleShare}
-          onGenerateVideo={handleGenerateVideo}
+          onGenerateVideo={isOwned ? handleGenerateVideo : undefined}
           onViewChange={setActiveView}
         />
       )}

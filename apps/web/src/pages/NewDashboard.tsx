@@ -40,6 +40,9 @@ export interface MusicEntry {
   diaryId?: Id<'diaries'>;
   diaryContent?: string;
   diaryDate?: number;
+  ownershipType?: 'owned' | 'shared';
+  ownerName?: string;
+  addedViaShareId?: string;
 }
 
 export default function NewDashboard() {

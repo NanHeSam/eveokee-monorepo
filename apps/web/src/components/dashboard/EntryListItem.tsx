@@ -36,6 +36,9 @@ interface EntryListItemProps {
       diaryContent?: string;
       diaryId?: Id<'diaries'>;
       imageUrl?: string;
+      ownershipType?: 'owned' | 'shared';
+      ownerName?: string;
+      addedViaShareId?: string;
     };
     shared?: {
       _id: Id<'sharedMusic'>;
@@ -126,9 +129,18 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
       }
 
       try {
-        const { shareUrl } = await createShareLink({
-          musicId: music._id,
-        });
+        let shareUrl: string;
+        
+        // If addedViaShareId is provided (for shared songs), use existing share link
+        if (music.addedViaShareId) {
+          shareUrl = `${window.location.origin}/share/${music.addedViaShareId}`;
+        } else {
+          // Otherwise, create a new share link
+          const result = await createShareLink({
+            musicId: music._id,
+          });
+          shareUrl = result.shareUrl;
+        }
 
         // Try Web Share API first, fallback to clipboard
         if (navigator.share) {
@@ -245,6 +257,13 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
             {music.diaryContent && (
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 leading-relaxed line-clamp-2">
                 {truncateText(music.diaryContent, 120)}
+              </p>
+            )}
+
+            {/* Shared by indicator */}
+            {music.ownershipType === 'shared' && music.ownerName && (
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                Shared by {music.ownerName}
               </p>
             )}
 
