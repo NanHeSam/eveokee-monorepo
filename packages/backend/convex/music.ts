@@ -797,7 +797,7 @@ export const listPlaylistMusic = query({
     // Step 4b: Get owner names for shared tracks using shared helper
     const ownerNameById = await getOwnerNamesForUserPlaylist(ctx, userId);
 
-    // Step 5: Map to result format
+    // Step 5: Map to result format (include unavailable tracks so FE can handle them)
     return musicRecords.map(({ userSong, music, sharedMusic, isUnavailable, unavailableReason }) => {
       // Use primary URLs with fallback to metadata URLs (only if available)
       const imageUrl = !isUnavailable 

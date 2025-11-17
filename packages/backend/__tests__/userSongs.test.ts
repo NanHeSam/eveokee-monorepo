@@ -415,7 +415,7 @@ describe("User Songs System", () => {
       expect(playlist[0].addedViaShareId).toBe(shareResult.shareId);
     });
 
-    it("should hide tracks from inactive shares", async () => {
+    it("should mark tracks from inactive shares as unavailable", async () => {
       const t = createTestEnvironment();
       const { clerkId: ownerClerkId, email: ownerEmail, name: ownerName } =
         await createTestUser(t);
@@ -474,9 +474,11 @@ describe("User Songs System", () => {
         });
       });
 
-      // Verify track is hidden from playlist
+      // Verify track is returned but marked as unavailable
       playlist = await asUser.query(api.music.listPlaylistMusic, {});
-      expect(playlist.length).toBe(0);
+      expect(playlist.length).toBe(1);
+      expect(playlist[0].isUnavailable).toBe(true);
+      expect(playlist[0].unavailableReason).toBe("unshared");
     });
 
     it("should include pending tracks for loading states", async () => {
