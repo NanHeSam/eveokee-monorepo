@@ -122,6 +122,7 @@ export const getSharedMusic = query({
       createdAt: v.number(),
       userName: v.optional(v.string()),
       diaryDate: v.optional(v.number()),
+      ownerClerkId: v.optional(v.string()),
     }),
     v.object({
       found: v.literal(false),
@@ -166,6 +167,7 @@ export const getSharedMusic = query({
       createdAt: shared.createdAt,
       userName: user?.name ?? undefined,
       diaryDate,
+      ownerClerkId: user?.clerkId ?? undefined,
     };
   },
 });

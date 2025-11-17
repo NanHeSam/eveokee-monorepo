@@ -65,7 +65,16 @@ createRoot(document.getElementById('root')!).render(
         debug: import.meta.env.MODE === 'development',
       }}
     >
-      <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+      <ClerkProvider
+        publishableKey={PUBLISHABLE_KEY}
+        allowedRedirectOrigins={[
+          'http://localhost:5173',
+          'https://eveokee.com',
+          ...(import.meta.env.VITE_BASE_URL
+            ? [import.meta.env.VITE_BASE_URL]
+            : []),
+        ]}
+      >
         <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
           <Sentry.ErrorBoundary fallback={ErrorFallback} showDialog>
             <PostHogClerkBridge />

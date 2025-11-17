@@ -350,4 +350,20 @@ export default defineSchema({
     .index("by_postId", ["postId"])
     .index("by_date", ["date"])
     .index("by_postId_and_date", ["postId", "date"]),
+
+  userSongs: defineTable({
+    userId: v.id("users"),
+    musicId: v.id("music"),
+    ownershipType: v.union(
+      v.literal("owned"),      // User created this music
+      v.literal("shared")      // User added this from a share link
+    ),
+    sharedMusicId: v.optional(v.id("sharedMusic")), // Reference to sharedMusic record if added via share
+    linkedFromMusicIndex: v.optional(v.number()), // Music index (0 or 1) - only link index 0 for now
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_and_musicId", ["userId", "musicId"])
+    .index("by_musicId", ["musicId"])
+    .index("by_sharedMusicId", ["sharedMusicId"]),
 });

@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "seed:blog": "npx tsx scripts/seed-blog.ts",
-    "seed:blog:clean": "npx tsx scripts/seed-blog.ts --delete-existing"
+    "seed:blog:clean": "npx tsx scripts/seed-blog.ts --delete-existing",
+    "migrate:userSongs": "npx tsx scripts/migrate-userSongs.ts"
   },
   "dependencies": {
     "@clerk/backend": "^2.17.2",
