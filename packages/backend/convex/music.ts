@@ -742,6 +742,7 @@ export const listPlaylistMusic = query({
       const isDeleted = !!music.deletedAt;
 
       // For shared tracks, check if the share is still active (only if music is not deleted)
+      // Skip fetching sharedMusic if music is deleted since ownerName is only included when !isUnavailable
       let sharedMusic = null;
       let isUnshared = false;
       if (!isDeleted && userSong.sharedMusicId) {
@@ -749,9 +750,6 @@ export const listPlaylistMusic = query({
         if (!sharedMusic || !sharedMusic.isActive || sharedMusic.isPrivate) {
           isUnshared = true;
         }
-      } else if (userSong.sharedMusicId) {
-        // Music is deleted, but we still want to fetch sharedMusic for reference
-        sharedMusic = await ctx.db.get(userSong.sharedMusicId);
       }
 
       // Determine availability status (deleted takes precedence over unshared)
