@@ -153,6 +153,8 @@ export const PlaylistScreen = () => {
                     artwork: i.imageUrl,
                     lyrics: i.lyric,
                     lyricWithTime: i.lyricWithTime,
+                    ownershipType: i.ownershipType,
+                    addedViaShareId: i.addedViaShareId,
                   }));
 
                   try {
@@ -168,7 +170,7 @@ export const PlaylistScreen = () => {
                   }
                 }}
                 onDelete={() => handleDeleteMusic(item.id, item.title)}
-                onShare={() => { void shareMusic(item.id, item.title) }}
+                onShare={() => { void shareMusic(item.id, item.title, item.addedViaShareId) }}
               />
               )
             )}
@@ -208,6 +210,9 @@ const mapMusicDocsToItems = (
     canPlay: doc.status === 'ready' && !!doc.audioUrl,
     isPlaceholder: false,
     createdAt: doc.createdAt,
+    ownershipType: doc.ownershipType,
+    ownerName: doc.ownerName,
+    addedViaShareId: doc.addedViaShareId,
   }));
 
 const GeneratingRow = ({
@@ -379,7 +384,11 @@ const PlaylistRow = ({
         <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
           {item.title}
         </Text>
-        {item.diaryDateLabel ? (
+        {item.ownershipType === 'shared' && item.ownerName ? (
+          <Text className="mt-0.5 text-xs" style={{ color: colors.textSecondary }}>
+            Shared by {item.ownerName}
+          </Text>
+        ) : item.diaryDateLabel ? (
           <Text className="mt-0.5 text-xs" style={{ color: colors.textSecondary }}>
             {item.diaryDateLabel}
           </Text>
