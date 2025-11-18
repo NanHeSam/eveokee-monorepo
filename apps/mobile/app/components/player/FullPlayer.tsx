@@ -31,6 +31,7 @@ import { useVideoGeneration } from '../../hooks/useVideoGeneration';
 import { VideoPlayerView } from './full/VideoPlayerView';
 import { LyricsPlayerView } from './full/LyricsPlayerView';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
+import { TRACK_PLAYER_OPTIONS } from '../../providers/TrackPlayerProvider';
 
 /**
  * FullPlayer Component
@@ -153,6 +154,29 @@ export const FullPlayer = () => {
 
   const hasVideo = Boolean(primaryVideo?.videoUrl);
   const headerTopInset = insets.top + 16;
+
+  useEffect(() => {
+    if (activeView !== 'video') {
+      return;
+    }
+
+    const reapplyTrackPlayerOptions = async () => {
+      try {
+        await TrackPlayer.updateOptions(TRACK_PLAYER_OPTIONS);
+      } catch (error) {
+        console.warn('[FullPlayer] Failed to update TrackPlayer options while on video view', error);
+      }
+    };
+
+    void reapplyTrackPlayerOptions();
+  }, [activeView, currentTrack?.id, primaryVideo?._id]);
+
+  const handleViewChange = useCallback(
+    (view: PlayerView) => {
+      setActiveView(view);
+    },
+    [],
+  );
 
   // Auto-switch to lyrics view when no video is available
   useEffect(() => {
@@ -378,7 +402,7 @@ export const FullPlayer = () => {
           onSkipPrevious={skipToPrevious}
           onClose={hideFullPlayer}
           onShare={handleShare}
-          onViewChange={setActiveView}
+          onViewChange={handleViewChange}
           videoAction={videoAction}
           isOverlayVisible={isOverlayVisible}
         />
@@ -410,7 +434,7 @@ export const FullPlayer = () => {
           onClose={hideFullPlayer}
           onShare={handleShare}
           onGenerateVideo={isOwned ? handleGenerateVideo : undefined}
-          onViewChange={setActiveView}
+          onViewChange={handleViewChange}
         />
       )}
     </Animated.View>
