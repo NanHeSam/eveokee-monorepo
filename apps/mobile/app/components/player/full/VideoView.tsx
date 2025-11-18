@@ -4,7 +4,6 @@ import Video from 'react-native-video';
 import TrackPlayer from 'react-native-track-player';
 
 import { useThemeColors } from '../../../theme/useThemeColors';
-import { TRACK_PLAYER_OPTIONS } from '../../../providers/TrackPlayerProvider';
 
 /**
  * VideoView Component
@@ -56,6 +55,8 @@ export const VideoView = ({
     return {
       enterPictureInPictureOnLeave: false,
       ignoreSilentSwitch: 'obey' as const,
+      disableAudioSessionManagement: true,
+      mixWithOthers: 'mix' as const,
     } as Partial<ComponentProps<typeof Video>>;
   }, []);
 
@@ -64,9 +65,7 @@ export const VideoView = ({
 
     void (async () => {
       try {
-        await TrackPlayer.updateOptions(TRACK_PLAYER_OPTIONS);
         const playbackState = await TrackPlayer.getPlaybackState();
-        console.log('[VideoView] TrackPlayer state after video ready', playbackState);
       } catch (error) {
         console.warn('[VideoView] Failed to refresh TrackPlayer options after video ready', error);
       }
@@ -76,13 +75,9 @@ export const VideoView = ({
   useEffect(() => {
     let isMounted = true;
 
-    const logPlaybackState = async () => {
+    const readPlaybackState = async () => {
       try {
-        const playbackState = await TrackPlayer.getPlaybackState();
-        if (!isMounted) {
-          return;
-        }
-        console.log('[VideoView] TrackPlayer state on mount', playbackState);
+        await TrackPlayer.getPlaybackState();
       } catch (error) {
         if (!isMounted) {
           return;
@@ -91,7 +86,7 @@ export const VideoView = ({
       }
     };
 
-    void logPlaybackState();
+    void readPlaybackState();
 
     return () => {
       isMounted = false;
@@ -133,8 +128,9 @@ export const VideoView = ({
         volume={0}
         controls={false}
         playInBackground={false}
-        playWhenInactive={false}
+        playWhenInactive
         allowsExternalPlayback={false}
+        showNotificationControls={false}
         selectedAudioTrack={disabledAudioTrack as unknown as ComponentProps<typeof Video>['selectedAudioTrack']}
         {...iosVideoProps}
       />
@@ -179,4 +175,3 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
-
