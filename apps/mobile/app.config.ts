@@ -31,7 +31,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: getAppName(),
   slug: "eveokee-mobile",
-  version: "1.1.1",
+  version: "1.1.2",
   orientation: "portrait",
   icon: "./assets/icon.png",
   userInterfaceStyle: "automatic",
