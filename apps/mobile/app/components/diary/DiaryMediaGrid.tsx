@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Image, TouchableOpacity, Text, Modal, Pressable, ScrollView, Alert } from 'react-native';
+import { View, Image, TouchableOpacity, Modal, Pressable, ScrollView, Alert, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@backend/convex';
@@ -77,7 +77,7 @@ export const DiaryMediaGrid = ({ diaryId, editable = false }: DiaryMediaGridProp
               source={{ uri: item.url }}
               paused
               resizeMode="cover"
-              className="w-full h-full"
+              style={styles.thumbnailVideo}
             />
             <View className="absolute inset-0 items-center justify-center">
               <View
@@ -146,9 +146,8 @@ export const DiaryMediaGrid = ({ diaryId, editable = false }: DiaryMediaGridProp
               <Video
                 source={{ uri: selectedMedia.url }}
                 controls
-                className="w-full"
-                style={{ aspectRatio: 1 }}
                 resizeMode="contain"
+                style={styles.viewerVideo}
               />
             ) : null}
           </ScrollView>
@@ -158,3 +157,13 @@ export const DiaryMediaGrid = ({ diaryId, editable = false }: DiaryMediaGridProp
   );
 };
 
+const styles = StyleSheet.create({
+  thumbnailVideo: {
+    width: '100%',
+    height: '100%',
+  },
+  viewerVideo: {
+    width: '100%',
+    aspectRatio: 1,
+  },
+});

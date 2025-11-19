@@ -44,6 +44,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "expo-system-ui",
     "expo-web-browser",
     "expo-image-picker",
+    "./plugins/with-react-bridging-header",
     "./plugins/with-expo-image-picker-autolinking",
     [
       "expo-notifications",
@@ -106,4 +107,3 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   owner: "eveokee"
 });
-
