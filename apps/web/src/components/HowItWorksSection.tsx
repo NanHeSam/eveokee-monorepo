@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { PenTool, Music, Headphones, Loader2, Sparkles } from 'lucide-react';
 import { SignedIn, SignedOut, useAuth } from '@clerk/clerk-react';
 import { useAction, useQuery } from 'convex/react';
@@ -105,9 +106,9 @@ export default function HowItWorksSection() {
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
   const [retryDiaryId, setRetryDiaryId] = useState<Id<"diaries"> | null>(null);
   const [testimonialIndex, setTestimonialIndex] = useState(0);
-  
+
   const { isSignedIn, userId } = useAuth();
-  
+
   const startMusicGeneration = useAction(api.music.startDiaryMusicGeneration);
   const [generatedMusic, setGeneratedMusic] = useState<GeneratedMusic | null>(null);
   const hasRestoredFromStorage = useRef(false);
@@ -161,7 +162,7 @@ export default function HowItWorksSection() {
 
   const nextTestimonial = () => setTestimonialIndex((i) => (i + 1) % testimonials.length);
   const prevTestimonial = () => setTestimonialIndex((i) => (i - 1 + testimonials.length) % testimonials.length);
-  
+
   // Always subscribe to playlist updates when signed in
   const shouldSubscribe = isSignedIn;
   const listPlaylistMusic = useQuery(
@@ -192,8 +193,8 @@ export default function HowItWorksSection() {
           const created = typeof music.createdAt === 'number'
             ? music.createdAt
             : typeof music.diaryDate === 'number'
-            ? music.diaryDate
-            : null;
+              ? music.diaryDate
+              : null;
           if (created && (!startTime || startTime > created)) {
             setStartTime(created);
             setElapsedTime(Math.floor((Date.now() - created) / 1000));
@@ -267,7 +268,7 @@ export default function HowItWorksSection() {
         diaryId: result.diaryId,
         status: 'pending'
       });
-      
+
     } catch (error) {
       console.error('Failed to start music generation:', error);
       setIsGenerating(false);
@@ -318,8 +319,8 @@ export default function HowItWorksSection() {
       const created = typeof music.createdAt === 'number'
         ? music.createdAt
         : typeof music.diaryDate === 'number'
-        ? music.diaryDate
-        : null;
+          ? music.diaryDate
+          : null;
       const start = created ?? Date.now();
       setStartTime(start);
       setElapsedTime(Math.floor((Date.now() - start) / 1000));
@@ -352,7 +353,7 @@ export default function HowItWorksSection() {
           gravity={0.3}
         />
       )}
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-16">
@@ -369,35 +370,59 @@ export default function HowItWorksSection() {
 
         <SignedOut>
           {/* Original Static Content for Non-Authenticated Users */}
-          <div className="grid md:grid-cols-3 gap-12 mb-16">
+          <motion.div
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={{
+              hidden: { opacity: 0 },
+              show: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.3
+                }
+              }
+            }}
+            className="grid md:grid-cols-3 gap-12 mb-16"
+          >
             {steps.map((step) => (
-              <div key={step.id} className="text-center relative">
+              <motion.div
+                key={step.id}
+                variants={{
+                  hidden: { opacity: 0, y: 30 },
+                  show: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+                }}
+                className="text-center relative"
+              >
                 {/* Step Content */}
                 <div className="relative z-10">
                   {/* Icon */}
-                  <div className="w-16 h-16 bg-accent-mint rounded-full flex items-center justify-center text-white mx-auto mb-6 shadow-lg">
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    className="w-16 h-16 bg-accent-mint rounded-full flex items-center justify-center text-white mx-auto mb-6 shadow-lg"
+                  >
                     {step.icon}
-                  </div>
+                  </motion.div>
 
-                  
+
                   {/* Title */}
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                     {step.title}
                   </h3>
-                  
+
                   {/* Description */}
                   <p className="text-accent-mint font-medium mb-4">
                     {step.description}
                   </p>
-                  
+
                   {/* Details */}
                   <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
                     {step.details}
                   </p>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
 
           {/* Call to Action for Non-Authenticated Users */}
           <div className="text-center mb-16">
@@ -420,11 +445,10 @@ export default function HowItWorksSection() {
             {toast && (
               <div
                 role="alert"
-                className={`mb-4 px-4 py-3 rounded-lg shadow-sm border ${
-                  toast.type === 'error'
-                    ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'
-                    : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800'
-                }`}
+                className={`mb-4 px-4 py-3 rounded-lg shadow-sm border ${toast.type === 'error'
+                  ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'
+                  : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800'
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">{toast.message}</span>
@@ -454,7 +478,7 @@ export default function HowItWorksSection() {
                       disabled={isGenerating}
                     />
                   </div>
-                  
+
                   <div className="text-center">
                     <button
                       type="submit"
@@ -484,22 +508,22 @@ export default function HowItWorksSection() {
                     <div className="w-20 h-20 bg-gradient-to-r from-accent-mint to-accent-apricot rounded-full flex items-center justify-center mx-auto mb-6">
                       <Loader2 className="w-10 h-10 text-white animate-spin" />
                     </div>
-                    
+
                     <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                       Creating your musical masterpiece...
                     </h3>
-                    
+
                     <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
                       {getTimingMessage()}
                     </p>
-                    
+
                     <div className="bg-gray-100 dark:bg-gray-700 rounded-full h-2 mb-4 max-w-md mx-auto">
-                      <div 
+                      <div
                         className="bg-gradient-to-r from-accent-mint to-accent-apricot h-2 rounded-full transition-all duration-1000"
                         style={{ width: `${Math.min((elapsedTime / 120) * 100, 95)}%` }}
                       ></div>
                     </div>
-                    
+
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       Elapsed time: {formatTime(elapsedTime)} • Expected: 30s - 2min
                     </p>
@@ -509,7 +533,7 @@ export default function HowItWorksSection() {
                     <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">
                       🎉 Your song is ready!
                     </h3>
-                    
+
                     {/* Demo Card Layout */}
                     <div className="max-w-md mx-auto">
                       <DemoCard
@@ -522,7 +546,7 @@ export default function HowItWorksSection() {
                         duration={generatedMusic.duration ? `${Math.floor(generatedMusic.duration / 60)}:${Math.floor(generatedMusic.duration % 60).toString().padStart(2, '0')}` : '0:00'}
                       />
                     </div>
-                    
+
                     <div className="mt-8">
                       <button
                         onClick={() => {
@@ -543,15 +567,15 @@ export default function HowItWorksSection() {
                     <div className="w-20 h-20 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
                       <Music className="w-10 h-10 text-red-500 dark:text-red-400" />
                     </div>
-                    
+
                     <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
                       Something went wrong
                     </h3>
-                    
+
                     <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
                       We couldn't generate your song this time. Please try again.
                     </p>
-                    
+
                     <button
                       onClick={() => {
                         setGeneratedMusic(null);

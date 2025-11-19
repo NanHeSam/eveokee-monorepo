@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, Minus } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface FAQ {
   id: string;
@@ -41,22 +42,35 @@ export default function FAQSection() {
     <section id="faq" className="py-20 bg-gray-50 dark:bg-gray-900">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
+        >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6">
             FAQs
           </h2>
           <p className="text-xl text-gray-600 dark:text-gray-300">
             Everything you need to know about eveokee
           </p>
-        </div>
-        
+        </motion.div>
+
         {/* FAQ Items */}
         <div className="space-y-4">
-          {faqs.map((faq) => {
+          {faqs.map((faq, index) => {
             const isOpen = openFAQ === faq.id;
-            
+
             return (
-              <div key={faq.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden">
+              <motion.div
+                key={faq.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1, duration: 0.5 }}
+                className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden"
+              >
                 <button
                   onClick={() => toggleFAQ(faq.id)}
                   className="w-full px-6 py-6 text-left flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:bg-gray-50 dark:focus:bg-gray-700"
@@ -64,42 +78,63 @@ export default function FAQSection() {
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white pr-4">
                     {faq.question}
                   </h3>
-                  
+
                   <div className="flex-shrink-0">
-                    {isOpen ? (
-                      <Minus className="w-5 h-5 text-accent-mint" />
-                    ) : (
-                      <Plus className="w-5 h-5 text-gray-400 dark:text-gray-500" />
-                    )}
+                    <motion.div
+                      animate={{ rotate: isOpen ? 180 : 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {isOpen ? (
+                        <Minus className="w-5 h-5 text-accent-mint" />
+                      ) : (
+                        <Plus className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+                      )}
+                    </motion.div>
                   </div>
                 </button>
-                
-                {isOpen && (
-                  <div className="px-6 pb-6">
-                    <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
-                      <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                        {faq.answer}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-6 pb-6">
+                        <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+                          <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                            {faq.answer}
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
             );
           })}
         </div>
-        
+
         {/* Additional Help */}
-        <div className="text-center mt-12">
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.5, duration: 0.5 }}
+          className="text-center mt-12"
+        >
           <p className="text-gray-600 dark:text-gray-300 mb-4">
             Still have questions?
           </p>
-          <a 
-            href="mailto:support@eveoky.com" 
+          <a
+            href="mailto:support@eveoky.com"
             className="inline-flex items-center text-accent-mint hover:text-accent-mint/80 font-medium transition-colors"
           >
             Get in touch with my team
           </a>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

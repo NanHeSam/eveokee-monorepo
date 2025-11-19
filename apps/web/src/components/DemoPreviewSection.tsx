@@ -1,4 +1,5 @@
 import DemoCard from './DemoCard';
+import { motion } from 'framer-motion';
 
 interface DemoItem {
   id: string;
@@ -52,38 +53,67 @@ const demoCards: DemoItem[] = [
   }
 ];
 
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.2
+    }
+  }
+};
+
+const item = {
+  hidden: { opacity: 0, y: 30 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+};
+
 export default function DemoPreviewSection({ onPlayDemo }: DemoPreviewSectionProps) {
 
   return (
     <section id="demo" className="py-20 bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
+        >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6">
             Listen to what real moments sound like.
           </h2>
-        </div>
-        
+        </motion.div>
+
         {/* Demo Cards Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+        <motion.div
+          variants={container}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-100px" }}
+          className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12"
+        >
           {demoCards.map((demo) => (
-            <DemoCard
-              key={demo.id}
-              lyric={demo.lyric}
-              title={demo.trackTitle}
-              date={demo.date}
-              imageUrl={demo.imageUrl}
-              audioId={demo.id}
-              audioUrl={demo.audioUrl}
-              startTime={demo.startTime}
-              duration={demo.duration}
-              onPlay={() => onPlayDemo?.(demo.id)}
-            />
+            <motion.div key={demo.id} variants={item}>
+              <DemoCard
+                lyric={demo.lyric}
+                title={demo.trackTitle}
+                date={demo.date}
+                imageUrl={demo.imageUrl}
+                audioId={demo.id}
+                audioUrl={demo.audioUrl}
+                startTime={demo.startTime}
+                duration={demo.duration}
+                onPlay={() => onPlayDemo?.(demo.id)}
+              />
+            </motion.div>
           ))}
-        </div>
-        
+        </motion.div>
+
 
       </div>
     </section>
   );
 }
+
