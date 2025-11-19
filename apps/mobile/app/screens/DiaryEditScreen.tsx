@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { useThemeColors } from '../theme/useThemeColors';
 import { DiaryEditNavigationProp, DiaryEditRouteProp } from '../navigation/types';
 import { api } from '@backend/convex';
+import { Id } from '@backend/convex/convex/_generated/dataModel';
 import { useTrackPlayerStore } from '../store/useTrackPlayerStore';
 import { PaywallModal } from '../components/billing/PaywallModal';
 import { useSubscriptionUIStore } from '../store/useSubscriptionStore';
@@ -19,6 +20,8 @@ import { useMusicGenerationStatus } from '../store/useMusicGenerationStatus';
 import { UsageProgress } from '../components/billing/UsageProgress';
 import { BUTTON_SPACING, EXTRA_PADDING, DEFAULT_BUTTON_HEIGHT } from '../utils/layoutConstants';
 import { getRandomStyles } from '@backend/convex/convex/utils/musicStyles';
+import { MediaUploadButton } from '../components/diary/MediaUploadButton';
+import { DiaryMediaGrid } from '../components/diary/DiaryMediaGrid';
 
 export const DiaryEditScreen = () => {
   const colors = useThemeColors();
@@ -92,6 +95,10 @@ export const DiaryEditScreen = () => {
     }
   }, [currentDiary?.content, route.params?.content, isEditing]);
 
+  const [savedDiaryId, setSavedDiaryId] = useState<Id<'diaries'> | null>(
+    route.params?.diaryId || null
+  );
+
   const handleDone = async () => {
     const trimmed = body.trim();
 
@@ -104,10 +111,15 @@ export const DiaryEditScreen = () => {
       setIsSaving(true);
       if (route.params?.diaryId) {
         await updateDiary({ diaryId: route.params.diaryId, content: trimmed });
+        navigation.goBack();
       } else {
-        await createDiary({ content: trimmed });
+        const result = await createDiary({ content: trimmed });
+        setSavedDiaryId(result._id);
+        // Update route params so media upload can work
+        navigation.setParams({ diaryId: result._id, content: trimmed });
+        // Don't navigate back immediately - allow user to add media
+        // navigation.goBack();
       }
-      navigation.goBack();
     } catch {
       Alert.alert('Unable to save entry', 'Please try again.');
     } finally {
@@ -309,6 +321,13 @@ export const DiaryEditScreen = () => {
             {currentDiary?.content ?? body}
           </Text>
 
+          {/* Media Display */}
+          {route.params?.diaryId && (
+            <View className="mb-6">
+              <DiaryMediaGrid diaryId={route.params.diaryId} editable={false} />
+            </View>
+          )}
+
           {primaryMusic && (
             <View className="mb-6">
               <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
@@ -424,6 +443,19 @@ export const DiaryEditScreen = () => {
               />
             </View>
           </View>
+
+          {/* Media Upload Section */}
+          {(route.params?.diaryId || savedDiaryId) && (
+            <View className="mt-4">
+              <MediaUploadButton
+                diaryId={(route.params?.diaryId || savedDiaryId)!}
+                onUploadComplete={() => {
+                  // Media will automatically refresh via the query
+                }}
+              />
+              <DiaryMediaGrid diaryId={(route.params?.diaryId || savedDiaryId)!} editable={true} />
+            </View>
+          )}
 
           {/* Usage Progress - Only show for free tier */}
           {subscriptionStatus?.tier === 'free' && (

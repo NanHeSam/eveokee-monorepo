@@ -58,6 +58,17 @@ export default defineSchema({
     .index("by_userId_and_updatedAt", ["userId", "updatedAt"])
     .index("by_primaryMusicId", ["primaryMusicId"]),
 
+  diaryMedia: defineTable({
+    diaryId: v.id("diaries"),
+    userId: v.id("users"),
+    storageId: v.id("_storage"),
+    mediaType: v.union(v.literal("photo"), v.literal("video")),
+    contentType: v.string(),
+    fileSize: v.number(),
+  })
+    .index("by_diaryId", ["diaryId"])
+    .index("by_userId", ["userId"]),
+
   music: defineTable({
     userId: v.id("users"),
     diaryId: v.optional(v.id("diaries")),
