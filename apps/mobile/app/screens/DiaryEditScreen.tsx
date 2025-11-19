@@ -18,6 +18,7 @@ import { useRevenueCatSubscription } from '../hooks/useRevenueCatSubscription';
 import { useMusicGenerationStatus } from '../store/useMusicGenerationStatus';
 import { UsageProgress } from '../components/billing/UsageProgress';
 import { BUTTON_SPACING, EXTRA_PADDING, DEFAULT_BUTTON_HEIGHT } from '../utils/layoutConstants';
+import { getRandomStyles } from '@backend/convex/convex/utils/musicStyles';
 
 export const DiaryEditScreen = () => {
   const colors = useThemeColors();
@@ -29,6 +30,7 @@ export const DiaryEditScreen = () => {
   const startMusicGeneration = useAction(api.music.startDiaryMusicGeneration);
   const initialBody = useMemo(() => route.params?.content ?? '', [route.params?.content]);
   const [body, setBody] = useState(initialBody);
+  const [style, setStyle] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEditing, setIsEditing] = useState(!route.params?.diaryId);
@@ -149,6 +151,7 @@ export const DiaryEditScreen = () => {
       const result = await startMusicGeneration({
         content: trimmed,
         diaryId: diaryId,
+        style: style.trim() || undefined, // Pass style if provided, otherwise undefined
       });
 
       if (!result.success) {
@@ -386,6 +389,40 @@ export const DiaryEditScreen = () => {
               className="text-base leading-6"
               style={{ color: colors.textPrimary, minHeight: 280, textAlignVertical: 'top' }}
             />
+          </View>
+
+          {/* Style Input Section */}
+          <View className="mt-4">
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="text-sm font-medium" style={{ color: colors.textSecondary }}>
+                Music Style (Optional)
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  const randomStyles = getRandomStyles(2);
+                  setStyle(randomStyles.join(', '));
+                }}
+                className="px-3 py-1.5 rounded-lg"
+                style={{ 
+                  backgroundColor: colors.scheme === 'light' ? colors.accentMint : colors.card,
+                }}
+                activeOpacity={0.7}
+              >
+                <Text className="text-xs font-medium" style={{ color: colors.scheme === 'light' ? '#FFFFFF' : colors.textPrimary }}>
+                  Random
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <View className="rounded-2xl p-4" style={{ backgroundColor: colors.surface }}>
+              <TextInput
+                value={style}
+                onChangeText={setStyle}
+                placeholder="Leave empty for AI mood + random styles, or enter custom style..."
+                placeholderTextColor={colors.textMuted}
+                className="text-sm"
+                style={{ color: colors.textPrimary }}
+              />
+            </View>
           </View>
 
           {/* Usage Progress - Only show for free tier */}

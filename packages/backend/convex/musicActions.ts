@@ -10,6 +10,14 @@ import {
 } from "./utils/constants";
 import { getOpenAIClient } from "./integrations/openai/client";
 import { createSunoClientFromEnv } from "./integrations/suno/client";
+import { getRandomStyles } from "./utils/musicStyles";
+
+/**
+ * Combine mood with style descriptors to create final style string
+ */
+function combineMoodAndStyles(mood: string, styles: string[]): string {
+  return [mood, ...styles].join(", ");
+}
 
 export const requestSunoGeneration = internalAction({
   args: {
@@ -17,6 +25,7 @@ export const requestSunoGeneration = internalAction({
       diaryId: v.id("diaries"),
       userId: v.id("users"),
       content: v.string(),
+      style: v.optional(v.string()), // Optional user-provided style
     }),
     usageResult: v.optional(v.object({
       success: v.boolean(),
@@ -42,11 +51,12 @@ export const requestSunoGeneration = internalAction({
       SUNO_TIMEOUT: process.env.SUNO_TIMEOUT,
     });
 
-    // Generate song data from diary content using OpenAI
-    let songData: { lyric: string; style: string; title: string };
+    // Generate song data from diary content using OpenAI (mood + lyrics + title)
+    let songData: { lyric: string; mood: string; title: string };
     try {
       songData = await openaiClient.generateMusicData({
         diaryContent: args.diary.content,
+        style: args.diary.style,
       });
       console.log("Generated song data:", songData);
     } catch (error) {
@@ -66,12 +76,25 @@ export const requestSunoGeneration = internalAction({
       throw new Error(`Failed to generate song data from OpenAI: ${error instanceof Error ? error.message : String(error)}`);
     }
     
+    // Determine final style: use user-provided style if available, otherwise combine mood + random styles
+    let finalStyle: string;
+    if (args.diary.style && args.diary.style.trim()) {
+      // User provided a custom style
+      finalStyle = args.diary.style.trim();
+    } else {
+      // Randomly select 2 styles and combine with mood
+      const randomStyles = getRandomStyles(2);
+      finalStyle = combineMoodAndStyles(songData.mood, randomStyles);
+    }
+    
+    console.log("Final style:", finalStyle);
+    
     // Generate music using Suno API
     let taskId: string;
     try {
       const result = await sunoClient.generateMusic({
         prompt: songData.lyric,
-        style: songData.style,
+        style: finalStyle,
         title: songData.title,
       });
       taskId = result.taskId;
