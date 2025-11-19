@@ -469,7 +469,7 @@ export const DiaryEditScreen = () => {
       navigation.setParams({ diaryId: result._id, content: trimmed });
       return result._id;
     } catch (error) {
-      Alert.alert('Unable to create diary', 'Please try again.');
+      Alert.alert('Unable to create diary', 'error: ' + error.message + ' Please try again.');
       return null;
     } finally {
       setIsSaving(false);
