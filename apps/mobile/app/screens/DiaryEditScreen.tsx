@@ -362,7 +362,7 @@ export const DiaryEditScreen = () => {
     });
 
     return unsubscribe;
-  }, [navigation, body, hasMedia, route.params?.diaryId, savedDiaryId, isSaving, isGenerating]);
+  }, [navigation, body, hasMedia, route.params?.diaryId, savedDiaryId, isSaving, isGenerating, currentId, trimmed, deleteDiary]);
 
   if (!isEditing && route.params?.diaryId) {
     return (
