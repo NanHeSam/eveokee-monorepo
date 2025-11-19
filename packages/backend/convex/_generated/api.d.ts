@@ -60,6 +60,7 @@ import type * as utils_constants_webhooks from "../utils/constants/webhooks.js";
 import type * as utils_contextHelpers from "../utils/contextHelpers.js";
 import type * as utils_envValidation from "../utils/envValidation.js";
 import type * as utils_logger from "../utils/logger.js";
+import type * as utils_musicStyles from "../utils/musicStyles.js";
 import type * as utils_phoneHelpers from "../utils/phoneHelpers.js";
 import type * as utils_slack from "../utils/slack.js";
 import type * as utils_timezoneHelpers from "../utils/timezoneHelpers.js";
@@ -142,6 +143,7 @@ declare const fullApi: ApiFromModules<{
   "utils/contextHelpers": typeof utils_contextHelpers;
   "utils/envValidation": typeof utils_envValidation;
   "utils/logger": typeof utils_logger;
+  "utils/musicStyles": typeof utils_musicStyles;
   "utils/phoneHelpers": typeof utils_phoneHelpers;
   "utils/slack": typeof utils_slack;
   "utils/timezoneHelpers": typeof utils_timezoneHelpers;

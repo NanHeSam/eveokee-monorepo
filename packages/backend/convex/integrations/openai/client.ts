@@ -31,6 +31,7 @@ export interface GenerateDiaryParams {
 
 export interface GenerateMusicParams {
   diaryContent: string;
+  style?: string; // Optional user-provided style
 }
 
 export interface GenerateVideoScriptParams {
@@ -105,14 +106,14 @@ Do not mention that this is from a call or conversation. Write as if the user is
   }
 
   /**
-   * Generate song data (lyrics, style, title) from diary content
-   * @param params - Parameters including diary content
-   * @returns Generated song data with lyric, style, and title
+   * Generate song data (lyrics, mood, title) from diary content
+   * @param params - Parameters including diary content and optional style
+   * @returns Generated song data with lyric, mood, and title
    * @throws Error if the API call fails
    */
   async generateMusicData(params: GenerateMusicParams): Promise<{
     lyric: string;
-    style: string;
+    mood: string;
     title: string;
   }> {
     try {
@@ -121,9 +122,18 @@ Do not mention that this is from a call or conversation. Write as if the user is
         messages: [
           {
             role: "system",
-            content: `You are a creative lyricist and music curator. Generate a song based on the diary entry provided. 
+            content: `You are a creative lyricist. Generate a song based on the diary entry provided. 
 Create lyrics with structure tags like [Verse], [Chorus], [Bridge], etc. Keep concise and emotional for a 1-2 minute song.
-Choose an appropriate music genre/style (e.g., 'indie pop, acoustic, melancholic' or 'electronic, upbeat, synthpop').
+
+Emotion/Mood Identification:
+Identify the PRIMARY EMOTION or MOOD from the diary entry. Common emotions include:
+- Positive: happy, joyful, excited, hopeful, content, peaceful, grateful, euphoric, optimistic
+- Negative: sad, melancholic, depressed, miserable, anxious, fearful, worried, lonely, hopeless
+- Intense: angry, frustrated, enraged, resentful, bitter, aggressive, defiant
+- Complex: nostalgic, bittersweet, conflicted, contemplative, reflective, introspective, yearning
+
+Return ONLY the mood/emotion as a single descriptive word or short phrase (e.g., "melancholic", "joyful", "angry", "nostalgic", "anxious", "peaceful"). This mood will be combined with music style descriptors separately.
+
 Create a creative song title.
 Use the same language as the diary entry for lyrics and title.`,
           },
@@ -145,16 +155,16 @@ Use the same language as the diary entry for lyrics and title.`,
                   type: "string",
                   description: "Song lyrics with structure tags like [Verse], [Chorus], [Bridge], etc.",
                 },
-                style: {
+                mood: {
                   type: "string",
-                  description: "Music genre and style tags (e.g., 'indie pop, acoustic, melancholic')",
+                  description: "Primary emotion or mood from the diary entry (e.g., 'melancholic', 'joyful', 'angry', 'nostalgic', 'anxious', 'peaceful', 'lonely', 'conflicted', 'contemplative', 'reflective', 'introspective', 'yearning', etc.). Single word or short phrase.",
                 },
                 title: {
                   type: "string",
                   description: "Creative song title",
                 },
               },
-              required: ["lyric", "style", "title"],
+              required: ["lyric", "mood", "title"],
               additionalProperties: false,
             },
           },
@@ -167,7 +177,7 @@ Use the same language as the diary entry for lyrics and title.`,
       }
 
       // Parse JSON response
-      let songData: { lyric: string; style: string; title: string };
+      let songData: { lyric: string; mood: string; title: string };
       try {
         songData = JSON.parse(content);
       } catch (parseError) {
@@ -177,8 +187,8 @@ Use the same language as the diary entry for lyrics and title.`,
         );
       }
 
-      if (!songData.lyric || !songData.style || !songData.title) {
-        throw new Error("OpenAI response missing required fields (lyric, style, or title)");
+      if (!songData.lyric || !songData.mood || !songData.title) {
+        throw new Error("OpenAI response missing required fields (lyric, mood, or title)");
       }
 
       return songData;

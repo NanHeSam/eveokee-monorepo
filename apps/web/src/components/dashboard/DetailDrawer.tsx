@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Music, Edit, Share2, Lock, FileText, Trash2, Loader2 } from 'lucide-react';
+import { X, Music, Edit, Share2, Lock, FileText, Trash2, Loader2, Shuffle } from 'lucide-react';
 import { useMutation } from 'convex/react';
 import { api } from '@backend/convex';
 import { DiaryEntry, FilterType } from '@/pages/NewDashboard';
@@ -8,6 +8,7 @@ import { Id } from '@backend/convex/convex/_generated/dataModel';
 import MusicPlayer from '@/components/MusicPlayer';
 import toast from 'react-hot-toast';
 import { formatDate, formatDuration } from '@/utils/formatting';
+import { getRandomStyles } from '@backend/convex/convex/utils/musicStyles';
 
 interface DetailDrawerProps {
   diaryId: Id<'diaries'>;
@@ -20,6 +21,7 @@ export default function DetailDrawer({ diaryId, diaries, onClose, returnTab }: D
   const navigate = useNavigate();
   const diary = diaries.find(d => d._id === diaryId);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [style, setStyle] = useState<string>('');
   const deleteDiary = useMutation(api.diaries.deleteDiary);
   const createShareLink = useMutation(api.sharing.createShareLink);
   const startMusicGeneration = useMutation(api.music.startDiaryMusicGeneration);
@@ -114,6 +116,7 @@ export default function DetailDrawer({ diaryId, diaries, onClose, returnTab }: D
       const result = await startMusicGeneration({
         content: diary.content,
         diaryId: diary._id,
+        style: style.trim() || undefined, // Pass style if provided, otherwise undefined
       });
 
       if (!result.success) {
@@ -220,6 +223,34 @@ export default function DetailDrawer({ diaryId, diaries, onClose, returnTab }: D
                   <p className="text-xs text-red-600 dark:text-red-400 mt-1 mb-3">
                     Please try generating again
                   </p>
+                  
+                  {/* Style Input Section */}
+                  <div className="max-w-md mx-auto mb-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-medium text-red-800 dark:text-red-200">
+                        Music Style (Optional)
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const randomStyles = getRandomStyles(2);
+                          setStyle(randomStyles.join(', '));
+                        }}
+                        className="px-2 py-1 text-xs bg-red-600 dark:bg-red-900/30 text-white dark:text-red-300 rounded hover:bg-red-700 dark:hover:bg-red-900/50 transition-colors flex items-center gap-1"
+                      >
+                        <Shuffle className="w-3 h-3" />
+                        Random
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={style}
+                      onChange={(e) => setStyle(e.target.value)}
+                      placeholder="Leave empty for AI mood + random styles, or enter custom style..."
+                      className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-red-300 dark:border-red-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400"
+                    />
+                  </div>
+                  
                   <button
                     onClick={handleGenerateMusic}
                     disabled={isGenerating}
@@ -290,6 +321,34 @@ export default function DetailDrawer({ diaryId, diaries, onClose, returnTab }: D
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                   No music generated for this entry yet
                 </p>
+                
+                {/* Style Input Section */}
+                <div className="max-w-md mx-auto mb-4 px-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                      Music Style (Optional)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const randomStyles = getRandomStyles(2);
+                        setStyle(randomStyles.join(', '));
+                      }}
+                      className="px-2 py-1 text-xs bg-gray-700 dark:bg-gray-700 text-white dark:text-gray-300 rounded hover:bg-gray-600 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
+                    >
+                      <Shuffle className="w-3 h-3" />
+                      Random
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={style}
+                    onChange={(e) => setStyle(e.target.value)}
+                    placeholder="Leave empty for AI mood + random styles, or enter custom style..."
+                    className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400"
+                  />
+                </div>
+                
                 <button
                   onClick={handleGenerateMusic}
                   disabled={isGenerating}

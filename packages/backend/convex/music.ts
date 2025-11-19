@@ -48,6 +48,7 @@ export const startDiaryMusicGeneration = action({
   args: {
     content: v.string(),
     diaryId: v.optional(v.id("diaries")),
+    style: v.optional(v.string()), // Optional user-provided style
   },
   returns: v.object({
     diaryId: v.id("diaries"),
@@ -128,6 +129,7 @@ export const startDiaryMusicGeneration = action({
         diaryId,
         userId,
         content: trimmed,
+        style: args.style,
       },
       usageResult: {
         success: usageResult.success,
