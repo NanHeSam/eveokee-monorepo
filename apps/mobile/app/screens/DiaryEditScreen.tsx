@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View, ScrollView, Alert, Image, Pressable } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -30,6 +30,7 @@ export const DiaryEditScreen = () => {
   const route = useRoute<DiaryEditRouteProp>();
   const createDiary = useMutation(api.diaries.createDiary);
   const updateDiary = useMutation(api.diaries.updateDiary);
+  const deleteDiary = useMutation(api.diaries.deleteDiary);
   const startMusicGeneration = useAction(api.music.startDiaryMusicGeneration);
   const initialBody = useMemo(() => route.params?.content ?? '', [route.params?.content]);
   const [body, setBody] = useState(initialBody);
@@ -37,27 +38,27 @@ export const DiaryEditScreen = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEditing, setIsEditing] = useState(!route.params?.diaryId);
-  
+
   // Billing integration - Read directly from RevenueCat SDK (single source of truth)
   const { showPaywall, paywallReason, setShowPaywall } = useSubscriptionUIStore();
   const { subscriptionStatus } = useRevenueCatSubscription();
   const addPendingGeneration = useMusicGenerationStatus((state) => state.addPendingGeneration);
   const removePendingGeneration = useMusicGenerationStatus((state) => state.removePendingGeneration);
-  
+
   // Get usage data from Convex to get effective limit (handles yearly monthly credits correctly)
   const usageData = useQuery(api.usage.getCurrentUserUsage);
-  
+
   // Get MiniPlayer dimensions dynamically
   const { isVisible: isMiniPlayerVisible, miniPlayerHeight, miniPlayerBottom } = useTrackPlayerStore();
-  
+
   // Measure button height dynamically
   const [buttonHeight, setButtonHeight] = useState<number | null>(null);
-  
+
   // Calculate bottom padding to ensure buttons are above MiniPlayer
   // Uses dynamically measured MiniPlayer and button dimensions
   const bottomPadding = useMemo(() => {
     const effectiveButtonHeight = buttonHeight ?? DEFAULT_BUTTON_HEIGHT;
-    
+
     if (isMiniPlayerVisible && miniPlayerHeight !== null && miniPlayerBottom !== null) {
       // When MiniPlayer is visible: position buttons above it with spacing
       return miniPlayerBottom + miniPlayerHeight + effectiveButtonHeight + BUTTON_SPACING + EXTRA_PADDING;
@@ -183,12 +184,12 @@ export const DiaryEditScreen = () => {
             // Keep editing mode enabled so user can see/edit the diary
             setIsEditing(true);
           }
-          
+
           // Show error message with usage details before paywall
           // Use usage data from Convex to get effective limit (handles yearly monthly credits correctly)
           const effectiveLimit = usageData?.musicLimit ?? subscriptionStatus?.musicLimit ?? 0;
           const tier = subscriptionStatus?.tier ?? usageData?.tier ?? 'free';
-          
+
           // For yearly subscriptions, show "monthly" in the message since they reset monthly
           let tierDisplayName: string;
           let periodDisplayName: string;
@@ -199,7 +200,7 @@ export const DiaryEditScreen = () => {
             tierDisplayName = tier === 'free' ? 'free' : tier === 'weekly' ? 'weekly' : tier === 'monthly' ? 'monthly' : 'yearly';
             periodDisplayName = tierDisplayName;
           }
-          
+
           // Show error message (PaywallModal handles preventing double presentation)
           if (!showPaywall) {
             Alert.alert(
@@ -290,6 +291,79 @@ export const DiaryEditScreen = () => {
     }
   };
 
+  const diaryMedia = useQuery(api.diaryMedia.getDiaryMedia,
+    (route.params?.diaryId || savedDiaryId) ? { diaryId: (route.params?.diaryId || savedDiaryId)! } : "skip"
+  );
+  const hasMedia = (diaryMedia?.length ?? 0) > 0;
+
+  const initialDiaryIdRef = useRef(route.params?.diaryId);
+  const trimmed = body.trim();
+  const currentId = route.params?.diaryId || savedDiaryId;
+
+  // Prevent native swipe back when we need to show the alert
+  // This ensures the alert shows BEFORE the screen is removed
+  const shouldPreventRemove = !!(currentId && !trimmed && hasMedia);
+
+  useEffect(() => {
+    navigation.setOptions({
+      gestureEnabled: !shouldPreventRemove,
+    });
+  }, [navigation, shouldPreventRemove]);
+
+  // Intercept back navigation
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      // If we are saving or generating, don't interrupt (or maybe we should? but let's keep it simple)
+      if (isSaving || isGenerating) {
+        return;
+      }
+
+      // Variables are already hoisted above
+
+      // If we have an ID (so it's saved/created) AND content is empty AND we have media
+      if (currentId && !trimmed && hasMedia) {
+        // Prevent default behavior of leaving the screen
+        e.preventDefault();
+
+        Alert.alert(
+          'Discard Entry?',
+          'You have uploaded media but haven\'t written anything. Going back will delete this entry and its media.',
+          [
+            { text: 'Keep Editing', style: 'cancel', onPress: () => { } },
+            {
+              text: 'Discard',
+              style: 'destructive',
+              onPress: async () => {
+                try {
+                  await deleteDiary({ diaryId: currentId });
+                } catch (err) {
+                  console.error('Failed to delete empty diary', err);
+                }
+                // Dispatch the action to go back
+                navigation.dispatch(e.data.action);
+              },
+            },
+          ]
+        );
+      } else if (currentId && !trimmed && !hasMedia && !initialDiaryIdRef.current) {
+        // If it was a NEW entry (not editing existing one passed via params initially)
+        // and it's empty and has no media, we should probably just delete it silently
+        // because it was likely lazily created but user changed mind.
+        // However, if we just do nothing, it stays as an empty diary.
+        // Let's delete it silently to keep DB clean.
+
+        // Note: We can't easily await here before dispatching, so we fire and forget
+        // or we preventDefault, delete, then dispatch.
+        e.preventDefault();
+        deleteDiary({ diaryId: currentId })
+          .catch(err => console.error('Failed to cleanup empty diary', err))
+          .finally(() => navigation.dispatch(e.data.action));
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, body, hasMedia, route.params?.diaryId, savedDiaryId, isSaving, isGenerating]);
+
   if (!isEditing && route.params?.diaryId) {
     return (
       <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
@@ -378,12 +452,36 @@ export const DiaryEditScreen = () => {
     );
   }
 
+  const handleEnsureDiaryId = async (): Promise<Id<'diaries'> | null> => {
+    if (route.params?.diaryId) return route.params.diaryId;
+    if (savedDiaryId) return savedDiaryId;
+
+    try {
+      setIsSaving(true);
+      const trimmed = body.trim();
+      // Even if empty, we might need to create it to attach media? 
+      // Or should we require some text? Let's allow empty text if they are adding media.
+      // But createDiary might fail if we have validation. 
+      // Let's assume empty content is allowed or default to empty string.
+
+      const result = await createDiary({ content: trimmed });
+      setSavedDiaryId(result._id);
+      navigation.setParams({ diaryId: result._id, content: trimmed });
+      return result._id;
+    } catch (error) {
+      Alert.alert('Unable to create diary', 'Please try again.');
+      return null;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
-          contentContainerStyle={{ 
-            flexGrow: 1, 
+          contentContainerStyle={{
+            flexGrow: 1,
             paddingHorizontal: 20,
             paddingBottom: bottomPadding,
           }}
@@ -422,7 +520,7 @@ export const DiaryEditScreen = () => {
                   setStyle(randomStyles.join(', '));
                 }}
                 className="px-3 py-1.5 rounded-lg"
-                style={{ 
+                style={{
                   backgroundColor: colors.scheme === 'light' ? colors.accentMint : colors.card,
                 }}
                 activeOpacity={0.7}
@@ -445,17 +543,16 @@ export const DiaryEditScreen = () => {
           </View>
 
           {/* Media Upload Section */}
-          {(route.params?.diaryId || savedDiaryId) && (
-            <View className="mt-4">
-              <MediaUploadButton
-                diaryId={(route.params?.diaryId || savedDiaryId)!}
-                onUploadComplete={() => {
-                  // Media will automatically refresh via the query
-                }}
-              />
-              <DiaryMediaGrid diaryId={(route.params?.diaryId || savedDiaryId)!} editable={true} />
-            </View>
-          )}
+          <View className="mt-4">
+            <MediaUploadButton
+              diaryId={route.params?.diaryId || savedDiaryId || undefined}
+              onEnsureDiaryId={handleEnsureDiaryId}
+              onUploadComplete={() => {
+                // Media will automatically refresh via the query
+              }}
+            />
+            <DiaryMediaGrid diaryId={route.params?.diaryId || savedDiaryId || undefined} editable={true} />
+          </View>
 
           {/* Usage Progress - Only show for free tier */}
           {subscriptionStatus?.tier === 'free' && (
@@ -468,7 +565,7 @@ export const DiaryEditScreen = () => {
           )}
 
           {/* Action buttons - positioned relative to textbox */}
-          <View 
+          <View
             className="mt-6 flex-row gap-4"
             onLayout={(event) => {
               const { height } = event.nativeEvent.layout;
@@ -501,7 +598,7 @@ export const DiaryEditScreen = () => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-      
+
       {/* Paywall Modal */}
       <PaywallModal
         visible={showPaywall}
