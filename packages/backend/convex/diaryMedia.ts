@@ -151,7 +151,17 @@ export const deleteDiaryMedia = mutation({
       throw new Error("Forbidden");
     }
 
-    // Step 3: Delete from storage (Convex handles cleanup automatically)
+    // Step 3: Delete from storage before removing DB record
+    if (media.storageId) {
+      try {
+        await ctx.storage.delete(media.storageId);
+      } catch (error) {
+        // Log storage deletion errors but allow them to surface
+        console.error("Failed to delete storage object:", error);
+        throw error;
+      }
+    }
+
     // Step 4: Delete diaryMedia record
     await ctx.db.delete(args.mediaId);
 

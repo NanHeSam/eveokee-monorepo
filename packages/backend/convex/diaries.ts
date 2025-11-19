@@ -87,15 +87,17 @@ export const updateDiary = mutation({
 });
 
 /**
- * Delete a diary entry and all associated music records
+ * Delete a diary entry and all associated music records and media
  * 
  * Steps:
  * 1. Authenticate user and get userId
  * 2. Fetch diary record and verify ownership
  * 3. Find and delete all associated music records
- * 4. Delete the diary entry
+ * 4. Find and delete all associated media records and their storage objects
+ * 5. Delete the diary entry
  * 
- * WARNING: This permanently deletes the diary and all associated music tracks.
+ * WARNING: This permanently deletes the diary, all associated music tracks,
+ * and all associated media storage objects.
  */
 export const deleteDiary = mutation({
   args: {
@@ -126,12 +128,18 @@ export const deleteDiary = mutation({
       musicRecords.map((music) => ctx.db.delete(music._id))
     );
 
-    // Step 4: Delete associated media records
+    // Step 4: Delete associated media records and their storage objects
     const mediaRecords = await ctx.db
       .query("diaryMedia")
       .withIndex("by_diaryId", (q) => q.eq("diaryId", args.diaryId))
       .collect();
 
+    // Delete storage objects first
+    await Promise.all(
+      mediaRecords.map((media) => ctx.storage.delete(media.storageId))
+    );
+
+    // Then delete the database records
     await Promise.all(
       mediaRecords.map((media) => ctx.db.delete(media._id))
     );

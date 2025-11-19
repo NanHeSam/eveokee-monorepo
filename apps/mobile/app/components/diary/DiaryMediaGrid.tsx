@@ -42,6 +42,7 @@ export const DiaryMediaGrid = ({ diaryId, editable = false }: DiaryMediaGridProp
             try {
               await deleteMedia({ mediaId });
             } catch (error) {
+              console.error('Failed to delete media', error);
               Alert.alert('Error', 'Failed to delete media. Please try again.');
             }
           },
