@@ -2,6 +2,14 @@ const { withDangerousMod } = require("@expo/config-plugins");
 const fs = require("fs");
 const path = require("path");
 
+/**
+ * Ensure expo-image-picker's module config includes Apple platform settings and the ImagePickerModule, removing deprecated fields.
+ *
+ * Reads expo-image-picker's expo-module.config.json (resolved from the provided project root) and, if present,
+ * adds an `apple` configuration (copied from `ios` if necessary), ensures `"apple"` is listed in `platforms`,
+ * sets `apple.modules` to `["ImagePickerModule"]`, and removes `apple.modulesClassNames`. Writes the file back only if changes are made.
+ * @param {string} projectRoot - Filesystem path used to resolve the expo-image-picker package (typically the project root).
+ */
 function patchExpoImagePickerConfig(projectRoot) {
   const packageJsonPath = require.resolve("expo-image-picker/package.json", {
     paths: [projectRoot],
@@ -60,5 +68,4 @@ module.exports = function withExpoImagePickerAutolinking(config) {
     return cfg;
   }]);
 };
-
 

@@ -8,6 +8,15 @@ const IMPORT_LINES = [
   "#import <React/RCTLinkingManager.h>",
 ];
 
+/**
+ * Ensure the given Objective-C bridging header text contains the required React import lines.
+ *
+ * The function normalizes CRLF to LF and trims trailing whitespace, then appends any missing
+ * import lines (each on its own line). If no imports are missing, the original `contents`
+ * is returned unchanged.
+ *
+ * @param {string} contents - Existing file contents of the bridging header.
+ * @returns {string} The resulting file contents with any missing import lines appended.
 function ensureImports(contents) {
   const normalized = contents.replace(/\r\n/g, "\n").trimEnd();
   const missing = IMPORT_LINES.filter((line) => !normalized.includes(line));
@@ -50,4 +59,3 @@ module.exports = function withReactBridgingHeader(config) {
     return cfg;
   }]);
 };
-
