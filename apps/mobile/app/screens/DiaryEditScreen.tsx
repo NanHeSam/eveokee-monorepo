@@ -268,18 +268,22 @@ export const DiaryEditScreen = () => {
   
   // Update original content when diary loads or editing starts
   useEffect(() => {
+    // Case 1: Editing existing diary - diary data has loaded, use its content
     if (route.params?.diaryId && currentDiary?.content) {
       originalContentRef.current = currentDiary.content.trim();
       setIsTextDirty(trimmed !== currentDiary.content.trim());
+    // Case 2: Editing existing diary - content passed via params but diary still loading
+    // This handles the case where we navigate with content param before currentDiary loads
     } else if (route.params?.content) {
       originalContentRef.current = route.params.content.trim();
       setIsTextDirty(trimmed !== route.params.content.trim());
+    // Case 3: Existing diary not yet loaded - wait for currentDiary to load
+    // originalContentRef will be updated when currentDiary loads (Case 1)
     } else if (route.params?.diaryId && !currentDiary) {
-      // Diary is loading, originalContentRef will be set when currentDiary loads
       originalContentRef.current = '';
       setIsTextDirty(false);
+    // Case 4: New diary entry - no diaryId means this is a fresh entry
     } else if (!route.params?.diaryId) {
-      // New diary, reset original content
       originalContentRef.current = '';
       setIsTextDirty(false);
     }
