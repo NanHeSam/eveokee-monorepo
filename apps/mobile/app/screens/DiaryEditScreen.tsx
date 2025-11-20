@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View, ScrollView, Alert, Pressable } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -327,7 +327,7 @@ export const DiaryEditScreen = () => {
   }, [navigation, shouldPreventRemove]);
 
   // Helper function to show discard dialog and handle navigation confirmation
-  const showDiscardDialog = async (
+  const showDiscardDialog = useCallback(async (
     onConfirm: () => void
   ): Promise<boolean> => {
     // If we are saving or generating, don't interrupt
@@ -442,7 +442,7 @@ export const DiaryEditScreen = () => {
       onConfirm();
       return true;
     }
-  };
+  }, [isSaving, isGenerating, trimmed, currentId, deleteDiary, isTextDirty, shouldWarnBecauseOfMedia, shouldSilentlyDeleteEmptyNewDiary]);
 
   // Handle back navigation with appropriate warnings/cleanup
   const handleBackPress = async () => {
@@ -474,7 +474,7 @@ export const DiaryEditScreen = () => {
     });
 
     return unsubscribe;
-  }, [navigation, isSaving, isGenerating, currentId, trimmed, deleteDiary, isTextDirty, shouldWarnBecauseOfMedia, shouldSilentlyDeleteEmptyNewDiary, initialDiaryIdRef]);
+  }, [navigation, showDiscardDialog]);
 
   const handleEnsureDiaryId = async (): Promise<Id<'diaries'> | null> => {
     if (route.params?.diaryId) return route.params.diaryId;
@@ -492,9 +492,9 @@ export const DiaryEditScreen = () => {
       navigation.setParams({ diaryId: result._id, content: trimmed });
       return result._id;
     } catch (error) {
-      console.error(error);
       const errorMessage = error instanceof Error ? error.message : String(error);
-      Alert.alert('Unable to create diary', `${errorMessage} Please try again.`);
+      console.error('Unable to create diary', error, errorMessage);
+      Alert.alert('Unable to create diary', 'Please try again.');
       return null;
     } finally {
       setIsSaving(false);
