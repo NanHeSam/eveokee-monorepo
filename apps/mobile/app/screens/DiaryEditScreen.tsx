@@ -326,90 +326,95 @@ export const DiaryEditScreen = () => {
     });
   }, [navigation, shouldPreventRemove]);
 
-  // Handle back navigation with appropriate warnings/cleanup
-  const handleBackPress = async () => {
+  // Helper function to show discard dialog and handle navigation confirmation
+  const showDiscardDialog = async (
+    onConfirm: () => void
+  ): Promise<boolean> => {
     // If we are saving or generating, don't interrupt
     if (isSaving || isGenerating) {
-      return;
+      return false;
     }
 
     // First check: If it's a NEW entry (not editing existing one passed via params initially)
     // and it has text, show discard warning (regardless of media or whether diary was created)
     if (trimmed && !initialDiaryIdRef.current) {
-      Alert.alert(
-        'Discard Entry?',
-        currentId 
-          ? 'You have written content but haven\'t saved. Going back will delete this entry.'
-          : 'You have written content but haven\'t saved. Going back will discard your changes.',
-        [
-          { text: 'Keep Editing', style: 'cancel', onPress: () => { } },
-          {
-            text: 'Discard',
-            style: 'destructive',
-            onPress: async () => {
-              // Only delete if diary was already created
-              if (currentId) {
+      return new Promise((resolve) => {
+        Alert.alert(
+          'Discard Entry?',
+          currentId 
+            ? 'You have written content but haven\'t saved. Going back will delete this entry.'
+            : 'You have written content but haven\'t saved. Going back will discard your changes.',
+          [
+            { text: 'Keep Editing', style: 'cancel', onPress: () => resolve(false) },
+            {
+              text: 'Discard',
+              style: 'destructive',
+              onPress: async () => {
+                // Only delete if diary was already created
+                if (currentId) {
+                  try {
+                    await deleteDiary({ diaryId: currentId });
+                  } catch (err) {
+                    // Handle gracefully if diary was already deleted
+                    const errorMessage = err instanceof Error ? err.message : String(err);
+                    if (!errorMessage.includes('Diary not found')) {
+                      console.error('Failed to delete diary', err);
+                    }
+                  }
+                }
+                onConfirm();
+                resolve(true);
+              },
+            },
+          ]
+        );
+      });
+    } else if (initialDiaryIdRef.current && isTextDirty) {
+      // Existing diary with unsaved changes - show warning
+      return new Promise((resolve) => {
+        Alert.alert(
+          'Discard Changes?',
+          'You have unsaved changes. Going back will discard your edits.',
+          [
+            { text: 'Keep Editing', style: 'cancel', onPress: () => resolve(false) },
+            {
+              text: 'Discard',
+              style: 'destructive',
+              onPress: () => {
+                onConfirm();
+                resolve(true);
+              },
+            },
+          ]
+        );
+      });
+    } else if (shouldWarnBecauseOfMedia) {
+      return new Promise((resolve) => {
+        Alert.alert(
+          'Discard Entry?',
+          'You have uploaded media but haven\'t written anything. Going back will delete this entry and its media.',
+          [
+            { text: 'Keep Editing', style: 'cancel', onPress: () => resolve(false) },
+            {
+              text: 'Discard',
+              style: 'destructive',
+              onPress: async () => {
                 try {
-                  await deleteDiary({ diaryId: currentId });
+                  await deleteDiary({ diaryId: currentId! });
                 } catch (err) {
                   // Handle gracefully if diary was already deleted
                   const errorMessage = err instanceof Error ? err.message : String(err);
                   if (!errorMessage.includes('Diary not found')) {
-                    console.error('Failed to delete diary', err);
+                    console.error('Failed to delete empty diary', err);
                   }
                 }
-              }
-              // Mark that we're navigating back programmatically to prevent beforeRemove from handling it
-              isNavigatingBackRef.current = true;
-              navigation.goBack();
+                onConfirm();
+                resolve(true);
+              },
             },
-          },
-        ]
-      );
-    } else if (initialDiaryIdRef.current && isTextDirty) {
-      // Existing diary with unsaved changes - show warning
-      Alert.alert(
-        'Discard Changes?',
-        'You have unsaved changes. Going back will discard your edits.',
-        [
-          { text: 'Keep Editing', style: 'cancel', onPress: () => { } },
-          {
-            text: 'Discard',
-            style: 'destructive',
-            onPress: () => {
-              // Mark that we're navigating back programmatically to prevent beforeRemove from handling it
-              isNavigatingBackRef.current = true;
-              navigation.goBack();
-            },
-          },
-        ]
-      );
-    } else if (shouldWarnBecauseOfMedia) {
-      Alert.alert(
-        'Discard Entry?',
-        'You have uploaded media but haven\'t written anything. Going back will delete this entry and its media.',
-        [
-          { text: 'Keep Editing', style: 'cancel', onPress: () => { } },
-          {
-            text: 'Discard',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                await deleteDiary({ diaryId: currentId });
-              } catch (err) {
-                // Handle gracefully if diary was already deleted
-                const errorMessage = err instanceof Error ? err.message : String(err);
-                if (!errorMessage.includes('Diary not found')) {
-                  console.error('Failed to delete empty diary', err);
-                }
-              }
-              // Mark that we're navigating back programmatically to prevent beforeRemove from handling it
-              isNavigatingBackRef.current = true;
-              navigation.goBack();
-            },
-          },
-        ]
-      );
+          ]
+        );
+      });
     } else if (shouldSilentlyDeleteEmptyNewDiary) {
       // If it was a NEW entry (not editing existing one passed via params initially)
       // and it's empty and has no media (and media query has finished loading),
@@ -428,21 +433,29 @@ export const DiaryEditScreen = () => {
           }
         })
         .finally(() => {
-          // Mark that we're navigating back programmatically to prevent beforeRemove from handling it
-          isNavigatingBackRef.current = true;
-          navigation.goBack();
+          onConfirm();
         });
+      // Return false to indicate navigation should be prevented (will be handled in finally)
+      return false;
     } else {
-      // Normal case - just go back
+      // Normal case - just proceed
+      onConfirm();
+      return true;
+    }
+  };
+
+  // Handle back navigation with appropriate warnings/cleanup
+  const handleBackPress = async () => {
+    await showDiscardDialog(() => {
       // Mark that we're navigating back programmatically to prevent beforeRemove from handling it
       isNavigatingBackRef.current = true;
       navigation.goBack();
-    }
+    });
   };
 
   // Intercept back navigation
   useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+    const unsubscribe = navigation.addListener('beforeRemove', async (e) => {
       // If we're already handling navigation programmatically (via back button), skip
       if (isNavigatingBackRef.current) {
         // Reset the flag for next time
@@ -450,117 +463,18 @@ export const DiaryEditScreen = () => {
         return;
       }
 
-      // If we are saving or generating, don't interrupt (or maybe we should? but let's keep it simple)
-      if (isSaving || isGenerating) {
-        return;
-      }
+      const shouldProceed = await showDiscardDialog(() => {
+        // Dispatch the action to go back
+        navigation.dispatch(e.data.action);
+      });
 
-      // Variables are already hoisted above
-
-      // First check: If it's a NEW entry (not editing existing one passed via params initially)
-      // and it has text, show discard warning (regardless of media or whether diary was created)
-      if (trimmed && !initialDiaryIdRef.current) {
+      if (!shouldProceed) {
         e.preventDefault();
-
-        Alert.alert(
-          'Discard Entry?',
-          currentId 
-            ? 'You have written content but haven\'t saved. Going back will delete this entry.'
-            : 'You have written content but haven\'t saved. Going back will discard your changes.',
-          [
-            { text: 'Keep Editing', style: 'cancel', onPress: () => { } },
-            {
-              text: 'Discard',
-              style: 'destructive',
-              onPress: async () => {
-                // Only delete if diary was already created
-                if (currentId) {
-                  try {
-                    await deleteDiary({ diaryId: currentId });
-                  } catch (err) {
-                    // Handle gracefully if diary was already deleted
-                    const errorMessage = err instanceof Error ? err.message : String(err);
-                    if (!errorMessage.includes('Diary not found')) {
-                      console.error('Failed to delete diary', err);
-                    }
-                  }
-                }
-                // Dispatch the action to go back
-                navigation.dispatch(e.data.action);
-              },
-            },
-          ]
-        );
-      } else if (initialDiaryIdRef.current && isTextDirty) {
-        // Existing diary with unsaved changes - show warning
-        e.preventDefault();
-
-        Alert.alert(
-          'Discard Changes?',
-          'You have unsaved changes. Going back will discard your edits.',
-          [
-            { text: 'Keep Editing', style: 'cancel', onPress: () => { } },
-            {
-              text: 'Discard',
-              style: 'destructive',
-              onPress: () => {
-                // Dispatch the action to go back
-                navigation.dispatch(e.data.action);
-              },
-            },
-          ]
-        );
-      } else if (shouldWarnBecauseOfMedia) {
-        e.preventDefault();
-
-        Alert.alert(
-          'Discard Entry?',
-          'You have uploaded media but haven\'t written anything. Going back will delete this entry and its media.',
-          [
-            { text: 'Keep Editing', style: 'cancel', onPress: () => { } },
-            {
-              text: 'Discard',
-              style: 'destructive',
-              onPress: async () => {
-                try {
-                  await deleteDiary({ diaryId: currentId! });
-                } catch (err) {
-                  // Handle gracefully if diary was already deleted
-                  const errorMessage = err instanceof Error ? err.message : String(err);
-                  if (!errorMessage.includes('Diary not found')) {
-                    console.error('Failed to delete empty diary', err);
-                  }
-                }
-                // Dispatch the action to go back
-                navigation.dispatch(e.data.action);
-              },
-            },
-          ]
-        );
-      } else if (shouldSilentlyDeleteEmptyNewDiary) {
-        // If it was a NEW entry (not editing existing one passed via params initially)
-        // and it's empty and has no media (and media query has finished loading),
-        // we should delete it silently because it was likely lazily created but user changed mind.
-        // However, if we just do nothing, it stays as an empty diary.
-        // Let's delete it silently to keep DB clean.
-
-        // Note: We can't easily await here before dispatching, so we fire and forget
-        // or we preventDefault, delete, then dispatch.
-        e.preventDefault();
-        deleteDiary({ diaryId: currentId })
-          .catch(err => {
-            // Handle gracefully if diary was already deleted
-            const errorMessage = err instanceof Error ? err.message : String(err);
-            if (!errorMessage.includes('Diary not found')) {
-              console.error('Failed to cleanup empty diary', err);
-            }
-          })
-          .finally(() => navigation.dispatch(e.data.action));
       }
     });
 
     return unsubscribe;
-  }, [navigation, hasMedia, route.params?.diaryId, savedDiaryId, isSaving, isGenerating, currentId, trimmed, deleteDiary, diaryMediaLoaded, isTextDirty, shouldWarnBecauseOfMedia, shouldSilentlyDeleteEmptyNewDiary]);
+  }, [navigation, isSaving, isGenerating, currentId, trimmed, deleteDiary, isTextDirty, shouldWarnBecauseOfMedia, shouldSilentlyDeleteEmptyNewDiary, initialDiaryIdRef]);
 
   const handleEnsureDiaryId = async (): Promise<Id<'diaries'> | null> => {
     if (route.params?.diaryId) return route.params.diaryId;
