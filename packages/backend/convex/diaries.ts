@@ -111,7 +111,8 @@ export const deleteDiary = mutation({
     // Step 2: Verify ownership
     const diary = await ctx.db.get(args.diaryId);
     if (!diary) {
-      throw new Error("Diary not found");
+      // Diary already deleted or doesn't exist - idempotent operation, return silently
+      return null;
     }
 
     if (userId !== diary.userId) {

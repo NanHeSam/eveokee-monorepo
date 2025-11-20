@@ -207,10 +207,8 @@ export const DiaryScreen = () => {
                       <Pressable
                         key={entry.id}
                         onPress={() =>
-                          navigation.navigate('DiaryEdit', {
-                            diaryId: entry.id,
-                            content: entry.content,
-                            title: entry.title
+                          navigation.navigate('DiaryView', {
+                            diaryId: entry.id
                           })
                         }
                       >
@@ -272,10 +270,8 @@ export const DiaryScreen = () => {
                   <Pressable
                     key={entry.id}
                     onPress={() =>
-                      navigation.navigate('DiaryEdit', {
-                        diaryId: entry.id,
-                        content: entry.content,
-                        title: entry.title
+                      navigation.navigate('DiaryView', {
+                        diaryId: entry.id
                       })
                     }
                   >

@@ -5,6 +5,9 @@ import { Id } from '@backend/convex/convex/_generated/dataModel';
 
 export type DiaryStackParamList = {
   DiaryHome: undefined;
+  DiaryView: {
+    diaryId: Id<'diaries'>;
+  };
   DiaryEdit: {
     diaryId?: Id<'diaries'>;
     content?: string;
@@ -41,3 +44,6 @@ export type DiaryEditNavigationProp = NativeStackNavigationProp<DiaryStackParamL
 
 export type DiaryEditRouteProp = RouteProp<DiaryStackParamList, 'DiaryEdit'>;
 
+export type DiaryViewNavigationProp = NativeStackNavigationProp<DiaryStackParamList, 'DiaryView'>;
+
+export type DiaryViewRouteProp = RouteProp<DiaryStackParamList, 'DiaryView'>;
