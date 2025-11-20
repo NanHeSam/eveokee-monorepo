@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { PenTool, Music, Headphones, Loader2, Sparkles } from 'lucide-react';
 import { SignedIn, SignedOut, useAuth } from '@clerk/clerk-react';
 import { useAction, useQuery } from 'convex/react';
@@ -106,6 +106,7 @@ export default function HowItWorksSection() {
   const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' } | null>(null);
   const [retryDiaryId, setRetryDiaryId] = useState<Id<"diaries"> | null>(null);
   const [testimonialIndex, setTestimonialIndex] = useState(0);
+  const shouldReduceMotion = useReducedMotion();
 
   const { isSignedIn, userId } = useAuth();
 
@@ -375,10 +376,10 @@ export default function HowItWorksSection() {
             whileInView="show"
             viewport={{ once: true, margin: "-100px" }}
             variants={{
-              hidden: { opacity: 0 },
+              hidden: { opacity: shouldReduceMotion ? 1 : 0 },
               show: {
                 opacity: 1,
-                transition: {
+                transition: shouldReduceMotion ? {} : {
                   staggerChildren: 0.3
                 }
               }
@@ -389,8 +390,8 @@ export default function HowItWorksSection() {
               <motion.div
                 key={step.id}
                 variants={{
-                  hidden: { opacity: 0, y: 30 },
-                  show: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+                  hidden: { opacity: shouldReduceMotion ? 1 : 0, y: shouldReduceMotion ? 0 : 30 },
+                  show: { opacity: 1, y: 0, transition: shouldReduceMotion ? {} : { duration: 0.5 } }
                 }}
                 className="text-center relative"
               >
@@ -398,7 +399,7 @@ export default function HowItWorksSection() {
                 <div className="relative z-10">
                   {/* Icon */}
                   <motion.div
-                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    whileHover={shouldReduceMotion ? {} : { scale: 1.1, rotate: 5 }}
                     className="w-16 h-16 bg-accent-mint rounded-full flex items-center justify-center text-white mx-auto mb-6 shadow-lg"
                   >
                     {step.icon}

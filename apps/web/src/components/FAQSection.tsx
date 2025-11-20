@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Plus, Minus } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 interface FAQ {
   id: string;
@@ -33,6 +33,7 @@ const faqs: FAQ[] = [
 
 export default function FAQSection() {
   const [openFAQ, setOpenFAQ] = useState<string | null>(null);
+  const shouldReduceMotion = useReducedMotion();
 
   const toggleFAQ = (id: string) => {
     setOpenFAQ(openFAQ === id ? null : id);
@@ -43,10 +44,10 @@ export default function FAQSection() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: shouldReduceMotion ? 1 : 0, y: shouldReduceMotion ? 0 : 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          transition={shouldReduceMotion ? {} : { duration: 0.6 }}
           className="text-center mb-16"
         >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6">
@@ -65,10 +66,10 @@ export default function FAQSection() {
             return (
               <motion.div
                 key={faq.id}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: shouldReduceMotion ? 1 : 0, y: shouldReduceMotion ? 0 : 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: index * 0.1, duration: 0.5 }}
+                transition={shouldReduceMotion ? {} : { delay: index * 0.1, duration: 0.5 }}
                 className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden"
               >
                 <button
@@ -82,7 +83,7 @@ export default function FAQSection() {
                   <div className="flex-shrink-0">
                     <motion.div
                       animate={{ rotate: isOpen ? 180 : 0 }}
-                      transition={{ duration: 0.3 }}
+                      transition={shouldReduceMotion ? {} : { duration: 0.3 }}
                     >
                       {isOpen ? (
                         <Minus className="w-5 h-5 text-accent-mint" />
@@ -96,10 +97,10 @@ export default function FAQSection() {
                 <AnimatePresence>
                   {isOpen && (
                     <motion.div
-                      initial={{ height: 0, opacity: 0 }}
+                      initial={shouldReduceMotion ? { height: "auto", opacity: 1 } : { height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3 }}
+                      exit={shouldReduceMotion ? { height: "auto", opacity: 1 } : { height: 0, opacity: 0 }}
+                      transition={shouldReduceMotion ? {} : { duration: 0.3 }}
                       className="overflow-hidden"
                     >
                       <div className="px-6 pb-6">
@@ -119,10 +120,10 @@ export default function FAQSection() {
 
         {/* Additional Help */}
         <motion.div
-          initial={{ opacity: 0 }}
+          initial={{ opacity: shouldReduceMotion ? 1 : 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.5, duration: 0.5 }}
+          transition={shouldReduceMotion ? {} : { delay: 0.5, duration: 0.5 }}
           className="text-center mt-12"
         >
           <p className="text-gray-600 dark:text-gray-300 mb-4">

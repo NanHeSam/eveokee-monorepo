@@ -4,7 +4,8 @@ import { useAudio } from '../contexts/AudioContext';
 import { getAndroidBetaLink } from '../utils/deviceUtils';
 import AndroidInviteForm from './AndroidInviteForm';
 import IOSAppStoreButton from './IOSAppStoreButton';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion, useInView, useAnimation } from 'framer-motion';
+import { useEffect, useRef } from 'react';
 
 interface HeroSectionProps {
   onHearDemo?: () => void;
@@ -14,6 +15,71 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
   const audioManager = useAudio();
   const posthog = usePostHog();
   const androidBetaLink = getAndroidBetaLink();
+  const shouldReduceMotion = useReducedMotion();
+  
+  // Viewport visibility tracking for animations
+  const phoneMockupRef = useRef(null);
+  const isInView = useInView(phoneMockupRef, { once: false, margin: "-100px" });
+  
+  const phoneAnimation = useAnimation();
+  const floatingAnimation1 = useAnimation();
+  const floatingAnimation2 = useAnimation();
+  
+  // Control phone mockup animation based on viewport visibility
+  useEffect(() => {
+    if (shouldReduceMotion) {
+      phoneAnimation.set({ y: 0 });
+      return;
+    }
+    
+    if (isInView) {
+      phoneAnimation.start({
+        y: [0, -15, 0],
+        transition: {
+          duration: 8, // Increased from 6 to reduce workload
+          repeat: Infinity,
+          ease: "easeInOut"
+        }
+      });
+    } else {
+      phoneAnimation.stop();
+      phoneAnimation.set({ y: 0 });
+    }
+  }, [isInView, shouldReduceMotion, phoneAnimation]);
+  
+  // Control floating elements animations based on viewport visibility
+  useEffect(() => {
+    if (shouldReduceMotion) {
+      floatingAnimation1.set({ scale: 1 });
+      floatingAnimation2.set({ scale: 1 });
+      return;
+    }
+    
+    if (isInView) {
+      floatingAnimation1.start({
+        scale: [1, 1.2, 1],
+        transition: {
+          duration: 3, // Increased from 2 to reduce workload
+          repeat: Infinity,
+          ease: "easeInOut"
+        }
+      });
+      floatingAnimation2.start({
+        scale: [1, 1.2, 1],
+        transition: {
+          duration: 3, // Increased from 2 to reduce workload
+          repeat: Infinity,
+          delay: 1,
+          ease: "easeInOut"
+        }
+      });
+    } else {
+      floatingAnimation1.stop();
+      floatingAnimation2.stop();
+      floatingAnimation1.set({ scale: 1 });
+      floatingAnimation2.set({ scale: 1 });
+    }
+  }, [isInView, shouldReduceMotion, floatingAnimation1, floatingAnimation2]);
   
   const demoAudioUrl = 'https://cdn1.suno.ai/b28aad1b-2d89-44f9-9f06-0e4fe429f98e.mp3';
   const heroAudioId = 'hero-demo';
@@ -49,18 +115,18 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left Column - Text Content */}
           <motion.div 
-            initial={{ opacity: 0, x: -50 }}
+            initial={{ opacity: shouldReduceMotion ? 1 : 0, x: shouldReduceMotion ? 0 : -50 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            transition={shouldReduceMotion ? {} : { duration: 0.8, ease: "easeOut" }}
             className="text-center lg:text-left"
           >
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white leading-tight">
               Turn your diary
               <br />
               <motion.span 
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: shouldReduceMotion ? 1 : 0, y: shouldReduceMotion ? 0 : 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5, duration: 0.8 }}
+                transition={shouldReduceMotion ? {} : { delay: 0.5, duration: 0.8 }}
                 className="text-accent-mint inline-block"
               >
                 into sound
@@ -68,9 +134,9 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
             </h1>
             
             <motion.p 
-              initial={{ opacity: 0 }}
+              initial={{ opacity: shouldReduceMotion ? 1 : 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.8, duration: 0.8 }}
+              transition={shouldReduceMotion ? {} : { delay: 0.8, duration: 0.8 }}
               className="mt-6 text-xl text-gray-600 dark:text-gray-300 leading-relaxed"
             >
               A new way of journaling — where your words become music.
@@ -78,14 +144,14 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
             
             {/* CTA Buttons */}
             <motion.div 
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: shouldReduceMotion ? 1 : 0, y: shouldReduceMotion ? 0 : 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.0, duration: 0.5 }}
+              transition={shouldReduceMotion ? {} : { delay: 1.0, duration: 0.5 }}
               className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
             >
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={shouldReduceMotion ? {} : { scale: 1.05 }}
+                whileTap={shouldReduceMotion ? {} : { scale: 0.95 }}
                 onClick={handleAudioToggle}
                 disabled={isLoading}
                 className={`inline-flex items-center px-6 py-3 font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 ${
@@ -125,9 +191,9 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
             
             {/* App Beta Links */}
             <motion.div 
-              initial={{ opacity: 0 }}
+              initial={{ opacity: shouldReduceMotion ? 1 : 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 1.2, duration: 0.8 }}
+              transition={shouldReduceMotion ? {} : { delay: 1.2, duration: 0.8 }}
               className="mt-6 space-y-4"
             >
               <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
@@ -152,18 +218,14 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
           
           {/* Right Column - Phone Mockup */}
           <motion.div 
-            initial={{ opacity: 0, x: 50 }}
+            initial={{ opacity: shouldReduceMotion ? 1 : 0, x: shouldReduceMotion ? 0 : 50 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 1, ease: "easeOut" }}
+            transition={shouldReduceMotion ? {} : { duration: 1, ease: "easeOut" }}
             className="flex justify-center lg:justify-end"
           >
             <motion.div 
-              animate={{ y: [0, -15, 0] }}
-              transition={{ 
-                duration: 6, 
-                repeat: Infinity, 
-                ease: "easeInOut" 
-              }}
+              ref={phoneMockupRef}
+              animate={phoneAnimation}
               className="relative"
             >
               {/* Phone Frame */}
@@ -209,9 +271,9 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
                         <div className="space-y-4">
                           {/* Entry 1 */}
                           <motion.div 
-                            initial={{ opacity: 0, x: -20 }}
+                            initial={{ opacity: shouldReduceMotion ? 1 : 0, x: shouldReduceMotion ? 0 : -20 }}
                             animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 1.5, duration: 0.5 }}
+                            transition={shouldReduceMotion ? {} : { delay: 1.5, duration: 0.5 }}
                             className="flex items-start space-x-3"
                           >
                             <div className="text-center">
@@ -227,9 +289,9 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
                           
                           {/* Entry 2 */}
                           <motion.div 
-                            initial={{ opacity: 0, x: -20 }}
+                            initial={{ opacity: shouldReduceMotion ? 1 : 0, x: shouldReduceMotion ? 0 : -20 }}
                             animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 1.7, duration: 0.5 }}
+                            transition={shouldReduceMotion ? {} : { delay: 1.7, duration: 0.5 }}
                             className="flex items-start space-x-3"
                           >
                             <div className="text-center">
@@ -245,9 +307,9 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
                           
                           {/* Entry 3 */}
                           <motion.div 
-                            initial={{ opacity: 0, x: -20 }}
+                            initial={{ opacity: shouldReduceMotion ? 1 : 0, x: shouldReduceMotion ? 0 : -20 }}
                             animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 1.9, duration: 0.5 }}
+                            transition={shouldReduceMotion ? {} : { delay: 1.9, duration: 0.5 }}
                             className="flex items-start space-x-3"
                           >
                             <div className="text-center">
@@ -279,9 +341,9 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
                     
                     {/* Music Player */}
                     <motion.div 
-                      initial={{ y: 100 }}
+                      initial={{ y: shouldReduceMotion ? 0 : 100 }}
                       animate={{ y: 0 }}
-                      transition={{ delay: 2.2, type: "spring", stiffness: 100 }}
+                      transition={shouldReduceMotion ? {} : { delay: 2.2, type: "spring", stiffness: 100 }}
                       className="px-6 py-3 border-t border-gray-100 dark:border-gray-700"
                     >
                       <div className="flex items-center space-x-3">
@@ -334,13 +396,11 @@ export default function HeroSection({ onHearDemo }: HeroSectionProps) {
               
               {/* Floating Elements */}
               <motion.div 
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
+                animate={floatingAnimation1}
                 className="absolute -top-4 -right-4 w-8 h-8 bg-accent-apricot rounded-full"
               ></motion.div>
               <motion.div 
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+                animate={floatingAnimation2}
                 className="absolute -bottom-4 -left-4 w-6 h-6 bg-accent-mint rounded-full"
               ></motion.div>
             </motion.div>

@@ -1,5 +1,5 @@
 import DemoCard from './DemoCard';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 interface DemoItem {
   id: string;
@@ -53,32 +53,33 @@ const demoCards: DemoItem[] = [
   }
 ];
 
-const container = {
-  hidden: { opacity: 0 },
+const getContainerVariants = (shouldReduceMotion: boolean) => ({
+  hidden: { opacity: shouldReduceMotion ? 1 : 0 },
   show: {
     opacity: 1,
-    transition: {
+    transition: shouldReduceMotion ? {} : {
       staggerChildren: 0.2
     }
   }
-};
+});
 
-const item = {
-  hidden: { opacity: 0, y: 30 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.5 } }
-};
+const getItemVariants = (shouldReduceMotion: boolean) => ({
+  hidden: { opacity: shouldReduceMotion ? 1 : 0, y: shouldReduceMotion ? 0 : 30 },
+  show: { opacity: 1, y: 0, transition: shouldReduceMotion ? {} : { duration: 0.5 } }
+});
 
 export default function DemoPreviewSection({ onPlayDemo }: DemoPreviewSectionProps) {
+  const shouldReduceMotion = useReducedMotion();
 
   return (
     <section id="demo" className="py-20 bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: shouldReduceMotion ? 1 : 0, y: shouldReduceMotion ? 0 : 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          transition={shouldReduceMotion ? {} : { duration: 0.6 }}
           className="text-center mb-16"
         >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6">
@@ -88,14 +89,14 @@ export default function DemoPreviewSection({ onPlayDemo }: DemoPreviewSectionPro
 
         {/* Demo Cards Grid */}
         <motion.div
-          variants={container}
+          variants={getContainerVariants(shouldReduceMotion ?? false)}
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-100px" }}
           className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12"
         >
           {demoCards.map((demo) => (
-            <motion.div key={demo.id} variants={item}>
+            <motion.div key={demo.id} variants={getItemVariants(shouldReduceMotion ?? false)}>
               <DemoCard
                 lyric={demo.lyric}
                 title={demo.trackTitle}

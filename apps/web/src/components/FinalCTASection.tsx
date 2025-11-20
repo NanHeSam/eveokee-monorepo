@@ -7,7 +7,7 @@ import { ArrowRight, CheckCircle } from 'lucide-react';
 import { getAndroidBetaLink } from '../utils/deviceUtils';
 import AndroidInviteForm from './AndroidInviteForm';
 import IOSAppStoreButton from './IOSAppStoreButton';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 export default function FinalCTASection() {
   const [email, setEmail] = useState('');
@@ -16,6 +16,7 @@ export default function FinalCTASection() {
   const [error, setError] = useState<string | null>(null);
   const posthog = usePostHog();
   const androidBetaLink = getAndroidBetaLink();
+  const shouldReduceMotion = useReducedMotion();
 
   const addEmailNotification = useMutation(api.emailNotify.addEmailNotification);
 
@@ -52,8 +53,9 @@ export default function FinalCTASection() {
       <section className="py-20 bg-gradient-to-br from-accent-mint to-accent-apricot dark:from-gray-800 dark:to-gray-700">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
+            initial={{ scale: shouldReduceMotion ? 1 : 0.9, opacity: shouldReduceMotion ? 1 : 0 }}
             animate={{ scale: 1, opacity: 1 }}
+            transition={shouldReduceMotion ? {} : {}}
             className="bg-white dark:bg-gray-800 rounded-3xl p-12 shadow-2xl"
           >
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-6" />
@@ -76,10 +78,10 @@ export default function FinalCTASection() {
     <section className="py-20 bg-gradient-to-br from-accent-mint to-accent-apricot dark:from-gray-800 dark:to-gray-700">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: shouldReduceMotion ? 1 : 0, y: shouldReduceMotion ? 0 : 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          transition={shouldReduceMotion ? {} : { duration: 0.6 }}
           className="bg-white dark:bg-gray-800 rounded-3xl p-12 shadow-2xl"
         >
           {/* Header */}
@@ -105,8 +107,8 @@ export default function FinalCTASection() {
                 required
               />
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={shouldReduceMotion ? {} : { scale: 1.05 }}
+                whileTap={shouldReduceMotion ? {} : { scale: 0.95 }}
                 type="submit"
                 disabled={isLoading || !email || !isValidEmail(email)}
                 className="px-8 py-4 bg-accent-mint text-white rounded-full font-semibold hover:bg-accent-mint/90 focus:outline-none focus:ring-2 focus:ring-accent-mint focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap"
