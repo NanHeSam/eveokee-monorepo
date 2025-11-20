@@ -196,7 +196,11 @@ export default function Share() {
 
   return (
     <>
-      <Head title={sharedMusic.title ? `${sharedMusic.title} | eveokee` : 'eveokee - share music'} />
+      <Head 
+        title={sharedMusic.title ? `${sharedMusic.title} | eveokee` : 'eveokee - share music'}
+        description={sharedMusic.lyric ? sharedMusic.lyric.slice(0, 160) : 'Listen to this music shared on eveokee'}
+        ogImage={sharedMusic.imageUrl}
+      />
       <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 px-4 py-8 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
         <div className="lg:grid lg:grid-cols-2 lg:gap-8 bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden">
