@@ -1,12 +1,10 @@
-import { useMemo, useState, useEffect } from 'react';
-import { KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View, ScrollView, Alert, Image, Pressable } from 'react-native';
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import { KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View, ScrollView, Alert, Pressable } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useAction, useMutation, useQuery } from 'convex/react';
-import TrackPlayer from 'react-native-track-player';
-import { format } from 'date-fns';
 
 import { useThemeColors } from '../theme/useThemeColors';
 import { DiaryEditNavigationProp, DiaryEditRouteProp } from '../navigation/types';
@@ -30,34 +28,36 @@ export const DiaryEditScreen = () => {
   const route = useRoute<DiaryEditRouteProp>();
   const createDiary = useMutation(api.diaries.createDiary);
   const updateDiary = useMutation(api.diaries.updateDiary);
+  const deleteDiary = useMutation(api.diaries.deleteDiary);
   const startMusicGeneration = useAction(api.music.startDiaryMusicGeneration);
   const initialBody = useMemo(() => route.params?.content ?? '', [route.params?.content]);
   const [body, setBody] = useState(initialBody);
   const [style, setStyle] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isEditing, setIsEditing] = useState(!route.params?.diaryId);
-  
+  const trimmed = useMemo(() => body.trim(), [body]);
+  const [isTextDirty, setIsTextDirty] = useState(false); // Tracks whether text differs from last saved value
+
   // Billing integration - Read directly from RevenueCat SDK (single source of truth)
   const { showPaywall, paywallReason, setShowPaywall } = useSubscriptionUIStore();
   const { subscriptionStatus } = useRevenueCatSubscription();
   const addPendingGeneration = useMusicGenerationStatus((state) => state.addPendingGeneration);
   const removePendingGeneration = useMusicGenerationStatus((state) => state.removePendingGeneration);
-  
+
   // Get usage data from Convex to get effective limit (handles yearly monthly credits correctly)
   const usageData = useQuery(api.usage.getCurrentUserUsage);
-  
+
   // Get MiniPlayer dimensions dynamically
   const { isVisible: isMiniPlayerVisible, miniPlayerHeight, miniPlayerBottom } = useTrackPlayerStore();
-  
+
   // Measure button height dynamically
   const [buttonHeight, setButtonHeight] = useState<number | null>(null);
-  
+
   // Calculate bottom padding to ensure buttons are above MiniPlayer
   // Uses dynamically measured MiniPlayer and button dimensions
   const bottomPadding = useMemo(() => {
     const effectiveButtonHeight = buttonHeight ?? DEFAULT_BUTTON_HEIGHT;
-    
+
     if (isMiniPlayerVisible && miniPlayerHeight !== null && miniPlayerBottom !== null) {
       // When MiniPlayer is visible: position buttons above it with spacing
       return miniPlayerBottom + miniPlayerHeight + effectiveButtonHeight + BUTTON_SPACING + EXTRA_PADDING;
@@ -67,41 +67,24 @@ export const DiaryEditScreen = () => {
     }
   }, [isMiniPlayerVisible, miniPlayerHeight, miniPlayerBottom, buttonHeight, insets.bottom]);
 
-  const diaryDocs = useQuery(api.diaries.listDiaries);
-  const currentDiary = useMemo(
-    () => diaryDocs?.find((d: any) => d._id === route.params?.diaryId),
-    [diaryDocs, route.params?.diaryId]
-  );
-  const allMusic = useQuery(api.music.listPlaylistMusic);
-  const diaryMusic = useMemo(
-    () => allMusic?.find((m: any) => m.diaryId === route.params?.diaryId),
-    [allMusic, route.params?.diaryId]
-  );
-  const primaryMusic = currentDiary?.primaryMusic || (diaryMusic ? {
-    _id: diaryMusic._id,
-    title: diaryMusic.title,
-    imageUrl: diaryMusic.imageUrl,
-    audioUrl: diaryMusic.audioUrl,
-    duration: diaryMusic.duration,
-    lyric: diaryMusic.lyric,
-    lyricWithTime: diaryMusic.lyricWithTime,
-    status: diaryMusic.status,
-  } : undefined);
+  // Fetch all diaries and find the one we need (if editing existing diary)
+  const allDiaries = useQuery(api.diaries.listDiaries);
+  const currentDiary = route.params?.diaryId 
+    ? allDiaries?.find(d => d._id === route.params.diaryId)
+    : undefined;
 
-  // Update body state when currentDiary loads (for read mode when navigating without content param)
+  // Update body state when currentDiary loads (when navigating without content param)
   useEffect(() => {
-    if (currentDiary?.content && !route.params?.content && !isEditing) {
+    if (currentDiary?.content && !route.params?.content) {
       setBody(currentDiary.content);
     }
-  }, [currentDiary?.content, route.params?.content, isEditing]);
+  }, [currentDiary?.content, route.params?.content]);
 
   const [savedDiaryId, setSavedDiaryId] = useState<Id<'diaries'> | null>(
     route.params?.diaryId || null
   );
 
   const handleDone = async () => {
-    const trimmed = body.trim();
-
     if (!trimmed) {
       navigation.goBack();
       return;
@@ -111,14 +94,21 @@ export const DiaryEditScreen = () => {
       setIsSaving(true);
       if (route.params?.diaryId) {
         await updateDiary({ diaryId: route.params.diaryId, content: trimmed });
+        // Update original content to reflect saved state
+        originalContentRef.current = trimmed;
+        setIsTextDirty(false);
         navigation.goBack();
       } else {
         const result = await createDiary({ content: trimmed });
         setSavedDiaryId(result._id);
         // Update route params so media upload can work
         navigation.setParams({ diaryId: result._id, content: trimmed });
-        // Don't navigate back immediately - allow user to add media
-        // navigation.goBack();
+        // Update original content to reflect saved state
+        originalContentRef.current = trimmed;
+        setIsTextDirty(false);
+        
+        // Navigate to View instead of back to List
+        navigation.replace('DiaryView', { diaryId: result._id });
       }
     } catch {
       Alert.alert('Unable to save entry', 'Please try again.');
@@ -128,8 +118,6 @@ export const DiaryEditScreen = () => {
   };
 
   const handleGenerateMusic = async () => {
-    const trimmed = body.trim();
-
     if (!trimmed) {
       Alert.alert('Add some words first', 'Write a diary entry before generating music.');
       return;
@@ -141,9 +129,15 @@ export const DiaryEditScreen = () => {
       setIsSaving(true);
       if (route.params?.diaryId) {
         await updateDiary({ diaryId: route.params.diaryId, content: trimmed });
+        // Update original content to reflect saved state
+        originalContentRef.current = trimmed;
+        setIsTextDirty(false);
       } else {
         const result = await createDiary({ content: trimmed });
         diaryId = result._id;
+        // Update original content to reflect saved state
+        originalContentRef.current = trimmed;
+        setIsTextDirty(false);
       }
     } catch {
       Alert.alert('Unable to save entry', 'Please try again.');
@@ -180,15 +174,14 @@ export const DiaryEditScreen = () => {
               diaryId: diaryId,
               content: trimmed,
             });
-            // Keep editing mode enabled so user can see/edit the diary
-            setIsEditing(true);
+            // Keep user on the edit screen so they can see/edit the diary
           }
-          
+
           // Show error message with usage details before paywall
           // Use usage data from Convex to get effective limit (handles yearly monthly credits correctly)
           const effectiveLimit = usageData?.musicLimit ?? subscriptionStatus?.musicLimit ?? 0;
           const tier = subscriptionStatus?.tier ?? usageData?.tier ?? 'free';
-          
+
           // For yearly subscriptions, show "monthly" in the message since they reset monthly
           let tierDisplayName: string;
           let periodDisplayName: string;
@@ -199,13 +192,13 @@ export const DiaryEditScreen = () => {
             tierDisplayName = tier === 'free' ? 'free' : tier === 'weekly' ? 'weekly' : tier === 'monthly' ? 'monthly' : 'yearly';
             periodDisplayName = tierDisplayName;
           }
-          
+
           // Show error message (PaywallModal handles preventing double presentation)
           if (!showPaywall) {
             Alert.alert(
               'Credits Exhausted',
               `You've used all ${effectiveLimit} of your ${periodDisplayName} music generation${effectiveLimit === 1 ? '' : 's'}.
-               Your diary entry has been saved. Upgrade to generate music for this entry. or reach out to support@eveoky.com`,
+               Your diary entry has been saved. Upgrade to generate music for this entry or reach out to support@eveoky.com`,
               [
                 {
                   text: 'OK',
@@ -255,144 +248,295 @@ export const DiaryEditScreen = () => {
     }
   };
 
-  const handlePlayMusic = async () => {
-    if (!primaryMusic?.audioUrl) return;
+  const diaryMedia = useQuery(api.diaryMedia.getDiaryMedia,
+    (route.params?.diaryId || savedDiaryId) ? { diaryId: (route.params?.diaryId || savedDiaryId)! } : "skip"
+  );
+  // Track whether the diaryMedia query has finished loading
+  // In Convex, undefined means still loading, defined (even if empty array) means loaded
+  const diaryMediaLoaded = diaryMedia !== undefined;
+  const hasMedia = diaryMediaLoaded && (diaryMedia?.length ?? 0) > 0;
 
-    try {
-      const track = {
-        id: primaryMusic._id,
-        url: primaryMusic.audioUrl,
-        title: primaryMusic.title ?? 'Untitled Track',
-        artist: currentDiary?.date ? format(new Date(currentDiary.date), 'PPP') : 'Music Diary',
-        artwork: primaryMusic.imageUrl,
-        lyrics: primaryMusic.lyric,
-        lyricWithTime: primaryMusic.lyricWithTime || currentDiary?.primaryMusic?.lyricWithTime,
-      };
-
-      // Reset queue and add track
-      await TrackPlayer.reset();
-      await TrackPlayer.add(track);
-
-      // Verify the track was added before playing
-      const queue = await TrackPlayer.getQueue();
-      if (queue.length > 0) {
-        await TrackPlayer.skip(0);
-        await TrackPlayer.play();
-
-        const loadPlaylist = useTrackPlayerStore.getState().loadPlaylist;
-        loadPlaylist([track], 0);
-      } else {
-        console.error('Failed to add track to queue');
-      }
-    } catch (error) {
-      console.error('Failed to start playback', error);
-      Alert.alert('Playback Error', 'Unable to play this track. Please try again.');
+  const initialDiaryIdRef = useRef(route.params?.diaryId);
+  const isNavigatingBackRef = useRef(false);
+  // Track original content for existing diaries to detect changes
+  // Initialize synchronously based on available data
+  const originalContentRef = useRef<string>(
+    (route.params?.diaryId && currentDiary?.content)
+      ? currentDiary.content.trim()
+      : (route.params?.content ? route.params.content.trim() : '')
+  );
+  
+  // Update original content when diary loads or editing starts
+  useEffect(() => {
+    // Case 1: Editing existing diary - diary data has loaded, use its content
+    if (route.params?.diaryId && currentDiary?.content) {
+      originalContentRef.current = currentDiary.content.trim();
+      setIsTextDirty(trimmed !== currentDiary.content.trim());
+    // Case 2: Editing existing diary - content passed via params but diary still loading
+    // This handles the case where we navigate with content param before currentDiary loads
+    } else if (route.params?.content) {
+      originalContentRef.current = route.params.content.trim();
+      setIsTextDirty(trimmed !== route.params.content.trim());
+    // Case 3: Existing diary not yet loaded - wait for currentDiary to load
+    // originalContentRef will be updated when currentDiary loads (Case 1)
+    } else if (route.params?.diaryId && !currentDiary) {
+      originalContentRef.current = '';
+      setIsTextDirty(false);
+    // Case 4: New diary entry - no diaryId means this is a fresh entry
+    } else if (!route.params?.diaryId) {
+      originalContentRef.current = '';
+      setIsTextDirty(false);
     }
+  }, [route.params?.diaryId, route.params?.content, currentDiary?.content, currentDiary, trimmed]);
+
+  useEffect(() => {
+    setIsTextDirty(trimmed !== originalContentRef.current);
+  }, [trimmed]);
+  
+  const currentId = route.params?.diaryId || savedDiaryId;
+  
+  // Show warning dialogs for new diaries that currently have media attached.
+  const shouldWarnBecauseOfMedia = Boolean(
+    currentId &&
+    diaryMediaLoaded &&
+    !initialDiaryIdRef.current &&
+    hasMedia
+  );
+
+  // Silently clean up newly created diaries that have no text and no media.
+  const shouldSilentlyDeleteEmptyNewDiary = Boolean(
+    currentId &&
+    !trimmed &&
+    diaryMediaLoaded &&
+    !hasMedia &&
+    !initialDiaryIdRef.current
+  );
+
+  // Prevent native swipe back when we need to show the alert
+  // This ensures the alert shows BEFORE the screen is removed
+  // Prevent if:
+  // 1. New diary with text (regardless of media or whether diary was created) - needs warning before discarding
+  // 2. Existing diary with unsaved changes - needs warning before discarding
+  // 3. New diary that currently has media or previously had media this session
+  const shouldPreventRemove = !!(
+    (trimmed && !initialDiaryIdRef.current) ||
+    (initialDiaryIdRef.current && isTextDirty) ||
+    shouldWarnBecauseOfMedia
+  );
+
+  useEffect(() => {
+    navigation.setOptions({
+      gestureEnabled: !shouldPreventRemove,
+    });
+  }, [navigation, shouldPreventRemove]);
+
+  // Helper function to show discard dialog and handle navigation confirmation
+  const showDiscardDialog = useCallback(async (
+    onConfirm: () => void
+  ): Promise<boolean> => {
+    // If we are saving or generating, don't interrupt
+    if (isSaving || isGenerating) {
+      return false;
+    }
+
+    // First check: If it's a NEW entry (not editing existing one passed via params initially)
+    // and it has text, show discard warning (regardless of media or whether diary was created)
+    if (trimmed && !initialDiaryIdRef.current) {
+      return new Promise((resolve) => {
+        Alert.alert(
+          'Discard Entry?',
+          currentId 
+            ? 'You have written content but haven\'t saved. Going back will delete this entry.'
+            : 'You have written content but haven\'t saved. Going back will discard your changes.',
+          [
+            { text: 'Keep Editing', style: 'cancel', onPress: () => resolve(false) },
+            {
+              text: 'Discard',
+              style: 'destructive',
+              onPress: async () => {
+                // Only delete if diary was already created
+                if (currentId) {
+                  try {
+                    await deleteDiary({ diaryId: currentId });
+                  } catch (err) {
+                    // Handle gracefully if diary was already deleted
+                    const errorMessage = err instanceof Error ? err.message : String(err);
+                    if (!errorMessage.includes('Diary not found')) {
+                      console.error('Failed to delete diary', err);
+                    }
+                  }
+                }
+                onConfirm();
+                resolve(true);
+              },
+            },
+          ]
+        );
+      });
+    } else if (initialDiaryIdRef.current && isTextDirty) {
+      // Existing diary with unsaved changes - show warning
+      return new Promise((resolve) => {
+        Alert.alert(
+          'Discard Changes?',
+          'You have unsaved changes. Going back will discard your edits.',
+          [
+            { text: 'Keep Editing', style: 'cancel', onPress: () => resolve(false) },
+            {
+              text: 'Discard',
+              style: 'destructive',
+              onPress: () => {
+                onConfirm();
+                resolve(true);
+              },
+            },
+          ]
+        );
+      });
+    } else if (shouldWarnBecauseOfMedia) {
+      return new Promise((resolve) => {
+        Alert.alert(
+          'Discard Entry?',
+          'You have uploaded media but haven\'t written anything. Going back will delete this entry and its media.',
+          [
+            { text: 'Keep Editing', style: 'cancel', onPress: () => resolve(false) },
+            {
+              text: 'Discard',
+              style: 'destructive',
+              onPress: async () => {
+                try {
+                  await deleteDiary({ diaryId: currentId! });
+                } catch (err) {
+                  // Handle gracefully if diary was already deleted
+                  const errorMessage = err instanceof Error ? err.message : String(err);
+                  if (!errorMessage.includes('Diary not found')) {
+                    console.error('Failed to delete empty diary', err);
+                  }
+                }
+                onConfirm();
+                resolve(true);
+              },
+            },
+          ]
+        );
+      });
+    } else if (shouldSilentlyDeleteEmptyNewDiary) {
+      // If it was a NEW entry (not editing existing one passed via params initially)
+      // and it's empty and has no media (and media query has finished loading),
+      // we should delete it silently because it was likely lazily created but user changed mind.
+      // However, if we just do nothing, it stays as an empty diary.
+      // Let's delete it silently to keep DB clean.
+      
+      // Note: We can't easily await here before dispatching, so we fire and forget
+      // or we preventDefault, delete, then dispatch.
+      deleteDiary({ diaryId: currentId })
+        .catch(err => {
+          // Handle gracefully if diary was already deleted
+          const errorMessage = err instanceof Error ? err.message : String(err);
+          if (!errorMessage.includes('Diary not found')) {
+            console.error('Failed to cleanup empty diary', err);
+          }
+        })
+        .finally(() => {
+          onConfirm();
+        });
+      // Return false to indicate navigation should be prevented (will be handled in finally)
+      return false;
+    } else {
+      // Normal case - just proceed
+      onConfirm();
+      return true;
+    }
+  }, [isSaving, isGenerating, trimmed, currentId, deleteDiary, isTextDirty, shouldWarnBecauseOfMedia, shouldSilentlyDeleteEmptyNewDiary]);
+
+  // Handle back navigation with appropriate warnings/cleanup
+  const handleBackPress = async () => {
+    await showDiscardDialog(() => {
+      // Mark that we're navigating back programmatically to prevent beforeRemove from handling it
+      isNavigatingBackRef.current = true;
+      navigation.goBack();
+    });
   };
 
-  if (!isEditing && route.params?.diaryId) {
-    return (
-      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 20, paddingBottom: 24 }}
-        >
-          <View className="mt-1 mb-6 flex-row items-center justify-between">
-            <Pressable onPress={() => navigation.goBack()}>
-              <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-            </Pressable>
-            <Pressable onPress={() => setIsEditing(true)}>
-              <Text className="text-base font-semibold" style={{ color: colors.accentMint }}>
-                Edit
-              </Text>
-            </Pressable>
-          </View>
+  // Intercept back navigation
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', async (e) => {
+      // If we're already handling navigation programmatically (via back button), skip
+      if (isNavigatingBackRef.current) {
+        // Reset the flag for next time
+        isNavigatingBackRef.current = false;
+        return;
+      }
 
-          {currentDiary?.date && (
-            <Text className="text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-              {format(new Date(currentDiary.date), 'MMMM d, yyyy')}
-            </Text>
-          )}
+      const shouldProceed = await showDiscardDialog(() => {
+        // Dispatch the action to go back
+        navigation.dispatch(e.data.action);
+      });
 
-          <Text className="text-2xl font-semibold mb-6" style={{ color: colors.textPrimary }}>
-            {currentDiary?.title ?? 'A Day of Reflection'}
-          </Text>
+      if (!shouldProceed) {
+        e.preventDefault();
+      }
+    });
 
-          <Text className="text-base leading-7 mb-8" style={{ color: colors.textPrimary }}>
-            {currentDiary?.content ?? body}
-          </Text>
+    return unsubscribe;
+  }, [navigation, showDiscardDialog]);
 
-          {/* Media Display */}
-          {route.params?.diaryId && (
-            <View className="mb-6">
-              <DiaryMediaGrid diaryId={route.params.diaryId} editable={false} />
-            </View>
-          )}
+  const handleEnsureDiaryId = async (): Promise<Id<'diaries'> | null> => {
+    if (route.params?.diaryId) return route.params.diaryId;
+    if (savedDiaryId) return savedDiaryId;
 
-          {primaryMusic && (
-            <View className="mb-6">
-              <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
-                My Vibe
-              </Text>
-              <View className="rounded-3xl overflow-hidden" style={{ backgroundColor: colors.surface }}>
-                <Pressable
-                  className="flex-row items-center p-4"
-                  onPress={handlePlayMusic}
-                  disabled={primaryMusic.status !== 'ready' || !primaryMusic.audioUrl}
-                >
-                  {primaryMusic.imageUrl ? (
-                    <Image source={{ uri: primaryMusic.imageUrl }} className="h-16 w-16 rounded-2xl" />
-                  ) : (
-                    <View
-                      className="h-16 w-16 items-center justify-center rounded-2xl"
-                      style={{ backgroundColor: colors.card }}
-                    >
-                      <Ionicons name="musical-note" size={24} color={colors.textSecondary} />
-                    </View>
-                  )}
+    try {
+      setIsSaving(true);
+      // Even if empty, we might need to create it to attach media? 
+      // Or should we require some text? Let's allow empty text if they are adding media.
+      // But createDiary might fail if we have validation. 
+      // Let's assume empty content is allowed or default to empty string.
 
-                  <View className="ml-4 flex-1">
-                    <Text className="text-base font-semibold mb-1" style={{ color: colors.textPrimary }}>
-                      {primaryMusic.title ?? 'Untitled Track'}
-                    </Text>
-                    <Text className="text-xs" style={{ color: colors.textSecondary }}>
-                      JournalSounds
-                    </Text>
-                  </View>
-
-                  <View
-                    className="h-12 w-12 items-center justify-center rounded-full"
-                    style={{ backgroundColor: primaryMusic.status === 'ready' ? colors.accentMint : colors.card }}
-                  >
-                    <Ionicons
-                      name={primaryMusic.status === 'ready' ? 'play' : primaryMusic.status === 'pending' ? 'time-outline' : 'alert-circle-outline'}
-                      size={20}
-                      color={primaryMusic.status === 'ready' ? colors.background : colors.textSecondary}
-                    />
-                  </View>
-                </Pressable>
-              </View>
-            </View>
-          )}
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
+      const result = await createDiary({ content: trimmed });
+      setSavedDiaryId(result._id);
+      navigation.setParams({ diaryId: result._id, content: trimmed });
+      return result._id;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Unable to create diary', error, errorMessage);
+      Alert.alert('Unable to create diary', 'Please try again.');
+      return null;
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
-          contentContainerStyle={{ 
-            flexGrow: 1, 
+          contentContainerStyle={{
+            flexGrow: 1,
             paddingHorizontal: 20,
             paddingBottom: bottomPadding,
           }}
           keyboardShouldPersistTaps="handled"
         >
+          <View className="mt-1 mb-6 flex-row items-center justify-between">
+            <Pressable onPress={handleBackPress} testID="back-button">
+              <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+            </Pressable>
+            <View className="flex-1" />
+          </View>
+
           <View className="mt-1">
-            <Text className="text-2xl font-semibold" style={{ color: colors.textPrimary }}>
-              {route.params?.diaryId ? 'Edit Entry' : 'New Entry'}
-            </Text>
+            <View className="flex-row items-center">
+              <Text className="text-2xl font-semibold" style={{ color: colors.textPrimary }}>
+                {route.params?.diaryId ? 'Edit Entry' : 'New Entry'}
+              </Text>
+              {isTextDirty && (
+                <View
+                  testID="text-dirty-indicator"
+                  accessibilityLabel="Unsaved text changes"
+                  className="ml-2 h-2 w-2 rounded-full"
+                  style={{ backgroundColor: colors.accentMint }}
+                />
+              )}
+            </View>
             <Text className="mt-1 text-sm" style={{ color: colors.textSecondary }}>
               Capture your thoughts and transform them into music.
             </Text>
@@ -422,7 +566,7 @@ export const DiaryEditScreen = () => {
                   setStyle(randomStyles.join(', '));
                 }}
                 className="px-3 py-1.5 rounded-lg"
-                style={{ 
+                style={{
                   backgroundColor: colors.scheme === 'light' ? colors.accentMint : colors.card,
                 }}
                 activeOpacity={0.7}
@@ -445,17 +589,16 @@ export const DiaryEditScreen = () => {
           </View>
 
           {/* Media Upload Section */}
-          {(route.params?.diaryId || savedDiaryId) && (
-            <View className="mt-4">
-              <MediaUploadButton
-                diaryId={(route.params?.diaryId || savedDiaryId)!}
-                onUploadComplete={() => {
-                  // Media will automatically refresh via the query
-                }}
-              />
-              <DiaryMediaGrid diaryId={(route.params?.diaryId || savedDiaryId)!} editable={true} />
-            </View>
-          )}
+          <View className="mt-4">
+            <MediaUploadButton
+              diaryId={route.params?.diaryId || savedDiaryId || undefined}
+              onEnsureDiaryId={handleEnsureDiaryId}
+              onUploadComplete={() => {
+                // Media will automatically refresh via the query
+              }}
+            />
+            <DiaryMediaGrid diaryId={route.params?.diaryId || savedDiaryId || undefined} editable={true} />
+          </View>
 
           {/* Usage Progress - Only show for free tier */}
           {subscriptionStatus?.tier === 'free' && (
@@ -468,7 +611,7 @@ export const DiaryEditScreen = () => {
           )}
 
           {/* Action buttons - positioned relative to textbox */}
-          <View 
+          <View
             className="mt-6 flex-row gap-4"
             onLayout={(event) => {
               const { height } = event.nativeEvent.layout;
@@ -483,7 +626,7 @@ export const DiaryEditScreen = () => {
               disabled={isSaving || isGenerating}
             >
               <Text className="text-base font-semibold" style={{ color: colors.textPrimary }}>
-                {isSaving ? 'Saving...' : 'Done'}
+                {isSaving ? 'Saving...' : 'Save'}
               </Text>
             </TouchableOpacity>
 
@@ -501,7 +644,7 @@ export const DiaryEditScreen = () => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-      
+
       {/* Paywall Modal */}
       <PaywallModal
         visible={showPaywall}

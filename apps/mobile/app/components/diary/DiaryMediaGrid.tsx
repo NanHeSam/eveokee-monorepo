@@ -8,7 +8,7 @@ import { useThemeColors } from '../../theme/useThemeColors';
 import Video from 'react-native-video';
 
 type DiaryMediaGridProps = {
-  diaryId: Id<'diaries'>;
+  diaryId?: Id<'diaries'>;
   editable?: boolean;
 };
 
@@ -20,7 +20,7 @@ type MediaItem = {
 
 export const DiaryMediaGrid = ({ diaryId, editable = false }: DiaryMediaGridProps) => {
   const colors = useThemeColors();
-  const media = useQuery(api.diaryMedia.getDiaryMedia, { diaryId });
+  const media = useQuery(api.diaryMedia.getDiaryMedia, diaryId ? { diaryId } : "skip");
   const deleteMedia = useMutation(api.diaryMedia.deleteDiaryMedia);
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
   const [isViewerVisible, setIsViewerVisible] = useState(false);

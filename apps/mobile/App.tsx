@@ -14,6 +14,7 @@ import { View, Platform } from 'react-native';
 
 import { DiaryScreen } from './app/screens/DiaryScreen';
 import { DiaryEditScreen } from './app/screens/DiaryEditScreen';
+import { DiaryViewScreen } from './app/screens/DiaryViewScreen';
 import { PlaylistScreen } from './app/screens/PlaylistScreen';
 import { SettingsScreen } from './app/screens/SettingsScreen';
 import { AccountScreen } from './app/screens/AccountScreen';
@@ -74,6 +75,7 @@ const Tab = createBottomTabNavigator();
 const DiaryStackNavigator = () => (
   <DiaryStack.Navigator screenOptions={{ headerShown: false }}>
     <DiaryStack.Screen name="DiaryHome" component={DiaryScreen} />
+    <DiaryStack.Screen name="DiaryView" component={DiaryViewScreen} />
     <DiaryStack.Screen name="DiaryEdit" component={DiaryEditScreen} />
   </DiaryStack.Navigator>
 );

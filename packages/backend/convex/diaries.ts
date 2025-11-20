@@ -98,6 +98,11 @@ export const updateDiary = mutation({
  * 
  * WARNING: This permanently deletes the diary, all associated music tracks,
  * and all associated media storage objects.
+ * 
+ * NOTE: This operation is idempotent. If the diary is already deleted or
+ * doesn't exist, the function returns null without throwing an error. This
+ * allows safe retry behavior and matches UI flows that may call delete on
+ * already-removed entries.
  */
 export const deleteDiary = mutation({
   args: {
@@ -111,7 +116,8 @@ export const deleteDiary = mutation({
     // Step 2: Verify ownership
     const diary = await ctx.db.get(args.diaryId);
     if (!diary) {
-      throw new Error("Diary not found");
+      // Diary already deleted or doesn't exist - idempotent operation, return silently
+      return null;
     }
 
     if (userId !== diary.userId) {
@@ -170,6 +176,130 @@ export const createDiaryInternal = internalMutation({
     });
 
     return { _id };
+  },
+});
+
+/**
+ * Get a single diary entry by ID with its associated music
+ * 
+ * Steps:
+ * 1. Authenticate user and get userId
+ * 2. Fetch diary record and verify ownership
+ * 3. Fetch associated primary music if available
+ * 
+ * Returns the diary with its primary music, or null if not found or user doesn't own it.
+ */
+export const getDiary = query({
+  args: {
+    diaryId: v.id("diaries"),
+  },
+  returns: v.union(
+    v.object({
+      _id: v.id("diaries"),
+      userId: v.id("users"),
+      title: v.optional(v.string()),
+      content: v.string(),
+      date: v.number(),
+      primaryMusicId: v.optional(v.id("music")),
+      updatedAt: v.number(),
+      primaryMusic: v.optional(
+        v.object({
+          _id: v.id("music"),
+          title: v.optional(v.string()),
+          imageUrl: v.optional(v.string()),
+          audioUrl: v.optional(v.string()),
+          duration: v.optional(v.number()),
+          lyric: v.optional(v.string()),
+          lyricWithTime: v.optional(
+            v.object({
+              alignedWords: v.array(
+                v.object({
+                  word: v.string(),
+                  startS: v.number(),
+                  endS: v.number(),
+                  palign: v.number(),
+                }),
+              ),
+              waveformData: v.array(v.number()),
+              hootCer: v.number(),
+            }),
+          ),
+          status: v.union(
+            v.literal("pending"),
+            v.literal("ready"),
+            v.literal("failed"),
+          ),
+        }),
+      ),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const authResult = await getOptionalCurrentUser(ctx);
+    if (!authResult) {
+      return null;
+    }
+    const { userId } = authResult;
+
+    // Fetch diary and verify ownership
+    const diary = await ctx.db.get(args.diaryId);
+    if (!diary || diary.userId !== userId) {
+      return null;
+    }
+
+    // Fetch primary music if available
+    let primaryMusic: {
+      _id: Id<"music">;
+      title?: string;
+      imageUrl?: string;
+      audioUrl?: string;
+      duration?: number;
+      lyric?: string;
+      lyricWithTime?: {
+        alignedWords: Array<{
+          word: string;
+          startS: number;
+          endS: number;
+          palign: number;
+        }>;
+        waveformData: number[];
+        hootCer: number;
+      };
+      status: "pending" | "ready" | "failed";
+    } | undefined;
+
+    if (diary.primaryMusicId) {
+      const music = await ctx.db.get(diary.primaryMusicId);
+      if (music) {
+        const imageUrl = music.imageUrl ?? music.metadata?.source_image_url;
+        const audioUrl =
+          music.audioUrl ??
+          music.metadata?.stream_audio_url ??
+          music.metadata?.source_audio_url;
+
+        primaryMusic = {
+          _id: music._id,
+          title: music.title,
+          imageUrl: imageUrl,
+          audioUrl: audioUrl,
+          duration: music.duration,
+          lyric: music.lyric,
+          lyricWithTime: music.lyricWithTime,
+          status: music.status,
+        };
+      }
+    }
+
+    return {
+      _id: diary._id,
+      userId: diary.userId,
+      title: diary.title,
+      content: diary.content,
+      date: diary.date,
+      primaryMusicId: diary.primaryMusicId,
+      updatedAt: diary.updatedAt,
+      primaryMusic,
+    };
   },
 });
 

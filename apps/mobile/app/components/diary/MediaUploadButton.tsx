@@ -8,11 +8,12 @@ import { Id } from '@backend/convex/convex/_generated/dataModel';
 import { useThemeColors } from '../../theme/useThemeColors';
 
 type MediaUploadButtonProps = {
-  diaryId: Id<'diaries'>;
+  diaryId?: Id<'diaries'>;
   onUploadComplete?: () => void;
+  onEnsureDiaryId?: () => Promise<Id<'diaries'> | null>;
 };
 
-export const MediaUploadButton = ({ diaryId, onUploadComplete }: MediaUploadButtonProps) => {
+export const MediaUploadButton = ({ diaryId, onUploadComplete, onEnsureDiaryId }: MediaUploadButtonProps) => {
   const colors = useThemeColors();
   const [isUploading, setIsUploading] = useState(false);
   const generateUploadUrl = useAction(api.diaryMedia.generateUploadUrl);
@@ -31,7 +32,7 @@ export const MediaUploadButton = ({ diaryId, onUploadComplete }: MediaUploadButt
     return true;
   };
 
-  const uploadFile = async (uri: string, mediaType: 'photo' | 'video') => {
+  const uploadFile = async (uri: string, mediaType: 'photo' | 'video', targetDiaryId: Id<'diaries'>) => {
     try {
       // Get upload URL
       const uploadUrl = await generateUploadUrl();
@@ -61,7 +62,7 @@ export const MediaUploadButton = ({ diaryId, onUploadComplete }: MediaUploadButt
 
       // Create diaryMedia record
       await createDiaryMedia({
-        diaryId,
+        diaryId: targetDiaryId,
         storageId: uploadResult.storageId as Id<'_storage'>,
         mediaType,
         contentType: blob.type,
@@ -79,24 +80,42 @@ export const MediaUploadButton = ({ diaryId, onUploadComplete }: MediaUploadButt
     const hasPermission = await requestPermissions();
     if (!hasPermission) return;
 
-    setIsUploading(true);
-
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        mediaTypes: ['images', 'videos'],
         allowsMultipleSelection: true,
         quality: 0.8,
       });
 
       if (result.canceled) {
-        setIsUploading(false);
         return;
       }
+
+      // Ensure we have a diary ID before uploading
+      // If we don't have one, try to get one now (only if user actually picked something)
+      let targetDiaryId = diaryId;
+
+      if (!targetDiaryId) {
+        if (onEnsureDiaryId) {
+          const newId = await onEnsureDiaryId();
+          if (newId) {
+            targetDiaryId = newId;
+          } else {
+            // User cancelled or failed to create diary
+            return;
+          }
+        } else {
+          console.error('No diaryId and no onEnsureDiaryId provided');
+          return;
+        }
+      }
+
+      setIsUploading(true);
 
       // Upload each selected file
       const uploadPromises = result.assets.map((asset) => {
         const mediaType = asset.type === 'video' ? 'video' : 'photo';
-        return uploadFile(asset.uri, mediaType);
+        return uploadFile(asset.uri, mediaType, targetDiaryId!);
       });
 
       await Promise.all(uploadPromises);
