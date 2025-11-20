@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 import { getAndroidBetaLink } from "@/utils/deviceUtils";
 import AndroidInviteForm from "@/components/AndroidInviteForm";
 import IOSAppStoreButton from "@/components/IOSAppStoreButton";
+import { Head } from "@/components/Head";
 
 const formatDuration = (seconds?: number): string => {
   if (!seconds) return "0:00";
@@ -194,8 +195,14 @@ export default function Share() {
   };
 
   return (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+    <>
+      <Head 
+        title={sharedMusic.title ? `${sharedMusic.title} | eveokee` : 'eveokee - share music'}
+        description={sharedMusic.lyric ? sharedMusic.lyric.slice(0, 160) : 'Listen to this music shared on eveokee'}
+        ogImage={sharedMusic.imageUrl}
+      />
+      <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 px-4 py-8 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
         <div className="lg:grid lg:grid-cols-2 lg:gap-8 bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden">
           {sharedMusic.imageUrl && (
             <div className="relative w-full aspect-square lg:aspect-[3/4] overflow-hidden">
@@ -362,6 +369,7 @@ export default function Share() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
