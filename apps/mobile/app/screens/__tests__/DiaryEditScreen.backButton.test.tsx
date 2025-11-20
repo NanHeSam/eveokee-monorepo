@@ -198,24 +198,6 @@ describe('DiaryEditScreen - Back Button Logic', () => {
     };
   };
 
-  const triggerBackButton = () => {
-    const { getByTestId } = renderComponent();
-    // Find the back button (we'll need to add testID to it)
-    const backButton = getByTestId('back-button');
-    fireEvent.press(backButton);
-  };
-
-  const triggerBeforeRemove = (eventData = {}) => {
-    const callback = (mockNavigation as any).beforeRemoveCallback;
-    if (callback) {
-      callback({
-        preventDefault: jest.fn(),
-        data: { action: { type: 'GO_BACK' } },
-        ...eventData,
-      });
-    }
-  };
-
   describe('Media + No Text scenarios', () => {
     const renderExistingDiaryWithMedia = () => {
       (useQuery as jest.Mock).mockImplementation((apiPath) => {
@@ -629,27 +611,49 @@ describe('DiaryEditScreen - Back Button Logic', () => {
 
   describe('Programmatic navigation flag', () => {
     it('should skip beforeRemove handler when navigating programmatically', async () => {
-      renderNewDiaryAfterMediaUpload();
+      mockDeleteDiary.mockResolvedValue(null);
+      let alertButtons: any[] = [];
+      (Alert.alert as jest.Mock).mockImplementation((title, message, buttons) => {
+        alertButtons = buttons;
+      });
 
+      const { getByTestId } = renderNewDiaryAfterMediaUpload();
+
+      // First, trigger back button press which calls handleBackPress
+      // This should show an alert for new diary with media
+      fireEvent.press(getByTestId('back-button'));
+
+      await waitFor(() => {
+        expect(Alert.alert).toHaveBeenCalled();
+      });
+
+      // User clicks "Discard" - this sets isNavigatingBackRef.current = true
+      // and calls navigation.goBack() after async deleteDiary completes
+      const discardButton = alertButtons.find((btn) => btn.text === 'Discard');
+      await discardButton?.onPress?.();
+
+      // Wait for deleteDiary to complete
+      await waitFor(() => {
+        expect(mockDeleteDiary).toHaveBeenCalled();
+      });
+
+      // Reset alert mock to verify it's not called again
+      (Alert.alert as jest.Mock).mockClear();
+
+      // Now simulate the beforeRemove event that would be triggered by navigation.goBack()
+      // The handler should skip because isNavigatingBackRef.current was set to true
       const callback = (mockNavigation as any).beforeRemoveCallback;
       const mockEvent = {
         preventDefault: jest.fn(),
         data: { action: { type: 'GO_BACK' } },
       };
 
-      // First call - should show alert
       callback(mockEvent);
-      await waitFor(() => {
-        expect(Alert.alert).toHaveBeenCalled();
-      });
 
-      // Reset alert mock
-      (Alert.alert as jest.Mock).mockClear();
-
-      // Simulate programmatic navigation by setting the flag
-      // In real code, handleBackPress sets isNavigatingBackRef.current = true
-      // Then when navigation.goBack() triggers beforeRemove, it should skip
-      // This is harder to test directly, but the logic is there
+      // The handler should have skipped, so alert should not be shown again
+      // and preventDefault should not have been called
+      expect(Alert.alert).not.toHaveBeenCalled();
+      expect(mockEvent.preventDefault).not.toHaveBeenCalled();
     });
   });
 

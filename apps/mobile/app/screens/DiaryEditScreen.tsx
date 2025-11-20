@@ -198,7 +198,7 @@ export const DiaryEditScreen = () => {
             Alert.alert(
               'Credits Exhausted',
               `You've used all ${effectiveLimit} of your ${periodDisplayName} music generation${effectiveLimit === 1 ? '' : 's'}.
-               Your diary entry has been saved. Upgrade to generate music for this entry. or reach out to support@eveoky.com`,
+               Your diary entry has been saved. Upgrade to generate music for this entry or reach out to support@eveoky.com`,
               [
                 {
                   text: 'OK',
@@ -278,7 +278,7 @@ export const DiaryEditScreen = () => {
       originalContentRef.current = '';
       setIsTextDirty(false);
     }
-  }, [route.params?.diaryId, route.params?.content, currentDiary?.content]);
+  }, [route.params?.diaryId, route.params?.content, currentDiary?.content, currentDiary]);
 
   useEffect(() => {
     setIsTextDirty(trimmed !== originalContentRef.current);
@@ -573,7 +573,9 @@ export const DiaryEditScreen = () => {
       navigation.setParams({ diaryId: result._id, content: trimmed });
       return result._id;
     } catch (error) {
-      Alert.alert('Unable to create diary', 'error: ' + error.message + ' Please try again.');
+      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      Alert.alert('Unable to create diary', `${errorMessage} Please try again.`);
       return null;
     } finally {
       setIsSaving(false);

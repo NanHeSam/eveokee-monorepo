@@ -19,26 +19,10 @@ export const DiaryViewScreen = () => {
   
   const { diaryId } = route.params;
 
-  // Fetch all diaries and find the one we need
-  const allDiaries = useQuery(api.diaries.listDiaries);
-  const currentDiary = allDiaries?.find(d => d._id === diaryId);
+  // Fetch the specific diary by ID
+  const currentDiary = useQuery(api.diaries.getDiary, { diaryId });
 
-  // Fetch all music and find the one for this diary
-  const allMusic = useQuery(api.music.listPlaylistMusic);
-  const diaryMusic = allMusic?.find(m => m.diaryId === diaryId);
-
-  const primaryMusic = currentDiary?.primaryMusic || (diaryMusic
-    ? {
-        _id: diaryMusic._id,
-        title: diaryMusic.title,
-        imageUrl: diaryMusic.imageUrl,
-        audioUrl: diaryMusic.audioUrl,
-        duration: diaryMusic.duration,
-        lyric: diaryMusic.lyric,
-        lyricWithTime: diaryMusic.lyricWithTime,
-        status: diaryMusic.status,
-      }
-    : undefined);
+  const primaryMusic = currentDiary?.primaryMusic;
 
   const handlePlayMusic = async () => {
     if (!primaryMusic?.audioUrl) return;
@@ -68,12 +52,52 @@ export const DiaryViewScreen = () => {
         loadPlaylist([track], 0);
       } else {
         console.error('Failed to add track to queue');
+        Alert.alert('Playback Error', 'Unable to play this track. Please try again.');
       }
     } catch (error) {
       console.error('Failed to start playback', error);
       Alert.alert('Playback Error', 'Unable to play this track. Please try again.');
     }
   };
+
+  // Show loading state while query is in progress
+  if (currentDiary === undefined) {
+    return (
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-base" style={{ color: colors.textSecondary }}>
+            Loading...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Show not-found state when diary doesn't exist
+  if (currentDiary === null) {
+    return (
+      <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
+        <View className="flex-1 items-center justify-center px-6">
+          <Ionicons name="document-text-outline" size={64} color={colors.textSecondary} style={{ marginBottom: 16 }} />
+          <Text className="text-xl font-semibold mb-2" style={{ color: colors.textPrimary }}>
+            Diary Not Found
+          </Text>
+          <Text className="text-base text-center mb-6" style={{ color: colors.textSecondary }}>
+            This diary entry could not be found or you don't have permission to view it.
+          </Text>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            className="px-6 py-3 rounded-full"
+            style={{ backgroundColor: colors.accentMint }}
+          >
+            <Text className="text-base font-semibold" style={{ color: colors.background }}>
+              Go Back
+            </Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
@@ -84,25 +108,25 @@ export const DiaryViewScreen = () => {
           <Pressable onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
           </Pressable>
-          <Pressable onPress={() => navigation.navigate('DiaryEdit', { diaryId, content: currentDiary?.content, title: currentDiary?.title })}>
+          <Pressable onPress={() => navigation.navigate('DiaryEdit', { diaryId, content: currentDiary.content, title: currentDiary.title })}>
             <Text className="text-base font-semibold" style={{ color: colors.accentMint }}>
               Edit
             </Text>
           </Pressable>
         </View>
 
-        {currentDiary?.date && (
+        {currentDiary.date && (
           <Text className="text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
             {format(new Date(currentDiary.date), 'MMMM d, yyyy')}
           </Text>
         )}
 
         <Text className="text-2xl font-semibold mb-6" style={{ color: colors.textPrimary }}>
-          {currentDiary?.title ?? 'A Day of Reflection'}
+          {currentDiary.title ?? 'A Day of Reflection'}
         </Text>
 
         <Text className="text-base leading-7 mb-8" style={{ color: colors.textPrimary }}>
-          {currentDiary?.content}
+          {currentDiary.content}
         </Text>
 
         {/* Media Display */}
