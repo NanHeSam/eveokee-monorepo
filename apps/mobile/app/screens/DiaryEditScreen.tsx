@@ -259,16 +259,21 @@ export const DiaryEditScreen = () => {
   const initialDiaryIdRef = useRef(route.params?.diaryId);
   const isNavigatingBackRef = useRef(false);
   // Track original content for existing diaries to detect changes
-  const originalContentRef = useRef<string>('');
+  // Initialize synchronously based on available data
+  const originalContentRef = useRef<string>(
+    (route.params?.diaryId && currentDiary?.content)
+      ? currentDiary.content.trim()
+      : (route.params?.content ? route.params.content.trim() : '')
+  );
   
   // Update original content when diary loads or editing starts
   useEffect(() => {
     if (route.params?.diaryId && currentDiary?.content) {
       originalContentRef.current = currentDiary.content.trim();
-      setIsTextDirty(false);
+      setIsTextDirty(trimmed !== currentDiary.content.trim());
     } else if (route.params?.content) {
       originalContentRef.current = route.params.content.trim();
-      setIsTextDirty(false);
+      setIsTextDirty(trimmed !== route.params.content.trim());
     } else if (route.params?.diaryId && !currentDiary) {
       // Diary is loading, originalContentRef will be set when currentDiary loads
       originalContentRef.current = '';
@@ -278,7 +283,7 @@ export const DiaryEditScreen = () => {
       originalContentRef.current = '';
       setIsTextDirty(false);
     }
-  }, [route.params?.diaryId, route.params?.content, currentDiary?.content, currentDiary]);
+  }, [route.params?.diaryId, route.params?.content, currentDiary?.content, currentDiary, trimmed]);
 
   useEffect(() => {
     setIsTextDirty(trimmed !== originalContentRef.current);

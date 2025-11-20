@@ -83,7 +83,7 @@ export const DiaryViewScreen = () => {
             Diary Not Found
           </Text>
           <Text className="text-base text-center mb-6" style={{ color: colors.textSecondary }}>
-            This diary entry could not be found or you don't have permission to view it.
+            This diary entry could not be found or you don&apos;t have permission to view it.
           </Text>
           <Pressable
             onPress={() => navigation.goBack()}

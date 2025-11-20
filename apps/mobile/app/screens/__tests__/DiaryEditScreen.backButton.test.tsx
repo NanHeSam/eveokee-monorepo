@@ -1,6 +1,6 @@
 import React from 'react';
 import { Alert } from 'react-native';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { DiaryEditScreen } from '../DiaryEditScreen';
@@ -303,7 +303,15 @@ describe('DiaryEditScreen - Back Button Logic', () => {
 
     it('shows discard changes warning when existing text is edited', async () => {
       const { getByPlaceholderText } = renderExistingDiaryWithText();
-      fireEvent.changeText(getByPlaceholderText('Write your story...'), 'Updated text');
+      
+      await act(async () => {
+        fireEvent.changeText(getByPlaceholderText('Write your story...'), 'Updated text');
+      });
+
+      // Wait a bit for state updates to propagate
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 0));
+      });
 
       const callback = (mockNavigation as any).beforeRemoveCallback;
       const mockEvent = {
@@ -328,7 +336,15 @@ describe('DiaryEditScreen - Back Button Logic', () => {
       });
 
       const { getByPlaceholderText } = renderExistingDiaryWithText();
-      fireEvent.changeText(getByPlaceholderText('Write your story...'), 'Updated text');
+      
+      await act(async () => {
+        fireEvent.changeText(getByPlaceholderText('Write your story...'), 'Updated text');
+      });
+
+      // Wait a bit for state updates to propagate
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 0));
+      });
 
       const callback = (mockNavigation as any).beforeRemoveCallback;
       const mockEvent = {
