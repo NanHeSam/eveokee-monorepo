@@ -7,6 +7,7 @@ import { ArrowRight, CheckCircle } from 'lucide-react';
 import { getAndroidBetaLink } from '../utils/deviceUtils';
 import AndroidInviteForm from './AndroidInviteForm';
 import IOSAppStoreButton from './IOSAppStoreButton';
+import { motion, useReducedMotion } from 'framer-motion';
 
 export default function FinalCTASection() {
   const [email, setEmail] = useState('');
@@ -15,6 +16,7 @@ export default function FinalCTASection() {
   const [error, setError] = useState<string | null>(null);
   const posthog = usePostHog();
   const androidBetaLink = getAndroidBetaLink();
+  const shouldReduceMotion = useReducedMotion();
 
   const addEmailNotification = useMutation(api.emailNotify.addEmailNotification);
 
@@ -24,7 +26,7 @@ export default function FinalCTASection() {
       setError('Please enter a valid email (domain must include a dot).');
       return;
     }
-    
+
     setIsLoading(true);
     setError(null);
 
@@ -50,7 +52,12 @@ export default function FinalCTASection() {
     return (
       <section className="py-20 bg-gradient-to-br from-accent-mint to-accent-apricot dark:from-gray-800 dark:to-gray-700">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="bg-white dark:bg-gray-800 rounded-3xl p-12 shadow-2xl">
+          <motion.div
+            initial={{ scale: shouldReduceMotion ? 1 : 0.9, opacity: shouldReduceMotion ? 1 : 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={shouldReduceMotion ? {} : {}}
+            className="bg-white dark:bg-gray-800 rounded-3xl p-12 shadow-2xl"
+          >
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-6" />
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
               Welcome to eveokee!
@@ -61,7 +68,7 @@ export default function FinalCTASection() {
             <p className="text-gray-500 dark:text-gray-400">
               Keep an eye on your inbox for updates and app launch notifications.
             </p>
-          </div>
+          </motion.div>
         </div>
       </section>
     );
@@ -70,7 +77,13 @@ export default function FinalCTASection() {
   return (
     <section className="py-20 bg-gradient-to-br from-accent-mint to-accent-apricot dark:from-gray-800 dark:to-gray-700">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div className="bg-white dark:bg-gray-800 rounded-3xl p-12 shadow-2xl">
+        <motion.div
+          initial={{ opacity: shouldReduceMotion ? 1 : 0, y: shouldReduceMotion ? 0 : 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={shouldReduceMotion ? {} : { duration: 0.6 }}
+          className="bg-white dark:bg-gray-800 rounded-3xl p-12 shadow-2xl"
+        >
           {/* Header */}
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6">
             Start your new journaling journey
@@ -78,7 +91,7 @@ export default function FinalCTASection() {
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
             Sign up today to be notified when eveokee launches and start turning your words into music.
           </p>
-          
+
           {/* Email Signup Form */}
           <form onSubmit={handleSubmit} className="max-w-md mx-auto mb-8">
             <div className="flex flex-col sm:flex-row gap-4">
@@ -93,7 +106,9 @@ export default function FinalCTASection() {
                 className="flex-1 px-6 py-4 border border-gray-300 dark:border-gray-600 rounded-full focus:outline-none focus:ring-2 focus:ring-accent-mint focus:border-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 bg-white dark:bg-gray-700"
                 required
               />
-              <button
+              <motion.button
+                whileHover={shouldReduceMotion ? {} : { scale: 1.05 }}
+                whileTap={shouldReduceMotion ? {} : { scale: 0.95 }}
                 type="submit"
                 disabled={isLoading || !email || !isValidEmail(email)}
                 className="px-8 py-4 bg-accent-mint text-white rounded-full font-semibold hover:bg-accent-mint/90 focus:outline-none focus:ring-2 focus:ring-accent-mint focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap"
@@ -106,13 +121,13 @@ export default function FinalCTASection() {
                     <ArrowRight className="w-5 h-5" />
                   </>
                 )}
-              </button>
+              </motion.button>
             </div>
             {error && (
               <p className="mt-3 text-sm text-red-600">{error}</p>
             )}
           </form>
-          
+
           {/* Benefits */}
           <div className="grid sm:grid-cols-3 gap-6 text-sm text-gray-600 dark:text-gray-300">
             <div className="flex items-center justify-center gap-2">
@@ -128,7 +143,7 @@ export default function FinalCTASection() {
               <span>No spam, ever</span>
             </div>
           </div>
-          
+
           {/* App Beta Links */}
           <div className="mt-8 space-y-4">
             <div className="flex flex-wrap gap-3 justify-center">
@@ -152,8 +167,9 @@ export default function FinalCTASection() {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
 }
+
