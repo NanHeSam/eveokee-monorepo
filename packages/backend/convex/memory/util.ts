@@ -5,7 +5,7 @@ const SYSTEM_PROMPT = `You are an AI assistant that extracts memorable events fr
 Your goal is to identify distinct events, the people involved, and relevant tags.
 - events: A list of events found in the text.
 - people: Full names or nicknames of people mentioned.
-- tags: Conceptual themes or activities (e.g., "work", "hiking", "family").
+- tags: 1-3 tags related to the event.
 - happenedAt: Infer the best timestamp for the event based on the diary date.
 `;
 
@@ -13,7 +13,7 @@ const EventSchema = z.object({
   title: z.string().describe("A concise title for the event"),
   summary: z.string().describe("A 1-2 sentence summary of the event"),
   // best to just use diary date for Phase 1 unless specific time is mentioned.
-  tags: z.array(z.string()).describe("Tags related to the event"),
+  tags: z.array(z.string()).describe("1-3 tags related to the event"),
   people: z.array(z.string()).describe("Names of people involved"),
 });
 
@@ -45,11 +45,7 @@ export async function extractEventsFromDiary(
       apiKey,
     });
 
-    const contextPrompt = `
-Existing People: ${existingPeople.join(", ") || "None"}
-Existing Tags: ${existingTags.join(", ") || "None"}
-When extracting people and tags, prefer using the exact names/tags from the lists above if they match the context, if not, create new names/tags.
-`;
+    const contextPrompt = constructContextPrompt(existingPeople, existingTags);
 
     const result = await client.generateStructured(
       `Diary Entry (${new Date(date).toISOString()}): "${text}"`,
@@ -97,4 +93,36 @@ export function normalizeTag(tag: string): string {
 
 export function normalizePersonName(name: string): string {
   return name.trim();
+}
+
+export function constructContextPrompt(
+  existingPeople: string[],
+  existingTags: string[]
+): string {
+  const peopleLine =
+    existingPeople.length > 0
+      ? `Existing People: ${existingPeople.join(", ")}`
+      : "No existing people.";
+  const tagsLine =
+    existingTags.length > 0
+      ? `Existing Tags: ${existingTags.join(", ")}`
+      : "No existing tags.";
+
+  let instruction = "Create new names and tags as needed.";
+  if (existingPeople.length > 0 && existingTags.length > 0) {
+    instruction =
+      "When extracting people and tags, prefer using the exact names and tags from the lists above if they match the context; otherwise, create new ones.";
+  } else if (existingPeople.length > 0) {
+    instruction =
+      "When extracting people, prefer using the exact names from the list above if they match the context; otherwise, create new names.";
+  } else if (existingTags.length > 0) {
+    instruction =
+      "When extracting tags, prefer using the exact tags from the list above if they match the context; otherwise, create new tags.";
+  }
+
+  return `
+${peopleLine}
+${tagsLine}
+${instruction}
+`;
 }
