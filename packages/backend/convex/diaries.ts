@@ -1,8 +1,10 @@
 
-import { mutation, query, internalMutation } from "./_generated/server";
+import { mutation, query, internalMutation, internalAction, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import ensureCurrentUser, { getOptionalCurrentUser } from "./users";
+import { internal } from "./_generated/api";
+import { extractEventsFromDiary, normalizeTag, normalizePersonName } from "./memory/util";
 
 /**
  * Create a new diary entry
@@ -10,6 +12,7 @@ import ensureCurrentUser, { getOptionalCurrentUser } from "./users";
  * Steps:
  * 1. Authenticate user and get userId
  * 2. Insert new diary record with current timestamp
+ * 3. Schedule background processing for memory extraction
  * 
  * Returns the created diary ID.
  */
@@ -31,6 +34,13 @@ export const createDiary = mutation({
       content: args.content,
       date: now,
       updatedAt: now,
+      originalText: args.content,
+      version: 1,
+    });
+
+    // Step 3: Schedule memory processing
+    await ctx.scheduler.runAfter(0, internal.diaries.processDiaryEntry, {
+      diaryId: _id,
     });
 
     return { _id };
@@ -43,7 +53,7 @@ export const createDiary = mutation({
  * Steps:
  * 1. Authenticate user and get userId
  * 2. Fetch diary record and verify ownership
- * 3. Update content and updatedAt timestamp
+ * 3. Update content and updatedAt timestamp, increment version
  * 
  * Returns updated diary ID and timestamp.
  * Throws error if diary not found or user doesn't own it.
@@ -73,10 +83,12 @@ export const updateDiary = mutation({
 
     // Step 3: Update diary
     const updatedAt = Date.now();
+    const newVersion = (diary.version || 1) + 1;
 
     await ctx.db.patch(args.diaryId, {
       content: args.content,
       updatedAt,
+      version: newVersion,
     });
 
     return {
@@ -423,5 +435,167 @@ export const listDiaries = query({
         ? musicDataById.get(doc.primaryMusicId)
         : undefined,
     }));
+  },
+});
+
+// ============================================================================
+// Memory System Logic (Migrated from memory/diary.ts)
+// ============================================================================
+
+export const getDiaryContext = internalQuery({
+  args: {
+    diaryId: v.id("diaries"),
+  },
+  handler: async (ctx, args) => {
+    const diary = await ctx.db.get(args.diaryId);
+    if (!diary) return null;
+
+    const people = await ctx.db
+      .query("people")
+      .withIndex("by_userId", (q) => q.eq("userId", diary.userId))
+      .collect();
+
+    const themes = await ctx.db
+      .query("userTags")
+      .withIndex("by_userId", (q) => q.eq("userId", diary.userId))
+      .collect();
+
+    return {
+      diary,
+      existingPeople: people.map((p) => p.primaryName),
+      existingTags: themes.map((t) => t.canonicalName),
+    };
+  },
+});
+
+export const saveDiaryEvents = internalMutation({
+  args: {
+    diaryId: v.id("diaries"),
+    extractedEvents: v.array(
+      v.object({
+        title: v.string(),
+        summary: v.string(),
+        happenedAt: v.number(),
+        tags: v.array(v.string()),
+        people: v.array(v.string()),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const diary = await ctx.db.get(args.diaryId);
+    if (!diary) {
+      console.warn(`Diary ${args.diaryId} not found during processing`);
+      return;
+    }
+    // 1. Delete existing events for this diary
+    const existingEvents = await ctx.db
+      .query("events")
+      .withIndex("by_diaryId", (q) => q.eq("diaryId", diary._id))
+      .collect();
+
+    await Promise.all(existingEvents.map((e) => ctx.db.delete(e._id)));
+
+    // 2. Insert new events and handle People/Themes
+    for (const eventData of args.extractedEvents) {
+      const personIds = [];
+      // Simple person resolution
+      for (const name of eventData.people) {
+        const normalizedName = normalizePersonName(name);
+        let person = await ctx.db
+          .query("people")
+          .withIndex("by_userId_and_primaryName", (q) =>
+            q.eq("userId", diary.userId).eq("primaryName", normalizedName)
+          )
+          .first();
+
+        if (!person) {
+          const personId = await ctx.db.insert("people", {
+            userId: diary.userId,
+            primaryName: normalizedName,
+            interactionCount: 1,
+            lastMentionedAt: eventData.happenedAt,
+          });
+          personIds.push(personId);
+        } else {
+          personIds.push(person._id);
+          // Update stats
+          await ctx.db.patch(person._id, {
+            interactionCount: (person.interactionCount || 0) + 1,
+            lastMentionedAt: Math.max(person.lastMentionedAt || 0, eventData.happenedAt)
+          });
+        }
+      }
+
+      // Simple Theme/Tag handling (populate userTags)
+      const tags = eventData.tags.map(normalizeTag);
+
+      for (const tag of tags) {
+        const existingTheme = await ctx.db
+          .query("userTags")
+          .withIndex("by_userId_and_canonicalName", (q) =>
+            q.eq("userId", diary.userId).eq("canonicalName", tag)
+          )
+          .first();
+
+        if (existingTheme) {
+          await ctx.db.patch(existingTheme._id, {
+            eventCount: existingTheme.eventCount + 1,
+            lastUsedAt: eventData.happenedAt,
+          });
+        } else {
+          await ctx.db.insert("userTags", {
+            userId: diary.userId,
+            canonicalName: tag,
+            displayName: tag, // Use canonical as display for now
+            eventCount: 1,
+            lastUsedAt: eventData.happenedAt,
+          });
+        }
+      }
+
+      await ctx.db.insert("events", {
+        userId: diary.userId,
+        diaryId: diary._id,
+        happenedAt: eventData.happenedAt,
+        title: eventData.title,
+        summary: eventData.summary,
+        tags: tags,
+        personIds: personIds,
+      });
+    }
+
+    // 3. Update Diary metadata (version tracking if needed, but lastProcessedAt is removed)
+    // For now, we just leave it as is or update version if we want to track processing version
+    // But since lastProcessedAt is gone, we don't update it.
+  },
+});
+
+export const processDiaryEntry = internalAction({
+  args: {
+    diaryId: v.id("diaries"),
+  },
+  handler: async (ctx, args) => {
+    const context = await ctx.runQuery(internal.diaries.getDiaryContext, {
+      diaryId: args.diaryId,
+    });
+
+    if (!context || !context.diary) {
+      console.warn(`Diary ${args.diaryId} not found during processing`);
+      return;
+    }
+
+    const { diary, existingPeople, existingTags } = context;
+
+    const extractedEvents = await extractEventsFromDiary(
+      diary.content,
+      diary.date,
+      existingPeople,
+      existingTags
+    );
+
+    await ctx.runMutation(internal.diaries.saveDiaryEvents, {
+      diaryId: args.diaryId,
+      extractedEvents,
+    });
   },
 });
