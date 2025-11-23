@@ -1,5 +1,6 @@
 import { query } from "../_generated/server";
 import { v } from "convex/values";
+import { Id } from "../_generated/dataModel";
 import ensureCurrentUser from "../users";
 import { moodNumberToWord, arousalNumberToWord } from "./util";
 
@@ -23,11 +24,37 @@ export const getPersonDetail = query({
       .order("desc")
       .take(100);
 
-    const events = recentEvents.filter(e => e.personIds?.includes(args.personId)).map(e => ({
-      ...e,
-      moodWord: moodNumberToWord(e.mood),
-      arousalWord: arousalNumberToWord(e.arousal),
+    const filteredEvents = recentEvents.filter(e => e.personIds?.includes(args.personId));
+    
+    // Resolve tags for these events
+    const tagIds = new Set<Id<"userTags">>();
+    filteredEvents.forEach(e => e.tagIds?.forEach(id => tagIds.add(id)));
+    
+    const tagsMap = new Map<Id<"userTags">, any>();
+    await Promise.all(Array.from(tagIds).map(async (id) => {
+        const t = await ctx.db.get(id);
+        if (t) tagsMap.set(id, t);
     }));
+
+    const events = filteredEvents.map(e => {
+      const tags = e.tagIds?.map(id => tagsMap.get(id)?.displayName || tagsMap.get(id)?.canonicalName).filter(Boolean);
+      const tagsDetails = e.tagIds?.map(id => {
+        const t = tagsMap.get(id);
+        return t ? {
+          _id: t._id,
+          name: t.canonicalName,
+          displayName: t.displayName,
+        } : null;
+      }).filter(Boolean);
+      
+      return {
+        ...e,
+        tags: tags && tags.length > 0 ? tags : undefined,
+        tagsDetails: tagsDetails && tagsDetails.length > 0 ? tagsDetails : undefined,
+        moodWord: moodNumberToWord(e.mood),
+        arousalWord: arousalNumberToWord(e.arousal),
+      };
+    });
 
     return {
       person,

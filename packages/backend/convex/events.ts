@@ -46,6 +46,7 @@ export const getEvent = query({
         }
 
         // Resolve people
+        let people: { _id: Id<"people">; name: string }[] = [];
         let peopleDetails: { _id: Id<"people">; name: string; role?: string }[] = [];
         if (event.personIds && event.personIds.length > 0) {
             const peopleDocs = await Promise.all(
@@ -58,11 +59,31 @@ export const getEvent = query({
                     name: p!.primaryName,
                     role: p!.relationshipLabel,
                 }));
+            people = peopleDetails.map((p) => ({
+                _id: p._id,
+                name: p.name,
+            }));
+        }
+
+        // Resolve tags
+        let tags: { _id: Id<"userTags">; name: string }[] = [];
+        if (event.tagIds && event.tagIds.length > 0) {
+            const tagDocs = await Promise.all(
+                event.tagIds.map((id) => ctx.db.get(id))
+            );
+            tags = tagDocs
+                .filter((t) => t !== null)
+                .map((t) => ({
+                    _id: t!._id,
+                    name: t!.displayName, // Use displayName for the name shown to users
+                }));
         }
 
         return {
             ...event,
-            peopleDetails,
+            people,
+            peopleDetails, // Keep for backward compatibility (includes role)
+            tags,
             moodWord: moodNumberToWord(event.mood),
             arousalWord: arousalNumberToWord(event.arousal),
         };
@@ -101,12 +122,32 @@ export const updateEvent = mutation({
         if (args.arousal !== undefined) updates.arousal = args.arousal;
 
         if (args.tags !== undefined) {
-            // Normalize tags
-            updates.tags = args.tags.map(normalizeTag);
+            // Resolve tag names to tag IDs, creating if necessary
+            const tagIds: Id<"userTags">[] = [];
+            const normalizedTags = args.tags.map(normalizeTag);
 
-            // Update userTags stats (increment/decrement) - simplified for now, just updating the event.
-            // Ideally we should recount or update lastUsedAt.
-            // For this task, let's just update the event tags.
+            for (const tag of normalizedTags) {
+                const existingTag = await ctx.db
+                    .query("userTags")
+                    .withIndex("by_userId_and_canonicalName", (q) =>
+                        q.eq("userId", userId).eq("canonicalName", tag)
+                    )
+                    .first();
+
+                if (existingTag) {
+                    tagIds.push(existingTag._id);
+                } else {
+                    const newTagId = await ctx.db.insert("userTags", {
+                        userId,
+                        canonicalName: tag,
+                        displayName: tag, // Use canonical as display for now
+                        eventCount: 1,
+                        lastUsedAt: Date.now(),
+                    });
+                    tagIds.push(newTagId);
+                }
+            }
+            updates.tagIds = tagIds.length > 0 ? tagIds : undefined;
         }
 
         if (args.peopleNames !== undefined) {

@@ -72,7 +72,7 @@ export default defineSchema({
     mood: v.optional(v.union(v.literal(-2), v.literal(-1), v.literal(0), v.literal(1), v.literal(2))),
     arousal: v.optional(v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4), v.literal(5))),
     anniversaryCandidate: v.optional(v.boolean()),
-    tags: v.optional(v.array(v.string())),
+    tagIds: v.optional(v.array(v.id("userTags"))),
   })
     .index("by_userId", ["userId"])
     .index("by_diaryId", ["diaryId"])
@@ -99,8 +99,6 @@ export default defineSchema({
     userId: v.id("users"),
     canonicalName: v.string(),
     displayName: v.string(),
-    aliases: v.optional(v.array(v.string())),
-    color: v.optional(v.string()),
     eventCount: v.number(),
     lastUsedAt: v.optional(v.number()),
   })

@@ -8,7 +8,6 @@ import { api } from '@backend/convex';
 import { EventDetailsNavigationProp, EventDetailsRouteProp } from '../navigation/types';
 import { useThemeColors } from '../theme/useThemeColors';
 import { format } from 'date-fns';
-import { Id } from '@backend/convex/convex/_generated/dataModel';
 
 // Emoji mappings for mood (-2 to 2)
 const MOOD_EMOJIS: Record<number, string> = {
@@ -154,10 +153,14 @@ export const EventDetailsScreen = () => {
     const [mood, setMood] = useState<number | undefined>(undefined);
     const [arousal, setArousal] = useState<number | undefined>(undefined);
     const [tags, setTags] = useState<string[]>([]);
+    const [people, setPeople] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [isAddingTag, setIsAddingTag] = useState(false);
+    const [isAddingPerson, setIsAddingPerson] = useState(false);
     const [newTagText, setNewTagText] = useState('');
+    const [newPersonText, setNewPersonText] = useState('');
     const tagInputRef = React.useRef<TextInput>(null);
+    const personInputRef = React.useRef<TextInput>(null);
 
     useEffect(() => {
         if (event) {
@@ -165,7 +168,10 @@ export const EventDetailsScreen = () => {
             setSummary(event.summary);
             setMood(event.mood);
             setArousal(event.arousal);
-            setTags(event.tags || []);
+            // Extract tag names from tag objects
+            setTags(event.tags?.map(tag => tag.name) || []);
+            // Extract people names from people objects
+            setPeople(event.people?.map(person => person.name) || []);
         }
     }, [event]);
 
@@ -181,6 +187,7 @@ export const EventDetailsScreen = () => {
                 mood: mood as -2 | -1 | 0 | 1 | 2 | undefined,
                 arousal: arousal as 1 | 2 | 3 | 4 | 5 | undefined,
                 tags: tags.length > 0 ? tags : undefined,
+                peopleNames: people.length > 0 ? people : undefined,
             });
             Alert.alert('Success', 'Changes saved successfully.');
         } catch (error) {
@@ -294,7 +301,7 @@ export const EventDetailsScreen = () => {
                         People
                     </Text>
                     <View className="flex-row flex-wrap">
-                        {event.peopleDetails?.map((person, idx) => (
+                        {people.map((personName, idx) => (
                             <View
                                 key={idx}
                                 className="flex-row items-center px-3 py-2 rounded-full mr-2 mb-2"
@@ -302,13 +309,71 @@ export const EventDetailsScreen = () => {
                             >
                                 {/* Avatar placeholder */}
                                 <View className="w-6 h-6 rounded-full bg-gray-400 mr-2 items-center justify-center">
-                                    <Text className="text-xs text-white">{person.name.charAt(0)}</Text>
+                                    <Text className="text-xs text-white">{personName.charAt(0)}</Text>
                                 </View>
                                 <Text style={{ color: colors.textPrimary }}>
-                                    {person.name} {person.role ? `(${person.role})` : ''}
+                                    {personName}
                                 </Text>
+                                <Pressable
+                                    onPress={() => {
+                                        const newPeople = people.filter((_, i) => i !== idx);
+                                        setPeople(newPeople);
+                                    }}
+                                    className="ml-2"
+                                >
+                                    <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
+                                </Pressable>
                             </View>
                         ))}
+                        {isAddingPerson ? (
+                            <TextInput
+                                ref={personInputRef}
+                                className="px-4 py-2 rounded-full mr-2 mb-2 text-base"
+                                style={{
+                                    backgroundColor: colors.surface,
+                                    color: colors.textPrimary,
+                                    borderWidth: 1,
+                                    borderColor: colors.accentMint,
+                                    minWidth: 120,
+                                }}
+                                placeholder="Person name..."
+                                placeholderTextColor={colors.textSecondary}
+                                value={newPersonText}
+                                onChangeText={setNewPersonText}
+                                autoFocus
+                                onSubmitEditing={(e) => {
+                                    const newPerson = e.nativeEvent.text.trim();
+                                    if (newPerson && !people.includes(newPerson)) {
+                                        setPeople([...people, newPerson]);
+                                    }
+                                    setNewPersonText('');
+                                    setIsAddingPerson(false);
+                                }}
+                                onBlur={() => {
+                                    const trimmed = newPersonText.trim();
+                                    if (trimmed && !people.includes(trimmed)) {
+                                        setPeople([...people, trimmed]);
+                                    }
+                                    setNewPersonText('');
+                                    setIsAddingPerson(false);
+                                }}
+                            />
+                        ) : (
+                            <Pressable
+                                onPress={() => {
+                                    setIsAddingPerson(true);
+                                    setNewPersonText('');
+                                    // Focus the input after a brief delay to ensure it's rendered
+                                    setTimeout(() => {
+                                        personInputRef.current?.focus();
+                                    }, 100);
+                                }}
+                                className="px-4 py-2 rounded-full mr-2 mb-2"
+                                style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed' }}
+                            >
+                                <Text style={{ color: colors.textPrimary }}>+ Add person</Text>
+                            </Pressable>
+                        )}
                     </View>
                 </View>
 
@@ -318,13 +383,13 @@ export const EventDetailsScreen = () => {
                         Tags
                     </Text>
                     <View className="flex-row flex-wrap">
-                        {tags.map((tag, idx) => (
+                        {tags.map((tagName, idx) => (
                             <View
                                 key={idx}
                                 className="flex-row items-center px-4 py-2 rounded-full mr-2 mb-2"
                                 style={{ backgroundColor: colors.surface }}
                             >
-                                <Text style={{ color: colors.textPrimary }}>{tag}</Text>
+                                <Text style={{ color: colors.textPrimary }}>{tagName}</Text>
                                 <Pressable
                                     onPress={() => {
                                         const newTags = tags.filter((_, i) => i !== idx);

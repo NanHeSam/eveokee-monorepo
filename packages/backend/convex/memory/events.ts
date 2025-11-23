@@ -32,9 +32,28 @@ export const getTimelineEvents = query({
         if (p) peopleMap.set(id, p);
     }));
 
+    // Resolve tags
+    const tagIds = new Set<Id<"userTags">>();
+    events.forEach(e => e.tagIds?.forEach(id => tagIds.add(id)));
+    
+    const tagsMap = new Map<Id<"userTags">, any>();
+    await Promise.all(Array.from(tagIds).map(async (id) => {
+        const t = await ctx.db.get(id);
+        if (t) tagsMap.set(id, t);
+    }));
+
     return events.map(e => ({
         ...e,
         people: e.personIds?.map(id => peopleMap.get(id)).filter(Boolean),
+        tags: e.tagIds?.map(id => tagsMap.get(id)?.displayName || tagsMap.get(id)?.canonicalName).filter(Boolean),
+        tagsDetails: e.tagIds?.map(id => {
+            const t = tagsMap.get(id);
+            return t ? {
+                _id: t._id,
+                name: t.canonicalName,
+                displayName: t.displayName,
+            } : null;
+        }).filter(Boolean),
         moodWord: moodNumberToWord(e.mood),
         arousalWord: arousalNumberToWord(e.arousal),
     }));

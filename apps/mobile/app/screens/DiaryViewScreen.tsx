@@ -164,13 +164,20 @@ export const DiaryViewScreen = () => {
                 )}
 
                 {/* People */}
-                {event.peopleDetails && event.peopleDetails.length > 0 && (
+                {event.people && event.people.length > 0 && (
                   <View className="flex-row flex-wrap mb-2">
                     <Text className="text-sm mr-2 mb-1" style={{ color: colors.textSecondary }}>People</Text>
-                    {event.peopleDetails.map((person, idx) => (
-                      <View key={idx} className="px-2 py-1 rounded-full mr-2 mb-1" style={{ backgroundColor: colors.card }}>
-                        <Text className="text-xs" style={{ color: colors.textPrimary }}>{person.name}</Text>
-                      </View>
+                    {event.people.map((person) => (
+                      <Pressable
+                        key={person._id}
+                        onPress={() => {
+                          // TODO: Navigate to person detail page
+                        }}
+                      >
+                        <View className="px-2 py-1 rounded-full mr-2 mb-1" style={{ backgroundColor: colors.card }}>
+                          <Text className="text-xs" style={{ color: colors.textPrimary }}>{person.name}</Text>
+                        </View>
+                      </Pressable>
                     ))}
                   </View>
                 )}
@@ -179,10 +186,17 @@ export const DiaryViewScreen = () => {
                 {event.tags && event.tags.length > 0 && (
                   <View className="flex-row flex-wrap">
                     <Text className="text-sm mr-2 mb-1" style={{ color: colors.textSecondary }}>Tags</Text>
-                    {event.tags.map((tag, idx) => (
-                      <View key={idx} className="px-2 py-1 rounded-full mr-2 mb-1" style={{ backgroundColor: colors.card }}>
-                        <Text className="text-xs" style={{ color: colors.textPrimary }}>{tag}</Text>
-                      </View>
+                    {event.tags.map((tag) => (
+                      <Pressable
+                        key={tag._id}
+                        onPress={() => {
+                          // TODO: Navigate to tag detail page
+                        }}
+                      >
+                        <View className="px-2 py-1 rounded-full mr-2 mb-1" style={{ backgroundColor: colors.card }}>
+                          <Text className="text-xs" style={{ color: colors.textPrimary }}>{tag.name}</Text>
+                        </View>
+                      </Pressable>
                     ))}
                   </View>
                 )}

@@ -237,26 +237,6 @@ export function arousalNumberToWord(value?: ArousalValue): string | undefined {
   return AROUSAL_REVERSE_MAPPINGS[value];
 }
 
-/**
- * Legacy function for backward compatibility - converts number to number (no-op if valid)
- */
-function normalizeMood(value?: number): MoodValue | undefined {
-  if (value === undefined || value === null) {
-    return undefined;
-  }
-  return MOOD_SET.has(value) ? (value as MoodValue) : undefined;
-}
-
-/**
- * Legacy function for backward compatibility - converts number to number (no-op if valid)
- */
-function normalizeArousal(value?: number): ArousalValue | undefined {
-  if (value === undefined || value === null) {
-    return undefined;
-  }
-  return AROUSAL_SET.has(value) ? (value as ArousalValue) : undefined;
-}
-
 function getErrorMessage(error: unknown): string {
   if (!error) {
     return "Unknown error";

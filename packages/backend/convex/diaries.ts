@@ -270,9 +270,26 @@ export const getDiary = query({
             arousal: v.optional(v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4), v.literal(5))),
             arousalWord: v.optional(v.string()),
             anniversaryCandidate: v.optional(v.boolean()),
-            tags: v.optional(v.array(v.string())),
+            tagIds: v.optional(v.array(v.id("userTags"))),
+            tags: v.optional(
+              v.array(
+                v.object({
+                  _id: v.id("userTags"),
+                  name: v.string(),
+                })
+              )
+            ),
+            people: v.optional(
+              v.array(
+                v.object({
+                  _id: v.id("people"),
+                  name: v.string(),
+                })
+              )
+            ),
             peopleDetails: v.array(
               v.object({
+                _id: v.id("people"),
                 name: v.string(),
                 role: v.optional(v.string()),
               })
@@ -345,10 +362,10 @@ export const getDiary = query({
       .withIndex("by_diaryId", (q) => q.eq("diaryId", diary._id))
       .collect();
 
-    // Resolve people names for events
+    // Resolve people and tags for events
     const eventsWithDetails = await Promise.all(
       events.map(async (event) => {
-        let peopleDetails: { name: string; role?: string }[] = [];
+        let peopleDetails: { _id: Id<"people">; name: string; role?: string }[] = [];
         if (event.personIds && event.personIds.length > 0) {
           const peopleDocs = await Promise.all(
             event.personIds.map((id) => ctx.db.get(id))
@@ -356,13 +373,40 @@ export const getDiary = query({
           peopleDetails = peopleDocs
             .filter((p) => p !== null)
             .map((p) => ({
+              _id: p!._id,
               name: p!.primaryName,
               role: p!.relationshipLabel,
             }));
         }
+
+        // Resolve tags
+        let tags: { _id: Id<"userTags">; name: string }[] = [];
+        if (event.tagIds && event.tagIds.length > 0) {
+          const tagDocs = await Promise.all(
+            event.tagIds.map((id) => ctx.db.get(id))
+          );
+          tags = tagDocs
+            .filter((t) => t !== null)
+            .map((t) => ({
+              _id: t!._id,
+              name: t!.displayName, // Use displayName for the name shown to users
+            }));
+        }
+
+        // Resolve people (simplified format for navigation)
+        let people: { _id: Id<"people">; name: string }[] = [];
+        if (peopleDetails.length > 0) {
+          people = peopleDetails.map((p) => ({
+            _id: p._id,
+            name: p.name,
+          }));
+        }
+
         return {
           ...event,
-          peopleDetails,
+          people,
+          peopleDetails, // Keep for backward compatibility (includes role)
+          tags: tags.length > 0 ? tags : undefined,
           moodWord: moodNumberToWord(event.mood),
           arousalWord: arousalNumberToWord(event.arousal),
         };
@@ -613,30 +657,34 @@ export const saveDiaryEvents = internalMutation({
         }
       }
 
-      // Simple Theme/Tag handling (populate userTags)
-      const tags = eventData.tags.map(normalizeTag);
+      // Resolve tags to tag IDs (similar to people resolution)
+      const tagIds: Id<"userTags">[] = [];
+      const normalizedTags = eventData.tags.map(normalizeTag);
 
-      for (const tag of tags) {
-        const existingTheme = await ctx.db
+      for (const tag of normalizedTags) {
+        const existingTag = await ctx.db
           .query("userTags")
           .withIndex("by_userId_and_canonicalName", (q) =>
             q.eq("userId", diary.userId).eq("canonicalName", tag)
           )
           .first();
 
-        if (existingTheme) {
-          await ctx.db.patch(existingTheme._id, {
-            eventCount: existingTheme.eventCount + 1,
+        if (existingTag) {
+          tagIds.push(existingTag._id);
+          // Update stats
+          await ctx.db.patch(existingTag._id, {
+            eventCount: existingTag.eventCount + 1,
             lastUsedAt: eventData.happenedAt,
           });
         } else {
-          await ctx.db.insert("userTags", {
+          const newTagId = await ctx.db.insert("userTags", {
             userId: diary.userId,
             canonicalName: tag,
             displayName: tag, // Use canonical as display for now
             eventCount: 1,
             lastUsedAt: eventData.happenedAt,
           });
+          tagIds.push(newTagId);
         }
       }
 
@@ -646,8 +694,8 @@ export const saveDiaryEvents = internalMutation({
         happenedAt: eventData.happenedAt,
         title: eventData.title,
         summary: eventData.summary,
-        tags: tags,
-        personIds: personIds,
+        tagIds: tagIds.length > 0 ? tagIds : undefined,
+        personIds: personIds.length > 0 ? personIds : undefined,
       };
 
       if (eventData.mood !== undefined) {
