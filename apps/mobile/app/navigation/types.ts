@@ -19,6 +19,9 @@ export type DiaryStackParamList = {
   PersonDetail: {
     personId: Id<'people'>;
   };
+  PersonEdit: {
+    personId: Id<'people'>;
+  };
 };
 
 export type SettingsStackParamList = {
@@ -61,3 +64,7 @@ export type EventDetailsRouteProp = RouteProp<DiaryStackParamList, 'EventDetails
 export type PersonDetailNavigationProp = NativeStackNavigationProp<DiaryStackParamList, 'PersonDetail'>;
 
 export type PersonDetailRouteProp = RouteProp<DiaryStackParamList, 'PersonDetail'>;
+
+export type PersonEditNavigationProp = NativeStackNavigationProp<DiaryStackParamList, 'PersonEdit'>;
+
+export type PersonEditRouteProp = RouteProp<DiaryStackParamList, 'PersonEdit'>;

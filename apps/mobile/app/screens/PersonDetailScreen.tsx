@@ -77,7 +77,7 @@ export const PersonDetailScreen = () => {
           <Pressable onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
           </Pressable>
-          <Pressable>
+          <Pressable onPress={() => navigation.navigate('PersonEdit', { personId })}>
             <Text className="text-base font-semibold" style={{ color: colors.accentMint }}>
               Edit Profile
             </Text>

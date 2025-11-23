@@ -17,6 +17,7 @@ import { DiaryEditScreen } from './app/screens/DiaryEditScreen';
 import { DiaryViewScreen } from './app/screens/DiaryViewScreen';
 import { EventDetailsScreen } from './app/screens/EventDetailsScreen';
 import { PersonDetailScreen } from './app/screens/PersonDetailScreen';
+import { PersonEditScreen } from './app/screens/PersonEditScreen';
 import { PlaylistScreen } from './app/screens/PlaylistScreen';
 import { SettingsScreen } from './app/screens/SettingsScreen';
 import { AccountScreen } from './app/screens/AccountScreen';
@@ -81,6 +82,7 @@ const DiaryStackNavigator = () => (
     <DiaryStack.Screen name="DiaryEdit" component={DiaryEditScreen} />
     <DiaryStack.Screen name="EventDetails" component={EventDetailsScreen} />
     <DiaryStack.Screen name="PersonDetail" component={PersonDetailScreen} />
+    <DiaryStack.Screen name="PersonEdit" component={PersonEditScreen} />
   </DiaryStack.Navigator>
 );
 

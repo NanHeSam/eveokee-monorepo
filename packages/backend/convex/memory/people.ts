@@ -1,8 +1,9 @@
-import { query } from "../_generated/server";
+import { query, mutation, action, internalQuery, internalMutation } from "../_generated/server";
 import { v } from "convex/values";
 import { Id } from "../_generated/dataModel";
+import { internal } from "../_generated/api";
 import ensureCurrentUser from "../users";
-import { moodNumberToWord, arousalNumberToWord } from "./util";
+import { moodNumberToWord, arousalNumberToWord, generateRelationshipHighlight } from "./util";
 
 export const getPersonDetail = query({
   args: {
@@ -78,5 +79,156 @@ export const listPeople = query({
       .order("desc")
       .take(50);
   }
+});
+
+export const updatePerson = mutation({
+  args: {
+    personId: v.id("people"),
+    primaryName: v.optional(v.string()),
+    altNames: v.optional(v.array(v.string())),
+    relationshipLabel: v.optional(v.string()),
+    highlights: v.optional(v.object({
+      summary: v.string(),
+      lastGeneratedAt: v.number(),
+    })),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await ensureCurrentUser(ctx);
+    const person = await ctx.db.get(args.personId);
+
+    if (!person || person.userId !== userId) {
+      throw new Error("Person not found or unauthorized");
+    }
+
+    const updates: any = {};
+    if (args.primaryName !== undefined) {
+      updates.primaryName = args.primaryName;
+    }
+    if (args.altNames !== undefined) {
+      updates.altNames = args.altNames.length > 0 ? args.altNames : undefined;
+    }
+    if (args.relationshipLabel !== undefined) {
+      updates.relationshipLabel = args.relationshipLabel || undefined;
+    }
+    if (args.highlights !== undefined) {
+      updates.highlights = args.highlights;
+    }
+
+    await ctx.db.patch(args.personId, updates);
+  },
+});
+
+export const generatePersonHighlight = action({
+  args: {
+    personId: v.id("people"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+    
+    // Get user ID from internal query
+    const userResult = await ctx.runQuery(internal.users.getCurrentUserForAction);
+    if (!userResult) {
+      throw new Error("User not found");
+    }
+    const userId = userResult.userId;
+    
+    // Get person details
+    const person = await ctx.runQuery(internal.memory.people.getPersonForHighlight, {
+      personId: args.personId,
+      userId,
+    });
+
+    if (!person) {
+      throw new Error("Person not found or unauthorized");
+    }
+
+    // Get recent events for this person
+    const events = await ctx.runQuery(internal.memory.people.getPersonEventsForHighlight, {
+      personId: args.personId,
+      userId,
+    });
+
+    if (events.length === 0) {
+      throw new Error("No events found for this person");
+    }
+
+    const highlightSummary = await generateRelationshipHighlight(person.primaryName, events);
+
+    // Save to database
+    const now = Date.now();
+    await ctx.runMutation(internal.memory.people.updatePersonHighlight, {
+      personId: args.personId,
+      highlights: {
+        summary: highlightSummary,
+        lastGeneratedAt: now,
+      },
+    });
+
+    return {
+      summary: highlightSummary,
+      lastGeneratedAt: now,
+    };
+  },
+});
+
+// Internal query to get person for highlight generation
+export const getPersonForHighlight = internalQuery({
+  args: {
+    personId: v.id("people"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const person = await ctx.db.get(args.personId);
+    if (!person || person.userId !== args.userId) {
+      return null;
+    }
+    return person;
+  },
+});
+
+// Internal query to get events for highlight generation
+export const getPersonEventsForHighlight = internalQuery({
+  args: {
+    personId: v.id("people"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    // Get recent events (up to 20) for this person
+    const recentEvents = await ctx.db
+      .query("events")
+      .withIndex("by_userId_and_happenedAt", q => q.eq("userId", args.userId))
+      .order("desc")
+      .take(100);
+
+    const filteredEvents = recentEvents
+      .filter(e => e.personIds?.includes(args.personId))
+      .slice(0, 20)
+      .map(e => ({
+        title: e.title,
+        summary: e.summary,
+        happenedAt: e.happenedAt,
+      }));
+
+    return filteredEvents;
+  },
+});
+
+// Internal mutation to update person highlight
+export const updatePersonHighlight = internalMutation({
+  args: {
+    personId: v.id("people"),
+    highlights: v.object({
+      summary: v.string(),
+      lastGeneratedAt: v.number(),
+    }),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.personId, {
+      highlights: args.highlights,
+    });
+  },
 });
 

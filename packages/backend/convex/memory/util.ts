@@ -290,3 +290,102 @@ ${tagsLine}
 ${instruction}
 `;
 }
+
+const HIGHLIGHT_MODEL = "openai/gpt-4o-mini";
+
+type HighlightEventSummary = {
+  title: string;
+  summary: string;
+  happenedAt: number;
+};
+
+export async function generateRelationshipHighlight(
+  personName: string,
+  events: HighlightEventSummary[]
+): Promise<string> {
+  const fallback = () => buildFallbackHighlight(personName, events);
+
+  const apiKey = process.env.AI_GATEWAY_API_KEY;
+  if (!apiKey) {
+    console.warn("AI gateway API key missing. Using fallback highlight.");
+    return fallback();
+  }
+
+  try {
+    const client = getOrCreateAIClient(apiKey);
+    const model = client.getModel(HIGHLIGHT_MODEL);
+
+    const eventsText =
+      events
+        .map(
+          (event, idx) =>
+            `${idx + 1}. ${event.title} (${new Date(event.happenedAt).toLocaleDateString()}): ${event.summary}`
+        )
+        .join("\n") || "No events available.";
+
+
+    const prompt = `You are summarizing my relationship with ${personName}. Use first person ("I") and talk specifically about ${personName}—mention their name at least once and do not introduce other people unless they appear in the events.
+
+Events:
+${eventsText}
+
+Generate a highlight that:
+- Summarizes the recent interactions with ${personName}
+- References 1-2 concrete themes or patterns from these events
+- Is written in first person (from my perspective) and uses ${personName}'s name
+- Is concise but meaningful (2-3 sentences)
+- Focuses on why my connection with ${personName} matters to me
+
+Highlight:`;
+
+    const HighlightSchema = z.object({
+      highlight: z
+        .string()
+        .describe("A 2-3 sentence highlight summarizing the relationship"),
+    });
+    console.log("[HighlightAI] Generating highlight prompt", {
+      personName,
+      eventsCount: events.length,
+      promptPreview: prompt,
+    });
+    const result = await generateObject({
+      model,
+      schema: HighlightSchema,
+      prompt,
+    });
+
+    const highlight = result.object.highlight.trim();
+    console.log("[HighlightAI] Generated highlight result", {
+      personName,
+      highlightPreview: highlight.slice(0, 500),
+    });
+    return highlight;
+  } catch (error) {
+    console.error("Failed to generate relationship highlight via AI:", error);
+    return fallback();
+  }
+}
+
+function buildFallbackHighlight(
+  personName: string,
+  events: HighlightEventSummary[]
+): string {
+  if (events.length === 0) {
+    const summary = `I'm looking forward to creating more moments with ${personName}.`;
+    console.log("[HighlightAI] Using fallback highlight (no events)", {
+      personName,
+      highlightPreview: summary,
+    });
+    return summary;
+  }
+
+  const recent = events[0];
+  const eventDate = new Date(recent.happenedAt).toLocaleDateString();
+
+  const summary = `Recently (${eventDate}), I shared "${recent.title}" with ${personName}. Moments like these remind me why this relationship matters.`;
+  console.log("[HighlightAI] Using fallback highlight", {
+    personName,
+    highlightPreview: summary,
+  });
+  return summary;
+}
