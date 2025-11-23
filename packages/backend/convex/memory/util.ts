@@ -57,14 +57,16 @@ Your goal is to identify distinct events and capture all relevant metadata for e
 - mood: Overall sentiment of the event. Use one of: "very negative", "negative", "neutral", "positive", "very positive".
 - arousal: Energy level of the event. Use one of: "very calm", "relaxed", "moderate", "energetic", "very energetic".
 - anniversaryCandidate: true if this event should be remembered annually, otherwise false.
+
+CRITICAL: If you add a person to the "people" array for an event, you MUST mention their name in the event's "summary". Every person listed in "people" must be explicitly named in the summary text.
 `;
 
 const EventSchema = z.object({
   title: z.string().describe("A concise title for the event"),
-  summary: z.string().describe("A 1-2 sentence summary of the event"),
+  summary: z.string().describe("A 1-2 sentence summary of the event. IMPORTANT: If any person is listed in the 'people' array, their name MUST be mentioned in this summary."),
   // best to just use diary date for Phase 1 unless specific time is mentioned.
   tags: z.array(z.string()).describe("1-3 tags related to the event"),
-  people: z.array(z.string()).describe("Names of people involved"),
+  people: z.array(z.string()).describe("Names of people involved. Only include people if they are relevant to the event and will be mentioned in the summary."),
   mood: z
     .enum(MOOD_WORDS)
     .optional()
@@ -330,11 +332,13 @@ Events:
 ${eventsText}
 
 Generate a highlight that:
-- Summarizes the recent interactions with ${personName}
+- Summarizes the recent interactions with ${personName} in a casual, sincere tone
 - References 1-2 concrete themes or patterns from these events
 - Is written in first person (from my perspective) and uses ${personName}'s name
 - Is concise but meaningful (2-3 sentences)
-- Focuses on why my connection with ${personName} matters to me
+- Uses natural, conversational language—avoid formal phrases like "highlights the importance" or "deepens my appreciation"
+- Keep it simple and genuine—don't overstate the significance of casual connections like mutual friends or small interactions
+- Write like you're talking to a friend, not writing a formal reflection
 
 Highlight:`;
 
