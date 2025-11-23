@@ -171,7 +171,7 @@ export const DiaryViewScreen = () => {
                       <Pressable
                         key={person._id}
                         onPress={() => {
-                          // TODO: Navigate to person detail page
+                          navigation.navigate('PersonDetail', { personId: person._id });
                         }}
                       >
                         <View className="px-2 py-1 rounded-full mr-2 mb-1" style={{ backgroundColor: colors.card }}>

@@ -26,9 +26,14 @@ export const getPersonDetail = query({
 
     const filteredEvents = recentEvents.filter(e => e.personIds?.includes(args.personId));
     
+    // Sort by happenedAt descending (most recent first) and take top 3
+    const topEvents = filteredEvents
+      .sort((a, b) => b.happenedAt - a.happenedAt)
+      .slice(0, 3);
+    
     // Resolve tags for these events
     const tagIds = new Set<Id<"userTags">>();
-    filteredEvents.forEach(e => e.tagIds?.forEach(id => tagIds.add(id)));
+    topEvents.forEach(e => e.tagIds?.forEach(id => tagIds.add(id)));
     
     const tagsMap = new Map<Id<"userTags">, any>();
     await Promise.all(Array.from(tagIds).map(async (id) => {
@@ -36,7 +41,7 @@ export const getPersonDetail = query({
         if (t) tagsMap.set(id, t);
     }));
 
-    const events = filteredEvents.map(e => {
+    const events = topEvents.map(e => {
       const tags = e.tagIds?.map(id => tagsMap.get(id)?.displayName || tagsMap.get(id)?.canonicalName).filter(Boolean);
       const tagsDetails = e.tagIds?.map(id => {
         const t = tagsMap.get(id);

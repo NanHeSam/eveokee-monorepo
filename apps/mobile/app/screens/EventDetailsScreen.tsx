@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@backend/convex';
 import { EventDetailsNavigationProp, EventDetailsRouteProp } from '../navigation/types';
+import { Id } from '@backend/convex/convex/_generated/dataModel';
 import { useThemeColors } from '../theme/useThemeColors';
 import { format } from 'date-fns';
 
@@ -153,7 +154,7 @@ export const EventDetailsScreen = () => {
     const [mood, setMood] = useState<number | undefined>(undefined);
     const [arousal, setArousal] = useState<number | undefined>(undefined);
     const [tags, setTags] = useState<string[]>([]);
-    const [people, setPeople] = useState<string[]>([]);
+    const [people, setPeople] = useState<Array<{ _id: Id<'people'> | string; name: string }>>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [isAddingTag, setIsAddingTag] = useState(false);
     const [isAddingPerson, setIsAddingPerson] = useState(false);
@@ -170,8 +171,8 @@ export const EventDetailsScreen = () => {
             setArousal(event.arousal);
             // Extract tag names from tag objects
             setTags(event.tags?.map(tag => tag.name) || []);
-            // Extract people names from people objects
-            setPeople(event.people?.map(person => person.name) || []);
+            // Store people with IDs for navigation
+            setPeople(event.people?.map(person => ({ _id: person._id, name: person.name })) || []);
         }
     }, [event]);
 
@@ -187,7 +188,7 @@ export const EventDetailsScreen = () => {
                 mood: mood as -2 | -1 | 0 | 1 | 2 | undefined,
                 arousal: arousal as 1 | 2 | 3 | 4 | 5 | undefined,
                 tags: tags.length > 0 ? tags : undefined,
-                peopleNames: people.length > 0 ? people : undefined,
+                peopleNames: people.length > 0 ? people.map(p => p.name) : undefined,
             });
             Alert.alert('Success', 'Changes saved successfully.');
         } catch (error) {
@@ -301,30 +302,53 @@ export const EventDetailsScreen = () => {
                         People
                     </Text>
                     <View className="flex-row flex-wrap">
-                        {people.map((personName, idx) => (
-                            <View
-                                key={idx}
-                                className="flex-row items-center px-3 py-2 rounded-full mr-2 mb-2"
-                                style={{ backgroundColor: colors.surface }}
-                            >
-                                {/* Avatar placeholder */}
-                                <View className="w-6 h-6 rounded-full bg-gray-400 mr-2 items-center justify-center">
-                                    <Text className="text-xs text-white">{personName.charAt(0)}</Text>
-                                </View>
-                                <Text style={{ color: colors.textPrimary }}>
-                                    {personName}
-                                </Text>
+                        {people.map((person, idx) => {
+                            const isTemporary = person._id.toString().startsWith('temp-');
+                            const initial = person.name.charAt(0).toUpperCase();
+                            
+                            return (
                                 <Pressable
+                                    key={person._id}
                                     onPress={() => {
-                                        const newPeople = people.filter((_, i) => i !== idx);
-                                        setPeople(newPeople);
+                                        // Only navigate if this is not a temporary person (has valid ID)
+                                        if (!isTemporary) {
+                                            navigation.navigate('PersonDetail', { personId: person._id as Id<'people'> });
+                                        }
                                     }}
-                                    className="ml-2"
+                                    className="flex-row items-center px-3 py-2 rounded-full mr-2 mb-2"
+                                    style={{ 
+                                        backgroundColor: colors.surface,
+                                        opacity: isTemporary ? 0.6 : 1
+                                    }}
+                                    disabled={isTemporary}
                                 >
-                                    <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
+                                    <View 
+                                        className="w-8 h-8 rounded-full mr-2 items-center justify-center"
+                                        style={{ backgroundColor: colors.accentMint }}
+                                    >
+                                        <Text className="text-sm font-semibold" style={{ color: colors.background }}>
+                                            {initial}
+                                        </Text>
+                                    </View>
+                                    <Text 
+                                        className="text-base mr-2"
+                                        style={{ color: colors.textPrimary }}
+                                    >
+                                        {person.name}
+                                    </Text>
+                                    <Pressable
+                                        onPress={(e) => {
+                                            e.stopPropagation();
+                                            const newPeople = people.filter((_, i) => i !== idx);
+                                            setPeople(newPeople);
+                                        }}
+                                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                    >
+                                        <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
+                                    </Pressable>
                                 </Pressable>
-                            </View>
-                        ))}
+                            );
+                        })}
                         {isAddingPerson ? (
                             <TextInput
                                 ref={personInputRef}
@@ -343,16 +367,22 @@ export const EventDetailsScreen = () => {
                                 autoFocus
                                 onSubmitEditing={(e) => {
                                     const newPerson = e.nativeEvent.text.trim();
-                                    if (newPerson && !people.includes(newPerson)) {
-                                        setPeople([...people, newPerson]);
+                                    if (newPerson && !people.some(p => p.name === newPerson)) {
+                                        // For new people added manually, we'll need to create a person record
+                                        // For now, we'll use a temporary ID - this should be handled by the backend
+                                        // when saving the event
+                                        setPeople([...people, { _id: `temp-${Date.now()}`, name: newPerson }]);
                                     }
                                     setNewPersonText('');
                                     setIsAddingPerson(false);
                                 }}
                                 onBlur={() => {
                                     const trimmed = newPersonText.trim();
-                                    if (trimmed && !people.includes(trimmed)) {
-                                        setPeople([...people, trimmed]);
+                                    if (trimmed && !people.some(p => p.name === trimmed)) {
+                                        // For new people added manually, we'll need to create a person record
+                                        // For now, we'll use a temporary ID - this should be handled by the backend
+                                        // when saving the event
+                                        setPeople([...people, { _id: `temp-${Date.now()}`, name: trimmed }]);
                                     }
                                     setNewPersonText('');
                                     setIsAddingPerson(false);
