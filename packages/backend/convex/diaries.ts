@@ -271,7 +271,6 @@ export const getDiary = query({
             arousalWord: v.optional(v.string()),
             anniversaryCandidate: v.optional(v.boolean()),
             tags: v.optional(v.array(v.string())),
-            importance: v.optional(v.number()),
             peopleDetails: v.array(
               v.object({
                 name: v.string(),

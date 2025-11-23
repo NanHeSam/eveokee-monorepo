@@ -77,8 +77,8 @@ export const updateEvent = mutation({
         eventId: v.id("events"),
         title: v.optional(v.string()),
         summary: v.optional(v.string()),
-        importance: v.optional(v.number()),
         mood: v.optional(v.union(v.literal(-2), v.literal(-1), v.literal(0), v.literal(1), v.literal(2))),
+        arousal: v.optional(v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4), v.literal(5))),
         tags: v.optional(v.array(v.string())),
         // For people, we might want to add/remove. For now, let's just allow updating the list of names?
         // Or maybe we just update the IDs if the frontend handles person management.
@@ -97,8 +97,8 @@ export const updateEvent = mutation({
         const updates: any = {};
         if (args.title !== undefined) updates.title = args.title;
         if (args.summary !== undefined) updates.summary = args.summary;
-        if (args.importance !== undefined) updates.importance = args.importance;
         if (args.mood !== undefined) updates.mood = args.mood;
+        if (args.arousal !== undefined) updates.arousal = args.arousal;
 
         if (args.tags !== undefined) {
             // Normalize tags
