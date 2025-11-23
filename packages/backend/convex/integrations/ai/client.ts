@@ -1,7 +1,4 @@
 import { createGateway } from "@ai-sdk/gateway";
-import { generateObject } from "ai";
-import { z } from "zod";
-
 // Default model in the format "provider/model-name"
 const DEFAULT_MODEL = "google/gemini-2.0-flash-exp";
 
@@ -32,30 +29,7 @@ export class AIClient {
     });
   }
 
-  /**
-   * Generate structured output using a specified model and Zod schema.
-   * 
-   * @param prompt - The user prompt
-   * @param schema - Zod schema defining the expected output structure
-   * @param modelName - Model in format "provider/model-name" (e.g., "google/gemini-2.0-flash-exp")
-   * @param systemPrompt - Optional system prompt
-   * @returns Parsed object matching the schema
-   */
-  async generateStructured<T>(
-    prompt: string,
-    schema: z.ZodType<T>,
-    modelName: string = DEFAULT_MODEL,
-    systemPrompt?: string
-  ): Promise<T> {
-    const model = this.gateway(modelName);
-
-    const { object } = await generateObject({
-      model,
-      schema: schema as any,
-      prompt,
-      system: systemPrompt,
-    });
-
-    return object as T;
+  getModel(modelName: string = DEFAULT_MODEL) {
+    return this.gateway(modelName);
   }
 }

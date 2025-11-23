@@ -1,10 +1,10 @@
 
 import { mutation, query, internalMutation, internalAction, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
+import { Doc, Id } from "./_generated/dataModel";
 import ensureCurrentUser, { getOptionalCurrentUser } from "./users";
 import { internal } from "./_generated/api";
-import { extractEventsFromDiary, normalizeTag, normalizePersonName } from "./memory/util";
+import { extractEventsFromDiary, normalizeTag, normalizePersonName, moodNumberToWord, arousalNumberToWord } from "./memory/util";
 
 /**
  * Create a new diary entry
@@ -99,17 +99,18 @@ export const updateDiary = mutation({
 });
 
 /**
- * Delete a diary entry and all associated music records and media
+ * Delete a diary entry and all associated music records, memory events, and media
  * 
  * Steps:
  * 1. Authenticate user and get userId
  * 2. Fetch diary record and verify ownership
  * 3. Find and delete all associated music records
- * 4. Find and delete all associated media records and their storage objects
- * 5. Delete the diary entry
+ * 4. Find and delete all associated memory events
+ * 5. Find and delete all associated media records and their storage objects
+ * 6. Delete the diary entry
  * 
  * WARNING: This permanently deletes the diary, all associated music tracks,
- * and all associated media storage objects.
+ * memory events, and all associated media storage objects.
  * 
  * NOTE: This operation is idempotent. If the diary is already deleted or
  * doesn't exist, the function returns null without throwing an error. This
@@ -146,7 +147,17 @@ export const deleteDiary = mutation({
       musicRecords.map((music) => ctx.db.delete(music._id))
     );
 
-    // Step 4: Delete associated media records and their storage objects
+    // Step 4: Delete associated memory events
+    const eventRecords = await ctx.db
+      .query("events")
+      .withIndex("by_diaryId", (q) => q.eq("diaryId", args.diaryId))
+      .collect();
+
+    await Promise.all(
+      eventRecords.map((event) => ctx.db.delete(event._id))
+    );
+
+    // Step 5: Delete associated media records and their storage objects
     const mediaRecords = await ctx.db
       .query("diaryMedia")
       .withIndex("by_diaryId", (q) => q.eq("diaryId", args.diaryId))
@@ -162,7 +173,7 @@ export const deleteDiary = mutation({
       mediaRecords.map((media) => ctx.db.delete(media._id))
     );
 
-    // Step 5: Delete diary entry
+    // Step 6: Delete diary entry
     await ctx.db.delete(args.diaryId);
     return null;
   },
@@ -243,6 +254,33 @@ export const getDiary = query({
           ),
         }),
       ),
+      events: v.optional(
+        v.array(
+          v.object({
+            _id: v.id("events"),
+            _creationTime: v.number(),
+            userId: v.id("users"),
+            diaryId: v.id("diaries"),
+            happenedAt: v.number(),
+            personIds: v.optional(v.array(v.id("people"))),
+            title: v.string(),
+            summary: v.string(),
+            mood: v.optional(v.union(v.literal(-2), v.literal(-1), v.literal(0), v.literal(1), v.literal(2))),
+            moodWord: v.optional(v.string()),
+            arousal: v.optional(v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4), v.literal(5))),
+            arousalWord: v.optional(v.string()),
+            anniversaryCandidate: v.optional(v.boolean()),
+            tags: v.optional(v.array(v.string())),
+            importance: v.optional(v.number()),
+            peopleDetails: v.array(
+              v.object({
+                name: v.string(),
+                role: v.optional(v.string()),
+              })
+            ),
+          })
+        )
+      ),
     }),
     v.null(),
   ),
@@ -302,6 +340,36 @@ export const getDiary = query({
       }
     }
 
+    // Fetch events for this diary
+    const events = await ctx.db
+      .query("events")
+      .withIndex("by_diaryId", (q) => q.eq("diaryId", diary._id))
+      .collect();
+
+    // Resolve people names for events
+    const eventsWithDetails = await Promise.all(
+      events.map(async (event) => {
+        let peopleDetails: { name: string; role?: string }[] = [];
+        if (event.personIds && event.personIds.length > 0) {
+          const peopleDocs = await Promise.all(
+            event.personIds.map((id) => ctx.db.get(id))
+          );
+          peopleDetails = peopleDocs
+            .filter((p) => p !== null)
+            .map((p) => ({
+              name: p!.primaryName,
+              role: p!.relationshipLabel,
+            }));
+        }
+        return {
+          ...event,
+          peopleDetails,
+          moodWord: moodNumberToWord(event.mood),
+          arousalWord: arousalNumberToWord(event.arousal),
+        };
+      })
+    );
+
     return {
       _id: diary._id,
       userId: diary.userId,
@@ -311,6 +379,7 @@ export const getDiary = query({
       primaryMusicId: diary.primaryMusicId,
       updatedAt: diary.updatedAt,
       primaryMusic,
+      events: eventsWithDetails,
     };
   },
 });
@@ -478,6 +547,25 @@ export const saveDiaryEvents = internalMutation({
         happenedAt: v.number(),
         tags: v.array(v.string()),
         people: v.array(v.string()),
+        mood: v.optional(
+          v.union(
+            v.literal(-2),
+            v.literal(-1),
+            v.literal(0),
+            v.literal(1),
+            v.literal(2),
+          ),
+        ),
+        arousal: v.optional(
+          v.union(
+            v.literal(1),
+            v.literal(2),
+            v.literal(3),
+            v.literal(4),
+            v.literal(5),
+          ),
+        ),
+        anniversaryCandidate: v.optional(v.boolean()),
       })
     ),
   },
@@ -553,7 +641,7 @@ export const saveDiaryEvents = internalMutation({
         }
       }
 
-      await ctx.db.insert("events", {
+      const eventRecord: Omit<Doc<"events">, "_id" | "_creationTime"> = {
         userId: diary.userId,
         diaryId: diary._id,
         happenedAt: eventData.happenedAt,
@@ -561,7 +649,21 @@ export const saveDiaryEvents = internalMutation({
         summary: eventData.summary,
         tags: tags,
         personIds: personIds,
-      });
+      };
+
+      if (eventData.mood !== undefined) {
+        eventRecord.mood = eventData.mood;
+      }
+
+      if (eventData.arousal !== undefined) {
+        eventRecord.arousal = eventData.arousal;
+      }
+
+      if (eventData.anniversaryCandidate !== undefined) {
+        eventRecord.anniversaryCandidate = eventData.anniversaryCandidate;
+      }
+
+      await ctx.db.insert("events", eventRecord);
     }
 
     // 3. Update Diary metadata (version tracking if needed, but lastProcessedAt is removed)

@@ -1,6 +1,7 @@
 import { query } from "../_generated/server";
 import { v } from "convex/values";
 import ensureCurrentUser from "../users";
+import { moodNumberToWord, arousalNumberToWord } from "./util";
 
 export const getPersonDetail = query({
   args: {
@@ -22,7 +23,11 @@ export const getPersonDetail = query({
       .order("desc")
       .take(100);
 
-    const events = recentEvents.filter(e => e.personIds?.includes(args.personId));
+    const events = recentEvents.filter(e => e.personIds?.includes(args.personId)).map(e => ({
+      ...e,
+      moodWord: moodNumberToWord(e.mood),
+      arousalWord: arousalNumberToWord(e.arousal),
+    }));
 
     return {
       person,

@@ -21,6 +21,7 @@ import type * as deleteAccount from "../deleteAccount.js";
 import type * as diaries from "../diaries.js";
 import type * as diaryMedia from "../diaryMedia.js";
 import type * as emailNotify from "../emailNotify.js";
+import type * as events from "../events.js";
 import type * as http from "../http.js";
 import type * as index from "../index.js";
 import type * as integrations_ai_client from "../integrations/ai/client.js";
@@ -109,6 +110,7 @@ declare const fullApi: ApiFromModules<{
   diaries: typeof diaries;
   diaryMedia: typeof diaryMedia;
   emailNotify: typeof emailNotify;
+  events: typeof events;
   http: typeof http;
   index: typeof index;
   "integrations/ai/client": typeof integrations_ai_client;

@@ -2,6 +2,7 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import ensureCurrentUser from "../users";
 import { Id } from "../_generated/dataModel";
+import { moodNumberToWord, arousalNumberToWord } from "./util";
 
 export const getTimelineEvents = query({
   args: {
@@ -33,7 +34,9 @@ export const getTimelineEvents = query({
 
     return events.map(e => ({
         ...e,
-        people: e.personIds?.map(id => peopleMap.get(id)).filter(Boolean)
+        people: e.personIds?.map(id => peopleMap.get(id)).filter(Boolean),
+        moodWord: moodNumberToWord(e.mood),
+        arousalWord: arousalNumberToWord(e.arousal),
     }));
   },
 });

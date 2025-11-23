@@ -16,7 +16,7 @@ export const DiaryViewScreen = () => {
   const colors = useThemeColors();
   const navigation = useNavigation<DiaryViewNavigationProp>();
   const route = useRoute<DiaryViewRouteProp>();
-  
+
   const { diaryId } = route.params;
 
   // Fetch the specific diary by ID
@@ -133,6 +133,63 @@ export const DiaryViewScreen = () => {
         <View className="mb-6">
           <DiaryMediaGrid diaryId={diaryId} editable={false} />
         </View>
+
+        {/* Events Summary */}
+        {currentDiary.events && currentDiary.events.length > 0 && (
+          <View className="mb-6">
+            <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
+              Events summary
+            </Text>
+            {currentDiary.events.map((event) => (
+              <Pressable
+                key={event._id}
+                onPress={() => navigation.navigate('EventDetails', { eventId: event._id })}
+                className="p-4 rounded-2xl mb-3"
+                style={{ backgroundColor: colors.surface }}
+              >
+                <View className="flex-row justify-between items-start mb-2">
+                  <Text className="text-base font-semibold flex-1 mr-2" style={{ color: colors.textPrimary }}>
+                    {event.title}
+                  </Text>
+                  {/* Placeholder for "Needs review" or other status if needed */}
+                </View>
+
+                {event.mood !== undefined && (
+                  <View className="flex-row items-center mb-3">
+                    <View className={`w-3 h-3 rounded-full mr-2 ${event.mood > 0 ? 'bg-green-500' : event.mood < 0 ? 'bg-red-500' : 'bg-gray-400'}`} />
+                    <Text className="text-sm" style={{ color: colors.textSecondary }}>
+                      Mood ({event.mood > 0 ? 'positive' : event.mood < 0 ? 'negative' : 'neutral'})
+                    </Text>
+                  </View>
+                )}
+
+                {/* People */}
+                {event.peopleDetails && event.peopleDetails.length > 0 && (
+                  <View className="flex-row flex-wrap mb-2">
+                    <Text className="text-sm mr-2 mb-1" style={{ color: colors.textSecondary }}>People</Text>
+                    {event.peopleDetails.map((person, idx) => (
+                      <View key={idx} className="px-2 py-1 rounded-full mr-2 mb-1" style={{ backgroundColor: colors.card }}>
+                        <Text className="text-xs" style={{ color: colors.textPrimary }}>{person.name}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Tags */}
+                {event.tags && event.tags.length > 0 && (
+                  <View className="flex-row flex-wrap">
+                    <Text className="text-sm mr-2 mb-1" style={{ color: colors.textSecondary }}>Tags</Text>
+                    {event.tags.map((tag, idx) => (
+                      <View key={idx} className="px-2 py-1 rounded-full mr-2 mb-1" style={{ backgroundColor: colors.card }}>
+                        <Text className="text-xs" style={{ color: colors.textPrimary }}>{tag}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </Pressable>
+            ))}
+          </View>
+        )}
 
         {primaryMusic && (
           <View className="mb-6">

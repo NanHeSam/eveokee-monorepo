@@ -15,6 +15,7 @@ import { View, Platform } from 'react-native';
 import { DiaryScreen } from './app/screens/DiaryScreen';
 import { DiaryEditScreen } from './app/screens/DiaryEditScreen';
 import { DiaryViewScreen } from './app/screens/DiaryViewScreen';
+import { EventDetailsScreen } from './app/screens/EventDetailsScreen';
 import { PlaylistScreen } from './app/screens/PlaylistScreen';
 import { SettingsScreen } from './app/screens/SettingsScreen';
 import { AccountScreen } from './app/screens/AccountScreen';
@@ -77,6 +78,7 @@ const DiaryStackNavigator = () => (
     <DiaryStack.Screen name="DiaryHome" component={DiaryScreen} />
     <DiaryStack.Screen name="DiaryView" component={DiaryViewScreen} />
     <DiaryStack.Screen name="DiaryEdit" component={DiaryEditScreen} />
+    <DiaryStack.Screen name="EventDetails" component={EventDetailsScreen} />
   </DiaryStack.Navigator>
 );
 
@@ -92,27 +94,27 @@ const MainTabs = () => {
 
   return (
     <Tab.Navigator
-    screenOptions={({ route }) => ({
-      headerShown: false,
-      tabBarShowLabel: true,
-      tabBarStyle: undefined,
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarShowLabel: true,
+        tabBarStyle: undefined,
         tabBarActiveTintColor: colors.accentMint,
         tabBarInactiveTintColor: colors.textSecondary,
-      tabBarLabelStyle: undefined,
-      tabBarIcon: ({ color, focused, size }) => {
-        const iconSize = size + (focused ? 2 : 0);
-        switch (route.name) {
-          case 'Diary':
-            return <Ionicons name={focused ? 'book' : 'book-outline'} size={iconSize} color={color} />;
-          case 'Playlist':
-            return <Ionicons name={focused ? 'musical-notes' : 'musical-notes-outline'} size={iconSize} color={color} />;
-          case 'Settings':
-            return <Ionicons name={focused ? 'settings' : 'settings-outline'} size={iconSize} color={color} />;
-          default:
-            return null;
+        tabBarLabelStyle: undefined,
+        tabBarIcon: ({ color, focused, size }) => {
+          const iconSize = size + (focused ? 2 : 0);
+          switch (route.name) {
+            case 'Diary':
+              return <Ionicons name={focused ? 'book' : 'book-outline'} size={iconSize} color={color} />;
+            case 'Playlist':
+              return <Ionicons name={focused ? 'musical-notes' : 'musical-notes-outline'} size={iconSize} color={color} />;
+            case 'Settings':
+              return <Ionicons name={focused ? 'settings' : 'settings-outline'} size={iconSize} color={color} />;
+            default:
+              return null;
+          }
         }
-      }
-    })}
+      })}
     >
       <Tab.Screen name="Diary" component={DiaryStackNavigator} />
       <Tab.Screen name="Playlist" component={PlaylistScreen} />
@@ -129,7 +131,7 @@ if (!convexUrl) {
 
 const convexClient = new ConvexReactClient(convexUrl);
 
-const RootNavigator = ({ navigationRef, onNotificationNavigation }: { 
+const RootNavigator = ({ navigationRef, onNotificationNavigation }: {
   navigationRef: React.RefObject<NavigationContainerRef<any>>;
   onNotificationNavigation: (data: NotificationData) => void;
 }) => {
@@ -222,27 +224,27 @@ function AppContent() {
 
   const theme: Theme = colors.scheme === 'dark'
     ? {
-        ...DarkTheme,
-        colors: {
-          ...DarkTheme.colors,
-          background: colors.background,
-          card: colors.surface,
-          text: colors.textPrimary,
-          border: colors.border,
-          primary: colors.accentMint
-        }
+      ...DarkTheme,
+      colors: {
+        ...DarkTheme.colors,
+        background: colors.background,
+        card: colors.surface,
+        text: colors.textPrimary,
+        border: colors.border,
+        primary: colors.accentMint
       }
+    }
     : {
-        ...DefaultTheme,
-        colors: {
-          ...DefaultTheme.colors,
-          background: colors.background,
-          card: colors.surface,
-          text: colors.textPrimary,
-          border: colors.border,
-          primary: colors.accentMint
-        }
-      };
+      ...DefaultTheme,
+      colors: {
+        ...DefaultTheme.colors,
+        background: colors.background,
+        card: colors.surface,
+        text: colors.textPrimary,
+        border: colors.border,
+        primary: colors.accentMint
+      }
+    };
 
   return (
     <SafeAreaProvider>
