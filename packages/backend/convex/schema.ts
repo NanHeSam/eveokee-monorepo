@@ -425,4 +425,12 @@ export default defineSchema({
     .index("by_userId_and_musicId", ["userId", "musicId"])
     .index("by_musicId", ["musicId"])
     .index("by_sharedMusicId", ["sharedMusicId"]),
+
+  featureFlags: defineTable({
+    flagKey: v.string(),
+    allowUserIds: v.array(v.id("users")),
+    denyUserIds: v.array(v.id("users")),
+    rolloutPercentage: v.number(), // 0-100
+  })
+    .index("by_flagKey", ["flagKey"]),
 });
