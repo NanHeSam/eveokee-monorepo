@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useUsage, formatUsageText, formatRemainingQuota, getUsagePercentage, needsUpgrade } from '../../store/useSubscriptionStore';
+import { useThemeColors } from '../../theme/useThemeColors';
 
 interface UsageProgressProps {
   onUpgradePress?: () => void;
@@ -24,6 +25,7 @@ export function UsageProgress({
   compact = false
 }: UsageProgressProps) {
   const { usage } = useUsage();
+  const colors = useThemeColors();
 
   if (!usage) {
     return null;
@@ -60,46 +62,48 @@ export function UsageProgress({
   }
 
   return (
-    <View className="bg-white p-4 rounded-lg border border-gray-200">
-      <View className="flex-row justify-between items-center mb-2">
-        <Text className="text-sm font-medium text-gray-700">
-          Music Generations
+    <View style={{ padding: 0 }}>
+      <View className="flex-row justify-between items-center mb-3">
+        <Text className="text-base font-medium" style={{ color: colors.textPrimary }}>
+          Your song moments
         </Text>
-        <Text className="text-sm font-medium text-gray-900">
+        <Text className="text-sm font-medium" style={{ color: colors.textSecondary }}>
           {usageText}
         </Text>
       </View>
 
-      <View className="bg-gray-200 rounded-full h-3 mb-2">
+      <View className="rounded-full h-3 mb-3" style={{ backgroundColor: colors.border }}>
         <View 
-          className={`h-3 rounded-full ${
-            needsUpgradeNow ? 'bg-red-500' : 'bg-blue-500'
-          }`}
-          style={{ width: `${usagePercentage}%` }}
+          className="h-3 rounded-full"
+          style={{ 
+            width: `${usagePercentage}%`,
+            backgroundColor: needsUpgradeNow ? '#FF6B6B' : colors.accentMint
+          }}
         />
       </View>
 
       <View className="flex-row justify-between items-center">
-        <Text className="text-xs text-gray-500">
+        <Text className="text-sm" style={{ color: colors.textSecondary }}>
           {remainingText}
         </Text>
         
         {needsUpgradeNow && showUpgradeButton && (
           <TouchableOpacity 
             onPress={onUpgradePress}
-            className="bg-blue-500 px-3 py-1 rounded-full"
+            className="px-4 py-2 rounded-full"
+            style={{ backgroundColor: colors.accentMint }}
           >
-            <Text className="text-white text-xs font-medium">
-              Upgrade
+            <Text className="text-sm font-medium" style={{ color: colors.background }}>
+              Continue your journey
             </Text>
           </TouchableOpacity>
         )}
       </View>
 
       {needsUpgradeNow && (
-        <View className="mt-3 p-2 bg-red-50 rounded-lg border border-red-200">
-          <Text className="text-red-800 text-xs text-center">
-            You&apos;ve reached your limit. Upgrade to continue creating music.
+        <View className="mt-3 p-3 rounded-xl" style={{ backgroundColor: 'rgba(255, 107, 107, 0.15)' }}>
+          <Text className="text-sm text-center" style={{ color: '#FF6B6B' }}>
+            Your creative energy has been fully expressed. Continue your journey to create more melodies.
           </Text>
         </View>
       )}

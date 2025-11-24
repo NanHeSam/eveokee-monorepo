@@ -165,8 +165,8 @@ export const DiaryViewScreen = () => {
 
                 {/* People */}
                 {event.people && event.people.length > 0 && (
-                  <View className="flex-row flex-wrap mb-2">
-                    <Text className="text-sm mr-2 mb-1" style={{ color: colors.textSecondary }}>People</Text>
+                  <View className="flex-row flex-wrap items-center mb-2">
+                    <Text className="text-sm mr-2" style={{ color: colors.textSecondary }}>People</Text>
                     {event.people.map((person) => (
                       <Pressable
                         key={person._id}
@@ -174,7 +174,7 @@ export const DiaryViewScreen = () => {
                           navigation.navigate('PersonDetail', { personId: person._id });
                         }}
                       >
-                        <View className="px-2 py-1 rounded-full mr-2 mb-1" style={{ backgroundColor: colors.card }}>
+                        <View className="px-2 py-1 rounded-full mr-2 mb-1" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.accentMint + '30' }}>
                           <Text className="text-xs" style={{ color: colors.textPrimary }}>{person.name}</Text>
                         </View>
                       </Pressable>
@@ -184,8 +184,8 @@ export const DiaryViewScreen = () => {
 
                 {/* Tags */}
                 {event.tags && event.tags.length > 0 && (
-                  <View className="flex-row flex-wrap">
-                    <Text className="text-sm mr-2 mb-1" style={{ color: colors.textSecondary }}>Tags</Text>
+                  <View className="flex-row flex-wrap items-center">
+                    <Text className="text-sm mr-2" style={{ color: colors.textSecondary }}>Tags</Text>
                     {event.tags.map((tag) => (
                       <Pressable
                         key={tag._id}
@@ -193,7 +193,7 @@ export const DiaryViewScreen = () => {
                           // TODO: Navigate to tag detail page
                         }}
                       >
-                        <View className="px-2 py-1 rounded-full mr-2 mb-1" style={{ backgroundColor: colors.card }}>
+                        <View className="px-2 py-1 rounded-full mr-2 mb-1" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.accentMint + '30' }}>
                           <Text className="text-xs" style={{ color: colors.textPrimary }}>{tag.name}</Text>
                         </View>
                       </Pressable>

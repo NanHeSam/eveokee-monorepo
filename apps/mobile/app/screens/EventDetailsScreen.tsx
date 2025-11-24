@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert, PanResponder, Dimensions } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert, PanResponder, Dimensions, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { EventDetailsNavigationProp, EventDetailsRouteProp } from '../navigation
 import { Id } from '@backend/convex/convex/_generated/dataModel';
 import { useThemeColors } from '../theme/useThemeColors';
 import { format } from 'date-fns';
+import { useUser } from '@clerk/clerk-expo';
 
 // Emoji mappings for mood (-2 to 2)
 const MOOD_EMOJIS: Record<number, string> = {
@@ -69,6 +70,7 @@ const DraggableSlider: React.FC<DraggableSliderProps> = ({
     const sliderWidth = Dimensions.get('window').width - 80; // Account for padding
     const [localValue, setLocalValue] = useState<number | undefined>(value);
     const [sliderLayout, setSliderLayout] = useState({ width: sliderWidth, x: 0 });
+    const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
         setLocalValue(value);
@@ -85,6 +87,20 @@ const DraggableSlider: React.FC<DraggableSliderProps> = ({
         const newValue = min + clampedIndex;
         setLocalValue(newValue);
         onValueChange(newValue);
+        
+        // Gentle animation on change
+        Animated.sequence([
+            Animated.timing(scaleAnim, {
+                toValue: 1.05,
+                duration: 100,
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleAnim, {
+                toValue: 1,
+                duration: 150,
+                useNativeDriver: true,
+            }),
+        ]).start();
     };
 
     const panResponder = PanResponder.create({
@@ -105,18 +121,21 @@ const DraggableSlider: React.FC<DraggableSliderProps> = ({
 
     return (
         <View className="mb-6">
-            <Text className="text-sm mb-3" style={{ color: '#A0A0A0' }}>{label}</Text>
-            <View className="flex-row items-center mb-2">
+            <Text className="text-sm mb-3" style={{ color: colors.textSecondary }}>{label}</Text>
+            <Animated.View 
+                className="flex-row items-center mb-2"
+                style={{ transform: [{ scale: scaleAnim }] }}
+            >
                 <Text className="text-3xl mr-3">{emojis[currentValue]}</Text>
-                <Text className="text-lg font-semibold text-white">{labels[currentValue]}</Text>
-            </View>
+                <Text className="text-lg font-semibold" style={{ color: colors.textPrimary }}>{labels[currentValue]}</Text>
+            </Animated.View>
             <View
                 onLayout={(e) => {
                     const { width, x } = e.nativeEvent.layout;
                     setSliderLayout({ width, x });
                 }}
                 className="flex-row h-12 rounded-full overflow-hidden"
-                style={{ backgroundColor: '#2A3055', width: sliderWidth }}
+                style={{ backgroundColor: colors.border, width: sliderWidth }}
                 {...panResponder.panHandlers}
             >
                 {values.map((val, idx) => (
@@ -128,7 +147,7 @@ const DraggableSlider: React.FC<DraggableSliderProps> = ({
                         }}
                         className="flex-1 items-center justify-center"
                         style={{
-                            backgroundColor: idx <= valueIndex ? '#4FD1C7' : 'transparent',
+                            backgroundColor: idx <= valueIndex ? colors.accentMint : 'transparent',
                         }}
                     >
                         <Text className="text-xl">{emojis[val]}</Text>
@@ -144,6 +163,7 @@ export const EventDetailsScreen = () => {
     const navigation = useNavigation<EventDetailsNavigationProp>();
     const route = useRoute<EventDetailsRouteProp>();
     const { eventId } = route.params;
+    const { user } = useUser();
 
     const event = useQuery(api.events.getEvent, { eventId });
     const updateEvent = useMutation(api.events.updateEvent);
@@ -160,9 +180,9 @@ export const EventDetailsScreen = () => {
     const [isAddingPerson, setIsAddingPerson] = useState(false);
     const [newTagText, setNewTagText] = useState('');
     const [newPersonText, setNewPersonText] = useState('');
-    const [isEmotionCollapsed, setIsEmotionCollapsed] = useState(true);
     const tagInputRef = React.useRef<TextInput>(null);
     const personInputRef = React.useRef<TextInput>(null);
+    const personAnimations = React.useRef<Map<string, Animated.Value>>(new Map()).current;
 
     useEffect(() => {
         if (event) {
@@ -227,7 +247,7 @@ export const EventDetailsScreen = () => {
                     <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
                 </Pressable>
                 <Text className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
-                    Derived Memory
+                    What stayed with me
                 </Text>
                 <Pressable
                     onPress={handleSave}
@@ -249,14 +269,78 @@ export const EventDetailsScreen = () => {
                 <Text className="text-2xl font-bold mb-1" style={{ color: colors.textPrimary }}>
                     {title || 'Untitled Event'}
                 </Text>
-                <Text className="text-sm mb-6" style={{ color: colors.textSecondary }}>
+                <Text className="text-sm mb-4" style={{ color: colors.textSecondary }}>
                     {format(new Date(event.happenedAt), 'MMMM d, yyyy • HH:mm')}
                 </Text>
 
+                {/* Memory Identity Layer */}
+                <View className="mb-6 pb-4 border-b" style={{ borderBottomColor: colors.border, borderBottomWidth: 1 }}>
+                    <Text className="text-xs italic" style={{ color: colors.textSecondary }}>
+                        A fragment of your life, preserved in sound
+                    </Text>
+                </View>
+
+                {/* Emotion & Intensity - Moved to top */}
+                <View className="p-4 rounded-3xl mb-6" style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}>
+                    <Text className="text-base mb-4 italic" style={{ color: colors.textSecondary }}>
+                        This moment left me feeling…
+                    </Text>
+                    <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
+                        Emotion & Intensity
+                    </Text>
+
+                    {/* Mood Slider */}
+                    <DraggableSlider
+                        value={mood}
+                        min={-2}
+                        max={2}
+                        onValueChange={(val) => setMood(val as -2 | -1 | 0 | 1 | 2)}
+                        emojis={MOOD_EMOJIS}
+                        labels={MOOD_LABELS}
+                        label="Emotion"
+                        colors={colors}
+                    />
+
+                    {/* Arousal/Intensity Slider */}
+                    <DraggableSlider
+                        value={arousal}
+                        min={1}
+                        max={5}
+                        onValueChange={(val) => setArousal(val as 1 | 2 | 3 | 4 | 5)}
+                        emojis={AROUSAL_EMOJIS}
+                        labels={AROUSAL_LABELS}
+                        label="Intensity"
+                        colors={colors}
+                    />
+                </View>
+
+                {/* Narrative - Long Summary */}
+                <View className="mb-6">
+                    <Text className="text-sm mb-2 italic" style={{ color: colors.textSecondary }}>
+                        The story of this moment
+                    </Text>
+                    <TextInput
+                        className="p-4 rounded-2xl text-base"
+                        style={{
+                            backgroundColor: colors.surface,
+                            color: colors.textPrimary,
+                            borderWidth: 1,
+                            borderColor: colors.border,
+                            minHeight: 120
+                        }}
+                        value={summary}
+                        onChangeText={setSummary}
+                        placeholder="What happened? What did it mean to you?"
+                        placeholderTextColor={colors.textSecondary}
+                        multiline
+                        textAlignVertical="top"
+                    />
+                </View>
+
                 {/* Editable Short Summary */}
                 <View className="mb-6">
-                    <Text className="text-sm mb-2" style={{ color: colors.textSecondary }}>
-                        Editable Short Summary
+                    <Text className="text-sm mb-2 italic" style={{ color: colors.textSecondary }}>
+                        A brief memory
                     </Text>
                     <TextInput
                         className="p-4 rounded-2xl text-base"
@@ -268,86 +352,102 @@ export const EventDetailsScreen = () => {
                         }}
                         value={title}
                         onChangeText={setTitle}
-                        placeholder="Enter title..."
+                        placeholder="A few words to remember this by..."
                         placeholderTextColor={colors.textSecondary}
                         multiline
                     />
                 </View>
 
-                {/* Editable Long Summary */}
-                <View className="mb-6">
-                    <Text className="text-sm mb-2" style={{ color: colors.textSecondary }}>
-                        Editable Long Summary
-                    </Text>
-                    <TextInput
-                        className="p-4 rounded-2xl text-base"
-                        style={{
-                            backgroundColor: colors.surface,
-                            color: colors.textPrimary,
-                            borderWidth: 1,
-                            borderColor: colors.border,
-                            minHeight: 100
-                        }}
-                        value={summary}
-                        onChangeText={setSummary}
-                        placeholder="Enter summary..."
-                        placeholderTextColor={colors.textSecondary}
-                        multiline
-                        textAlignVertical="top"
-                    />
-                </View>
-
-                {/* People */}
+                {/* People - Who was part of this moment */}
                 <View className="mb-6">
                     <Text className="text-lg font-semibold mb-3" style={{ color: colors.textPrimary }}>
-                        People
+                        Who was part of this moment
                     </Text>
                     <View className="flex-row flex-wrap">
                         {people.map((person, idx) => {
                             const isTemporary = person._id.toString().startsWith('temp-');
                             const initial = person.name.charAt(0).toUpperCase();
                             
+                            // Get or create animation for this person
+                            if (!personAnimations.has(person._id.toString())) {
+                                personAnimations.set(person._id.toString(), new Animated.Value(1));
+                            }
+                            const scaleAnim = personAnimations.get(person._id.toString())!;
+                            
+                            // Simple micro-emotion indicator (random for now, could be stored per person)
+                            const emotionDots = ['💛', '💙', '💞'];
+                            const emotionDot = emotionDots[idx % emotionDots.length];
+                            
                             return (
-                                <Pressable
+                                <Animated.View
                                     key={person._id}
-                                    onPress={() => {
-                                        // Only navigate if this is not a temporary person (has valid ID)
-                                        if (!isTemporary) {
-                                            navigation.navigate('PersonDetail', { personId: person._id as Id<'people'> });
-                                        }
-                                    }}
-                                    className="flex-row items-center px-3 py-2 rounded-full mr-2 mb-2"
-                                    style={{ 
-                                        backgroundColor: colors.surface,
-                                        opacity: isTemporary ? 0.6 : 1
-                                    }}
-                                    disabled={isTemporary}
+                                    style={{ transform: [{ scale: scaleAnim }] }}
                                 >
-                                    <View 
-                                        className="w-8 h-8 rounded-full mr-2 items-center justify-center"
-                                        style={{ backgroundColor: colors.accentMint }}
-                                    >
-                                        <Text className="text-sm font-semibold" style={{ color: colors.background }}>
-                                            {initial}
-                                        </Text>
-                                    </View>
-                                    <Text 
-                                        className="text-base mr-2"
-                                        style={{ color: colors.textPrimary }}
-                                    >
-                                        {person.name}
-                                    </Text>
                                     <Pressable
-                                        onPress={(e) => {
-                                            e.stopPropagation();
-                                            const newPeople = people.filter((_, i) => i !== idx);
-                                            setPeople(newPeople);
+                                        onPress={() => {
+                                            // Gentle pulse animation
+                                            Animated.sequence([
+                                                Animated.timing(scaleAnim, {
+                                                    toValue: 1.1,
+                                                    duration: 100,
+                                                    useNativeDriver: true,
+                                                }),
+                                                Animated.timing(scaleAnim, {
+                                                    toValue: 1,
+                                                    duration: 200,
+                                                    useNativeDriver: true,
+                                                }),
+                                            ]).start();
+                                            
+                                            // Only navigate if this is not a temporary person (has valid ID)
+                                            if (!isTemporary) {
+                                                navigation.navigate('PersonDetail', { personId: person._id as Id<'people'> });
+                                            }
                                         }}
-                                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                        className="flex-row items-center px-3 py-2 rounded-full mr-2 mb-2"
+                                        style={{ 
+                                            backgroundColor: colors.surface,
+                                            borderWidth: 1,
+                                            borderColor: colors.accentMint + '30', // 30 = ~19% opacity in hex
+                                            opacity: isTemporary ? 0.6 : 1
+                                        }}
+                                        disabled={isTemporary}
                                     >
-                                        <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
+                                        <View className="relative">
+                                            <View 
+                                                className="w-8 h-8 rounded-full mr-2 items-center justify-center"
+                                                style={{ backgroundColor: colors.accentMint }}
+                                            >
+                                                <Text className="text-sm font-semibold" style={{ color: colors.background }}>
+                                                    {initial}
+                                                </Text>
+                                            </View>
+                                            {/* Micro-emotion dot */}
+                                            <View 
+                                                className="absolute -top-1 -right-1 w-4 h-4 rounded-full items-center justify-center"
+                                                style={{ backgroundColor: colors.background }}
+                                            >
+                                                <Text className="text-xs">{emotionDot}</Text>
+                                            </View>
+                                        </View>
+                                        <Text 
+                                            className="text-base mr-2"
+                                            style={{ color: colors.textPrimary }}
+                                        >
+                                            {person.name}
+                                        </Text>
+                                        <Pressable
+                                            onPress={(e) => {
+                                                e.stopPropagation();
+                                                const newPeople = people.filter((_, i) => i !== idx);
+                                                setPeople(newPeople);
+                                            }}
+                                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                        >
+                                            <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
+                                        </Pressable>
                                     </Pressable>
-                                </Pressable>
+                                </Animated.View>
                             );
                         })}
                         {isAddingPerson ? (
@@ -408,17 +508,22 @@ export const EventDetailsScreen = () => {
                     </View>
                 </View>
 
-                {/* Tags */}
+                {/* Themes - What this moment was about */}
                 <View className="mb-6">
                     <Text className="text-lg font-semibold mb-3" style={{ color: colors.textPrimary }}>
-                        Tags
+                        Themes of this moment
                     </Text>
                     <View className="flex-row flex-wrap">
                         {tags.map((tagName, idx) => (
                             <View
                                 key={idx}
                                 className="flex-row items-center px-4 py-2 rounded-full mr-2 mb-2"
-                                style={{ backgroundColor: colors.surface }}
+                                style={{ 
+                                    backgroundColor: colors.surface,
+                                    // Soft gradient effect using opacity
+                                    borderWidth: 1,
+                                    borderColor: colors.accentMint + '30', // 30 = ~19% opacity in hex
+                                }}
                             >
                                 <Text style={{ color: colors.textPrimary }}>{tagName}</Text>
                                 <Pressable
@@ -443,7 +548,7 @@ export const EventDetailsScreen = () => {
                                     borderColor: colors.accentMint,
                                     minWidth: 120,
                                 }}
-                                placeholder="Tag name..."
+                                placeholder="e.g., 'A moment of alignment' or 'Curious connection'..."
                                 placeholderTextColor={colors.textSecondary}
                                 value={newTagText}
                                 onChangeText={setNewTagText}
@@ -478,55 +583,10 @@ export const EventDetailsScreen = () => {
                                 className="px-4 py-2 rounded-full mr-2 mb-2"
                                 style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed' }}
                             >
-                                <Text style={{ color: colors.textPrimary }}>+ Add tag</Text>
+                                <Text style={{ color: colors.textPrimary }}>+ Add theme</Text>
                             </Pressable>
                         )}
                     </View>
-                </View>
-
-                {/* Emotion & Intensity */}
-                <View className="p-4 rounded-3xl mb-6" style={{ backgroundColor: '#1A1F3D' }}>
-                    <Pressable
-                        onPress={() => setIsEmotionCollapsed(!isEmotionCollapsed)}
-                        className="flex-row items-center justify-between mb-4"
-                    >
-                        <Text className="text-lg font-semibold" style={{ color: 'white' }}>
-                            Emotion & Intensity
-                        </Text>
-                        <Ionicons
-                            name={isEmotionCollapsed ? 'chevron-down' : 'chevron-up'}
-                            size={20}
-                            color="white"
-                        />
-                    </Pressable>
-
-                    {!isEmotionCollapsed && (
-                        <>
-                            {/* Mood Slider */}
-                            <DraggableSlider
-                                value={mood}
-                                min={-2}
-                                max={2}
-                                onValueChange={(val) => setMood(val as -2 | -1 | 0 | 1 | 2)}
-                                emojis={MOOD_EMOJIS}
-                                labels={MOOD_LABELS}
-                                label="Emotion"
-                                colors={colors}
-                            />
-
-                            {/* Arousal/Intensity Slider */}
-                            <DraggableSlider
-                                value={arousal}
-                                min={1}
-                                max={5}
-                                onValueChange={(val) => setArousal(val as 1 | 2 | 3 | 4 | 5)}
-                                emojis={AROUSAL_EMOJIS}
-                                labels={AROUSAL_LABELS}
-                                label="Intensity"
-                                colors={colors}
-                            />
-                        </>
-                    )}
                 </View>
 
 
@@ -534,9 +594,9 @@ export const EventDetailsScreen = () => {
                     <Pressable
                         onPress={() => navigation.navigate('DiaryView', { diaryId: event.diaryId })}
                         className="w-full py-3 rounded-xl items-center"
-                        style={{ backgroundColor: '#2A3055' }}
+                        style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
                     >
-                        <Text className="text-white font-semibold">View Full Entry</Text>
+                        <Text className="font-semibold" style={{ color: colors.textPrimary }}>View Full Entry</Text>
                     </Pressable>
 
             </ScrollView>

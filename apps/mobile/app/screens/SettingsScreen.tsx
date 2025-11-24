@@ -135,10 +135,10 @@ export const SettingsScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Subscription Status */}
+          {/* Your Journey */}
           <View className="mt-6">
             <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
-              Subscription
+              Your journey
             </Text>
             <View className="rounded-3xl p-5" style={{ backgroundColor: colors.surface }}>
               {subscriptionLoading ? (
@@ -206,11 +206,11 @@ export const SettingsScreen = () => {
             </View>
           </View>
 
-          {/* Usage Information - Only show for free tier */}
+          {/* Your Creative Energy - Only show for free tier */}
           {subscriptionStatus?.tier === 'free' && (
             <View className="mt-6">
               <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
-              Free Tier Usage
+                Your creative energy this month
               </Text>
               <View className="rounded-3xl p-5" style={{ backgroundColor: colors.surface }}>
                 <UsageProgress
