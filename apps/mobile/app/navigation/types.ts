@@ -27,6 +27,16 @@ export type DiaryStackParamList = {
 export type SettingsStackParamList = {
   SettingsHome: undefined;
   Account: undefined;
+  People: undefined;
+  PersonDetail: {
+    personId: Id<'people'>;
+  };
+  PersonEdit: {
+    personId: Id<'people'>;
+  };
+  EventDetails: {
+    eventId: Id<'events'>;
+  };
 };
 
 export type MainTabsParamList = {

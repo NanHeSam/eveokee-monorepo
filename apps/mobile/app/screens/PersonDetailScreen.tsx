@@ -60,12 +60,6 @@ export const PersonDetailScreen = () => {
   const { person, recentEvents } = personDetail;
   const personName = person.primaryName;
   const initial = personName.charAt(0).toUpperCase();
-  const interactionCount = person.interactionCount || 0;
-  const lastMentionedAt = person.lastMentionedAt;
-
-  // Calculate the year for "you've mentioned" text
-  const currentYear = new Date().getFullYear();
-  const lastMentionedYear = lastMentionedAt ? new Date(lastMentionedAt).getFullYear() : currentYear;
 
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: colors.background }}>
@@ -102,16 +96,6 @@ export const PersonDetailScreen = () => {
               {person.relationshipLabel}
             </Text>
           )}
-        </View>
-
-        {/* You've mentioned section */}
-        <View
-          className="p-4 rounded-2xl mb-6"
-          style={{ backgroundColor: colors.surface }}
-        >
-          <Text className="text-base" style={{ color: colors.textPrimary }}>
-            You&apos;ve mentioned {personName} {interactionCount} {interactionCount === 1 ? 'time' : 'times'} since {lastMentionedYear}.
-          </Text>
         </View>
 
         {/* Recent moments section */}

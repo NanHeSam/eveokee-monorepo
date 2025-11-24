@@ -21,11 +21,12 @@ import { PersonEditScreen } from './app/screens/PersonEditScreen';
 import { PlaylistScreen } from './app/screens/PlaylistScreen';
 import { SettingsScreen } from './app/screens/SettingsScreen';
 import { AccountScreen } from './app/screens/AccountScreen';
+import { PeopleScreen } from './app/screens/PeopleScreen';
 import { SignInScreen } from './app/screens/SignInScreen';
 import { SignUpScreen } from './app/screens/SignUpScreen';
 import { tokenCache } from './app/utils/tokenCache';
 import { useThemeColors } from './app/theme/useThemeColors';
-import { DiaryStackParamList } from './app/navigation/types';
+import { DiaryStackParamList, SettingsStackParamList } from './app/navigation/types';
 import { MiniPlayer } from './app/components/player/MiniPlayer';
 import { FullPlayer } from './app/components/player/FullPlayer';
 import { TrackPlayerProvider } from './app/providers/TrackPlayerProvider';
@@ -72,7 +73,7 @@ type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const DiaryStack = createNativeStackNavigator<DiaryStackParamList>();
-const SettingsStack = createNativeStackNavigator();
+const SettingsStack = createNativeStackNavigator<SettingsStackParamList>();
 const Tab = createBottomTabNavigator();
 
 const DiaryStackNavigator = () => (
@@ -90,6 +91,10 @@ const SettingsStackNavigator = () => (
   <SettingsStack.Navigator screenOptions={{ headerShown: false }}>
     <SettingsStack.Screen name="SettingsHome" component={SettingsScreen} />
     <SettingsStack.Screen name="Account" component={AccountScreen} />
+    <SettingsStack.Screen name="People" component={PeopleScreen} />
+    <SettingsStack.Screen name="PersonDetail" component={PersonDetailScreen} />
+    <SettingsStack.Screen name="PersonEdit" component={PersonEditScreen} />
+    <SettingsStack.Screen name="EventDetails" component={EventDetailsScreen} />
   </SettingsStack.Navigator>
 );
 

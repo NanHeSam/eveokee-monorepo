@@ -2,6 +2,7 @@ import { Image, Text, TouchableOpacity, View, ScrollView, RefreshControl } from 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import Purchases from 'react-native-purchases';
 
 import { useAuth, useUser } from '@clerk/clerk-expo';
@@ -112,6 +113,28 @@ export const SettingsScreen = () => {
             </View>
           </View>
 
+          {/* People */}
+          <View className="mt-6">
+            <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
+              People
+            </Text>
+            <TouchableOpacity
+              className="rounded-2xl p-4"
+              style={{ backgroundColor: colors.surface }}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('People' as never)}
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="flex-1">
+                  <Text className="text-base font-medium" style={{ color: colors.textPrimary }}>
+                    See People
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} style={{ marginLeft: 16 }} />
+              </View>
+            </TouchableOpacity>
+          </View>
+
           {/* Subscription Status */}
           <View className="mt-6">
             <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
@@ -216,22 +239,22 @@ export const SettingsScreen = () => {
               Account
             </Text>
             <TouchableOpacity
-              className="rounded-3xl p-5"
+              className="rounded-2xl p-4"
               style={{ backgroundColor: colors.surface }}
               activeOpacity={0.85}
               onPress={() => navigation.navigate('Account' as never)}
             >
               <View className="flex-row items-center justify-between">
-                <Text className="text-base font-medium" style={{ color: colors.textPrimary }}>
-                  Delete Account
-                </Text>
-                <Text className="text-base" style={{ color: colors.textSecondary }}>
-                  {'>'}
-                </Text>
+                <View className="flex-1">
+                  <Text className="text-base font-medium" style={{ color: colors.textPrimary }}>
+                    Delete Account
+                  </Text>
+                  <Text className="mt-2 text-sm" style={{ color: colors.textSecondary }}>
+                    Permanently delete your account and all journal entries.
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} style={{ marginLeft: 16 }} />
               </View>
-              <Text className="mt-2 text-sm" style={{ color: colors.textSecondary }}>
-                Permanently delete your account and all journal entries.
-              </Text>
             </TouchableOpacity>
           </View>
         </View>

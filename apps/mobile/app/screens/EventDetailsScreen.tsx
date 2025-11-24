@@ -160,6 +160,7 @@ export const EventDetailsScreen = () => {
     const [isAddingPerson, setIsAddingPerson] = useState(false);
     const [newTagText, setNewTagText] = useState('');
     const [newPersonText, setNewPersonText] = useState('');
+    const [isEmotionCollapsed, setIsEmotionCollapsed] = useState(true);
     const tagInputRef = React.useRef<TextInput>(null);
     const personInputRef = React.useRef<TextInput>(null);
 
@@ -485,33 +486,47 @@ export const EventDetailsScreen = () => {
 
                 {/* Emotion & Intensity */}
                 <View className="p-4 rounded-3xl mb-6" style={{ backgroundColor: '#1A1F3D' }}>
-                    <Text className="text-lg font-semibold mb-4" style={{ color: 'white' }}>
-                        Emotion & Intensity
-                    </Text>
+                    <Pressable
+                        onPress={() => setIsEmotionCollapsed(!isEmotionCollapsed)}
+                        className="flex-row items-center justify-between mb-4"
+                    >
+                        <Text className="text-lg font-semibold" style={{ color: 'white' }}>
+                            Emotion & Intensity
+                        </Text>
+                        <Ionicons
+                            name={isEmotionCollapsed ? 'chevron-down' : 'chevron-up'}
+                            size={20}
+                            color="white"
+                        />
+                    </Pressable>
 
-                    {/* Mood Slider */}
-                    <DraggableSlider
-                        value={mood}
-                        min={-2}
-                        max={2}
-                        onValueChange={(val) => setMood(val as -2 | -1 | 0 | 1 | 2)}
-                        emojis={MOOD_EMOJIS}
-                        labels={MOOD_LABELS}
-                        label="Emotion"
-                        colors={colors}
-                    />
+                    {!isEmotionCollapsed && (
+                        <>
+                            {/* Mood Slider */}
+                            <DraggableSlider
+                                value={mood}
+                                min={-2}
+                                max={2}
+                                onValueChange={(val) => setMood(val as -2 | -1 | 0 | 1 | 2)}
+                                emojis={MOOD_EMOJIS}
+                                labels={MOOD_LABELS}
+                                label="Emotion"
+                                colors={colors}
+                            />
 
-                    {/* Arousal/Intensity Slider */}
-                    <DraggableSlider
-                        value={arousal}
-                        min={1}
-                        max={5}
-                        onValueChange={(val) => setArousal(val as 1 | 2 | 3 | 4 | 5)}
-                        emojis={AROUSAL_EMOJIS}
-                        labels={AROUSAL_LABELS}
-                        label="Intensity"
-                        colors={colors}
-                    />
+                            {/* Arousal/Intensity Slider */}
+                            <DraggableSlider
+                                value={arousal}
+                                min={1}
+                                max={5}
+                                onValueChange={(val) => setArousal(val as 1 | 2 | 3 | 4 | 5)}
+                                emojis={AROUSAL_EMOJIS}
+                                labels={AROUSAL_LABELS}
+                                label="Intensity"
+                                colors={colors}
+                            />
+                        </>
+                    )}
                 </View>
 
 
