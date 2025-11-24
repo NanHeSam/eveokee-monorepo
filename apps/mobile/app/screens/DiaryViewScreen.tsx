@@ -11,11 +11,13 @@ import { DiaryViewNavigationProp, DiaryViewRouteProp } from '../navigation/types
 import { api } from '@backend/convex';
 import { DiaryMediaGrid } from '../components/diary/DiaryMediaGrid';
 import { useTrackPlayerStore } from '../store/useTrackPlayerStore';
+import { useFeatureFlags } from '../hooks/useFeatureFlags';
 
 export const DiaryViewScreen = () => {
   const colors = useThemeColors();
   const navigation = useNavigation<DiaryViewNavigationProp>();
   const route = useRoute<DiaryViewRouteProp>();
+  const { hasFeature } = useFeatureFlags();
 
   const { diaryId } = route.params;
 
@@ -135,7 +137,7 @@ export const DiaryViewScreen = () => {
         </View>
 
         {/* Events Summary */}
-        {currentDiary.events && currentDiary.events.length > 0 && (
+        {hasFeature('event-extraction') && currentDiary.events && currentDiary.events.length > 0 && (
           <View className="mb-6">
             <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
               Events summary
