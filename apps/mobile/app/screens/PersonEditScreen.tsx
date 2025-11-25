@@ -44,14 +44,24 @@ export const PersonEditScreen = () => {
     
     setIsSaving(true);
     try {
+      const trimmedHighlight = highlight.trim();
+      const existingSummary = personDetail?.person.highlights?.summary;
+      const existingLastGeneratedAt = personDetail?.person.highlights?.lastGeneratedAt;
+      
+      // Only update lastGeneratedAt if the highlight text actually changed
+      const highlightChanged = trimmedHighlight !== existingSummary;
+      const lastGeneratedAt = highlightChanged 
+        ? Date.now() 
+        : (existingLastGeneratedAt ?? Date.now());
+      
       await updatePerson({
         personId,
         primaryName: primaryName.trim() || undefined,
         altNames: altNames.length > 0 ? altNames : undefined,
         relationshipLabel: relationshipLabel.trim() || undefined,
-        highlights: highlight.trim() ? {
-          summary: highlight.trim(),
-          lastGeneratedAt: personDetail?.person.highlights?.lastGeneratedAt || Date.now(),
+        highlights: trimmedHighlight ? {
+          summary: trimmedHighlight,
+          lastGeneratedAt,
         } : undefined,
       });
       Alert.alert('Success', 'Person updated successfully.');
@@ -212,7 +222,9 @@ export const PersonEditScreen = () => {
                 autoFocus
                 onSubmitEditing={handleAddAltName}
                 onBlur={() => {
-                  handleAddAltName();
+                  // Only close the input on blur; don't attempt to add invalid/empty names
+                  // User can press Enter to explicitly add a name
+                  setNewAltName('');
                   setIsAddingAltName(false);
                 }}
               />

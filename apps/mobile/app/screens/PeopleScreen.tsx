@@ -5,11 +5,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from 'convex/react';
 import { api } from '@backend/convex';
 import { useThemeColors } from '../theme/useThemeColors';
-import { Id } from '@backend/convex/convex/_generated/dataModel';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SettingsStackParamList } from '../navigation/types';
 
 type PeopleScreenNavigationProp = NativeStackNavigationProp<SettingsStackParamList>;
+
+type Person = NonNullable<typeof api["memory/people"]["listPeople"]["_returnType"]>[number];
 
 export const PeopleScreen = () => {
   const colors = useThemeColors();
@@ -17,8 +18,11 @@ export const PeopleScreen = () => {
   
   const people = useQuery(api["memory/people"].listPeople);
 
-  const renderPerson = ({ item }: { item: any }) => {
-    const initial = item.primaryName.charAt(0).toUpperCase();
+  const renderPerson = ({ item }: { item: Person }) => {
+    const primaryName = item.primaryName || 'Unknown';
+    const initial = primaryName && primaryName.length > 0 
+      ? primaryName.charAt(0).toUpperCase() 
+      : '?';
     
     return (
       <Pressable
@@ -36,7 +40,7 @@ export const PeopleScreen = () => {
         </View>
         <View className="flex-1">
           <Text className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
-            {item.primaryName}
+            {primaryName}
           </Text>
           {item.relationshipLabel && (
             <Text className="text-sm" style={{ color: colors.textSecondary }}>

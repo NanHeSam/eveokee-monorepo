@@ -45,6 +45,42 @@ const AROUSAL_LABELS: Record<number, string> = {
     [5]: 'Very High',
 };
 
+// Valid mood values: -2, -1, 0, 1, 2
+const VALID_MOOD_VALUES = [-2, -1, 0, 1, 2] as const;
+const VALID_MOOD_SET = new Set(VALID_MOOD_VALUES);
+type ValidMoodValue = typeof VALID_MOOD_VALUES[number];
+
+// Valid arousal values: 1, 2, 3, 4, 5
+const VALID_AROUSAL_VALUES = [1, 2, 3, 4, 5] as const;
+const VALID_AROUSAL_SET = new Set(VALID_AROUSAL_VALUES);
+type ValidArousalValue = typeof VALID_AROUSAL_VALUES[number];
+
+/**
+ * Validates and normalizes mood value to ensure it matches backend expectations.
+ * Returns undefined if the value is invalid, preventing runtime errors.
+ */
+function validateMood(value: number | undefined): -2 | -1 | 0 | 1 | 2 | undefined {
+    if (value === undefined) return undefined;
+    if (VALID_MOOD_SET.has(value as ValidMoodValue)) {
+        return value as -2 | -1 | 0 | 1 | 2;
+    }
+    console.warn(`Invalid mood value: ${value}. Expected one of: ${VALID_MOOD_VALUES.join(', ')}`);
+    return undefined;
+}
+
+/**
+ * Validates and normalizes arousal value to ensure it matches backend expectations.
+ * Returns undefined if the value is invalid, preventing runtime errors.
+ */
+function validateArousal(value: number | undefined): 1 | 2 | 3 | 4 | 5 | undefined {
+    if (value === undefined) return undefined;
+    if (VALID_AROUSAL_SET.has(value as ValidArousalValue)) {
+        return value as 1 | 2 | 3 | 4 | 5;
+    }
+    console.warn(`Invalid arousal value: ${value}. Expected one of: ${VALID_AROUSAL_VALUES.join(', ')}`);
+    return undefined;
+}
+
 // Draggable slider component
 interface DraggableSliderProps {
     value: number | undefined;
@@ -183,6 +219,7 @@ export const EventDetailsScreen = () => {
     const tagInputRef = React.useRef<TextInput>(null);
     const personInputRef = React.useRef<TextInput>(null);
     const personAnimations = React.useRef<Map<string, Animated.Value>>(new Map()).current;
+    const didAddPersonRef = React.useRef<boolean>(false);
 
     useEffect(() => {
         if (event) {
@@ -206,11 +243,13 @@ export const EventDetailsScreen = () => {
                 eventId,
                 title,
                 summary,
-                mood: mood as -2 | -1 | 0 | 1 | 2 | undefined,
-                arousal: arousal as 1 | 2 | 3 | 4 | 5 | undefined,
+                mood: validateMood(mood),
+                arousal: validateArousal(arousal),
                 tags: tags.length > 0 ? tags : undefined,
                 peopleNames: people.length > 0 ? people.map(p => p.name) : undefined,
             });
+            // Reset the add-person flag after successful save
+            didAddPersonRef.current = false;
             Alert.alert('Success', 'Changes saved successfully.');
         } catch (error) {
             console.error('Failed to update event:', error);
@@ -218,6 +257,28 @@ export const EventDetailsScreen = () => {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const addPersonFromText = (text: string) => {
+        // Guard against duplicate adds from both onSubmitEditing and onBlur
+        if (didAddPersonRef.current) {
+            return;
+        }
+
+        const trimmed = text.trim();
+        if (trimmed && !people.some(p => p.name === trimmed)) {
+            // Mark that we're adding to prevent duplicate adds
+            didAddPersonRef.current = true;
+            
+            // For new people added manually, we'll need to create a person record
+            // For now, we'll use a temporary ID - this should be handled by the backend
+            // when saving the event
+            setPeople([...people, { _id: `temp-${Date.now()}`, name: trimmed }]);
+        }
+        
+        // Always clear the input and close the add-person UI
+        setNewPersonText('');
+        setIsAddingPerson(false);
     };
 
     if (event === undefined) {
@@ -467,31 +528,17 @@ export const EventDetailsScreen = () => {
                                 onChangeText={setNewPersonText}
                                 autoFocus
                                 onSubmitEditing={(e) => {
-                                    const newPerson = e.nativeEvent.text.trim();
-                                    if (newPerson && !people.some(p => p.name === newPerson)) {
-                                        // For new people added manually, we'll need to create a person record
-                                        // For now, we'll use a temporary ID - this should be handled by the backend
-                                        // when saving the event
-                                        setPeople([...people, { _id: `temp-${Date.now()}`, name: newPerson }]);
-                                    }
-                                    setNewPersonText('');
-                                    setIsAddingPerson(false);
+                                    addPersonFromText(e.nativeEvent.text);
                                 }}
                                 onBlur={() => {
-                                    const trimmed = newPersonText.trim();
-                                    if (trimmed && !people.some(p => p.name === trimmed)) {
-                                        // For new people added manually, we'll need to create a person record
-                                        // For now, we'll use a temporary ID - this should be handled by the backend
-                                        // when saving the event
-                                        setPeople([...people, { _id: `temp-${Date.now()}`, name: trimmed }]);
-                                    }
-                                    setNewPersonText('');
-                                    setIsAddingPerson(false);
+                                    addPersonFromText(newPersonText);
                                 }}
                             />
                         ) : (
                             <Pressable
                                 onPress={() => {
+                                    // Reset the flag when opening the input for a new person
+                                    didAddPersonRef.current = false;
                                     setIsAddingPerson(true);
                                     setNewPersonText('');
                                     // Focus the input after a brief delay to ensure it's rendered
