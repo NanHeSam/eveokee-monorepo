@@ -15,14 +15,18 @@ import { View, Platform } from 'react-native';
 import { DiaryScreen } from './app/screens/DiaryScreen';
 import { DiaryEditScreen } from './app/screens/DiaryEditScreen';
 import { DiaryViewScreen } from './app/screens/DiaryViewScreen';
+import { EventDetailsScreen } from './app/screens/EventDetailsScreen';
+import { PersonDetailScreen } from './app/screens/PersonDetailScreen';
+import { PersonEditScreen } from './app/screens/PersonEditScreen';
 import { PlaylistScreen } from './app/screens/PlaylistScreen';
 import { SettingsScreen } from './app/screens/SettingsScreen';
 import { AccountScreen } from './app/screens/AccountScreen';
+import { PeopleScreen } from './app/screens/PeopleScreen';
 import { SignInScreen } from './app/screens/SignInScreen';
 import { SignUpScreen } from './app/screens/SignUpScreen';
 import { tokenCache } from './app/utils/tokenCache';
 import { useThemeColors } from './app/theme/useThemeColors';
-import { DiaryStackParamList } from './app/navigation/types';
+import { DiaryStackParamList, SettingsStackParamList } from './app/navigation/types';
 import { MiniPlayer } from './app/components/player/MiniPlayer';
 import { FullPlayer } from './app/components/player/FullPlayer';
 import { TrackPlayerProvider } from './app/providers/TrackPlayerProvider';
@@ -69,7 +73,7 @@ type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const DiaryStack = createNativeStackNavigator<DiaryStackParamList>();
-const SettingsStack = createNativeStackNavigator();
+const SettingsStack = createNativeStackNavigator<SettingsStackParamList>();
 const Tab = createBottomTabNavigator();
 
 const DiaryStackNavigator = () => (
@@ -77,6 +81,9 @@ const DiaryStackNavigator = () => (
     <DiaryStack.Screen name="DiaryHome" component={DiaryScreen} />
     <DiaryStack.Screen name="DiaryView" component={DiaryViewScreen} />
     <DiaryStack.Screen name="DiaryEdit" component={DiaryEditScreen} />
+    <DiaryStack.Screen name="EventDetails" component={EventDetailsScreen} />
+    <DiaryStack.Screen name="PersonDetail" component={PersonDetailScreen} />
+    <DiaryStack.Screen name="PersonEdit" component={PersonEditScreen} />
   </DiaryStack.Navigator>
 );
 
@@ -84,6 +91,10 @@ const SettingsStackNavigator = () => (
   <SettingsStack.Navigator screenOptions={{ headerShown: false }}>
     <SettingsStack.Screen name="SettingsHome" component={SettingsScreen} />
     <SettingsStack.Screen name="Account" component={AccountScreen} />
+    <SettingsStack.Screen name="People" component={PeopleScreen} />
+    <SettingsStack.Screen name="PersonDetail" component={PersonDetailScreen} />
+    <SettingsStack.Screen name="PersonEdit" component={PersonEditScreen} />
+    <SettingsStack.Screen name="EventDetails" component={EventDetailsScreen} />
   </SettingsStack.Navigator>
 );
 
@@ -92,27 +103,27 @@ const MainTabs = () => {
 
   return (
     <Tab.Navigator
-    screenOptions={({ route }) => ({
-      headerShown: false,
-      tabBarShowLabel: true,
-      tabBarStyle: undefined,
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarShowLabel: true,
+        tabBarStyle: undefined,
         tabBarActiveTintColor: colors.accentMint,
         tabBarInactiveTintColor: colors.textSecondary,
-      tabBarLabelStyle: undefined,
-      tabBarIcon: ({ color, focused, size }) => {
-        const iconSize = size + (focused ? 2 : 0);
-        switch (route.name) {
-          case 'Diary':
-            return <Ionicons name={focused ? 'book' : 'book-outline'} size={iconSize} color={color} />;
-          case 'Playlist':
-            return <Ionicons name={focused ? 'musical-notes' : 'musical-notes-outline'} size={iconSize} color={color} />;
-          case 'Settings':
-            return <Ionicons name={focused ? 'settings' : 'settings-outline'} size={iconSize} color={color} />;
-          default:
-            return null;
+        tabBarLabelStyle: undefined,
+        tabBarIcon: ({ color, focused, size }) => {
+          const iconSize = size + (focused ? 2 : 0);
+          switch (route.name) {
+            case 'Diary':
+              return <Ionicons name={focused ? 'book' : 'book-outline'} size={iconSize} color={color} />;
+            case 'Playlist':
+              return <Ionicons name={focused ? 'musical-notes' : 'musical-notes-outline'} size={iconSize} color={color} />;
+            case 'Settings':
+              return <Ionicons name={focused ? 'settings' : 'settings-outline'} size={iconSize} color={color} />;
+            default:
+              return null;
+          }
         }
-      }
-    })}
+      })}
     >
       <Tab.Screen name="Diary" component={DiaryStackNavigator} />
       <Tab.Screen name="Playlist" component={PlaylistScreen} />
@@ -129,7 +140,7 @@ if (!convexUrl) {
 
 const convexClient = new ConvexReactClient(convexUrl);
 
-const RootNavigator = ({ navigationRef, onNotificationNavigation }: { 
+const RootNavigator = ({ navigationRef, onNotificationNavigation }: {
   navigationRef: React.RefObject<NavigationContainerRef<any>>;
   onNotificationNavigation: (data: NotificationData) => void;
 }) => {
@@ -222,27 +233,27 @@ function AppContent() {
 
   const theme: Theme = colors.scheme === 'dark'
     ? {
-        ...DarkTheme,
-        colors: {
-          ...DarkTheme.colors,
-          background: colors.background,
-          card: colors.surface,
-          text: colors.textPrimary,
-          border: colors.border,
-          primary: colors.accentMint
-        }
+      ...DarkTheme,
+      colors: {
+        ...DarkTheme.colors,
+        background: colors.background,
+        card: colors.surface,
+        text: colors.textPrimary,
+        border: colors.border,
+        primary: colors.accentMint
       }
+    }
     : {
-        ...DefaultTheme,
-        colors: {
-          ...DefaultTheme.colors,
-          background: colors.background,
-          card: colors.surface,
-          text: colors.textPrimary,
-          border: colors.border,
-          primary: colors.accentMint
-        }
-      };
+      ...DefaultTheme,
+      colors: {
+        ...DefaultTheme.colors,
+        background: colors.background,
+        card: colors.surface,
+        text: colors.textPrimary,
+        border: colors.border,
+        primary: colors.accentMint
+      }
+    };
 
   return (
     <SafeAreaProvider>

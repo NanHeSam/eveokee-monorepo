@@ -52,11 +52,59 @@ export default defineSchema({
     date: v.number(),
     primaryMusicId: v.optional(v.id("music")),
     updatedAt: v.number(),
+    // Memory system extensions
+    originalText: v.optional(v.string()),
+    version: v.optional(v.number()),
   })
     .index("by_userId", ["userId"])
     .index("by_userId_and_date", ["userId", "date"])
     .index("by_userId_and_updatedAt", ["userId", "updatedAt"])
     .index("by_primaryMusicId", ["primaryMusicId"]),
+
+  // Memory System Tables
+  events: defineTable({
+    userId: v.id("users"),
+    diaryId: v.id("diaries"),
+    happenedAt: v.number(),
+    personIds: v.optional(v.array(v.id("people"))),
+    title: v.string(),
+    summary: v.string(),
+    mood: v.optional(v.union(v.literal(-2), v.literal(-1), v.literal(0), v.literal(1), v.literal(2))),
+    arousal: v.optional(v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4), v.literal(5))),
+    anniversaryCandidate: v.optional(v.boolean()),
+    tagIds: v.optional(v.array(v.id("userTags"))),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_diaryId", ["diaryId"])
+    .index("by_userId_and_happenedAt", ["userId", "happenedAt"]),
+
+  people: defineTable({
+    userId: v.id("users"),
+    primaryName: v.string(),
+    altNames: v.optional(v.array(v.string())),
+    relationshipLabel: v.optional(v.string()),
+    lastMentionedAt: v.optional(v.number()),
+    interactionCount: v.optional(v.number()),
+    highlights: v.optional(v.object({
+      summary: v.string(),
+      lastGeneratedAt: v.number(),
+    })),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_and_primaryName", ["userId", "primaryName"])
+    .index("by_userId_and_lastMentionedAt", ["userId", "lastMentionedAt"])
+    .index("by_userId_and_interactionCount", ["userId", "interactionCount"]),
+
+  userTags: defineTable({
+    userId: v.id("users"),
+    canonicalName: v.string(),
+    displayName: v.string(),
+    eventCount: v.number(),
+    lastUsedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_and_eventCount", ["userId", "eventCount"])
+    .index("by_userId_and_canonicalName", ["userId", "canonicalName"]),
 
   diaryMedia: defineTable({
     diaryId: v.id("diaries"),
@@ -377,4 +425,12 @@ export default defineSchema({
     .index("by_userId_and_musicId", ["userId", "musicId"])
     .index("by_musicId", ["musicId"])
     .index("by_sharedMusicId", ["sharedMusicId"]),
+
+  featureFlags: defineTable({
+    flagKey: v.string(),
+    allowUserIds: v.array(v.id("users")),
+    denyUserIds: v.array(v.id("users")),
+    rolloutPercentage: v.number(), // 0-100
+  })
+    .index("by_flagKey", ["flagKey"]),
 });

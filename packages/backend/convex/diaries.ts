@@ -1,8 +1,10 @@
 
-import { mutation, query, internalMutation } from "./_generated/server";
+import { mutation, query, internalMutation, internalAction, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
+import { Doc, Id } from "./_generated/dataModel";
 import ensureCurrentUser, { getOptionalCurrentUser } from "./users";
+import { internal } from "./_generated/api";
+import { extractEventsFromDiary, normalizeTag, normalizePersonName, moodNumberToWord, arousalNumberToWord } from "./memory/util";
 
 /**
  * Create a new diary entry
@@ -10,6 +12,7 @@ import ensureCurrentUser, { getOptionalCurrentUser } from "./users";
  * Steps:
  * 1. Authenticate user and get userId
  * 2. Insert new diary record with current timestamp
+ * 3. Schedule background processing for memory extraction
  * 
  * Returns the created diary ID.
  */
@@ -31,6 +34,13 @@ export const createDiary = mutation({
       content: args.content,
       date: now,
       updatedAt: now,
+      originalText: args.content,
+      version: 1,
+    });
+
+    // Step 3: Schedule memory processing
+    await ctx.scheduler.runAfter(0, internal.diaries.processDiaryEntry, {
+      diaryId: _id,
     });
 
     return { _id };
@@ -43,7 +53,7 @@ export const createDiary = mutation({
  * Steps:
  * 1. Authenticate user and get userId
  * 2. Fetch diary record and verify ownership
- * 3. Update content and updatedAt timestamp
+ * 3. Update content and updatedAt timestamp, increment version
  * 
  * Returns updated diary ID and timestamp.
  * Throws error if diary not found or user doesn't own it.
@@ -73,10 +83,12 @@ export const updateDiary = mutation({
 
     // Step 3: Update diary
     const updatedAt = Date.now();
+    const newVersion = (diary.version || 0) + 1;
 
     await ctx.db.patch(args.diaryId, {
       content: args.content,
       updatedAt,
+      version: newVersion,
     });
 
     return {
@@ -87,17 +99,18 @@ export const updateDiary = mutation({
 });
 
 /**
- * Delete a diary entry and all associated music records and media
+ * Delete a diary entry and all associated music records, memory events, and media
  * 
  * Steps:
  * 1. Authenticate user and get userId
  * 2. Fetch diary record and verify ownership
  * 3. Find and delete all associated music records
- * 4. Find and delete all associated media records and their storage objects
- * 5. Delete the diary entry
+ * 4. Find and delete all associated memory events
+ * 5. Find and delete all associated media records and their storage objects
+ * 6. Delete the diary entry
  * 
  * WARNING: This permanently deletes the diary, all associated music tracks,
- * and all associated media storage objects.
+ * memory events, and all associated media storage objects.
  * 
  * NOTE: This operation is idempotent. If the diary is already deleted or
  * doesn't exist, the function returns null without throwing an error. This
@@ -134,7 +147,17 @@ export const deleteDiary = mutation({
       musicRecords.map((music) => ctx.db.delete(music._id))
     );
 
-    // Step 4: Delete associated media records and their storage objects
+    // Step 4: Delete associated memory events
+    const eventRecords = await ctx.db
+      .query("events")
+      .withIndex("by_diaryId", (q) => q.eq("diaryId", args.diaryId))
+      .collect();
+
+    await Promise.all(
+      eventRecords.map((event) => ctx.db.delete(event._id))
+    );
+
+    // Step 5: Delete associated media records and their storage objects
     const mediaRecords = await ctx.db
       .query("diaryMedia")
       .withIndex("by_diaryId", (q) => q.eq("diaryId", args.diaryId))
@@ -150,7 +173,7 @@ export const deleteDiary = mutation({
       mediaRecords.map((media) => ctx.db.delete(media._id))
     );
 
-    // Step 5: Delete diary entry
+    // Step 6: Delete diary entry
     await ctx.db.delete(args.diaryId);
     return null;
   },
@@ -173,6 +196,8 @@ export const createDiaryInternal = internalMutation({
       content: args.content,
       date: diaryDate,
       updatedAt: now,
+      originalText: args.content,
+      version: 1,
     });
 
     return { _id };
@@ -230,6 +255,49 @@ export const getDiary = query({
             v.literal("failed"),
           ),
         }),
+      ),
+      events: v.optional(
+        v.array(
+          v.object({
+            _id: v.id("events"),
+            _creationTime: v.number(),
+            userId: v.id("users"),
+            diaryId: v.id("diaries"),
+            happenedAt: v.number(),
+            personIds: v.optional(v.array(v.id("people"))),
+            title: v.string(),
+            summary: v.string(),
+            mood: v.optional(v.union(v.literal(-2), v.literal(-1), v.literal(0), v.literal(1), v.literal(2))),
+            moodWord: v.optional(v.string()),
+            arousal: v.optional(v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4), v.literal(5))),
+            arousalWord: v.optional(v.string()),
+            anniversaryCandidate: v.optional(v.boolean()),
+            tagIds: v.optional(v.array(v.id("userTags"))),
+            tags: v.optional(
+              v.array(
+                v.object({
+                  _id: v.id("userTags"),
+                  name: v.string(),
+                })
+              )
+            ),
+            people: v.optional(
+              v.array(
+                v.object({
+                  _id: v.id("people"),
+                  name: v.string(),
+                })
+              )
+            ),
+            peopleDetails: v.array(
+              v.object({
+                _id: v.id("people"),
+                name: v.string(),
+                role: v.optional(v.string()),
+              })
+            ),
+          })
+        )
       ),
     }),
     v.null(),
@@ -290,6 +358,63 @@ export const getDiary = query({
       }
     }
 
+    // Fetch events for this diary
+    const events = await ctx.db
+      .query("events")
+      .withIndex("by_diaryId", (q) => q.eq("diaryId", diary._id))
+      .collect();
+
+    // Resolve people and tags for events
+    const eventsWithDetails = await Promise.all(
+      events.map(async (event) => {
+        let peopleDetails: { _id: Id<"people">; name: string; role?: string }[] = [];
+        if (event.personIds && event.personIds.length > 0) {
+          const peopleDocs = await Promise.all(
+            event.personIds.map((id) => ctx.db.get(id))
+          );
+          peopleDetails = peopleDocs
+            .filter((p) => p !== null)
+            .map((p) => ({
+              _id: p!._id,
+              name: p!.primaryName,
+              role: p!.relationshipLabel,
+            }));
+        }
+
+        // Resolve tags
+        let tags: { _id: Id<"userTags">; name: string }[] = [];
+        if (event.tagIds && event.tagIds.length > 0) {
+          const tagDocs = await Promise.all(
+            event.tagIds.map((id) => ctx.db.get(id))
+          );
+          tags = tagDocs
+            .filter((t) => t !== null)
+            .map((t) => ({
+              _id: t!._id,
+              name: t!.displayName, // Use displayName for the name shown to users
+            }));
+        }
+
+        // Resolve people (simplified format for navigation)
+        let people: { _id: Id<"people">; name: string }[] = [];
+        if (peopleDetails.length > 0) {
+          people = peopleDetails.map((p) => ({
+            _id: p._id,
+            name: p.name,
+          }));
+        }
+
+        return {
+          ...event,
+          people,
+          peopleDetails, // Keep for backward compatibility (includes role)
+          tags: tags.length > 0 ? tags : undefined,
+          moodWord: moodNumberToWord(event.mood),
+          arousalWord: arousalNumberToWord(event.arousal),
+        };
+      })
+    );
+
     return {
       _id: diary._id,
       userId: diary.userId,
@@ -299,6 +424,7 @@ export const getDiary = query({
       primaryMusicId: diary.primaryMusicId,
       updatedAt: diary.updatedAt,
       primaryMusic,
+      events: eventsWithDetails,
     };
   },
 });
@@ -423,5 +549,249 @@ export const listDiaries = query({
         ? musicDataById.get(doc.primaryMusicId)
         : undefined,
     }));
+  },
+});
+
+// ============================================================================
+// Memory System Logic (Migrated from memory/diary.ts)
+// ============================================================================
+
+export const getDiaryContext = internalQuery({
+  args: {
+    diaryId: v.id("diaries"),
+  },
+  handler: async (ctx, args) => {
+    const diary = await ctx.db.get(args.diaryId);
+    if (!diary) return null;
+
+    const people = await ctx.db
+      .query("people")
+      .withIndex("by_userId", (q) => q.eq("userId", diary.userId))
+      .collect();
+
+    const themes = await ctx.db
+      .query("userTags")
+      .withIndex("by_userId", (q) => q.eq("userId", diary.userId))
+      .collect();
+
+    return {
+      diary,
+      existingPeople: people.map((p) => p.primaryName),
+      existingTags: themes.map((t) => t.canonicalName),
+    };
+  },
+});
+
+export const saveDiaryEvents = internalMutation({
+  args: {
+    diaryId: v.id("diaries"),
+    extractedEvents: v.array(
+      v.object({
+        title: v.string(),
+        summary: v.string(),
+        happenedAt: v.number(),
+        tags: v.array(v.string()),
+        people: v.array(v.string()),
+        mood: v.optional(
+          v.union(
+            v.literal(-2),
+            v.literal(-1),
+            v.literal(0),
+            v.literal(1),
+            v.literal(2),
+          ),
+        ),
+        arousal: v.optional(
+          v.union(
+            v.literal(1),
+            v.literal(2),
+            v.literal(3),
+            v.literal(4),
+            v.literal(5),
+          ),
+        ),
+        anniversaryCandidate: v.optional(v.boolean()),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const diary = await ctx.db.get(args.diaryId);
+    if (!diary) {
+      console.warn(`Diary ${args.diaryId} not found during processing`);
+      return;
+    }
+
+    // 1. Validate that we have events to process
+    if (!args.extractedEvents || args.extractedEvents.length === 0) {
+      console.warn(`No events extracted for diary ${args.diaryId}, skipping update`);
+      return;
+    }
+
+    // 2. Get existing events (we'll delete them only after successful creation)
+    const existingEvents = await ctx.db
+      .query("events")
+      .withIndex("by_diaryId", (q) => q.eq("diaryId", diary._id))
+      .collect();
+
+    // 3. Create new events first, collecting their IDs
+    const newEventIds: Id<"events">[] = [];
+    try {
+      for (const eventData of args.extractedEvents) {
+        const personIds = [];
+        // Simple person resolution
+        for (const name of eventData.people) {
+          const normalizedName = normalizePersonName(name);
+          let person = await ctx.db
+            .query("people")
+            .withIndex("by_userId_and_primaryName", (q) =>
+              q.eq("userId", diary.userId).eq("primaryName", normalizedName)
+            )
+            .first();
+
+          if (!person) {
+            const personId = await ctx.db.insert("people", {
+              userId: diary.userId,
+              primaryName: normalizedName,
+              interactionCount: 1,
+              lastMentionedAt: eventData.happenedAt,
+            });
+            personIds.push(personId);
+          } else {
+            personIds.push(person._id);
+            // Update stats
+            await ctx.db.patch(person._id, {
+              interactionCount: (person.interactionCount || 0) + 1,
+              lastMentionedAt: Math.max(person.lastMentionedAt || 0, eventData.happenedAt)
+            });
+          }
+        }
+
+        // Resolve tags to tag IDs (similar to people resolution)
+        const tagIds: Id<"userTags">[] = [];
+        const normalizedTags = eventData.tags.map(normalizeTag);
+
+        for (const tag of normalizedTags) {
+          const existingTag = await ctx.db
+            .query("userTags")
+            .withIndex("by_userId_and_canonicalName", (q) =>
+              q.eq("userId", diary.userId).eq("canonicalName", tag)
+            )
+            .first();
+
+          if (existingTag) {
+            tagIds.push(existingTag._id);
+            // Update stats
+            await ctx.db.patch(existingTag._id, {
+              eventCount: existingTag.eventCount + 1,
+              lastUsedAt: eventData.happenedAt,
+            });
+          } else {
+            const newTagId = await ctx.db.insert("userTags", {
+              userId: diary.userId,
+              canonicalName: tag,
+              displayName: tag, // Use canonical as display for now
+              eventCount: 1,
+              lastUsedAt: eventData.happenedAt,
+            });
+            tagIds.push(newTagId);
+          }
+        }
+
+        const eventRecord: Omit<Doc<"events">, "_id" | "_creationTime"> = {
+          userId: diary.userId,
+          diaryId: diary._id,
+          happenedAt: eventData.happenedAt,
+          title: eventData.title,
+          summary: eventData.summary,
+          tagIds: tagIds.length > 0 ? tagIds : undefined,
+          personIds: personIds.length > 0 ? personIds : undefined,
+        };
+
+        if (eventData.mood !== undefined) {
+          eventRecord.mood = eventData.mood;
+        }
+
+        if (eventData.arousal !== undefined) {
+          eventRecord.arousal = eventData.arousal;
+        }
+
+        if (eventData.anniversaryCandidate !== undefined) {
+          eventRecord.anniversaryCandidate = eventData.anniversaryCandidate;
+        }
+
+        const eventId = await ctx.db.insert("events", eventRecord);
+        newEventIds.push(eventId);
+      }
+
+      // 4. Only delete existing events after all new events are successfully created
+      // This ensures we don't leave the diary empty if creation fails
+      if (newEventIds.length > 0) {
+        await Promise.all(existingEvents.map((e) => ctx.db.delete(e._id)));
+      } else {
+        // This shouldn't happen if validation passed, but log if it does
+        console.warn(`No events were created for diary ${args.diaryId} despite validation`);
+      }
+    } catch (error) {
+      // If creation fails, don't delete existing events
+      // Clean up any partially created events if possible
+      if (newEventIds.length > 0) {
+        console.error(
+          `Error creating events for diary ${args.diaryId}, cleaning up ${newEventIds.length} partially created events`
+        );
+        try {
+          await Promise.all(newEventIds.map((id) => ctx.db.delete(id)));
+        } catch (cleanupError) {
+          console.error(`Failed to cleanup partially created events: ${cleanupError}`);
+        }
+      }
+      // Re-throw to ensure the error is propagated
+      throw error;
+    }
+
+    // 5. Update Diary metadata (version tracking if needed, but lastProcessedAt is removed)
+    // For now, we just leave it as is or update version if we want to track processing version
+    // But since lastProcessedAt is gone, we don't update it.
+  },
+});
+
+export const processDiaryEntry = internalAction({
+  args: {
+    diaryId: v.id("diaries"),
+  },
+  handler: async (ctx, args) => {
+    const context = await ctx.runQuery(internal.diaries.getDiaryContext, {
+      diaryId: args.diaryId,
+    });
+
+    if (!context || !context.diary) {
+      console.warn(`Diary ${args.diaryId} not found during processing`);
+      return;
+    }
+
+    const { diary, existingPeople, existingTags } = context;
+
+    try {
+      const extractedEvents = await extractEventsFromDiary(
+        diary.content,
+        diary.date,
+        existingPeople,
+        existingTags
+      );
+
+      await ctx.runMutation(internal.diaries.saveDiaryEvents, {
+        diaryId: args.diaryId,
+        extractedEvents,
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      
+      console.error(
+        `Failed to process diary ${args.diaryId}: ${errorMessage}`,
+        errorStack ? `\nStack: ${errorStack}` : ""
+      );
+
+      return { success: false, error: errorMessage };
+    }
   },
 });

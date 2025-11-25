@@ -354,6 +354,36 @@ export const getUserIdByClerkId = internalQuery({
   },
 });
 
+/**
+ * Get current user for actions (internal - used by actions that need userId)
+ */
+export const getCurrentUserForAction = internalQuery({
+  args: {},
+  returns: v.union(
+    v.object({
+      userId: v.id("users"),
+    }),
+    v.null()
+  ),
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return null;
+    }
+    
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+    
+    if (!user) {
+      return null;
+    }
+    
+    return { userId: user._id };
+  },
+});
+
 export { ensureCurrentUserHandler };
 export default ensureCurrentUserHandler;
 

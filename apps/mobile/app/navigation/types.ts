@@ -13,11 +13,30 @@ export type DiaryStackParamList = {
     content?: string;
     title?: string;
   } | undefined;
+  EventDetails: {
+    eventId: Id<'events'>;
+  };
+  PersonDetail: {
+    personId: Id<'people'>;
+  };
+  PersonEdit: {
+    personId: Id<'people'>;
+  };
 };
 
 export type SettingsStackParamList = {
   SettingsHome: undefined;
   Account: undefined;
+  People: undefined;
+  PersonDetail: {
+    personId: Id<'people'>;
+  };
+  PersonEdit: {
+    personId: Id<'people'>;
+  };
+  EventDetails: {
+    eventId: Id<'events'>;
+  };
 };
 
 export type MainTabsParamList = {
@@ -47,3 +66,15 @@ export type DiaryEditRouteProp = RouteProp<DiaryStackParamList, 'DiaryEdit'>;
 export type DiaryViewNavigationProp = NativeStackNavigationProp<DiaryStackParamList, 'DiaryView'>;
 
 export type DiaryViewRouteProp = RouteProp<DiaryStackParamList, 'DiaryView'>;
+
+export type EventDetailsNavigationProp = NativeStackNavigationProp<DiaryStackParamList, 'EventDetails'>;
+
+export type EventDetailsRouteProp = RouteProp<DiaryStackParamList, 'EventDetails'>;
+
+export type PersonDetailNavigationProp = NativeStackNavigationProp<DiaryStackParamList, 'PersonDetail'>;
+
+export type PersonDetailRouteProp = RouteProp<DiaryStackParamList, 'PersonDetail'>;
+
+export type PersonEditNavigationProp = NativeStackNavigationProp<DiaryStackParamList, 'PersonEdit'>;
+
+export type PersonEditRouteProp = RouteProp<DiaryStackParamList, 'PersonEdit'>;

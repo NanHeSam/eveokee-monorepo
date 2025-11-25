@@ -137,12 +137,25 @@ export function getUsagePercentage(usage: UsageState | undefined): number {
 
 export function formatUsageText(usage: UsageState | undefined): string {
   if (!usage) return 'Loading...';
-  return `${usage.musicGenerationsUsed}/${usage.musicLimit}`;
+  if (usage.musicGenerationsUsed === 0) {
+    return 'No memories transformed yet';
+  }
+  if (usage.musicGenerationsUsed === 1) {
+    return '1 memory transformed into music';
+  }
+  return `${usage.musicGenerationsUsed} memories transformed into music`;
 }
 
 export function formatRemainingQuota(usage: UsageState | undefined): string {
   if (!usage) return 'Loading...';
-  return `${usage.remainingQuota} remaining`;
+  const remaining = usage.remainingQuota;
+  if (remaining === 0) {
+    return 'All melodies have been born';
+  }
+  if (remaining === 1) {
+    return '1 melody waiting to be born';
+  }
+  return `${remaining} melodies waiting to be born`;
 }
 
 export function isSubscriptionExpired(subscription: SubscriptionState | undefined): boolean {
