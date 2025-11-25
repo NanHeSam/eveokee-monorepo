@@ -3,6 +3,7 @@ import { query } from "./_generated/server";
 
 export const getUserFlags = query({
   args: { userId: v.optional(v.id("users")) },
+  returns: v.record(v.string(), v.boolean()),
   handler: async (ctx, args) => {
     let userId = args.userId;
 

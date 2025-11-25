@@ -11,6 +11,33 @@ export const getEvent = query({
     args: {
         eventId: v.id("events"),
     },
+    returns: v.union(
+        v.null(),
+        v.object({
+            _id: v.id("events"),
+            _creationTime: v.number(),
+            userId: v.id("users"),
+            diaryId: v.id("diaries"),
+            happenedAt: v.number(),
+            personIds: v.optional(v.array(v.id("people"))),
+            title: v.string(),
+            summary: v.string(),
+            mood: v.optional(v.union(v.literal(-2), v.literal(-1), v.literal(0), v.literal(1), v.literal(2))),
+            arousal: v.optional(v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4), v.literal(5))),
+            anniversaryCandidate: v.optional(v.boolean()),
+            tagIds: v.optional(v.array(v.id("userTags"))),
+            people: v.array(v.object({
+                _id: v.id("people"),
+                name: v.string(),
+            })),
+            tags: v.array(v.object({
+                _id: v.id("userTags"),
+                name: v.string(),
+            })),
+            moodWord: v.string(),
+            arousalWord: v.string(),
+        })
+    ),
     handler: async (ctx, args) => {
         const event = await ctx.db.get(args.eventId);
         if (!event) {
@@ -18,20 +45,6 @@ export const getEvent = query({
         }
 
         // Verify ownership
-        const user = await ctx.auth.getUserIdentity();
-        if (!user || user.subject !== (await ctx.db.get(event.userId))?.clerkId) {
-            // We can't easily check ownership without fetching user first, 
-            // but let's assume if we can't find the user or it doesn't match, we return null.
-            // Actually, let's just check if the event belongs to the current user.
-            // We need to get the current user's ID from our users table.
-            // But since this is a query, we can just use ensureCurrentUser logic if we want strictness,
-            // or just rely on the fact that we filter by userId usually.
-            // For simplicity and performance in query, let's just fetch the user record if needed.
-            // But wait, `ensureCurrentUser` is for mutations usually or async.
-            // Let's just fetch the user based on auth.
-        }
-
-        // Better way:
         const identity = await ctx.auth.getUserIdentity();
         if (!identity) {
             return null;
@@ -82,7 +95,6 @@ export const getEvent = query({
         return {
             ...event,
             people,
-            peopleDetails, // Keep for backward compatibility (includes role)
             tags,
             moodWord: moodNumberToWord(event.mood),
             arousalWord: arousalNumberToWord(event.arousal),
@@ -101,12 +113,9 @@ export const updateEvent = mutation({
         mood: v.optional(v.union(v.literal(-2), v.literal(-1), v.literal(0), v.literal(1), v.literal(2))),
         arousal: v.optional(v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4), v.literal(5))),
         tags: v.optional(v.array(v.string())),
-        // For people, we might want to add/remove. For now, let's just allow updating the list of names?
-        // Or maybe we just update the IDs if the frontend handles person management.
-        // The design shows "People" list. If we want to add a person, we probably need a separate flow or just pass names.
-        // Let's support passing a list of names to sync with.
         peopleNames: v.optional(v.array(v.string())),
     },
+    returns: v.null(),
     handler: async (ctx, args) => {
         const { userId } = await ensureCurrentUser(ctx);
         const event = await ctx.db.get(args.eventId);
@@ -122,8 +131,13 @@ export const updateEvent = mutation({
         if (args.arousal !== undefined) updates.arousal = args.arousal;
 
         if (args.tags !== undefined) {
+            // Capture old tag IDs from the existing event
+            const oldTagIds = event.tagIds || [];
+            const oldTagIdsSet = new Set(oldTagIds);
+
             // Resolve tag names to tag IDs, creating if necessary
-            const tagIds: Id<"userTags">[] = [];
+            const newTagIds: Id<"userTags">[] = [];
+            const newlyCreatedTagIds = new Set<Id<"userTags">>();
             const normalizedTags = args.tags.map(normalizeTag);
 
             for (const tag of normalizedTags) {
@@ -135,7 +149,7 @@ export const updateEvent = mutation({
                     .first();
 
                 if (existingTag) {
-                    tagIds.push(existingTag._id);
+                    newTagIds.push(existingTag._id);
                 } else {
                     const newTagId = await ctx.db.insert("userTags", {
                         userId,
@@ -144,15 +158,48 @@ export const updateEvent = mutation({
                         eventCount: 1,
                         lastUsedAt: Date.now(),
                     });
-                    tagIds.push(newTagId);
+                    newTagIds.push(newTagId);
+                    newlyCreatedTagIds.add(newTagId);
                 }
             }
-            updates.tagIds = tagIds.length > 0 ? tagIds : undefined;
+
+            const newTagIdsSet = new Set(newTagIds);
+
+            // Decrement eventCount for tags that were removed
+            for (const oldTagId of oldTagIds) {
+                if (!newTagIdsSet.has(oldTagId)) {
+                    const tagDoc = await ctx.db.get(oldTagId);
+                    if (tagDoc) {
+                        const newCount = Math.max(0, (tagDoc.eventCount || 0) - 1);
+                        await ctx.db.patch(oldTagId, { eventCount: newCount });
+                    }
+                }
+            }
+
+            // Increment eventCount for tags that were added (but weren't in oldTagIds and weren't just created)
+            for (const newTagId of newTagIds) {
+                if (!oldTagIdsSet.has(newTagId) && !newlyCreatedTagIds.has(newTagId)) {
+                    const tagDoc = await ctx.db.get(newTagId);
+                    if (tagDoc) {
+                        await ctx.db.patch(newTagId, {
+                            eventCount: (tagDoc.eventCount || 0) + 1,
+                            lastUsedAt: Date.now(),
+                        });
+                    }
+                }
+            }
+
+            updates.tagIds = newTagIds.length > 0 ? newTagIds : undefined;
         }
 
         if (args.peopleNames !== undefined) {
+            // Capture old person IDs from the existing event
+            const oldPersonIds = event.personIds || [];
+            const oldPersonIdsSet = new Set(oldPersonIds);
+
             // Resolve people names to IDs, creating if necessary
-            const personIds: Id<"people">[] = [];
+            const newPersonIds: Id<"people">[] = [];
+            const newlyCreatedPersonIds = new Set<Id<"people">>();
             for (const name of args.peopleNames) {
                 const normalizedName = normalizePersonName(name);
                 const existingPerson = await ctx.db
@@ -163,7 +210,7 @@ export const updateEvent = mutation({
                     .first();
 
                 if (existingPerson) {
-                    personIds.push(existingPerson._id);
+                    newPersonIds.push(existingPerson._id);
                 } else {
                     const newPersonId = await ctx.db.insert("people", {
                         userId,
@@ -171,10 +218,52 @@ export const updateEvent = mutation({
                         interactionCount: 1,
                         lastMentionedAt: Date.now(),
                     });
-                    personIds.push(newPersonId);
+                    newPersonIds.push(newPersonId);
+                    newlyCreatedPersonIds.add(newPersonId);
                 }
             }
-            updates.personIds = personIds;
+
+            const newPersonIdsSet = new Set(newPersonIds);
+
+            // Compute sets: removed = old - new, added = new - old, kept = intersection
+            const removedPersonIds = oldPersonIds.filter((id) => !newPersonIdsSet.has(id));
+            const addedPersonIds = newPersonIds.filter(
+                (id) => !oldPersonIdsSet.has(id) && !newlyCreatedPersonIds.has(id)
+            );
+            const keptPersonIds = newPersonIds.filter(
+                (id) => oldPersonIdsSet.has(id) && !newlyCreatedPersonIds.has(id)
+            );
+
+            // Decrement interactionCount for removed people (clamp to >= 0)
+            for (const removedPersonId of removedPersonIds) {
+                const personDoc = await ctx.db.get(removedPersonId);
+                if (personDoc) {
+                    const newCount = Math.max(0, (personDoc.interactionCount || 0) - 1);
+                    await ctx.db.patch(removedPersonId, { interactionCount: newCount });
+                }
+            }
+
+            // Increment interactionCount for added people (but not newly created ones)
+            for (const addedPersonId of addedPersonIds) {
+                const personDoc = await ctx.db.get(addedPersonId);
+                if (personDoc) {
+                    await ctx.db.patch(addedPersonId, {
+                        interactionCount: (personDoc.interactionCount || 0) + 1,
+                        lastMentionedAt: Date.now(),
+                    });
+                }
+            }
+
+            // Update lastMentionedAt for kept people
+            for (const keptPersonId of keptPersonIds) {
+                await ctx.db.patch(keptPersonId, {
+                    lastMentionedAt: Date.now(),
+                });
+            }
+
+            // Note: newly created people already have lastMentionedAt set during creation
+
+            updates.personIds = newPersonIds;
         }
 
         await ctx.db.patch(args.eventId, updates);

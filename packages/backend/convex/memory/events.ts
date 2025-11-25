@@ -1,7 +1,7 @@
-import { mutation, query } from "../_generated/server";
+import { query } from "../_generated/server";
 import { v } from "convex/values";
 import ensureCurrentUser from "../users";
-import { Id } from "../_generated/dataModel";
+import { Id, Doc } from "../_generated/dataModel";
 import { moodNumberToWord, arousalNumberToWord } from "./util";
 
 export const getTimelineEvents = query({
@@ -26,7 +26,7 @@ export const getTimelineEvents = query({
     const personIds = new Set<Id<"people">>();
     events.forEach(e => e.personIds?.forEach(id => personIds.add(id)));
     
-    const peopleMap = new Map<Id<"people">, any>();
+    const peopleMap = new Map<Id<"people">, Doc<"people">>();
     await Promise.all(Array.from(personIds).map(async (id) => {
         const p = await ctx.db.get(id);
         if (p) peopleMap.set(id, p);
@@ -36,7 +36,7 @@ export const getTimelineEvents = query({
     const tagIds = new Set<Id<"userTags">>();
     events.forEach(e => e.tagIds?.forEach(id => tagIds.add(id)));
     
-    const tagsMap = new Map<Id<"userTags">, any>();
+    const tagsMap = new Map<Id<"userTags">, Doc<"userTags">>();
     await Promise.all(Array.from(tagIds).map(async (id) => {
         const t = await ctx.db.get(id);
         if (t) tagsMap.set(id, t);

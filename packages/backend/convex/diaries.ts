@@ -83,7 +83,7 @@ export const updateDiary = mutation({
 
     // Step 3: Update diary
     const updatedAt = Date.now();
-    const newVersion = (diary.version || 1) + 1;
+    const newVersion = (diary.version || 0) + 1;
 
     await ctx.db.patch(args.diaryId, {
       content: args.content,
@@ -196,6 +196,8 @@ export const createDiaryInternal = internalMutation({
       content: args.content,
       date: diaryDate,
       updatedAt: now,
+      originalText: args.content,
+      version: 1,
     });
 
     return { _id };
@@ -618,102 +620,135 @@ export const saveDiaryEvents = internalMutation({
       console.warn(`Diary ${args.diaryId} not found during processing`);
       return;
     }
-    // 1. Delete existing events for this diary
+
+    // 1. Validate that we have events to process
+    if (!args.extractedEvents || args.extractedEvents.length === 0) {
+      console.warn(`No events extracted for diary ${args.diaryId}, skipping update`);
+      return;
+    }
+
+    // 2. Get existing events (we'll delete them only after successful creation)
     const existingEvents = await ctx.db
       .query("events")
       .withIndex("by_diaryId", (q) => q.eq("diaryId", diary._id))
       .collect();
 
-    await Promise.all(existingEvents.map((e) => ctx.db.delete(e._id)));
+    // 3. Create new events first, collecting their IDs
+    const newEventIds: Id<"events">[] = [];
+    try {
+      for (const eventData of args.extractedEvents) {
+        const personIds = [];
+        // Simple person resolution
+        for (const name of eventData.people) {
+          const normalizedName = normalizePersonName(name);
+          let person = await ctx.db
+            .query("people")
+            .withIndex("by_userId_and_primaryName", (q) =>
+              q.eq("userId", diary.userId).eq("primaryName", normalizedName)
+            )
+            .first();
 
-    // 2. Insert new events and handle People/Themes
-    for (const eventData of args.extractedEvents) {
-      const personIds = [];
-      // Simple person resolution
-      for (const name of eventData.people) {
-        const normalizedName = normalizePersonName(name);
-        let person = await ctx.db
-          .query("people")
-          .withIndex("by_userId_and_primaryName", (q) =>
-            q.eq("userId", diary.userId).eq("primaryName", normalizedName)
-          )
-          .first();
+          if (!person) {
+            const personId = await ctx.db.insert("people", {
+              userId: diary.userId,
+              primaryName: normalizedName,
+              interactionCount: 1,
+              lastMentionedAt: eventData.happenedAt,
+            });
+            personIds.push(personId);
+          } else {
+            personIds.push(person._id);
+            // Update stats
+            await ctx.db.patch(person._id, {
+              interactionCount: (person.interactionCount || 0) + 1,
+              lastMentionedAt: Math.max(person.lastMentionedAt || 0, eventData.happenedAt)
+            });
+          }
+        }
 
-        if (!person) {
-          const personId = await ctx.db.insert("people", {
-            userId: diary.userId,
-            primaryName: normalizedName,
-            interactionCount: 1,
-            lastMentionedAt: eventData.happenedAt,
-          });
-          personIds.push(personId);
-        } else {
-          personIds.push(person._id);
-          // Update stats
-          await ctx.db.patch(person._id, {
-            interactionCount: (person.interactionCount || 0) + 1,
-            lastMentionedAt: Math.max(person.lastMentionedAt || 0, eventData.happenedAt)
-          });
+        // Resolve tags to tag IDs (similar to people resolution)
+        const tagIds: Id<"userTags">[] = [];
+        const normalizedTags = eventData.tags.map(normalizeTag);
+
+        for (const tag of normalizedTags) {
+          const existingTag = await ctx.db
+            .query("userTags")
+            .withIndex("by_userId_and_canonicalName", (q) =>
+              q.eq("userId", diary.userId).eq("canonicalName", tag)
+            )
+            .first();
+
+          if (existingTag) {
+            tagIds.push(existingTag._id);
+            // Update stats
+            await ctx.db.patch(existingTag._id, {
+              eventCount: existingTag.eventCount + 1,
+              lastUsedAt: eventData.happenedAt,
+            });
+          } else {
+            const newTagId = await ctx.db.insert("userTags", {
+              userId: diary.userId,
+              canonicalName: tag,
+              displayName: tag, // Use canonical as display for now
+              eventCount: 1,
+              lastUsedAt: eventData.happenedAt,
+            });
+            tagIds.push(newTagId);
+          }
+        }
+
+        const eventRecord: Omit<Doc<"events">, "_id" | "_creationTime"> = {
+          userId: diary.userId,
+          diaryId: diary._id,
+          happenedAt: eventData.happenedAt,
+          title: eventData.title,
+          summary: eventData.summary,
+          tagIds: tagIds.length > 0 ? tagIds : undefined,
+          personIds: personIds.length > 0 ? personIds : undefined,
+        };
+
+        if (eventData.mood !== undefined) {
+          eventRecord.mood = eventData.mood;
+        }
+
+        if (eventData.arousal !== undefined) {
+          eventRecord.arousal = eventData.arousal;
+        }
+
+        if (eventData.anniversaryCandidate !== undefined) {
+          eventRecord.anniversaryCandidate = eventData.anniversaryCandidate;
+        }
+
+        const eventId = await ctx.db.insert("events", eventRecord);
+        newEventIds.push(eventId);
+      }
+
+      // 4. Only delete existing events after all new events are successfully created
+      // This ensures we don't leave the diary empty if creation fails
+      if (newEventIds.length > 0) {
+        await Promise.all(existingEvents.map((e) => ctx.db.delete(e._id)));
+      } else {
+        // This shouldn't happen if validation passed, but log if it does
+        console.warn(`No events were created for diary ${args.diaryId} despite validation`);
+      }
+    } catch (error) {
+      // If creation fails, don't delete existing events
+      // Clean up any partially created events if possible
+      if (newEventIds.length > 0) {
+        console.error(
+          `Error creating events for diary ${args.diaryId}, cleaning up ${newEventIds.length} partially created events`
+        );
+        try {
+          await Promise.all(newEventIds.map((id) => ctx.db.delete(id)));
+        } catch (cleanupError) {
+          console.error(`Failed to cleanup partially created events: ${cleanupError}`);
         }
       }
-
-      // Resolve tags to tag IDs (similar to people resolution)
-      const tagIds: Id<"userTags">[] = [];
-      const normalizedTags = eventData.tags.map(normalizeTag);
-
-      for (const tag of normalizedTags) {
-        const existingTag = await ctx.db
-          .query("userTags")
-          .withIndex("by_userId_and_canonicalName", (q) =>
-            q.eq("userId", diary.userId).eq("canonicalName", tag)
-          )
-          .first();
-
-        if (existingTag) {
-          tagIds.push(existingTag._id);
-          // Update stats
-          await ctx.db.patch(existingTag._id, {
-            eventCount: existingTag.eventCount + 1,
-            lastUsedAt: eventData.happenedAt,
-          });
-        } else {
-          const newTagId = await ctx.db.insert("userTags", {
-            userId: diary.userId,
-            canonicalName: tag,
-            displayName: tag, // Use canonical as display for now
-            eventCount: 1,
-            lastUsedAt: eventData.happenedAt,
-          });
-          tagIds.push(newTagId);
-        }
-      }
-
-      const eventRecord: Omit<Doc<"events">, "_id" | "_creationTime"> = {
-        userId: diary.userId,
-        diaryId: diary._id,
-        happenedAt: eventData.happenedAt,
-        title: eventData.title,
-        summary: eventData.summary,
-        tagIds: tagIds.length > 0 ? tagIds : undefined,
-        personIds: personIds.length > 0 ? personIds : undefined,
-      };
-
-      if (eventData.mood !== undefined) {
-        eventRecord.mood = eventData.mood;
-      }
-
-      if (eventData.arousal !== undefined) {
-        eventRecord.arousal = eventData.arousal;
-      }
-
-      if (eventData.anniversaryCandidate !== undefined) {
-        eventRecord.anniversaryCandidate = eventData.anniversaryCandidate;
-      }
-
-      await ctx.db.insert("events", eventRecord);
+      // Re-throw to ensure the error is propagated
+      throw error;
     }
 
-    // 3. Update Diary metadata (version tracking if needed, but lastProcessedAt is removed)
+    // 5. Update Diary metadata (version tracking if needed, but lastProcessedAt is removed)
     // For now, we just leave it as is or update version if we want to track processing version
     // But since lastProcessedAt is gone, we don't update it.
   },
@@ -735,16 +770,28 @@ export const processDiaryEntry = internalAction({
 
     const { diary, existingPeople, existingTags } = context;
 
-    const extractedEvents = await extractEventsFromDiary(
-      diary.content,
-      diary.date,
-      existingPeople,
-      existingTags
-    );
+    try {
+      const extractedEvents = await extractEventsFromDiary(
+        diary.content,
+        diary.date,
+        existingPeople,
+        existingTags
+      );
 
-    await ctx.runMutation(internal.diaries.saveDiaryEvents, {
-      diaryId: args.diaryId,
-      extractedEvents,
-    });
+      await ctx.runMutation(internal.diaries.saveDiaryEvents, {
+        diaryId: args.diaryId,
+        extractedEvents,
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      
+      console.error(
+        `Failed to process diary ${args.diaryId}: ${errorMessage}`,
+        errorStack ? `\nStack: ${errorStack}` : ""
+      );
+
+      return { success: false, error: errorMessage };
+    }
   },
 });

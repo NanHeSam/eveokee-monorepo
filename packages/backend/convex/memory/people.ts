@@ -9,6 +9,53 @@ export const getPersonDetail = query({
   args: {
     personId: v.id("people"),
   },
+  returns: v.union(
+    v.object({
+      person: v.object({
+        _id: v.id("people"),
+        _creationTime: v.number(),
+        userId: v.id("users"),
+        primaryName: v.string(),
+        altNames: v.optional(v.array(v.string())),
+        relationshipLabel: v.optional(v.string()),
+        lastMentionedAt: v.optional(v.number()),
+        interactionCount: v.optional(v.number()),
+        highlights: v.optional(v.object({
+          summary: v.string(),
+          lastGeneratedAt: v.number(),
+        })),
+      }),
+      recentEvents: v.array(
+        v.object({
+          _id: v.id("events"),
+          _creationTime: v.number(),
+          userId: v.id("users"),
+          diaryId: v.id("diaries"),
+          happenedAt: v.number(),
+          personIds: v.optional(v.array(v.id("people"))),
+          title: v.string(),
+          summary: v.string(),
+          mood: v.optional(v.union(v.literal(-2), v.literal(-1), v.literal(0), v.literal(1), v.literal(2))),
+          arousal: v.optional(v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4), v.literal(5))),
+          anniversaryCandidate: v.optional(v.boolean()),
+          tagIds: v.optional(v.array(v.id("userTags"))),
+          tags: v.optional(v.array(v.string())),
+          tagsDetails: v.optional(
+            v.array(
+              v.object({
+                _id: v.id("userTags"),
+                name: v.string(),
+                displayName: v.string(),
+              })
+            )
+          ),
+          moodWord: v.optional(v.string()),
+          arousalWord: v.optional(v.string()),
+        })
+      ),
+    }),
+    v.null()
+  ),
   handler: async (ctx, args) => {
     const { userId } = await ensureCurrentUser(ctx);
     const person = await ctx.db.get(args.personId);
@@ -71,6 +118,22 @@ export const getPersonDetail = query({
 
 export const listPeople = query({
   args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("people"),
+      _creationTime: v.number(),
+      userId: v.id("users"),
+      primaryName: v.string(),
+      altNames: v.optional(v.array(v.string())),
+      relationshipLabel: v.optional(v.string()),
+      lastMentionedAt: v.optional(v.number()),
+      interactionCount: v.optional(v.number()),
+      highlights: v.optional(v.object({
+        summary: v.string(),
+        lastGeneratedAt: v.number(),
+      })),
+    })
+  ),
   handler: async (ctx) => {
     const { userId } = await ensureCurrentUser(ctx);
     return await ctx.db
@@ -92,6 +155,7 @@ export const updatePerson = mutation({
       lastGeneratedAt: v.number(),
     })),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const { userId } = await ensureCurrentUser(ctx);
     const person = await ctx.db.get(args.personId);
@@ -122,6 +186,10 @@ export const generatePersonHighlight = action({
   args: {
     personId: v.id("people"),
   },
+  returns: v.object({
+    summary: v.string(),
+    lastGeneratedAt: v.number(),
+  }),
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
@@ -180,6 +248,23 @@ export const getPersonForHighlight = internalQuery({
     personId: v.id("people"),
     userId: v.id("users"),
   },
+  returns: v.union(
+    v.object({
+      _id: v.id("people"),
+      _creationTime: v.number(),
+      userId: v.id("users"),
+      primaryName: v.string(),
+      altNames: v.optional(v.array(v.string())),
+      relationshipLabel: v.optional(v.string()),
+      lastMentionedAt: v.optional(v.number()),
+      interactionCount: v.optional(v.number()),
+      highlights: v.optional(v.object({
+        summary: v.string(),
+        lastGeneratedAt: v.number(),
+      })),
+    }),
+    v.null()
+  ),
   handler: async (ctx, args) => {
     const person = await ctx.db.get(args.personId);
     if (!person || person.userId !== args.userId) {
@@ -195,6 +280,13 @@ export const getPersonEventsForHighlight = internalQuery({
     personId: v.id("people"),
     userId: v.id("users"),
   },
+  returns: v.array(
+    v.object({
+      title: v.string(),
+      summary: v.string(),
+      happenedAt: v.number(),
+    })
+  ),
   handler: async (ctx, args) => {
     // Get recent events (up to 20) for this person
     const recentEvents = await ctx.db
@@ -225,6 +317,7 @@ export const updatePersonHighlight = internalMutation({
       lastGeneratedAt: v.number(),
     }),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
     await ctx.db.patch(args.personId, {
       highlights: args.highlights,
