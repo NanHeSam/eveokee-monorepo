@@ -182,6 +182,7 @@ export const updatePerson = mutation({
     }
 
     await ctx.db.patch(args.personId, updates);
+    return null;
   },
 });
 
@@ -325,6 +326,7 @@ export const updatePersonHighlight = internalMutation({
     await ctx.db.patch(args.personId, {
       highlights: args.highlights,
     });
+    return null;
   },
 });
 
