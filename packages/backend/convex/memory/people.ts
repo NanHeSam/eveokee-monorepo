@@ -1,6 +1,6 @@
 import { query, mutation, action, internalQuery, internalMutation } from "../_generated/server";
 import { v } from "convex/values";
-import { Id } from "../_generated/dataModel";
+import { Doc, Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
 import ensureCurrentUser from "../users";
 import { moodNumberToWord, arousalNumberToWord, generateRelationshipHighlight } from "./util";
@@ -83,7 +83,7 @@ export const getPersonDetail = query({
     const tagIds = new Set<Id<"userTags">>();
     topEvents.forEach(e => e.tagIds?.forEach(id => tagIds.add(id)));
     
-    const tagsMap = new Map<Id<"userTags">, any>();
+    const tagsMap = new Map<Id<"userTags">, Doc<"userTags">>();
     await Promise.all(Array.from(tagIds).map(async (id) => {
         const t = await ctx.db.get(id);
         if (t) tagsMap.set(id, t);

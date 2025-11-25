@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert, PanResponder, Dimensions, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -9,7 +9,6 @@ import { EventDetailsNavigationProp, EventDetailsRouteProp } from '../navigation
 import { Id } from '@backend/convex/convex/_generated/dataModel';
 import { useThemeColors } from '../theme/useThemeColors';
 import { format } from 'date-fns';
-import { useUser } from '@clerk/clerk-expo';
 
 // Emoji mappings for mood (-2 to 2)
 const MOOD_EMOJIS: Record<number, string> = {
@@ -238,7 +237,6 @@ export const EventDetailsScreen = () => {
     const navigation = useNavigation<EventDetailsNavigationProp>();
     const route = useRoute<EventDetailsRouteProp>();
     const { eventId } = route.params;
-    const { user } = useUser();
 
     const event = useQuery(api.events.getEvent, { eventId });
     const updateEvent = useMutation(api.events.updateEvent);
@@ -249,7 +247,7 @@ export const EventDetailsScreen = () => {
     const [mood, setMood] = useState<number | undefined>(undefined);
     const [arousal, setArousal] = useState<number | undefined>(undefined);
     const [tags, setTags] = useState<string[]>([]);
-    const [people, setPeople] = useState<Array<{ _id: Id<'people'> | string; name: string }>>([]);
+    const [people, setPeople] = useState<{ _id: Id<'people'> | string; name: string }[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [isAddingTag, setIsAddingTag] = useState(false);
     const [isAddingPerson, setIsAddingPerson] = useState(false);
@@ -259,6 +257,7 @@ export const EventDetailsScreen = () => {
     const personInputRef = React.useRef<TextInput>(null);
     const personAnimations = React.useRef<Map<string, Animated.Value>>(new Map()).current;
     const didAddPersonRef = React.useRef<boolean>(false);
+    const didAddTagRef = React.useRef<boolean>(false);
 
     useEffect(() => {
         if (event) {
@@ -287,8 +286,9 @@ export const EventDetailsScreen = () => {
                 tags: tags.length > 0 ? tags : undefined,
                 peopleNames: people.length > 0 ? people.map(p => p.name) : undefined,
             });
-            // Reset the add-person flag after successful save
+            // Reset the add-person and add-tag flags after successful save
             didAddPersonRef.current = false;
+            didAddTagRef.current = false;
             Alert.alert('Success', 'Changes saved successfully.');
         } catch (error) {
             console.error('Failed to update event:', error);
@@ -623,16 +623,20 @@ export const EventDetailsScreen = () => {
                                 onChangeText={setNewTagText}
                                 autoFocus
                                 onSubmitEditing={(e) => {
+                                    if (didAddTagRef.current) return;
                                     const newTag = e.nativeEvent.text.trim();
                                     if (newTag && !tags.includes(newTag)) {
+                                        didAddTagRef.current = true;
                                         setTags([...tags, newTag]);
                                     }
                                     setNewTagText('');
                                     setIsAddingTag(false);
                                 }}
                                 onBlur={() => {
+                                    if (didAddTagRef.current) return;
                                     const trimmed = newTagText.trim();
                                     if (trimmed && !tags.includes(trimmed)) {
+                                        didAddTagRef.current = true;
                                         setTags([...tags, trimmed]);
                                     }
                                     setNewTagText('');
@@ -642,6 +646,8 @@ export const EventDetailsScreen = () => {
                         ) : (
                             <Pressable
                                 onPress={() => {
+                                    // Reset the flag when opening the input for a new tag
+                                    didAddTagRef.current = false;
                                     setIsAddingTag(true);
                                     setNewTagText('');
                                     // Focus the input after a brief delay to ensure it's rendered
@@ -657,8 +663,6 @@ export const EventDetailsScreen = () => {
                         )}
                     </View>
                 </View>
-
-
 
                     <Pressable
                         onPress={() => navigation.navigate('DiaryView', { diaryId: event.diaryId })}
