@@ -1,4 +1,4 @@
-import { beforeEach, afterEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { api } from "../convex/_generated/api";
 import {
   createTestEnvironment,
@@ -11,13 +11,6 @@ describe("diaries.deleteDiary", () => {
 
   beforeEach(() => {
     t = createTestEnvironment();
-  });
-
-  afterEach(async () => {
-    if (t && "finishInProgressScheduledJobs" in t) {
-      // @ts-ignore - convex-test exposes this helper at runtime
-      await t.finishInProgressScheduledJobs();
-    }
   });
 
   it("removes associated events when diary is deleted", async () => {

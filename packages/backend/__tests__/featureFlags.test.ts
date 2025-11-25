@@ -58,28 +58,8 @@ describe("featureFlags", () => {
       });
     });
 
-    // Logic in implementation:
-    // 1. allow check -> returns true
-    // Wait, my implementation checked allow first!
-    // "If allowUserIds.includes(userId) -> true"
-    // Usually deny should take precedence. The plan said "deny list wins if both contain the user".
-    // I need to fix the implementation order in featureFlags.ts first if I made a mistake.
-    
-    // Let's check the implementation:
-    /*
-      // 1. Explicitly allowed
-      if (allowUserIds.includes(userId)) {
-        result[flagKey] = true;
-        continue;
-      }
-
-      // 2. Explicitly denied
-      if (denyUserIds.includes(userId)) {
-        result[flagKey] = false;
-        continue;
-      }
-    */
-    // Yes, I implemented allow first. I should fix this to match the plan (and standard practice).
+    const result = await t.query(api.featureFlags.getUserFlags, { userId });
+    expect(result["test-flag"]).toBe(false);
   });
   
   it("resolves percentage rollout", async () => {

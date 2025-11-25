@@ -1,5 +1,9 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
-import { createTestEnvironment, createTestUser, withAuth } from "../convexTestUtils";
+import { describe, test, expect, beforeEach } from "vitest";
+import {
+  createTestEnvironment,
+  createTestUser,
+  withAuth,
+} from "../convexTestUtils";
 import { api } from "../../convex/_generated/api";
 import { Doc, Id } from "../../convex/_generated/dataModel";
 
@@ -11,13 +15,6 @@ describe("Memory System - Diary Processing", () => {
 
   beforeEach(() => {
     t = createTestEnvironment();
-  });
-
-  afterEach(async () => {
-    if (t && "finishInProgressScheduledJobs" in t) {
-      // @ts-ignore
-      await t.finishInProgressScheduledJobs();
-    }
   });
 
   test("createDiary schedules processing and events are created", async () => {
