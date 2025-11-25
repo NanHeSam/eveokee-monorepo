@@ -107,6 +107,7 @@ const DraggableSlider: React.FC<DraggableSliderProps> = ({
     const [localValue, setLocalValue] = useState<number | undefined>(value);
     const [sliderLayout, setSliderLayout] = useState({ width: sliderWidth, x: 0 });
     const scaleAnim = React.useRef(new Animated.Value(1)).current;
+    const isDraggingRef = React.useRef(false);
 
     useEffect(() => {
         setLocalValue(value);
@@ -115,45 +116,86 @@ const DraggableSlider: React.FC<DraggableSliderProps> = ({
     const values = Array.from({ length: max - min + 1 }, (_, i) => min + i);
     const currentValue = localValue ?? Math.floor((min + max) / 2);
     const valueIndex = currentValue - min;
-    const segmentWidth = sliderLayout.width / (max - min);
 
-    const handleTouch = (locationX: number) => {
-        const newIndex = Math.round(locationX / segmentWidth);
-        const clampedIndex = Math.max(0, Math.min(max - min, newIndex));
-        const newValue = min + clampedIndex;
-        setLocalValue(newValue);
-        onValueChange(newValue);
-        
-        // Gentle animation on change
-        Animated.sequence([
-            Animated.timing(scaleAnim, {
-                toValue: 1.05,
-                duration: 100,
-                useNativeDriver: true,
-            }),
-            Animated.timing(scaleAnim, {
-                toValue: 1,
-                duration: 150,
-                useNativeDriver: true,
-            }),
-        ]).start();
+    const clamp = (val: number, minVal: number, maxVal: number) => {
+        return Math.min(Math.max(val, minVal), maxVal);
     };
 
-    const panResponder = PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: (evt) => {
-            const { locationX } = evt.nativeEvent;
-            handleTouch(locationX);
-        },
-        onPanResponderMove: (evt) => {
-            const { locationX } = evt.nativeEvent;
-            handleTouch(locationX);
-        },
-        onPanResponderRelease: () => {
-            // Value already updated
-        },
-    });
+    const handleTouch = React.useCallback((locationX: number) => {
+        if (sliderLayout.width <= 0) return;
+        
+        const segmentCount = max - min;
+        const clampedX = clamp(locationX, 0, sliderLayout.width);
+        const segmentWidth = sliderLayout.width / segmentCount;
+        const newIndex = Math.round(clampedX / segmentWidth);
+        const clampedIndex = clamp(newIndex, 0, segmentCount);
+        const newValue = min + clampedIndex;
+        
+        setLocalValue((prevValue) => {
+            if (newValue !== prevValue) {
+                onValueChange(newValue);
+                
+                // Gentle animation on change
+                Animated.sequence([
+                    Animated.timing(scaleAnim, {
+                        toValue: 1.05,
+                        duration: 100,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(scaleAnim, {
+                        toValue: 1,
+                        duration: 150,
+                        useNativeDriver: true,
+                    }),
+                ]).start();
+                
+                return newValue;
+            }
+            return prevValue;
+        });
+    }, [sliderLayout.width, min, max, onValueChange, scaleAnim]);
+
+    const panResponder = React.useMemo(() => {
+        return PanResponder.create({
+            // Capture the gesture immediately to prevent ScrollView from intercepting
+            onStartShouldSetPanResponderCapture: () => true,
+            onStartShouldSetPanResponder: () => true,
+            // Prioritize horizontal movement - if horizontal movement is greater than or equal to vertical, capture it
+            // This prevents ScrollView from scrolling when user drags horizontally with slight vertical movement
+            onMoveShouldSetPanResponderCapture: (_, gestureState) => {
+                // If horizontal movement is dominant or significant, capture to prevent ScrollView scrolling
+                const absDx = Math.abs(gestureState.dx);
+                const absDy = Math.abs(gestureState.dy);
+                return absDx >= absDy && absDx > 5;
+            },
+            onMoveShouldSetPanResponder: (_, gestureState) => {
+                // Once we've started, respond to any horizontal movement
+                return isDraggingRef.current || Math.abs(gestureState.dx) > 5;
+            },
+            onPanResponderGrant: (evt) => {
+                isDraggingRef.current = true;
+                const { locationX } = evt.nativeEvent;
+                handleTouch(locationX);
+            },
+            onPanResponderMove: (evt) => {
+                if (!isDraggingRef.current) return;
+                const { locationX } = evt.nativeEvent;
+                handleTouch(locationX);
+            },
+            onPanResponderRelease: () => {
+                isDraggingRef.current = false;
+            },
+            onPanResponderTerminate: () => {
+                isDraggingRef.current = false;
+            },
+            // Prevent ScrollView from terminating our gesture when dragging
+            onPanResponderTerminationRequest: () => {
+                // Return false to prevent termination while actively dragging
+                // This keeps the gesture locked to the slider even if ScrollView tries to take over
+                return false;
+            },
+        });
+    }, [handleTouch]);
 
     return (
         <View className="mb-6">
@@ -175,19 +217,16 @@ const DraggableSlider: React.FC<DraggableSliderProps> = ({
                 {...panResponder.panHandlers}
             >
                 {values.map((val, idx) => (
-                    <Pressable
+                    <View
                         key={val}
-                        onPress={() => {
-                            setLocalValue(val);
-                            onValueChange(val);
-                        }}
                         className="flex-1 items-center justify-center"
                         style={{
                             backgroundColor: idx <= valueIndex ? colors.accentMint : 'transparent',
                         }}
+                        pointerEvents="none"
                     >
                         <Text className="text-xl">{emojis[val]}</Text>
-                    </Pressable>
+                    </View>
                 ))}
             </View>
         </View>
@@ -346,10 +385,6 @@ export const EventDetailsScreen = () => {
                     <Text className="text-base mb-4 italic" style={{ color: colors.textSecondary }}>
                         This moment left me feeling…
                     </Text>
-                    <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
-                        Emotion & Intensity
-                    </Text>
-
                     {/* Mood Slider */}
                     <DraggableSlider
                         value={mood}
@@ -435,10 +470,6 @@ export const EventDetailsScreen = () => {
                             }
                             const scaleAnim = personAnimations.get(person._id.toString())!;
                             
-                            // Simple micro-emotion indicator (random for now, could be stored per person)
-                            const emotionDots = ['💛', '💙', '💞'];
-                            const emotionDot = emotionDots[idx % emotionDots.length];
-                            
                             return (
                                 <Animated.View
                                     key={person._id}
@@ -474,22 +505,13 @@ export const EventDetailsScreen = () => {
                                         }}
                                         disabled={isTemporary}
                                     >
-                                        <View className="relative">
-                                            <View 
-                                                className="w-8 h-8 rounded-full mr-2 items-center justify-center"
-                                                style={{ backgroundColor: colors.accentMint }}
-                                            >
-                                                <Text className="text-sm font-semibold" style={{ color: colors.background }}>
-                                                    {initial}
-                                                </Text>
-                                            </View>
-                                            {/* Micro-emotion dot */}
-                                            <View 
-                                                className="absolute -top-1 -right-1 w-4 h-4 rounded-full items-center justify-center"
-                                                style={{ backgroundColor: colors.background }}
-                                            >
-                                                <Text className="text-xs">{emotionDot}</Text>
-                                            </View>
+                                        <View 
+                                            className="w-8 h-8 rounded-full mr-2 items-center justify-center"
+                                            style={{ backgroundColor: colors.accentMint }}
+                                        >
+                                            <Text className="text-sm font-semibold" style={{ color: colors.background }}>
+                                                {initial}
+                                            </Text>
                                         </View>
                                         <Text 
                                             className="text-base mr-2"
