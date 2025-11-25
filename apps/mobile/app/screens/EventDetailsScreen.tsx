@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert, PanResponder, Dimensions, Animated } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert, PanResponder, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -102,9 +102,8 @@ const DraggableSlider: React.FC<DraggableSliderProps> = ({
     label,
     colors,
 }) => {
-    const sliderWidth = Dimensions.get('window').width - 80; // Account for padding
     const [localValue, setLocalValue] = useState<number | undefined>(value);
-    const [sliderLayout, setSliderLayout] = useState({ width: sliderWidth, x: 0 });
+    const [sliderLayout, setSliderLayout] = useState({ width: 0, x: 0 });
     const scaleAnim = React.useRef(new Animated.Value(1)).current;
     const isDraggingRef = React.useRef(false);
 
@@ -212,7 +211,7 @@ const DraggableSlider: React.FC<DraggableSliderProps> = ({
                     setSliderLayout({ width, x });
                 }}
                 className="flex-row h-12 rounded-full overflow-hidden"
-                style={{ backgroundColor: colors.border, width: sliderWidth }}
+                style={{ backgroundColor: colors.border, flex: 1 }}
                 {...panResponder.panHandlers}
             >
                 {values.map((val, idx) => (
@@ -247,7 +246,7 @@ export const EventDetailsScreen = () => {
     const [mood, setMood] = useState<number | undefined>(undefined);
     const [arousal, setArousal] = useState<number | undefined>(undefined);
     const [tags, setTags] = useState<string[]>([]);
-    const [people, setPeople] = useState<{ _id: Id<'people'> | string; name: string }[]>([]);
+    const [people, setPeople] = useState<{ _id: Id<'people'> | string; name: string; isTemporary?: boolean }[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [isAddingTag, setIsAddingTag] = useState(false);
     const [isAddingPerson, setIsAddingPerson] = useState(false);
@@ -283,8 +282,8 @@ export const EventDetailsScreen = () => {
                 summary,
                 mood: validateMood(mood),
                 arousal: validateArousal(arousal),
-                tags: tags.length > 0 ? tags : undefined,
-                peopleNames: people.length > 0 ? people.map(p => p.name) : undefined,
+                tags: tags,
+                peopleNames: people.map(p => p.name),
             });
             // Reset the add-person and add-tag flags after successful save
             didAddPersonRef.current = false;
@@ -312,7 +311,7 @@ export const EventDetailsScreen = () => {
             // For new people added manually, we'll need to create a person record
             // For now, we'll use a temporary ID - this should be handled by the backend
             // when saving the event
-            setPeople([...people, { _id: `temp-${Date.now()}`, name: trimmed }]);
+            setPeople([...people, { _id: `temp-${Date.now()}`, name: trimmed, isTemporary: true }]);
         }
         
         // Always clear the input and close the add-person UI
@@ -370,6 +369,7 @@ export const EventDetailsScreen = () => {
                     {title || 'Untitled Event'}
                 </Text>
                 <Text className="text-sm mb-4" style={{ color: colors.textSecondary }}>
+                    {/* happenedAt is stored as milliseconds (Date.now()) in the backend */}
                     {format(new Date(event.happenedAt), 'MMMM d, yyyy • HH:mm')}
                 </Text>
 
@@ -461,14 +461,15 @@ export const EventDetailsScreen = () => {
                     </Text>
                     <View className="flex-row flex-wrap">
                         {people.map((person, idx) => {
-                            const isTemporary = person._id.toString().startsWith('temp-');
+                            const isTemporary = !!person.isTemporary;
                             const initial = person.name.charAt(0).toUpperCase();
+                            const personIdKey = person._id.toString();
                             
                             // Get or create animation for this person
-                            if (!personAnimations.has(person._id.toString())) {
-                                personAnimations.set(person._id.toString(), new Animated.Value(1));
+                            if (!personAnimations.has(personIdKey)) {
+                                personAnimations.set(personIdKey, new Animated.Value(1));
                             }
-                            const scaleAnim = personAnimations.get(person._id.toString())!;
+                            const scaleAnim = personAnimations.get(personIdKey)!;
                             
                             return (
                                 <Animated.View
@@ -522,6 +523,8 @@ export const EventDetailsScreen = () => {
                                         <Pressable
                                             onPress={(e) => {
                                                 e.stopPropagation();
+                                                // Clean up animation entry when removing person
+                                                personAnimations.delete(personIdKey);
                                                 const newPeople = people.filter((_, i) => i !== idx);
                                                 setPeople(newPeople);
                                             }}

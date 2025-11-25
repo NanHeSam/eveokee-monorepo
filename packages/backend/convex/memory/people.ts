@@ -90,7 +90,10 @@ export const getPersonDetail = query({
     }));
 
     const events = topEvents.map(e => {
-      const tags = e.tagIds?.map(id => tagsMap.get(id)?.displayName || tagsMap.get(id)?.canonicalName).filter(Boolean);
+      const tags = e.tagIds?.map(id => {
+        const t = tagsMap.get(id);
+        return t?.displayName ?? t?.canonicalName;
+      }).filter(Boolean);
       const tagsDetails = e.tagIds?.map(id => {
         const t = tagsMap.get(id);
         return t ? {
@@ -164,7 +167,7 @@ export const updatePerson = mutation({
       throw new Error("Person not found or unauthorized");
     }
 
-    const updates: any = {};
+    const updates: Partial<Doc<"people">> = {};
     if (args.primaryName !== undefined) {
       updates.primaryName = args.primaryName;
     }
