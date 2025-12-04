@@ -57,6 +57,13 @@ export const requestSunoGeneration = internalAction({
       songData = await openaiClient.generateMusicData({
         diaryContent: args.diary.content,
         style: args.diary.style,
+        analytics: {
+          userId: args.diary.userId,
+          traceId: `music-${args.diary.diaryId}`,
+          properties: {
+            diaryId: args.diary.diaryId,
+          },
+        },
       });
       console.log("Generated song data:", songData);
     } catch (error) {
