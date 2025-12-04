@@ -26,6 +26,12 @@ export const extractTagsFromContent = action({
       const tags = await openai.extractTags({
         title: args.title,
         content: args.content,
+        analytics: {
+          traceId: `blog-${Date.now()}`,
+          properties: {
+            source: "blog.extractTags",
+          },
+        },
       });
 
       // Ensure we return at least one tag

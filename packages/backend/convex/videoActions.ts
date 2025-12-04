@@ -186,6 +186,13 @@ export const requestKieVideoGeneration = internalAction({
         lyrics: args.lyric,
         songTitle: args.title,
         diaryEntry: args.diaryEntry,
+        analytics: {
+          userId: args.userId,
+          traceId: `video-${args.musicId}`,
+          properties: {
+            musicId: args.musicId,
+          },
+        },
       });
       console.log("Video script generated successfully", { scriptLength: videoScript.length });
     } catch (error) {
