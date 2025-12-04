@@ -3,13 +3,18 @@
 import { internalAction, action } from "./_generated/server";
 import { v } from "convex/values";
 import { internal, api } from "./_generated/api";
-import { VIDEO_GENERATION_CALLBACK_PATH, KIE_MODEL_IMAGE_TO_VIDEO, DEFAULT_VIDEO_DURATION, DEFAULT_VIDEO_RESOLUTION } from "./utils/constants";
+import {
+  VIDEO_GENERATION_CALLBACK_PATH,
+  KIE_MODEL_IMAGE_TO_VIDEO,
+  DEFAULT_VIDEO_DURATION,
+  DEFAULT_VIDEO_RESOLUTION,
+} from "./utils/constants";
 import { getOpenAIClient, type OpenAIClient } from "./integrations/openai/client";
 import { createKieClientFromEnv, type KieGenerateRequest } from "./integrations/kie/client";
 
 /**
  * Start video generation for a music track
- * 
+ *
  * Steps:
  * 1. Authenticate user and verify music ownership
  * 2. Check for existing pending video generation to prevent duplicates
@@ -17,7 +22,7 @@ import { createKieClientFromEnv, type KieGenerateRequest } from "./integrations/
  * 4. Generate video script from lyrics using OpenAI
  * 5. Call Kie.ai API to start video generation (async via webhook)
  * 6. Create pending video record with taskId
- * 
+ *
  * Returns success status with videoId and remaining quota, or error code if limit reached or already in progress.
  */
 export const startVideoGeneration = action({
@@ -27,12 +32,14 @@ export const startVideoGeneration = action({
   returns: v.object({
     success: v.boolean(),
     videoId: v.optional(v.id("musicVideos")),
-    code: v.optional(v.union(
-      v.literal("USAGE_LIMIT_REACHED"),
-      v.literal("ALREADY_IN_PROGRESS"),
-      v.literal("NO_LYRICS"),
-      v.literal("UNKNOWN_ERROR")
-    )),
+    code: v.optional(
+      v.union(
+        v.literal("USAGE_LIMIT_REACHED"),
+        v.literal("ALREADY_IN_PROGRESS"),
+        v.literal("NO_LYRICS"),
+        v.literal("UNKNOWN_ERROR"),
+      ),
+    ),
     reason: v.optional(v.string()),
     remainingQuota: v.optional(v.number()),
   }),
@@ -79,20 +86,15 @@ export const startVideoGeneration = action({
     }
 
     // Step 3: Check usage limits and record video generation (costs 3 credits)
-    const usageResult = await ctx.runAction(
-      internal.usage.recordVideoGenerationWithReconciliation,
-      {
-        userId,
-      },
-    );
+    const usageResult = await ctx.runAction(internal.usage.recordVideoGenerationWithReconciliation, {
+      userId,
+    });
 
     // If usage limit reached, return error
     if (!usageResult.success) {
       return {
         success: false,
-        code: (usageResult.code || "UNKNOWN_ERROR") as
-          | "USAGE_LIMIT_REACHED"
-          | "UNKNOWN_ERROR",
+        code: (usageResult.code || "UNKNOWN_ERROR") as "USAGE_LIMIT_REACHED" | "UNKNOWN_ERROR",
         reason: usageResult.reason,
         remainingQuota: usageResult.remainingQuota,
       };
@@ -124,7 +126,7 @@ export const startVideoGeneration = action({
 /**
  * Request video generation from Kie.ai API
  * Follows the same pattern as requestSunoGeneration
- * 
+ *
  * Steps:
  * 1. Generate video script from lyrics using OpenAI
  * 2. Call Kie.ai API to start video generation with callback URL
@@ -139,11 +141,13 @@ export const requestKieVideoGeneration = internalAction({
     title: v.optional(v.string()),
     diaryEntry: v.optional(v.string()),
     diaryPhotoMediaId: v.optional(v.id("diaryMedia")),
-    usageResult: v.optional(v.object({
-      success: v.boolean(),
-      currentUsage: v.number(),
-      remainingQuota: v.number(),
-    })),
+    usageResult: v.optional(
+      v.object({
+        success: v.boolean(),
+        currentUsage: v.number(),
+        remainingQuota: v.number(),
+      }),
+    ),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -159,7 +163,9 @@ export const requestKieVideoGeneration = internalAction({
       // CONVEX_SITE_URL is provided automatically by Convex
       const convexSiteUrl = process.env.CONVEX_SITE_URL;
       if (!convexSiteUrl) {
-        throw new Error("CONVEX_SITE_URL is not available (this should be provided automatically by Convex)");
+        throw new Error(
+          "CONVEX_SITE_URL is not available (this should be provided automatically by Convex)",
+        );
       }
       kieClient = createKieClientFromEnv({
         KIE_AI_API_KEY: process.env.KIE_AI_API_KEY,
@@ -192,15 +198,21 @@ export const requestKieVideoGeneration = internalAction({
         referenceImageUrl = signedMedia?.url;
 
         if (!referenceImageUrl) {
-          console.warn("Diary photo URL missing despite media reference; falling back to text-only video", {
-            diaryPhotoMediaId: args.diaryPhotoMediaId,
-          });
+          console.warn(
+            "Diary photo URL missing despite media reference; falling back to text-only video",
+            {
+              diaryPhotoMediaId: args.diaryPhotoMediaId,
+            },
+          );
         }
       } catch (error) {
-        console.error("Failed to generate signed URL for diary media, falling back to text-only video", {
-          diaryPhotoMediaId: args.diaryPhotoMediaId,
-          error,
-        });
+        console.error(
+          "Failed to generate signed URL for diary media, falling back to text-only video",
+          {
+            diaryPhotoMediaId: args.diaryPhotoMediaId,
+            error,
+          },
+        );
       }
     }
 
@@ -208,25 +220,39 @@ export const requestKieVideoGeneration = internalAction({
     let videoScript: string;
     try {
       const useImagePrompt = !!referenceImageUrl;
-      videoScript = useImagePrompt
-        ? await openaiClient.generateImageVideoPrompt({
-            lyrics: args.lyric,
-            songTitle: args.title,
-            diaryEntry: args.diaryEntry,
-            imageUrl: referenceImageUrl,
-          })
-        : await openaiClient.generateVideoScript({
-            lyrics: args.lyric,
-            songTitle: args.title,
-            diaryEntry: args.diaryEntry,
-          });
+      if (useImagePrompt) {
+        videoScript = await openaiClient.generateImageVideoPrompt({
+          lyrics: args.lyric,
+          songTitle: args.title,
+          diaryEntry: args.diaryEntry,
+          imageUrl: referenceImageUrl,
+        });
 
-      console.log(useImagePrompt ? "Image-to-video prompt generated" : "Video script generated successfully", {
-        scriptLength: videoScript.length,
-      });
+        console.log("Image-to-video prompt generated", {
+          scriptLength: videoScript.length,
+          diaryPhotoMediaId: args.diaryPhotoMediaId,
+        });
+      } else {
+        videoScript = await openaiClient.generateVideoScript({
+          lyrics: args.lyric,
+          songTitle: args.title,
+          diaryEntry: args.diaryEntry,
+          analytics: {
+            userId: args.userId,
+            traceId: `video-${args.musicId}`,
+            properties: {
+              musicId: args.musicId,
+            },
+          },
+        });
+
+        console.log("Video script generated successfully", {
+          scriptLength: videoScript.length,
+        });
+      }
     } catch (error) {
       console.error("OpenAI API error:", error);
-      
+
       // Step 4: On error, refund 3 credits (decrement usage counter)
       if (args.usageResult) {
         try {
@@ -237,10 +263,12 @@ export const requestKieVideoGeneration = internalAction({
           console.error("Failed to decrement usage counter:", decrementError);
         }
       }
-      
-      throw new Error(`Failed to generate video script from OpenAI: ${error instanceof Error ? error.message : String(error)}`);
+
+      throw new Error(
+        `Failed to generate video script from OpenAI: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
-    
+
     // Step 2: Call Kie.ai API to start video generation with callback URL
     let taskId: string;
     try {
@@ -283,7 +311,7 @@ export const requestKieVideoGeneration = internalAction({
           console.error("Failed to decrement usage counter:", decrementError);
         }
       }
-      
+
       throw error;
     }
 
@@ -298,5 +326,3 @@ export const requestKieVideoGeneration = internalAction({
     return null;
   },
 });
-
-
