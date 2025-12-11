@@ -9,7 +9,9 @@
 import {
   KIE_API_CREATE_TASK_ENDPOINT,
   KIE_MODEL_TEXT_TO_VIDEO,
+  KIE_MODEL_IMAGE_TO_VIDEO,
   DEFAULT_VIDEO_DURATION,
+  DEFAULT_VIDEO_RESOLUTION,
   DEFAULT_ASPECT_RATIO,
   DEFAULT_REMOVE_WATERMARK,
 } from "../../utils/constants/video";
@@ -24,8 +26,11 @@ export interface KieClientConfig {
 export interface KieGenerateRequest {
   prompt: string;
   aspect_ratio?: "portrait" | "landscape";
-  n_frames?: "10" | "15"; // 10s or 15s
+  duration?: "5" | "10"; // 5s or 10s
+  resolution?: "720p" | "1080p";
   remove_watermark?: boolean;
+  model?: typeof KIE_MODEL_TEXT_TO_VIDEO | typeof KIE_MODEL_IMAGE_TO_VIDEO;
+  image_url?: string; // Single image URL for image-to-video models
 }
 
 export interface KieGenerateResponse {
@@ -68,16 +73,48 @@ export class KieClient {
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
 
     try {
-      const payload = {
-        model: KIE_MODEL_TEXT_TO_VIDEO,
-        callBackUrl: this.config.callbackUrl,
-        input: {
-          prompt: request.prompt,
-          aspect_ratio: request.aspect_ratio ?? DEFAULT_ASPECT_RATIO,
-          n_frames: request.n_frames ?? DEFAULT_VIDEO_DURATION,
-          remove_watermark: request.remove_watermark ?? DEFAULT_REMOVE_WATERMARK,
-        },
-      };
+      const model = request.model ?? KIE_MODEL_TEXT_TO_VIDEO;
+
+      if (model === KIE_MODEL_IMAGE_TO_VIDEO && !request.image_url) {
+        throw new Error("Kie.ai image-to-video requests require an image_url");
+      }
+
+      let payload: Record<string, unknown>;
+
+      if (model === KIE_MODEL_IMAGE_TO_VIDEO) {
+        // Image-to-video: minimal payload matching working request format
+        // Only includes: model, input.duration, input.image_url, input.prompt, input.resolution
+        payload = {
+          model,
+          callBackUrl: this.config.callbackUrl,
+          input: {
+            prompt: request.prompt,
+            duration: request.duration ?? DEFAULT_VIDEO_DURATION,
+            image_url: request.image_url,
+            resolution: request.resolution ?? DEFAULT_VIDEO_RESOLUTION,
+          },
+        };
+      } else {
+        // Text-to-video: full payload with all options
+        payload = {
+          model,
+          callBackUrl: this.config.callbackUrl,
+          input: {
+            prompt: request.prompt,
+            aspect_ratio: request.aspect_ratio ?? DEFAULT_ASPECT_RATIO,
+            duration: request.duration ?? DEFAULT_VIDEO_DURATION,
+            remove_watermark: request.remove_watermark ?? DEFAULT_REMOVE_WATERMARK,
+          },
+        };
+      }
+
+      console.log("Kie.ai API request", {
+        url: this.baseUrl,
+        method: "POST",
+        payload: JSON.stringify(payload, null, 2),
+        model,
+        hasImageUrl: Boolean(request.image_url),
+      });
 
       const response = await fetch(this.baseUrl, {
         method: "POST",
@@ -93,10 +130,22 @@ export class KieClient {
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error("Kie.ai API request failed", {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText,
+        });
         throw new Error(`Kie.ai API request failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const data = (await response.json()) as KieGenerateResponse;
+
+      console.log("Kie.ai API response", {
+        code: data.code,
+        msg: data.msg,
+        taskId: data.data?.taskId,
+        fullResponse: JSON.stringify(data, null, 2),
+      });
 
       if (data.code !== HTTP_STATUS_OK) {
         throw new Error(`Kie.ai API returned error code ${data.code}: ${data.msg}`);
