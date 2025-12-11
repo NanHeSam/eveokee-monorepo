@@ -64,12 +64,14 @@ export const kieVideoGenerationCallback = httpAction(async (ctx, req) => {
     return parseResult.error;
   }
 
+  const body = parseResult.data;
+  logger.info("Received Kie.ai callback payload", { payload: JSON.stringify(body) });
+
   // Step 3: Validate payload structure using type guard
-  if (!isValidKieCallback(parseResult.data)) {
-    logger.warn("Invalid payload structure", { payload: parseResult.data });
+  if (!isValidKieCallback(body)) {
+    logger.warn("Invalid payload structure", { payload: JSON.stringify(body) });
     return errorResponse("Invalid payload", HTTP_STATUS_BAD_REQUEST);
   }
-  const body = parseResult.data;
 
   // Step 4: Extract callback type and taskId first (before requiring videoUrl)
   const callbackType = extractKieCallbackType(body);
@@ -82,9 +84,40 @@ export const kieVideoGenerationCallback = httpAction(async (ctx, req) => {
 
   const eventLogger = logger.child({ taskId, callbackType });
 
-  // Step 5: Handle failure callbacks (which may not have videoUrl)
-  if (callbackType === "failed" || callbackType === "error") {
-    eventLogger.warn("Received failure callback");
+  // Step 5: Detect failure callbacks (which may not have videoUrl)
+  // Check for failure indicators: state="fail", non-200 codes, or failMsg/failCode
+  const isFailure = 
+    callbackType === "failed" || 
+    callbackType === "error" || 
+    callbackType === "fail" ||
+    (typeof body.code === "number" && body.code !== HTTP_STATUS_OK && body.code !== 200) ||
+    (body.data && typeof body.data === "object" && ("failMsg" in body.data || "failCode" in body.data));
+
+  if (isFailure) {
+    // Extract failure message from payload
+    let errorMessage = "Video generation failed on Kie.ai";
+    if (body.data && typeof body.data === "object") {
+      const data = body.data as Record<string, unknown>;
+      if (typeof data.failMsg === "string" && data.failMsg) {
+        errorMessage = data.failMsg;
+      } else if (typeof data.msg === "string" && data.msg) {
+        errorMessage = data.msg;
+      } else if (typeof body.msg === "string" && body.msg) {
+        errorMessage = body.msg;
+      }
+      
+      // Include failCode if available
+      if (typeof data.failCode === "string" && data.failCode) {
+        errorMessage = `[${data.failCode}] ${errorMessage}`;
+      }
+    }
+
+    eventLogger.warn("Received failure callback", { 
+      callbackType, 
+      code: body.code,
+      errorMessage 
+    });
+
     try {
       // Mark video as failed (failVideoGeneration now handles refund atomically)
       const result = await ctx.runMutation(internal.videos.failVideoGeneration, {

@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, Image, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, Image, Alert, TextInput, type TextInputProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +12,50 @@ import { api } from '@backend/convex';
 import { DiaryMediaGrid } from '../components/diary/DiaryMediaGrid';
 import { useTrackPlayerStore } from '../store/useTrackPlayerStore';
 import { useFeatureFlags } from '../hooks/useFeatureFlags';
+
+// Use TextInput with editable={false} for proper text selection support
+// This provides native text selection with selection handles
+const SelectableText = ({ style, className, children, ...rest }: TextInputProps & { className?: string; children?: React.ReactNode }) => {
+  const colors = useThemeColors();
+  
+  // Convert children to string value for TextInput
+  const getTextValue = (): string => {
+    if (typeof children === 'string') return children;
+    if (typeof children === 'number') return String(children);
+    if (Array.isArray(children)) {
+      return children.map(child => {
+        if (typeof child === 'string') return child;
+        if (typeof child === 'number') return String(child);
+        return '';
+      }).join('');
+    }
+    return '';
+  };
+  
+  const textValue = getTextValue();
+  
+  return (
+    <TextInput
+      editable={false}
+      multiline
+      value={textValue}
+      showSoftInputOnFocus={false}
+      style={[
+        {
+          color: colors.textPrimary,
+          padding: 0,
+          margin: 0,
+          borderWidth: 0,
+          backgroundColor: 'transparent',
+          textAlignVertical: 'top',
+        },
+        style,
+      ]}
+      className={className}
+      {...rest}
+    />
+  );
+};
 
 export const DiaryViewScreen = () => {
   const colors = useThemeColors();
@@ -118,18 +162,18 @@ export const DiaryViewScreen = () => {
         </View>
 
         {currentDiary.date && (
-          <Text className="text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+          <SelectableText className="text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
             {format(new Date(currentDiary.date), 'MMMM d, yyyy')}
-          </Text>
+          </SelectableText>
         )}
 
-        <Text className="text-2xl font-semibold mb-6" style={{ color: colors.textPrimary }}>
+        <SelectableText className="text-2xl font-semibold mb-6" style={{ color: colors.textPrimary }}>
           {currentDiary.title ?? 'A Day of Reflection'}
-        </Text>
+        </SelectableText>
 
-        <Text className="text-base leading-7 mb-8" style={{ color: colors.textPrimary }}>
+        <SelectableText className="text-base leading-7 mb-8" style={{ color: colors.textPrimary }}>
           {currentDiary.content}
-        </Text>
+        </SelectableText>
 
         {/* Media Display */}
         <View className="mb-6">
@@ -139,36 +183,37 @@ export const DiaryViewScreen = () => {
         {/* Events Summary */}
         {hasFeature('event-extraction') && currentDiary.events && currentDiary.events.length > 0 && (
           <View className="mb-6">
-            <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
+            <SelectableText className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
               Events summary
-            </Text>
+            </SelectableText>
             {currentDiary.events.map((event) => (
               <Pressable
                 key={event._id}
                 onPress={() => navigation.navigate('EventDetails', { eventId: event._id })}
+                delayLongPress={200}
                 className="p-4 rounded-2xl mb-3"
                 style={{ backgroundColor: colors.surface }}
               >
                 <View className="flex-row justify-between items-start mb-2">
-                  <Text className="text-base font-semibold flex-1 mr-2" style={{ color: colors.textPrimary }}>
+                  <SelectableText className="text-base font-semibold flex-1 mr-2" style={{ color: colors.textPrimary }}>
                     {event.title}
-                  </Text>
+                  </SelectableText>
                   {/* Placeholder for "Needs review" or other status if needed */}
                 </View>
 
                 {event.mood !== undefined && (
                   <View className="flex-row items-center mb-3">
                     <View className={`w-3 h-3 rounded-full mr-2 ${event.mood > 0 ? 'bg-green-500' : event.mood < 0 ? 'bg-red-500' : 'bg-gray-400'}`} />
-                    <Text className="text-sm" style={{ color: colors.textSecondary }}>
+                    <SelectableText className="text-sm" style={{ color: colors.textSecondary }}>
                       Mood ({event.mood > 0 ? 'positive' : event.mood < 0 ? 'negative' : 'neutral'})
-                    </Text>
+                    </SelectableText>
                   </View>
                 )}
 
                 {/* People */}
                 {event.people && event.people.length > 0 && (
                   <View className="flex-row flex-wrap items-center mb-2">
-                    <Text className="text-sm mr-2" style={{ color: colors.textSecondary }}>People</Text>
+                    <SelectableText className="text-sm mr-2" style={{ color: colors.textSecondary }}>People</SelectableText>
                     {event.people.map((person) => (
                       <Pressable
                         key={person._id}
@@ -177,7 +222,7 @@ export const DiaryViewScreen = () => {
                         }}
                       >
                         <View className="px-2 py-1 rounded-full mr-2 mb-1" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.accentMint + '30' }}>
-                          <Text className="text-xs" style={{ color: colors.textPrimary }}>{person.name}</Text>
+                          <SelectableText className="text-xs" style={{ color: colors.textPrimary }}>{person.name}</SelectableText>
                         </View>
                       </Pressable>
                     ))}
@@ -187,7 +232,7 @@ export const DiaryViewScreen = () => {
                 {/* Tags */}
                 {event.tags && event.tags.length > 0 && (
                   <View className="flex-row flex-wrap items-center">
-                    <Text className="text-sm mr-2" style={{ color: colors.textSecondary }}>Tags</Text>
+                    <SelectableText className="text-sm mr-2" style={{ color: colors.textSecondary }}>Tags</SelectableText>
                     {event.tags.map((tag) => (
                       <Pressable
                         key={tag._id}
@@ -196,7 +241,7 @@ export const DiaryViewScreen = () => {
                         }}
                       >
                         <View className="px-2 py-1 rounded-full mr-2 mb-1" style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.accentMint + '30' }}>
-                          <Text className="text-xs" style={{ color: colors.textPrimary }}>{tag.name}</Text>
+                          <SelectableText className="text-xs" style={{ color: colors.textPrimary }}>{tag.name}</SelectableText>
                         </View>
                       </Pressable>
                     ))}
@@ -209,9 +254,9 @@ export const DiaryViewScreen = () => {
 
         {primaryMusic && (
           <View className="mb-6">
-            <Text className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
+            <SelectableText className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
               My Vibe
-            </Text>
+            </SelectableText>
             <View className="rounded-3xl overflow-hidden" style={{ backgroundColor: colors.surface }}>
               <Pressable
                 className="flex-row items-center p-4"
@@ -230,12 +275,12 @@ export const DiaryViewScreen = () => {
                 )}
 
                 <View className="ml-4 flex-1">
-                  <Text className="text-base font-semibold mb-1" style={{ color: colors.textPrimary }}>
+                  <SelectableText className="text-base font-semibold mb-1" style={{ color: colors.textPrimary }}>
                     {primaryMusic.title ?? 'Untitled Track'}
-                  </Text>
-                  <Text className="text-xs" style={{ color: colors.textSecondary }}>
+                  </SelectableText>
+                  <SelectableText className="text-xs" style={{ color: colors.textSecondary }}>
                     JournalSounds
-                  </Text>
+                  </SelectableText>
                 </View>
 
                 <View

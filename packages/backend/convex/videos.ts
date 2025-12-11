@@ -6,6 +6,7 @@
 import { mutation, query, internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { ensureCurrentUserHandler, getOptionalCurrentUser } from "./users";
+import { Id } from "./_generated/dataModel";
 
 /**
  * List all videos for a specific music track
@@ -471,6 +472,7 @@ export const getMusicForVideoGeneration = internalQuery({
     lyric: v.optional(v.string()),
     title: v.optional(v.string()),
     diaryContent: v.optional(v.string()),
+    diaryPhotoMediaId: v.optional(v.id("diaryMedia")),
     error: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
@@ -491,10 +493,23 @@ export const getMusicForVideoGeneration = internalQuery({
     }
 
     let diaryContent: string | undefined;
+    let diaryPhotoMediaId: Id<"diaryMedia"> | undefined;
     if (music.diaryId) {
       const diary = await ctx.db.get(music.diaryId);
       if (diary && diary.userId === args.userId) {
         diaryContent = diary.content;
+
+        const diaryPhoto = await ctx.db
+          .query("diaryMedia")
+          .withIndex("by_diaryId_and_mediaType", (q) =>
+            q.eq("diaryId", music.diaryId!).eq("mediaType", "photo"),
+          )
+          .order("asc")
+          .first();
+
+        if (diaryPhoto) {
+          diaryPhotoMediaId = diaryPhoto._id;
+        }
       }
     }
 
@@ -503,6 +518,7 @@ export const getMusicForVideoGeneration = internalQuery({
       lyric: music.lyric,
       title: music.title,
       diaryContent,
+      diaryPhotoMediaId,
     };
   },
 });

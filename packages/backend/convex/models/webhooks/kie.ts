@@ -34,6 +34,9 @@ export interface KieCallbackData {
   status?: string;
   resultJson?: string; // JSON string containing resultUrls array
   state?: string;
+  failCode?: string | number;
+  failMsg?: string;
+  msg?: string;
 }
 
 /**

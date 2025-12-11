@@ -40,6 +40,10 @@ export interface GenerateVideoScriptParams {
   diaryEntry?: string;
 }
 
+export interface GenerateImageVideoPromptParams extends GenerateVideoScriptParams {
+  imageUrl: string; // URL of the reference image to analyze and use in video generation
+}
+
 export interface ExtractTagsParams {
   title: string;
   content: string;
@@ -303,6 +307,82 @@ Your output should read like a film director's short shotlist written as prose, 
         throw new Error(`OpenAI video script generation failed: ${error.message}`);
       }
       throw new Error(`OpenAI video script generation failed: ${String(error)}`);
+    }
+  }
+
+  /**
+   * Generate an image-conditioned video prompt
+   * Tailored for image-to-video: stresses character consistency with the reference photo
+   */
+  async generateImageVideoPrompt(params: GenerateImageVideoPromptParams): Promise<string> {
+    try {
+      const userMessageSections: Array<string> = [];
+      if (params.songTitle) {
+        userMessageSections.push(`Song Title:\n${params.songTitle}`);
+      }
+      if (params.diaryEntry) {
+        userMessageSections.push(`Diary Reflection:\n${params.diaryEntry}`);
+      }
+      userMessageSections.push(`Song Lyrics:\n${params.lyrics}`);
+      const textContent = userMessageSections.join("\n\n");
+
+      const completion = await this.client.chat.completions.create({
+        model: OPENAI_VIDEO_SCRIPT_MODEL,
+        messages: [
+          {
+            role: "system",
+            content: `You are a MUSIC VIDEO DIRECTOR crafting a 10-second vertical AI-video prompt for image-to-video generation. You will analyze a reference photo along with diary context and song lyrics to create a cohesive video.
+
+YOUR TASK:
+1. Analyze the reference photo carefully - identify if there are people, the environment, mood, lighting, colors, and setting
+2. Understand the diary context - the emotional tone, place, time, and personal meaning
+3. Connect the lyrics - how the words relate to the image and diary
+4. Create exactly 3 shots/scenes that flow naturally together
+
+MANDATORY RULES:
+- If the photo contains people: Use the person(s) in the photo as the main subject. Keep their appearance exactly as shown (same faces, outfits, hair, age, build). Never introduce new characters or alter their clothing. The person should appear in all 3 shots with consistent looks.
+- If the photo has no people: Use the environment, objects, or setting from the photo. Maintain the same location, lighting, and atmosphere across all shots.
+- The reference photo is the starting point (first frame). All 3 shots must feel like a natural continuation from this image.
+- Use the diary and lyrics together to understand the full context - the diary provides emotional grounding and setting, the lyrics provide visual rhythm and imagery.
+- Portrait format, 10 seconds total, exactly 3 shots/scenes:
+  * Shot 1 (0-3s): Establish the scene and character/environment from the photo
+  * Shot 2 (3-6s): Develop the action or emotion tied to the lyrics
+  * Shot 3 (6-10s): Resolution or visual echo that connects back to the diary emotion
+- Write as one cohesive paragraph with clear timing markers. Use cinematic language (camera moves, shot types, lighting, transitions).
+- Keep it natural, realistic, and emotionally resonant. Avoid surreal elements or disjointed montage.
+- Do NOT apologize or add meta text. Output only the final video prompt paragraph.`,
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `Reference Photo Context:\nAnalyze this image carefully. Note the people (if any), environment, mood, lighting, colors, and setting.\n\n${textContent}`,
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: params.imageUrl,
+                },
+              },
+            ],
+          },
+        ],
+        reasoning_effort: "low",
+        max_completion_tokens: OPENAI_VIDEO_SCRIPT_MAX_OUTPUT_TOKENS,
+      } as any);
+
+      const content = completion.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error("Failed to generate image-to-video prompt: Empty response");
+      }
+
+      return content.trim();
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`OpenAI image-to-video prompt generation failed: ${error.message}`);
+      }
+      throw new Error(`OpenAI image-to-video prompt generation failed: ${String(error)}`);
     }
   }
 

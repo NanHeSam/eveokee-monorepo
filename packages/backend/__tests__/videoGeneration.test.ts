@@ -3,8 +3,9 @@
  * Tests for video generation, credit tracking, and webhook handling
  */
 
+import { Blob } from 'buffer';
 import { describe, test, expect } from 'vitest';
-import { createTestEnvironment, createTestUser } from './convexTestUtils';
+import { createTestEnvironment, createTestUser, createTestDiary } from './convexTestUtils';
 import { api, internal } from '../convex/_generated/api';
 import type { Id } from '../convex/_generated/dataModel';
 
@@ -346,6 +347,83 @@ describe('Video Generation Workflow', () => {
       return await ctx.db.get(musicId);
     });
     expect(music?.primaryVideoId).toBeUndefined();
+  });
+});
+
+describe('Diary media support for video generation', () => {
+  test('getMusicForVideoGeneration returns diary photo reference when available', async () => {
+    const t = createTestEnvironment();
+    const { userId } = await createTestUser(t, {
+      tier: 'monthly',
+    });
+
+    const diaryId = await createTestDiary(t, userId, 'Photo-backed diary');
+
+    const { mediaId, musicId } = await t.run(async (ctx) => {
+      const blob = new Blob(['sample image bytes'], { type: 'image/jpeg' });
+      const storageId = await ctx.storage.store(blob);
+      const mediaId = await ctx.db.insert('diaryMedia', {
+        diaryId,
+        userId,
+        storageId,
+        mediaType: 'photo',
+        contentType: 'image/jpeg',
+        fileSize: 16,
+      });
+
+      const musicId = await ctx.db.insert('music', {
+        userId,
+        diaryId,
+        title: 'Song with photo',
+        lyric: 'Lyrics describing the day',
+        audioUrl: 'https://example.com/audio.mp3',
+        status: 'ready',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+
+      return { mediaId, musicId };
+    });
+
+    const result = await t.query(internal.videos.getMusicForVideoGeneration, {
+      musicId,
+      userId,
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.diaryPhotoMediaId).toEqual(mediaId);
+  });
+
+  test('getSignedMediaUrl returns signed URL for media owner', async () => {
+    const t = createTestEnvironment();
+    const { userId } = await createTestUser(t, {
+      tier: 'monthly',
+    });
+
+    const diaryId = await createTestDiary(t, userId, 'Diary with attachment');
+
+    const { mediaId } = await t.run(async (ctx) => {
+      const blob = new Blob(['sample image bytes'], { type: 'image/png' });
+      const storageId = await ctx.storage.store(blob);
+      const mediaId = await ctx.db.insert('diaryMedia', {
+        diaryId,
+        userId,
+        storageId,
+        mediaType: 'photo',
+        contentType: 'image/png',
+        fileSize: 32,
+      });
+      return { mediaId };
+    });
+
+    const signedMedia = await t.query(internal.diaryMedia.getSignedMediaUrl, {
+      mediaId,
+      userId,
+    });
+
+    expect(signedMedia).not.toBeNull();
+    expect(signedMedia?.url).toMatch(/^https?:\/\//);
+    expect(signedMedia?.contentType).toBe('image/png');
   });
 });
 

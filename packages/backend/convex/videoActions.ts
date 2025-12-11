@@ -3,9 +3,9 @@
 import { internalAction, action } from "./_generated/server";
 import { v } from "convex/values";
 import { internal, api } from "./_generated/api";
-import { VIDEO_GENERATION_CALLBACK_PATH } from "./utils/constants";
+import { VIDEO_GENERATION_CALLBACK_PATH, KIE_MODEL_IMAGE_TO_VIDEO, DEFAULT_VIDEO_DURATION, DEFAULT_VIDEO_RESOLUTION } from "./utils/constants";
 import { getOpenAIClient, type OpenAIClient } from "./integrations/openai/client";
-import { createKieClientFromEnv } from "./integrations/kie/client";
+import { createKieClientFromEnv, type KieGenerateRequest } from "./integrations/kie/client";
 
 /**
  * Start video generation for a music track
@@ -105,6 +105,7 @@ export const startVideoGeneration = action({
       lyric: music.lyric,
       title: music.title,
       diaryEntry: music.diaryContent,
+      diaryPhotoMediaId: music.diaryPhotoMediaId,
       usageResult: {
         success: usageResult.success,
         currentUsage: usageResult.currentUsage,
@@ -137,6 +138,7 @@ export const requestKieVideoGeneration = internalAction({
     lyric: v.string(),
     title: v.optional(v.string()),
     diaryEntry: v.optional(v.string()),
+    diaryPhotoMediaId: v.optional(v.id("diaryMedia")),
     usageResult: v.optional(v.object({
       success: v.boolean(),
       currentUsage: v.number(),
@@ -179,19 +181,53 @@ export const requestKieVideoGeneration = internalAction({
       throw error;
     }
 
-    // Generate video script from lyrics using OpenAI
+    // Resolve diary photo URL if one exists (needed for both prompt generation and video API)
+    let referenceImageUrl: string | undefined;
+    if (args.diaryPhotoMediaId) {
+      try {
+        const signedMedia = await ctx.runQuery(internal.diaryMedia.getSignedMediaUrl, {
+          mediaId: args.diaryPhotoMediaId,
+          userId: args.userId,
+        });
+        referenceImageUrl = signedMedia?.url;
+
+        if (!referenceImageUrl) {
+          console.warn("Diary photo URL missing despite media reference; falling back to text-only video", {
+            diaryPhotoMediaId: args.diaryPhotoMediaId,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to generate signed URL for diary media, falling back to text-only video", {
+          diaryPhotoMediaId: args.diaryPhotoMediaId,
+          error,
+        });
+      }
+    }
+
+    // Step 1: Generate video script from lyrics/diary using OpenAI
     let videoScript: string;
     try {
-      videoScript = await openaiClient.generateVideoScript({
-        lyrics: args.lyric,
-        songTitle: args.title,
-        diaryEntry: args.diaryEntry,
+      const useImagePrompt = !!referenceImageUrl;
+      videoScript = useImagePrompt
+        ? await openaiClient.generateImageVideoPrompt({
+            lyrics: args.lyric,
+            songTitle: args.title,
+            diaryEntry: args.diaryEntry,
+            imageUrl: referenceImageUrl,
+          })
+        : await openaiClient.generateVideoScript({
+            lyrics: args.lyric,
+            songTitle: args.title,
+            diaryEntry: args.diaryEntry,
+          });
+
+      console.log(useImagePrompt ? "Image-to-video prompt generated" : "Video script generated successfully", {
+        scriptLength: videoScript.length,
       });
-      console.log("Video script generated successfully", { scriptLength: videoScript.length });
     } catch (error) {
       console.error("OpenAI API error:", error);
       
-      // Decrement usage counter if we have usage tracking info
+      // Step 4: On error, refund 3 credits (decrement usage counter)
       if (args.usageResult) {
         try {
           await ctx.runMutation(internal.usage.decrementVideoGeneration, {
@@ -205,19 +241,39 @@ export const requestKieVideoGeneration = internalAction({
       throw new Error(`Failed to generate video script from OpenAI: ${error instanceof Error ? error.message : String(error)}`);
     }
     
-    // Generate video using Kie.ai API
+    // Step 2: Call Kie.ai API to start video generation with callback URL
     let taskId: string;
     try {
-      const result = await kieClient.generateVideo({
+      const generationRequest: Omit<KieGenerateRequest, "callbackUrl"> = {
         prompt: videoScript,
         aspect_ratio: "portrait", // Mobile-first
-        n_frames: "15", // 15 seconds
+        duration: DEFAULT_VIDEO_DURATION, // 10 seconds
         remove_watermark: true,
+      };
+
+      if (referenceImageUrl) {
+        Object.assign(generationRequest, {
+          model: KIE_MODEL_IMAGE_TO_VIDEO,
+          image_url: referenceImageUrl,
+          resolution: DEFAULT_VIDEO_RESOLUTION, // 720p
+        });
+        console.log("Submitting diary photo for image-to-video generation", {
+          diaryPhotoMediaId: args.diaryPhotoMediaId,
+          model: KIE_MODEL_IMAGE_TO_VIDEO,
+        });
+      }
+
+      console.log("Sending video generation request to Kie.ai", {
+        request: JSON.stringify(generationRequest, null, 2),
+        musicId: args.musicId,
+        userId: args.userId,
       });
+
+      const result = await kieClient.generateVideo(generationRequest);
       taskId = result.taskId;
       console.log("Kie.ai video generation started with taskId:", taskId);
     } catch (error) {
-      // Decrement usage counter if Kie.ai API fails
+      // Step 4: On error, refund 3 credits (decrement usage counter)
       if (args.usageResult) {
         try {
           await ctx.runMutation(internal.usage.decrementVideoGeneration, {
@@ -231,7 +287,7 @@ export const requestKieVideoGeneration = internalAction({
       throw error;
     }
 
-    // Create pending video record
+    // Step 3: Create pending video record with taskId
     await ctx.runMutation(internal.videos.createPendingVideoRecord, {
       musicId: args.musicId,
       userId: args.userId,

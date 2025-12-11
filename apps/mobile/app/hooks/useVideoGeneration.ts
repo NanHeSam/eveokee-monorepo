@@ -22,6 +22,8 @@ export function useVideoGeneration(musicId: Id<'music'> | null) {
     isGenerating: false,
     error: null,
   });
+  const [generationStartTime, setGenerationStartTime] = useState<number | null>(null);
+  const [pendingSeenThisRun, setPendingSeenThisRun] = useState(false);
 
   // Action to start video generation (actions can call external APIs)
   const startGeneration = useAction(api.videoActions.startVideoGeneration);
@@ -55,6 +57,8 @@ export function useVideoGeneration(musicId: Id<'music'> | null) {
     }
 
     setState({ isGenerating: true, error: null });
+    setGenerationStartTime(Date.now());
+    setPendingSeenThisRun(false);
 
     try {
       const result = await startGeneration({ musicId });
@@ -137,13 +141,71 @@ export function useVideoGeneration(musicId: Id<'music'> | null) {
   const [pendingElapsedSeconds, setPendingElapsedSeconds] = useState<number | null>(null);
   const pendingCreatedAt = pendingVideo?.createdAt ?? null;
 
-  // Clear isGenerating state when any video appears in query (pending, ready, or failed)
-  // This handles fast completions that might skip the pending state
+  // Track when a pending video is observed after starting generation.
   useEffect(() => {
-    if (hasAnyVideo) {
-      setState({ isGenerating: false, error: null });
+    if (!state.isGenerating || generationStartTime === null) {
+      return;
     }
-  }, [hasAnyVideo]);
+    if (hasPendingVideo) {
+      setPendingSeenThisRun(true);
+    }
+  }, [state.isGenerating, generationStartTime, hasPendingVideo]);
+
+  // Clear isGenerating once the pending video we observed transitions away (ready/failed).
+  useEffect(() => {
+    if (!state.isGenerating || !pendingSeenThisRun) {
+      return;
+    }
+    if (!hasPendingVideo) {
+      setState({ isGenerating: false, error: null });
+      setGenerationStartTime(null);
+      setPendingSeenThisRun(false);
+    }
+  }, [state.isGenerating, pendingSeenThisRun, hasPendingVideo]);
+
+  // Reset tracking whenever generation stops for any reason
+  useEffect(() => {
+    if (!state.isGenerating) {
+      setGenerationStartTime(null);
+      setPendingSeenThisRun(false);
+    }
+  }, [state.isGenerating]);
+
+  // Fallback: if generation was started but no video record appears within a grace window,
+  // assume the backend request failed and reset the spinner so the UI does not get stuck.
+  useEffect(() => {
+    if (!state.isGenerating || generationStartTime === null) {
+      return;
+    }
+
+    // If a pending was observed and is now gone, the other effect will clear.
+    if (pendingSeenThisRun && !hasPendingVideo) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      // Double-check generation is still stuck before clearing.
+      setState((prev) => {
+        if (!prev.isGenerating) {
+          return prev;
+        }
+        return {
+          isGenerating: false,
+          error: 'Video generation did not start. Please try again.',
+        };
+      });
+      setGenerationStartTime(null);
+      setPendingSeenThisRun(false);
+      Alert.alert(
+        'Video Generation Failed',
+        'We could not start video generation. Please try again.'
+      );
+    }, 20000); // 20s grace period is enough for the pending record to appear when backend succeeds.
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [state.isGenerating, generationStartTime, pendingSeenThisRun, hasPendingVideo]);
 
   useEffect(() => {
     if (pendingCreatedAt === null) {
@@ -165,7 +227,6 @@ export function useVideoGeneration(musicId: Id<'music'> | null) {
 
   // Get ready videos count
   const readyVideosCount = videos?.filter((v) => v.status === 'ready').length ?? 0;
-
   return {
     // State
     isGenerating: state.isGenerating || hasPendingVideo,

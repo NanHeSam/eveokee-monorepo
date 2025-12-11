@@ -1,4 +1,4 @@
-import { action, mutation, query } from "./_generated/server";
+import { action, mutation, query, internalQuery } from "./_generated/server";
 import { api } from "./_generated/api";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
@@ -166,6 +166,40 @@ export const deleteDiaryMedia = mutation({
     await ctx.db.delete(args.mediaId);
 
     return null;
+  },
+});
+
+/**
+ * Internal helper to fetch a signed URL for a media item
+ * Ensures the requested media belongs to the requesting user
+ */
+export const getSignedMediaUrl = internalQuery({
+  args: {
+    mediaId: v.id("diaryMedia"),
+    userId: v.id("users"),
+  },
+  returns: v.union(
+    v.object({
+      url: v.string(),
+      contentType: v.string(),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const media = await ctx.db.get(args.mediaId);
+    if (!media || media.userId !== args.userId) {
+      return null;
+    }
+
+    const url = await ctx.storage.getUrl(media.storageId);
+    if (!url) {
+      return null;
+    }
+
+    return {
+      url,
+      contentType: media.contentType,
+    };
   },
 });
 

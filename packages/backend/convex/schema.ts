@@ -115,7 +115,8 @@ export default defineSchema({
     fileSize: v.number(),
   })
     .index("by_diaryId", ["diaryId"])
-    .index("by_userId", ["userId"]),
+    .index("by_userId", ["userId"])
+    .index("by_diaryId_and_mediaType", ["diaryId", "mediaType"]),
 
   music: defineTable({
     userId: v.id("users"),
