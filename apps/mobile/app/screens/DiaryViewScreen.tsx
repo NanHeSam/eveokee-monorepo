@@ -48,7 +48,6 @@ const SelectableText = ({ style, className, children, ...rest }: TextInputProps 
           borderWidth: 0,
           backgroundColor: 'transparent',
           textAlignVertical: 'top',
-          outlineStyle: 'none',
         },
         style,
       ]}
