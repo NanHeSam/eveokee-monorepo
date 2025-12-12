@@ -62,7 +62,7 @@ export const generatePersonHighlight = action({
       if (apiKey) {
         const client = new AIClient({ apiKey });
         const baseModel = client.getModel("openai/gpt-4o-mini");
-        wrappedModel = wrapModelWithPostHog(baseModel, {
+        const [model, wasWrapped] = wrapModelWithPostHog(baseModel, {
           userId,
           traceId: `person-${args.personId}`,
           operation: "generateRelationshipHighlight",
@@ -72,7 +72,8 @@ export const generatePersonHighlight = action({
             eventsCount: events.length,
           },
         });
-        if (wrappedModel) {
+        wrappedModel = model;
+        if (wasWrapped) {
           posthogUsed = true;
         }
       }

@@ -36,7 +36,7 @@ export const processDiaryEntry = internalAction({
       if (apiKey) {
         const client = new AIClient({ apiKey });
         const baseModel = client.getModel("google/gemini-3-pro-preview");
-        wrappedModel = wrapModelWithPostHog(baseModel, {
+        const [model, wasWrapped] = wrapModelWithPostHog(baseModel, {
           userId: diary.userId,
           traceId: `diary-${args.diaryId}`,
           operation: "extractEventsFromDiary",
@@ -47,7 +47,8 @@ export const processDiaryEntry = internalAction({
             existingTagsCount: existingTags.length,
           },
         });
-        if (wrappedModel) {
+        wrappedModel = model;
+        if (wasWrapped) {
           posthogUsed = true;
         }
       }

@@ -9,7 +9,9 @@ import { getPostHogClient } from "./posthog";
  * 
  * @param model - The AI model to wrap (from AIClient.getModel())
  * @param options - PostHog tracing options
- * @returns The wrapped model with PostHog tracing, or the original model if PostHog is not configured
+ * @returns A tuple [model, wasWrapped] where:
+ *   - model: The wrapped model with PostHog tracing, or the original model if PostHog is not configured
+ *   - wasWrapped: true if PostHog wrapping actually occurred, false otherwise
  */
 export function wrapModelWithPostHog(
   model: Parameters<typeof withTracing>[0],
@@ -20,7 +22,7 @@ export function wrapModelWithPostHog(
     modelName: string;
     additionalProperties?: Record<string, any>;
   }
-): ReturnType<typeof withTracing> {
+): [ReturnType<typeof withTracing>, boolean] {
   const posthogClient = getPostHogClient();
   if (!posthogClient) {
     console.warn(
@@ -30,7 +32,7 @@ export function wrapModelWithPostHog(
         model: options.modelName,
       }
     );
-    return model as ReturnType<typeof withTracing>;
+    return [model as ReturnType<typeof withTracing>, false];
   }
 
   console.log("[PostHog] Wrapping model with tracing", {
@@ -41,14 +43,17 @@ export function wrapModelWithPostHog(
     ...(options.additionalProperties ?? {}),
   });
 
-  return withTracing(model, posthogClient, {
-    posthogDistinctId: options.userId,
-    posthogTraceId: options.traceId,
-    posthogProperties: {
-      operation: options.operation,
-      model: options.modelName,
-      ...options.additionalProperties,
-    },
-  });
+  return [
+    withTracing(model, posthogClient, {
+      posthogDistinctId: options.userId,
+      posthogTraceId: options.traceId,
+      posthogProperties: {
+        operation: options.operation,
+        model: options.modelName,
+        ...options.additionalProperties,
+      },
+    }),
+    true,
+  ];
 }
 
