@@ -119,6 +119,7 @@ Do not mention that this is from a call or conversation. Write as if the user is
     lyric: string;
     mood: string;
     title: string;
+    style: string;
   }> {
     try {
       const completion = await this.client.chat.completions.create({
@@ -129,6 +130,26 @@ Do not mention that this is from a call or conversation. Write as if the user is
             content: `You are a creative lyricist. Generate a song based on the diary entry provided. 
 Create lyrics with structure tags like [Verse], [Chorus], [Bridge], etc. Keep concise and emotional for a 1-2 minute song.
 
+Rhythm / Singability (very important):
+- The lyrics MUST feel rhythmic in the SAME LANGUAGE as the diary main entry.
+- Adapt to that language’s natural prosody (stress timing vs syllable timing, typical word lengths, and common line breaks in that language). Do NOT force English-centric stress patterns onto other languages.
+- Use short, beat-friendly lines with consistent length within each section.
+- Aim for ~6–10 syllables (or roughly 5–10 words, depending on the language) per line.
+- Avoid run-on sentences. If a line gets long, split it into two lines.
+- Keep punctuation simple so lines are easy to sing.
+- Language-specific punctuation rule:
+  - If the lyric language is Chinese/Japanese/Korean, prefer LINE BREAKS over commas. Avoid frequent "，" mid-line; each line should read as a clean, singable phrase. If you use punctuation, keep it sparse and intentional (e.g., occasional "。" or no punctuation at all).
+- Chinese-specific rhyme & line-length rule (very important when writing Chinese lyrics):
+  - Make line lengths consistent within each section: pick a target of 8–10 Chinese characters per line (±1 max) and keep it steady in that section.
+  - Add clear end-rhyme: choose ONE main rhyme family (same pinyin final / 韵母) for the Chorus and keep every Chorus line ending on that rhyme.
+  - Use a simple rhyme scheme per section (e.g., AABB or ABAB). Avoid random endings that break the rhyme.
+  - Prefer common, natural-sounding rhymes; do not force awkward wording just to rhyme—if needed, slightly rewrite the line to keep meaning and rhyme.
+
+Lyric Style (important):
+- If the user provides a Style hint, use it to influence both the lyrical vibe (imagery, tone, vocabulary) and the downstream music style.
+- If a Style hint is provided, set the output field "style" to EXACTLY the provided Style hint (trim whitespace only; do not rewrite).
+- If no Style hint is provided, generate a short style string based on the diary’s sensation: 2–4 comma-separated tags (e.g. "lo-fi, indie pop, warm, mellow"). Keep tags short.
+
 Emotion/Mood Identification:
 Identify the PRIMARY EMOTION or MOOD from the diary entry. Common emotions include:
 - Positive: happy, joyful, excited, hopeful, content, peaceful, grateful, euphoric, optimistic
@@ -136,14 +157,17 @@ Identify the PRIMARY EMOTION or MOOD from the diary entry. Common emotions inclu
 - Intense: angry, frustrated, enraged, resentful, bitter, aggressive, defiant
 - Complex: nostalgic, bittersweet, conflicted, contemplative, reflective, introspective, yearning
 
-Return ONLY the mood/emotion as a single descriptive word or short phrase (e.g., "melancholic", "joyful", "angry", "nostalgic", "anxious", "peaceful"). This mood will be combined with music style descriptors separately.
+Return ONLY the mood/emotion as a single descriptive word or short phrase (e.g., "melancholic", "joyful", "angry", "nostalgic", "anxious", "peaceful"). This mood will be combined with the style tags for downstream music generation.
 
 Create a creative song title.
 Use the same language as the diary entry for lyrics and title.`,
           },
           {
             role: "user",
-            content: params.diaryContent,
+            content:
+              (params.style && params.style.trim()
+                ? `Style hint:\n${params.style.trim()}\n\nDiary entry:\n${params.diaryContent}`
+                : `Diary entry:\n${params.diaryContent}`),
           },
         ],
         max_tokens: OPENAI_MUSIC_MAX_COMPLETION_TOKENS,
@@ -163,12 +187,17 @@ Use the same language as the diary entry for lyrics and title.`,
                   type: "string",
                   description: "Primary emotion or mood from the diary entry (e.g., 'melancholic', 'joyful', 'angry', 'nostalgic', 'anxious', 'peaceful', 'lonely', 'conflicted', 'contemplative', 'reflective', 'introspective', 'yearning', etc.). Single word or short phrase.",
                 },
+                style: {
+                  type: "string",
+                  description:
+                    "Style hint/tags used for lyric vibe and downstream music style. If user provided a Style hint, copy it verbatim (trim only). Otherwise generate 2–4 short comma-separated tags.",
+                },
                 title: {
                   type: "string",
                   description: "Creative song title",
                 },
               },
-              required: ["lyric", "mood", "title"],
+              required: ["lyric", "mood", "title", "style"],
               additionalProperties: false,
             },
           },
@@ -181,7 +210,7 @@ Use the same language as the diary entry for lyrics and title.`,
       }
 
       // Parse JSON response
-      let songData: { lyric: string; mood: string; title: string };
+      let songData: { lyric: string; mood: string; title: string; style: string };
       try {
         songData = JSON.parse(content);
       } catch (parseError) {
@@ -191,8 +220,8 @@ Use the same language as the diary entry for lyrics and title.`,
         );
       }
 
-      if (!songData.lyric || !songData.mood || !songData.title) {
-        throw new Error("OpenAI response missing required fields (lyric, mood, or title)");
+      if (!songData.lyric || !songData.mood || !songData.title || !songData.style) {
+        throw new Error("OpenAI response missing required fields (lyric, mood, title, or style)");
       }
 
       return songData;
