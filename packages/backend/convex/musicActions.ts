@@ -10,13 +10,19 @@ import {
 } from "./utils/constants";
 import { getOpenAIClient } from "./integrations/openai/client";
 import { createSunoClientFromEnv } from "./integrations/suno/client";
-import { getRandomStyles } from "./utils/musicStyles";
 
 /**
  * Combine mood with style descriptors to create final style string
  */
 function combineMoodAndStyles(mood: string, styles: string[]): string {
   return [mood, ...styles].join(", ");
+}
+
+function splitStyleTags(style: string): string[] {
+  return style
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
 }
 
 export const requestSunoGeneration = internalAction({
@@ -52,7 +58,7 @@ export const requestSunoGeneration = internalAction({
     });
 
     // Generate song data from diary content using OpenAI (mood + lyrics + title)
-    let songData: { lyric: string; mood: string; title: string };
+    let songData: { lyric: string; mood: string; title: string; style: string };
     try {
       songData = await openaiClient.generateMusicData({
         diaryContent: args.diary.content,
@@ -76,16 +82,8 @@ export const requestSunoGeneration = internalAction({
       throw new Error(`Failed to generate song data from OpenAI: ${error instanceof Error ? error.message : String(error)}`);
     }
     
-    // Determine final style: use user-provided style if available, otherwise combine mood + random styles
-    let finalStyle: string;
-    if (args.diary.style && args.diary.style.trim()) {
-      // User provided a custom style
-      finalStyle = args.diary.style.trim();
-    } else {
-      // Randomly select 2 styles and combine with mood
-      const randomStyles = getRandomStyles(2);
-      finalStyle = combineMoodAndStyles(songData.mood, randomStyles);
-    }
+    // Determine final style: always combine mood + style tags (style is user-provided or LLM-generated)
+    const finalStyle = combineMoodAndStyles(songData.mood, splitStyleTags(songData.style));
     
     console.log("Final style:", finalStyle);
     
