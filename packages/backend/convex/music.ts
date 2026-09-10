@@ -332,11 +332,13 @@ export const completeSunoTask = internalMutation({
         if (track.id) {
           patch.audioId = track.id;
         }
-        if (track.audio_url) {
-          patch.audioUrl = track.source_audio_url;
+        const audioUrl = track.source_audio_url || track.audio_url;
+        const imageUrl = track.source_image_url || track.image_url;
+        if (audioUrl) {
+          patch.audioUrl = audioUrl;
         }
-        if (track.image_url) {
-          patch.imageUrl = track.source_image_url;
+        if (imageUrl) {
+          patch.imageUrl = imageUrl;
         }
         if (typeof track.duration === "number") {
           patch.duration = track.duration;
