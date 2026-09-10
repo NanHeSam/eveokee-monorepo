@@ -145,7 +145,10 @@ export function extractSunoTracks(body: SunoWebhookPayload): SunoTrack[] {
     } as const;
 
     for (const [field, alias] of Object.entries(stringFields)) {
-      const value = typeof raw[field] === "string" ? raw[field] : raw[alias];
+      const primaryValue = raw[field];
+      const value = typeof primaryValue === "string" && primaryValue.length > 0
+        ? primaryValue
+        : raw[alias];
       if (typeof value === "string") {
         normalized[field as keyof typeof stringFields] = value;
       }

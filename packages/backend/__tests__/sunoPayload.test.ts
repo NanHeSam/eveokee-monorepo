@@ -43,6 +43,37 @@ describe("Suno callback normalization", () => {
     expect(diary?.primaryMusicId).toBe(songs[0]._id);
   });
 
+  it.each([false, true])("uses populated URL aliases when legacy fields are empty (source URLs: %s)", async (includeSource) => {
+    const t = createTestEnvironment();
+    const { userId } = await createTestUser(t);
+    const diaryId = await createTestDiary(t, userId, "An evening walk");
+    await t.mutation(internal.music.createPendingMusicRecords, {
+      diaryId, userId, taskId: "empty-legacy-task", prompt: "An evening walk",
+      model: "V5", trackCount: 1,
+    });
+    const parsed = parseSunoPayload({
+      data: { taskId: "empty-legacy-task", callbackType: "complete", data: [{
+        id: "alias-track", audio_url: "", audioUrl: "https://example.com/audio.mp3",
+        image_url: "", imageUrl: "https://example.com/image.jpg",
+        source_audio_url: "", source_image_url: "",
+        ...(includeSource ? {
+          sourceAudioUrl: "https://example.com/source.mp3",
+          sourceImageUrl: "https://example.com/source.jpg",
+        } : {}),
+      }] },
+    });
+    if (!parsed.success) throw new Error(parsed.error);
+    await t.mutation(internal.music.completeSunoTask, {
+      taskId: parsed.data.taskId, tracks: parsed.data.tracks,
+    });
+    const songs = await t.run((ctx) => ctx.db.query("music").collect());
+    expect(songs[0].status).toBe("ready");
+    expect(songs[0].audioUrl).toBe(includeSource
+      ? "https://example.com/source.mp3" : "https://example.com/audio.mp3");
+    expect(songs[0].imageUrl).toBe(includeSource
+      ? "https://example.com/source.jpg" : "https://example.com/image.jpg");
+  });
+
   it("preserves legacy snake_case fields and ignores invalid optional values", () => {
     const parsed = parseSunoPayload({
       data: { task_id: "legacy-task", callbackType: "complete", data: [{

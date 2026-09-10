@@ -6,7 +6,7 @@ A second defect selected `source_audio_url` when `audio_url` was present, even w
 
 ## Repair
 
-- Normalize incoming tracks onto an explicit allowlist, accepting both legacy snake_case and camelCase names. Ignore unrelated provider metadata and invalid optional values.
+- Normalize incoming tracks onto an explicit allowlist, accepting both legacy snake_case and camelCase names. Prefer populated aliases when legacy fields are empty. Ignore unrelated provider metadata and invalid optional values.
 - Store a nonempty source URL when available, falling back to the regular audio/image URL.
 - Preserve and deploy the existing local memory-model change to `openai/gpt-5.4-nano`. A live structured-output request established that the old `google/gemini-3-pro-preview` returns 404 (model not found), while the replacement and the existing highlight model work with the production Gateway key. The SDK's generic “Gateway access failed” message concealed this cause.
 - Deploy the backend to `insightful-squid-847` after a successful dry run. No schema/index deletions occurred. The backend function runtime version advanced from 1.28.0 to the already-installed 1.31.0.
@@ -39,7 +39,7 @@ Music uses the separate `SUNO_API_KEY` at `api.sunoapi.org`, which remains funct
 | Command/check | Result |
 |---|---|
 | `pnpm --filter @backend/convex exec vitest run __tests__/sunoPayload.test.ts` | Initial regression runs failed as expected on the defects; final focused run PASS: 2 tests |
-| `pnpm test:backend` | PASS: 315 tests, 27 files |
+| `pnpm test:backend` | PASS: 317 tests, 27 files after PR review added two empty-alias cases |
 | `pnpm lint` (pre-PR check) | PASS: no errors; 10 existing web/mobile warnings |
 | `pnpm type-check` (pre-PR check) | PASS: web/mobile; backend script defers to Convex deployment checks |
 | `pnpm --filter web type-check` | PASS |
