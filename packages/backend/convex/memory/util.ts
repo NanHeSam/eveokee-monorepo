@@ -103,7 +103,8 @@ export async function extractEventsFromDiary(
   text: string,
   date: number,
   existingPeople: string[] = [],
-  existingTags: string[] = []
+  existingTags: string[] = [],
+  model?: ReturnType<AIClient["getModel"]>
 ): Promise<ExtractedEvent[]> {
   const apiKey = process.env.AI_GATEWAY_API_KEY;
 
@@ -113,7 +114,8 @@ export async function extractEventsFromDiary(
   }
 
   const client = getOrCreateAIClient(apiKey);
-  const model = client.getModel(EXTRACTION_MODEL);
+  const defaultModel = client.getModel(EXTRACTION_MODEL);
+  const modelToUse = model ?? defaultModel;
   const contextPrompt = constructContextPrompt(existingPeople, existingTags);
   const systemPrompt = SYSTEM_PROMPT + contextPrompt;
 
@@ -124,7 +126,7 @@ export async function extractEventsFromDiary(
       const prompt = buildDiaryPrompt(text, date, previousError);
 
       const result = await generateObject({
-        model,
+        model: modelToUse,
         schema: EventSchema,
         output: "array",
         prompt,
@@ -303,7 +305,8 @@ type HighlightEventSummary = {
 
 export async function generateRelationshipHighlight(
   personName: string,
-  events: HighlightEventSummary[]
+  events: HighlightEventSummary[],
+  model?: ReturnType<AIClient["getModel"]>
 ): Promise<string> {
   const fallback = () => buildFallbackHighlight(personName, events);
 
@@ -315,7 +318,8 @@ export async function generateRelationshipHighlight(
 
   try {
     const client = getOrCreateAIClient(apiKey);
-    const model = client.getModel(HIGHLIGHT_MODEL);
+    const defaultModel = client.getModel(HIGHLIGHT_MODEL);
+    const modelToUse = model ?? defaultModel;
 
     const eventsText =
       events
@@ -353,7 +357,7 @@ Highlight:`;
       promptPreview: prompt,
     });
     const result = await generateObject({
-      model,
+      model: modelToUse,
       schema: HighlightSchema,
       prompt,
     });
