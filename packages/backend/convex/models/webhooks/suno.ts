@@ -22,7 +22,7 @@ export interface SunoTrack {
   source_stream_audio_url?: string;
   stream_audio_url?: string;
   model_name?: string;
-  createTime?: number;
+  createTime?: number | string;
 }
 
 /**
@@ -126,8 +126,39 @@ export function extractSunoTracks(body: SunoWebhookPayload): SunoTrack[] {
   if (!Array.isArray(tracksRaw)) {
     return [];
   }
-  // Filter to only tracks that pass validation
-  return tracksRaw.filter(isValidSunoTrack);
+  // Provider callbacks may contain camelCase aliases and new metadata. Convex
+  // argument validators reject unknown fields, so project onto our own shape.
+  return tracksRaw.filter(isValidSunoTrack).map((track) => {
+    const raw = track as unknown as Record<string, unknown>;
+    const normalized: SunoTrack = { id: track.id };
+    const stringFields = {
+      title: "title",
+      prompt: "prompt",
+      tags: "tags",
+      audio_url: "audioUrl",
+      image_url: "imageUrl",
+      source_audio_url: "sourceAudioUrl",
+      source_image_url: "sourceImageUrl",
+      source_stream_audio_url: "sourceStreamAudioUrl",
+      stream_audio_url: "streamAudioUrl",
+      model_name: "modelName",
+    } as const;
+
+    for (const [field, alias] of Object.entries(stringFields)) {
+      const value = typeof raw[field] === "string" ? raw[field] : raw[alias];
+      if (typeof value === "string") {
+        normalized[field as keyof typeof stringFields] = value;
+      }
+    }
+    if (typeof raw.duration === "number" && Number.isFinite(raw.duration)) {
+      normalized.duration = raw.duration;
+    }
+    if (typeof raw.createTime === "string" ||
+        (typeof raw.createTime === "number" && Number.isFinite(raw.createTime))) {
+      normalized.createTime = raw.createTime;
+    }
+    return normalized;
+  });
 }
 
 /**
@@ -193,4 +224,3 @@ export const sampleSunoCallback: SunoWebhookPayload = {
     ],
   },
 };
-

@@ -82,7 +82,7 @@ const EventSchema = z.object({
 });
 
 type EventExtraction = z.infer<typeof EventSchema>;
-const EXTRACTION_MODEL = "google/gemini-3-pro-preview";
+const EXTRACTION_MODEL = "openai/gpt-5.4-nano";
 const MAX_EXTRACTION_ATTEMPTS = 3;
 
 let cachedAIClient: AIClient | null = null;
