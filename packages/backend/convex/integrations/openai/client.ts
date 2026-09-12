@@ -14,6 +14,7 @@ import {
   OPENAI_VIDEO_SCRIPT_MODEL,
   OPENAI_VIDEO_SCRIPT_MAX_OUTPUT_TOKENS,
 } from "../../utils/constants";
+import { captureLLMGeneration } from "../../utils/posthogLLM";
 
 export interface OpenAIClientConfig {
   apiKey: string;
@@ -25,19 +26,28 @@ export interface ChatCompletionMessage {
   content: string;
 }
 
+export interface LLMAnalyticsMetadata {
+  userId?: string;
+  traceId?: string;
+  properties?: Record<string, any>;
+}
+
 export interface GenerateDiaryParams {
   transcript: string;
+  analytics?: LLMAnalyticsMetadata;
 }
 
 export interface GenerateMusicParams {
   diaryContent: string;
   style?: string; // Optional user-provided style
+  analytics?: LLMAnalyticsMetadata;
 }
 
 export interface GenerateVideoScriptParams {
   lyrics: string;
   songTitle?: string;
   diaryEntry?: string;
+  analytics?: LLMAnalyticsMetadata;
 }
 
 export interface GenerateImageVideoPromptParams extends GenerateVideoScriptParams {
@@ -47,6 +57,7 @@ export interface GenerateImageVideoPromptParams extends GenerateVideoScriptParam
 export interface ExtractTagsParams {
   title: string;
   content: string;
+  analytics?: LLMAnalyticsMetadata;
 }
 
 /**
@@ -72,6 +83,7 @@ export class OpenAIClient {
    */
   async generateDiary(params: GenerateDiaryParams): Promise<string> {
     try {
+      const started = Date.now();
       const completion = await this.client.chat.completions.create({
         model: OPENAI_DIARY_MODEL,
         messages: [
@@ -100,6 +112,23 @@ Do not mention that this is from a call or conversation. Write as if the user is
         throw new Error("Failed to generate diary content: Empty response");
       }
 
+      await captureLLMGeneration({
+        operation: "openai.generateDiary",
+        model: OPENAI_DIARY_MODEL,
+        userId: params.analytics?.userId,
+        traceId: params.analytics?.traceId,
+        latencySeconds: (Date.now() - started) / 1000,
+        input: params.transcript,
+        output: content,
+        inputTokens: completion.usage?.prompt_tokens,
+        outputTokens: completion.usage?.completion_tokens,
+        totalTokens: completion.usage?.total_tokens,
+        properties: {
+          source: "generateDiary",
+          ...params.analytics?.properties,
+        },
+      });
+
       return content.trim();
     } catch (error) {
       if (error instanceof Error) {
@@ -122,6 +151,7 @@ Do not mention that this is from a call or conversation. Write as if the user is
     style: string;
   }> {
     try {
+      const started = Date.now();
       const completion = await this.client.chat.completions.create({
         model: OPENAI_LYRIC_GENERATION_MODEL,
         messages: [
@@ -224,6 +254,24 @@ Use the same language as the diary entry for lyrics and title.`,
         throw new Error("OpenAI response missing required fields (lyric, mood, title, or style)");
       }
 
+      await captureLLMGeneration({
+        operation: "openai.generateMusicData",
+        model: OPENAI_LYRIC_GENERATION_MODEL,
+        userId: params.analytics?.userId,
+        traceId: params.analytics?.traceId,
+        latencySeconds: (Date.now() - started) / 1000,
+        input: params.diaryContent,
+        output: content,
+        inputTokens: completion.usage?.prompt_tokens,
+        outputTokens: completion.usage?.completion_tokens,
+        totalTokens: completion.usage?.total_tokens,
+        properties: {
+          style: params.style,
+          source: "generateMusicData",
+          ...params.analytics?.properties,
+        },
+      });
+
       return songData;
     } catch (error) {
       if (error instanceof Error) {
@@ -252,6 +300,7 @@ Use the same language as the diary entry for lyrics and title.`,
       userMessageSections.push(`Song Lyrics:\n${params.lyrics}`);
       const userContent = userMessageSections.join("\n\n");
       
+      const started = Date.now();
       const completion = await this.client.chat.completions.create({
         model: OPENAI_VIDEO_SCRIPT_MODEL,
         messages: [
@@ -329,6 +378,23 @@ Your output should read like a film director's short shotlist written as prose, 
       if (!content) {
         throw new Error("Failed to generate video script: Empty response");
       }
+
+      await captureLLMGeneration({
+        operation: "openai.generateVideoScript",
+        model: OPENAI_VIDEO_SCRIPT_MODEL,
+        userId: params.analytics?.userId,
+        traceId: params.analytics?.traceId,
+        latencySeconds: (Date.now() - started) / 1000,
+        input: userContent,
+        output: content,
+        inputTokens: completion.usage?.prompt_tokens,
+        outputTokens: completion.usage?.completion_tokens,
+        totalTokens: completion.usage?.total_tokens,
+        properties: {
+          source: "generateVideoScript",
+          ...params.analytics?.properties,
+        },
+      });
 
       return content.trim();
     } catch (error) {
@@ -424,6 +490,7 @@ MANDATORY RULES:
    */
   async extractTags(params: ExtractTagsParams): Promise<string[]> {
     try {
+      const started = Date.now();
       const completion = await this.client.chat.completions.create({
         model: "gpt-4o-mini", // Using mini for fast, cost-effective tag extraction
         messages: [
@@ -470,6 +537,23 @@ Return ONLY the tags as a JSON array of strings. No explanations, no extra text.
       if (!Array.isArray(tags) || tags.length === 0) {
         throw new Error("OpenAI response did not contain valid tags array");
       }
+
+      await captureLLMGeneration({
+        operation: "openai.extractTags",
+        model: "gpt-4o-mini",
+        userId: params.analytics?.userId,
+        traceId: params.analytics?.traceId,
+        latencySeconds: (Date.now() - started) / 1000,
+        input: `Title: ${params.title}\nContent:\n${params.content}`,
+        output: content,
+        inputTokens: completion.usage?.prompt_tokens,
+        outputTokens: completion.usage?.completion_tokens,
+        totalTokens: completion.usage?.total_tokens,
+        properties: {
+          source: "extractTags",
+          ...params.analytics?.properties,
+        },
+      });
 
       // Return 3-5 tags, filter out empty strings
       return tags.filter((tag: string) => tag && tag.trim().length > 0).slice(0, 5);

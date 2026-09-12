@@ -189,6 +189,14 @@ export const generateDiaryFromCall = internalAction({
       try {
         diaryContent = await openaiClient.generateDiary({
           transcript: transcriptText,
+          analytics: {
+            userId: args.userId,
+            traceId: `call-diary-${args.callSessionId}`,
+            properties: {
+              callSessionId: args.callSessionId,
+              source: "generateDiaryFromCall",
+            },
+          },
         });
         console.log("Generated diary content from call transcript using OpenAI");
       } catch (error) {
