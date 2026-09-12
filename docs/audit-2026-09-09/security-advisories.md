@@ -1,0 +1,181 @@
+# Registry security findings — 2026-09-09
+
+Snapshot of npm registry advisory data returned by pnpm. Counts reflect affected dependency/version findings and may differ from the number of distinct advisories or exploitable application paths. Production dependency graphs still include Expo tooling. No exploit was executed.
+
+| Scope | Critical | High | Moderate | Low | Advisory records |
+|---|---:|---:|---:|---:|---:|
+| All | 6 | 105 | 59 | 10 | 166 |
+| Production dependencies | 3 | 90 | 44 | 6 | 137 |
+
+## Full advisory list
+
+| Severity | Package | Installed affected versions | Patched range reported | Advisory |
+|---|---|---|---|---|
+| critical | `@clerk/shared` | 3.28.3 | `>=3.47.4` | [Official Clerk JavaScript SDKs: Middleware-based route protection bypass](https://github.com/advisories/GHSA-vqx2-fgx2-5wq9) |
+| critical | `react-server-dom-webpack` | 19.0.0 | `>=19.0.1` | [React Server Components are Vulnerable to RCE](https://github.com/advisories/GHSA-fv66-9v8q-g76r) |
+| critical | `shell-quote` | 1.8.3 | `>=1.8.4` | [shell-quote quote() does not escape newlines in object .op values](https://github.com/advisories/GHSA-w7jw-789q-3m8p) |
+| critical | `tar` | 7.5.1 | `>=7.5.19` | [node-tar: Decompression/parse DoS via unlimited input](https://github.com/advisories/GHSA-23hp-3jrh-7fpw) |
+| critical | `vitest` | 2.1.9 | `>=3.2.6` | [When Vitest UI server is listening, arbitrary file can be read and executed](https://github.com/advisories/GHSA-5xrq-8626-4rwp) |
+| high | `@clerk/backend` | 2.19.0 | `>=2.33.3` | [Clerk has an authorization bypass when combining organization, billing, or reverification checks](https://github.com/advisories/GHSA-w24r-5266-9c3c) |
+| high | `@clerk/clerk-expo` | 2.17.1 | `>=2.19.36` | [Clerk has an authorization bypass when combining organization, billing, or reverification checks](https://github.com/advisories/GHSA-w24r-5266-9c3c) |
+| high | `@clerk/clerk-js` | 5.102.1 | `>=5.125.10` | [Clerk has an authorization bypass when combining organization, billing, or reverification checks](https://github.com/advisories/GHSA-w24r-5266-9c3c) |
+| high | `@clerk/clerk-react` | 5.53.3 | `>=5.61.6` | [Clerk has an authorization bypass when combining organization, billing, or reverification checks](https://github.com/advisories/GHSA-w24r-5266-9c3c) |
+| high | `@clerk/shared` | 3.28.3 | `>=3.47.5` | [Clerk has an authorization bypass when combining organization, billing, or reverification checks](https://github.com/advisories/GHSA-w24r-5266-9c3c) |
+| high | `@xmldom/xmldom` | 0.8.11 | `>=0.8.13` | [xmldom has XML injection through unvalidated DocumentType serialization](https://github.com/advisories/GHSA-f6ww-3ggp-fr8h) |
+| high | `@xmldom/xmldom` | 0.8.11 | `>=0.8.13` | [xmldom has XML node injection through unvalidated comment serialization](https://github.com/advisories/GHSA-j759-j44w-7fr8) |
+| high | `@xmldom/xmldom` | 0.8.11 | `>=0.8.13` | [xmldom has XML node injection through unvalidated processing instruction serialization](https://github.com/advisories/GHSA-x6wf-f3px-wcqx) |
+| high | `@xmldom/xmldom` | 0.8.11 | `>=0.8.14` | [xmldom: Attribute name injection via setAttribute() bypasses requireWellFormed](https://github.com/advisories/GHSA-4w3w-2rp5-g8jm) |
+| high | `@xmldom/xmldom` | 0.8.11 | `>=0.8.15` | [xmldom: DocType `name` Injection Bypasses requireWellFormed](https://github.com/advisories/GHSA-27p8-2357-5qqv) |
+| high | `@xmldom/xmldom` | 0.8.11 | `>=0.8.14` | [xmldom: Element name injection via createElement() bypasses requireWellFormed](https://github.com/advisories/GHSA-w2rr-34g9-rvrj) |
+| high | `@xmldom/xmldom` | 0.8.11 | `>=0.8.15` | [xmldom: End-tag Whitespace-Trim Regex ReDoS — quadratic backtracking in the 0.8.x end-tag parser](https://github.com/advisories/GHSA-x4fp-j954-r2f4) |
+| high | `@xmldom/xmldom` | 0.8.11 | `>=0.8.15` | [xmldom: Processing Instruction Target Injection Bypasses requireWellFormed](https://github.com/advisories/GHSA-c7q8-3ch8-vqpv) |
+| high | `@xmldom/xmldom` | 0.8.11 | `>=0.8.15` | [xmldom: Quadratic-memory consumption](https://github.com/advisories/GHSA-965w-775f-mr7g) |
+| high | `@xmldom/xmldom` | 0.8.11 | `>=0.8.15` | [xmldom: Quadratic-time attribute deduplication](https://github.com/advisories/GHSA-8344-3jmq-59r6) |
+| high | `@xmldom/xmldom` | 0.8.11 | `>=0.8.15` | [xmldom: Quadratic-time parsing via the malformed-input recovery path — `parseElementStartPart` re-scan and `normalize()` adjacent-text merge](https://github.com/advisories/GHSA-93r5-fhx6-vmg9) |
+| high | `@xmldom/xmldom` | 0.8.11 | `>=0.8.13` | [xmldom: Uncontrolled recursion in XML serialization leads to DoS](https://github.com/advisories/GHSA-2v35-w6hq-6mfw) |
+| high | `@xmldom/xmldom` | 0.8.11 | `>=0.8.12` | [xmldom: XML injection via unsafe CDATA serialization allows attacker-controlled markup insertion](https://github.com/advisories/GHSA-wh4c-j3r5-mjhp) |
+| high | `brace-expansion` | 2.0.2 | `>=2.1.2` | [brace-expansion: DoS via exponential-time expansion of consecutive non-expanding {} groups](https://github.com/advisories/GHSA-3jxr-9vmj-r5cp) |
+| high | `brace-expansion` | 1.1.12 | `>=1.1.16` | [brace-expansion: DoS via exponential-time expansion of consecutive non-expanding {} groups](https://github.com/advisories/GHSA-3jxr-9vmj-r5cp) |
+| high | `brace-expansion` | 1.1.12 | `>=1.1.17` | [brace-expansion: DoS via unbounded expansion length causing an out-of-memory process crash](https://github.com/advisories/GHSA-mh99-v99m-4gvg) |
+| high | `brace-expansion` | 2.0.2 | `>=2.1.3` | [brace-expansion: DoS via unbounded expansion length causing an out-of-memory process crash](https://github.com/advisories/GHSA-mh99-v99m-4gvg) |
+| high | `brace-expansion` | 2.0.2 | `>=2.1.4` | [brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation](https://github.com/advisories/GHSA-rgw5-rvv9-x895) |
+| high | `brace-expansion` | 1.1.12 | `>=1.1.18` | [brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation](https://github.com/advisories/GHSA-rgw5-rvv9-x895) |
+| high | `browserslist` | 4.27.0, 4.28.0 | `>=4.28.7` | [Browserslist: Unbounded memory growth (no cache eviction) via distinct query results, leading to eventual OOM](https://github.com/advisories/GHSA-c83g-rgw3-j3cx) |
+| high | `browserslist` | 4.27.0, 4.28.0 | `>=4.28.7` | [Browserslist: Uncaught crash / prototype write via untrusted browserslist-stats.json custom stats (normalizeStats)](https://github.com/advisories/GHSA-73wf-gq98-2v4g) |
+| high | `fast-uri` | 3.1.0 | `>=3.1.5` | [fast-uri vulnerable to host confusion via backslash authority introducer](https://github.com/advisories/GHSA-7p8r-x3mc-p8w7) |
+| high | `fast-uri` | 3.1.0 | `>=3.1.3` | [fast-uri vulnerable to host confusion via failed IDN canonicalization](https://github.com/advisories/GHSA-4c8g-83qw-93j6) |
+| high | `fast-uri` | 3.1.0 | `>=3.1.4` | [fast-uri vulnerable to host confusion via literal backslash authority delimiter](https://github.com/advisories/GHSA-v2hh-gcrm-f6hx) |
+| high | `fast-uri` | 3.1.0 | `>=3.1.2` | [fast-uri vulnerable to host confusion via percent-encoded authority delimiters](https://github.com/advisories/GHSA-v39h-62p7-jpjc) |
+| high | `fast-uri` | 3.1.0 | `>=3.1.6` | [fast-uri vulnerable to host confusion via percent-encoded scheme normalization](https://github.com/advisories/GHSA-jqff-g426-hqxp) |
+| high | `fast-uri` | 3.1.0 | `>=3.1.1` | [fast-uri vulnerable to path traversal via percent-encoded dot segments](https://github.com/advisories/GHSA-q3j6-qgpj-74h6) |
+| high | `fast-uri` | 3.1.0 | `>=3.1.6` | [fast-uri vulnerable to server-side request forgery via malformed IPv6 normalization](https://github.com/advisories/GHSA-f65p-4m7j-42xc) |
+| high | `flatted` | 3.3.3 | `>=3.4.2` | [Prototype Pollution via parse() in NodeJS flatted](https://github.com/advisories/GHSA-rf6f-7fwh-wjgh) |
+| high | `flatted` | 3.3.3 | `>=3.4.0` | [flatted vulnerable to unbounded recursion DoS in parse() revive phase](https://github.com/advisories/GHSA-25h7-pfq9-p65f) |
+| high | `form-data` | 4.0.4 | `>=4.0.6` | [form-data: CRLF injection in form-data via unescaped multipart field names and filenames](https://github.com/advisories/GHSA-hmw2-7cc7-3qxx) |
+| high | `glob` | 10.4.5 | `>=10.5.0` | [glob CLI: Command injection via -c/--cmd executes matches with shell:true](https://github.com/advisories/GHSA-5j98-mcp5-4vw2) |
+| high | `image-size` | 1.2.1 | `<0.0.0` | [image-size: ICNS parser allows denial of service through an infinite loop](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr) |
+| high | `image-size` | 1.2.1 | `<0.0.0` | [image-size: JXL and HEIF parsers allow denial of service through infinite loops](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq) |
+| high | `js-cookie` | 3.0.5 | `>=3.0.7` | [JavaScript Cookie: Per-instance prototype hijack in assign() enables cookie-attribute injection](https://github.com/advisories/GHSA-qjx8-664m-686j) |
+| high | `js-yaml` | 3.14.1 | `>=3.15.1` | [JS-YAML: Quadratic CPU consumption in !!omap resolution (3.x and 4.x) — CVE-2026-59870 fix not backported](https://github.com/advisories/GHSA-5p4m-2wfm-xmqj) |
+| high | `js-yaml` | 4.1.0 | `>=4.3.1` | [JS-YAML: Quadratic CPU consumption in !!omap resolution (3.x and 4.x) — CVE-2026-59870 fix not backported](https://github.com/advisories/GHSA-5p4m-2wfm-xmqj) |
+| high | `js-yaml` | 4.1.0 | `>=4.3.0` | [js-yaml: YAML merge-key chains can force quadratic CPU consumption](https://github.com/advisories/GHSA-52cp-r559-cp3m) |
+| high | `js-yaml` | 3.14.1 | `>=3.15.0` | [js-yaml: YAML merge-key chains can force quadratic CPU consumption](https://github.com/advisories/GHSA-52cp-r559-cp3m) |
+| high | `js-yaml` | 3.14.1 | `>=3.15.2` | [js-yaml: maxTotalMergeKeys does not limit CPU use for empty merge sources](https://github.com/advisories/GHSA-2883-xcg3-v3hh) |
+| high | `js-yaml` | 4.1.0 | `>=4.3.2` | [js-yaml: maxTotalMergeKeys does not limit CPU use for empty merge sources](https://github.com/advisories/GHSA-2883-xcg3-v3hh) |
+| high | `lodash` | 4.17.21 | `>=4.18.0` | [lodash vulnerable to Code Injection via `_.template` imports key names](https://github.com/advisories/GHSA-r5fr-rjxr-66jc) |
+| high | `minimatch` | 3.1.2 | `>=3.1.4` | [minimatch ReDoS: nested *() extglobs generate catastrophically backtracking regular expressions](https://github.com/advisories/GHSA-23c5-xmqv-rm74) |
+| high | `minimatch` | 9.0.5 | `>=9.0.7` | [minimatch ReDoS: nested *() extglobs generate catastrophically backtracking regular expressions](https://github.com/advisories/GHSA-23c5-xmqv-rm74) |
+| high | `minimatch` | 3.1.2 | `>=3.1.3` | [minimatch has ReDoS: matchOne() combinatorial backtracking via multiple non-adjacent GLOBSTAR segments](https://github.com/advisories/GHSA-7r86-cg39-jmmj) |
+| high | `minimatch` | 9.0.5 | `>=9.0.7` | [minimatch has ReDoS: matchOne() combinatorial backtracking via multiple non-adjacent GLOBSTAR segments](https://github.com/advisories/GHSA-7r86-cg39-jmmj) |
+| high | `minimatch` | 3.1.2 | `>=3.1.3` | [minimatch has a ReDoS via repeated wildcards with non-matching literal in pattern](https://github.com/advisories/GHSA-3ppc-4f35-3m26) |
+| high | `minimatch` | 9.0.5 | `>=9.0.6` | [minimatch has a ReDoS via repeated wildcards with non-matching literal in pattern](https://github.com/advisories/GHSA-3ppc-4f35-3m26) |
+| high | `nanoid` | 3.3.11 | `>=3.3.12` | [nanoid: Integer Overflow or Wraparound](https://github.com/advisories/GHSA-xwg4-73v4-xw9w) |
+| high | `nanoid` | 3.3.11 | `>=3.3.18` | [nanoid: custom generators can loop indefinitely when size is zero](https://github.com/advisories/GHSA-2v37-7h3g-55p8) |
+| high | `nanoid` | 3.3.11 | `>=3.3.16` | [nanoid: non-secure generators can loop indefinitely with negative size](https://github.com/advisories/GHSA-28wg-ghj8-5hjv) |
+| high | `node-forge` | 1.3.1 | `>=1.4.0` | [Forge has Denial of Service via Infinite Loop in BigInteger.modInverse() with Zero Input](https://github.com/advisories/GHSA-5m6q-g25r-mvwx) |
+| high | `node-forge` | 1.3.1 | `>=1.4.0` | [Forge has a basicConstraints bypass in its certificate chain verification (RFC 5280 violation)](https://github.com/advisories/GHSA-2328-f5f3-gj25) |
+| high | `node-forge` | 1.3.1 | `>=1.4.0` | [Forge has signature forgery in Ed25519 due to missing S > L check](https://github.com/advisories/GHSA-q67f-28xg-22rw) |
+| high | `node-forge` | 1.3.1 | `>=1.4.0` | [Forge has signature forgery in RSA-PKCS due to ASN.1 extra field  ](https://github.com/advisories/GHSA-ppp5-5v6c-4jwp) |
+| high | `node-forge` | 1.3.1 | `>=1.3.2` | [node-forge has ASN.1 Unbounded Recursion](https://github.com/advisories/GHSA-554w-wpv2-vw27) |
+| high | `node-forge` | 1.3.1 | `>=1.3.2` | [node-forge has an Interpretation Conflict vulnerability via its ASN.1 Validator Desynchronization](https://github.com/advisories/GHSA-5gfm-wpxj-wjgq) |
+| high | `picomatch` | 2.3.1 | `>=2.3.2` | [Picomatch has a ReDoS vulnerability via extglob quantifiers](https://github.com/advisories/GHSA-c2c7-rcm5-vvqj) |
+| high | `picomatch` | 3.0.1 | `>=3.0.2` | [Picomatch has a ReDoS vulnerability via extglob quantifiers](https://github.com/advisories/GHSA-c2c7-rcm5-vvqj) |
+| high | `picomatch` | 4.0.3 | `>=4.0.4` | [Picomatch has a ReDoS vulnerability via extglob quantifiers](https://github.com/advisories/GHSA-c2c7-rcm5-vvqj) |
+| high | `postcss` | 8.4.49, 8.5.6 | `>=8.5.12` | [PostCSS: Arbitrary file read and information disclosure via attacker-controlled sourceMappingURL in CSS comments](https://github.com/advisories/GHSA-6g55-p6wh-862q) |
+| high | `postcss` | 8.4.49, 8.5.6 | `>=8.5.18` | [PostCSS: Path Traversal in Previous Source Map Auto-Loading (sourceMappingURL) leads to Arbitrary .map File Disclosure](https://github.com/advisories/GHSA-r28c-9q8g-f849) |
+| high | `preact` | 10.27.2 | `>=10.27.3` | [Preact has JSON VNode Injection issue](https://github.com/advisories/GHSA-36hm-qxxp-pg3m) |
+| high | `react-router` | 7.9.4 | `>=7.12.0` | [React Router SSR XSS in ScrollRestoration](https://github.com/advisories/GHSA-8v8x-cx79-35w7) |
+| high | `react-router` | 7.9.4 | `>=7.14.0` | [React Router vulnerable to Denial of Service via reflected user input in single-fetch](https://github.com/advisories/GHSA-rxv8-25v2-qmq8) |
+| high | `react-router` | 7.9.4 | `>=7.15.0` | [React Router vulnerable to DoS via unbounded path expansion in __manifest endpoint](https://github.com/advisories/GHSA-8x6r-g9mw-2r78) |
+| high | `react-router` | 7.9.4 | `>=7.13.2` | [React Router vulnerable to XSS in unstable RSC redirect handling via javascript: redirect targets](https://github.com/advisories/GHSA-8646-j5j9-6r62) |
+| high | `react-router` | 7.9.4 | `>=7.12.0` | [React Router vulnerable to XSS via Open Redirects](https://github.com/advisories/GHSA-2w69-qvjg-hvjx) |
+| high | `react-router` | 7.9.4 | `>=7.14.2` | [React Router's vendored turbo-stream v2 allows arbitrary constructor invocation via TYPE_ERROR deserialization leading to Unauth RCE](https://github.com/advisories/GHSA-49rj-9fvp-4h2h) |
+| high | `react-router` | 7.9.4 | `>=7.18.0` | [React Router: Unauthenticated Denial of Service via Inefficient Route Matching](https://github.com/advisories/GHSA-chx6-hx7r-mcp5) |
+| high | `react-server-dom-webpack` | 19.0.0 | `>=19.0.2` | [Denial of Service Vulnerability in React Server Components](https://github.com/advisories/GHSA-2m3v-v2m8-q956) |
+| high | `react-server-dom-webpack` | 19.0.0 | `>=19.0.6` | [Facebook React has a Denial of Service Vulnerability in React Server Components](https://github.com/advisories/GHSA-rv78-f8rc-xrxh) |
+| high | `react-server-dom-webpack` | 19.0.0 | `>=19.0.5` | [React Server Components have a Denial of Service Vulnerability](https://github.com/advisories/GHSA-479c-33wc-g2pg) |
+| high | `react-server-dom-webpack` | 19.0.0 | `>=19.0.4` | [React Server Components have multiple Denial of Service Vulnerabilities](https://github.com/advisories/GHSA-83fc-fqcc-2hmg) |
+| high | `react-server-dom-webpack` | 19.0.0 | `>=19.0.8` | [react-server-dom: Denial of Service in Server Functions](https://github.com/advisories/GHSA-wx67-qw84-cm4g) |
+| high | `rollup` | 4.52.5 | `>=4.59.0` | [Rollup 4 has Arbitrary File Write via Path Traversal](https://github.com/advisories/GHSA-mw96-cpmx-2vgc) |
+| high | `serialize-javascript` | 6.0.2 | `>=7.0.3` | [Serialize JavaScript is Vulnerable to RCE via RegExp.flags and Date.prototype.toISOString()](https://github.com/advisories/GHSA-5c6j-r48x-rmvq) |
+| high | `shell-quote` | 1.8.3 | `>=1.9.0` | [shell-quote: Quadratic-complexity Denial of Service in `parse()` (CWE-407)](https://github.com/advisories/GHSA-395f-4hp3-45gv) |
+| high | `tar` | 7.5.1 | `>=7.5.8` | [Arbitrary File Read/Write via Hardlink Target Escape Through Symlink Chain in node-tar Extraction](https://github.com/advisories/GHSA-83g3-92jg-28cx) |
+| high | `tar` | 7.5.1 | `>=7.5.4` | [Race Condition in node-tar Path Reservations via Unicode Ligature Collisions on macOS APFS](https://github.com/advisories/GHSA-r6q2-hw4h-h46w) |
+| high | `tar` | 7.5.1 | `>=7.5.11` | [node-tar Symlink Path Traversal via Drive-Relative Linkpath](https://github.com/advisories/GHSA-9ppj-qmqm-q256) |
+| high | `tar` | 7.5.1 | `>=7.5.7` | [node-tar Vulnerable to Arbitrary File Creation/Overwrite via Hardlink Path Traversal](https://github.com/advisories/GHSA-34x7-hfp2-rc4v) |
+| high | `tar` | 7.5.1 | `>=7.5.3` | [node-tar is Vulnerable to Arbitrary File Overwrite and Symlink Poisoning via Insufficient Path Sanitization](https://github.com/advisories/GHSA-8qq5-rm4j-mr97) |
+| high | `tar` | 7.5.1 | `>=7.5.18` | [node-tar: Negative tar entry size causes infinite loop in archive replace](https://github.com/advisories/GHSA-8x88-c5mf-7j5w) |
+| high | `tar` | 7.5.1 | `>=7.5.21` | [node-tar: Uncontrolled recursion in mapHas/filesFilter allows uncatchable stack-overflow DoS via crafted long-path tar with member selection](https://github.com/advisories/GHSA-r292-9mhp-454m) |
+| high | `tar` | 7.5.1 | `>=7.5.10` | [tar has Hardlink Path Traversal via Drive-Relative Linkpath](https://github.com/advisories/GHSA-qffp-2rhf-9h96) |
+| high | `undici` | 6.22.0 | `>=6.24.0` | [Undici has Unbounded Memory Consumption in WebSocket permessage-deflate Decompression](https://github.com/advisories/GHSA-vrm6-8vpv-qv8q) |
+| high | `undici` | 6.22.0 | `>=6.24.0` | [Undici has Unhandled Exception in WebSocket Client Due to Invalid server_max_window_bits Validation](https://github.com/advisories/GHSA-v9p9-hfj2-hcw8) |
+| high | `undici` | 6.22.0 | `>=6.24.0` | [Undici: Malicious WebSocket 64-bit length overflows parser and crashes the client](https://github.com/advisories/GHSA-f269-vfmq-vjvj) |
+| high | `undici` | 6.22.0 | `>=6.27.0` | [undici WebSocket client vulnerable to denial of service via fragment count bypass](https://github.com/advisories/GHSA-vxpw-j846-p89q) |
+| high | `vite` | 6.4.1 | `>=6.4.2` | [Vite Vulnerable to Arbitrary File Read via Vite Dev Server WebSocket](https://github.com/advisories/GHSA-p9ff-h696-f583) |
+| high | `vite` | 5.4.21, 6.4.1 | `>=6.4.3` | [vite: `server.fs.deny` bypass on Windows alternate paths](https://github.com/advisories/GHSA-fx2h-pf6j-xcff) |
+| high | `ws` | 8.18.3 | `>=8.21.0` | [ws: Memory exhaustion DoS from tiny fragments and data chunks](https://github.com/advisories/GHSA-96hv-2xvq-fx4p) |
+| high | `ws` | 7.5.10 | `>=7.5.11` | [ws: Memory exhaustion DoS from tiny fragments and data chunks](https://github.com/advisories/GHSA-96hv-2xvq-fx4p) |
+| high | `ws` | 6.2.3 | `>=6.2.4` | [ws: Memory exhaustion DoS from tiny fragments and data chunks](https://github.com/advisories/GHSA-96hv-2xvq-fx4p) |
+| moderate | `@humanfs/node` | 0.16.7 | `>=0.16.8` | [humanfs: Recursive copy follows symlinked files and copies data from outside the source tree](https://github.com/advisories/GHSA-p498-v437-472g) |
+| moderate | `@vitest/mocker` | 2.1.9 | `>=4.1.11` | [Vitest: Path Traversal / Arbitrary File Read via @vitest/mocker Redirect Mock](https://github.com/advisories/GHSA-82fw-gwwq-j7x9) |
+| moderate | `@xmldom/xmldom` | 0.8.11 | `>=0.8.15` | [xmldom: Parser silently accepts a not-well-formed end tag whose name is followed by a line break and trailing content](https://github.com/advisories/GHSA-6h8r-xr42-gp59) |
+| moderate | `@xmldom/xmldom` | 0.8.11 | `>=0.8.15` | [xmldom: XML fragment injection via invalid EntityReference.nodeName during requireWellFormed serialization](https://github.com/advisories/GHSA-6gmq-8vp8-gcm6) |
+| moderate | `ajv` | 6.12.6 | `>=6.14.0` | [ajv has ReDoS when using `$data` option](https://github.com/advisories/GHSA-2g4f-4pwh-qvx6) |
+| moderate | `ajv` | 8.17.1 | `>=8.18.0` | [ajv has ReDoS when using `$data` option](https://github.com/advisories/GHSA-2g4f-4pwh-qvx6) |
+| moderate | `baseline-browser-mapping` | 2.8.20, 2.8.29 | `>=2.11.0` | [baseline-browser-mapping process termination on invalid input causes denial of service](https://github.com/advisories/GHSA-w5vr-8v7q-w6rv) |
+| moderate | `brace-expansion` | 1.1.12 | `>=1.1.13` | [brace-expansion: Zero-step sequence causes process hang and memory exhaustion](https://github.com/advisories/GHSA-f886-m6hf-6m8v) |
+| moderate | `brace-expansion` | 2.0.2 | `>=2.0.3` | [brace-expansion: Zero-step sequence causes process hang and memory exhaustion](https://github.com/advisories/GHSA-f886-m6hf-6m8v) |
+| moderate | `decode-uri-component` | 0.2.2 | `>=0.5.0` | [decode-uri-component: Denial of service via exponential decoding of malformed percent-encoded input](https://github.com/advisories/GHSA-vcc3-ghjq-m6fr) |
+| moderate | `esbuild` | 0.21.5 | `>=0.25.0` | [esbuild enables any website to send any requests to the development server and read the response](https://github.com/advisories/GHSA-67mh-4wv8-2f99) |
+| moderate | `fflate` | 0.4.8 | `>=0.4.9` | [fflate unzipSync can enter an infinite loop when parsing malformed ZIP64 archives](https://github.com/advisories/GHSA-px8p-9vwx-vf98) |
+| moderate | `js-yaml` | 3.14.1 | `>=3.15.0` | [JS-YAML: Quadratic-complexity DoS in merge key handling via repeated aliases](https://github.com/advisories/GHSA-h67p-54hq-rp68) |
+| moderate | `js-yaml` | 4.1.0 | `>=4.2.0` | [JS-YAML: Quadratic-complexity DoS in merge key handling via repeated aliases](https://github.com/advisories/GHSA-h67p-54hq-rp68) |
+| moderate | `js-yaml` | 3.14.1 | `>=3.14.2` | [js-yaml has prototype pollution in merge (<<)](https://github.com/advisories/GHSA-mh29-5h37-fv8m) |
+| moderate | `js-yaml` | 4.1.0 | `>=4.1.1` | [js-yaml has prototype pollution in merge (<<)](https://github.com/advisories/GHSA-mh29-5h37-fv8m) |
+| moderate | `lodash` | 4.17.21 | `>=4.17.23` | [Lodash has Prototype Pollution Vulnerability in `_.unset` and `_.omit` functions](https://github.com/advisories/GHSA-xxjr-mmjv-4gpg) |
+| moderate | `lodash` | 4.17.21 | `>=4.18.0` | [lodash vulnerable to Prototype Pollution via array path bypass in `_.unset` and `_.omit`](https://github.com/advisories/GHSA-f23m-r3pf-42rh) |
+| moderate | `mdast-util-to-hast` | 13.2.0 | `>=13.2.1` | [mdast-util-to-hast has unsanitized class attribute](https://github.com/advisories/GHSA-4fh9-h7wg-q85m) |
+| moderate | `node-forge` | 1.3.1 | `>=1.3.2` | [node-forge is vulnerable to ASN.1 OID Integer Truncation](https://github.com/advisories/GHSA-65ch-62r8-g69g) |
+| moderate | `picomatch` | 2.3.1 | `>=2.3.2` | [Picomatch: Method Injection in POSIX Character Classes causes incorrect Glob Matching](https://github.com/advisories/GHSA-3v7f-55p6-f55p) |
+| moderate | `picomatch` | 3.0.1 | `>=3.0.2` | [Picomatch: Method Injection in POSIX Character Classes causes incorrect Glob Matching](https://github.com/advisories/GHSA-3v7f-55p6-f55p) |
+| moderate | `picomatch` | 4.0.3 | `>=4.0.4` | [Picomatch: Method Injection in POSIX Character Classes causes incorrect Glob Matching](https://github.com/advisories/GHSA-3v7f-55p6-f55p) |
+| moderate | `postcss` | 8.4.49, 8.5.6 | `>=8.5.10` | [PostCSS has XSS via Unescaped </style> in its CSS Stringify Output](https://github.com/advisories/GHSA-qx2v-qp2m-jg93) |
+| moderate | `postcss` | 8.4.49, 8.5.6 | `>=8.5.23` | [PostCSS: incomplete fix of GHSA-6g55-p6wh-862q — attacker-controlled sourceMappingURL reads arbitrary .map files when `from` is unset](https://github.com/advisories/GHSA-fxqj-rqcc-2cmp) |
+| moderate | `react-router` | 7.9.4 | `>=7.12.0` | [React Router has CSRF issue in Action/Server Action Request Processing](https://github.com/advisories/GHSA-h5cw-625j-3rxh) |
+| moderate | `react-router` | 7.9.4 | `>=7.13.2` | [React Router has stored XSS via unescaped Location header in prerendered redirect HTML](https://github.com/advisories/GHSA-f22v-gfqf-p8f3) |
+| moderate | `react-router` | 7.9.4 | `>=7.9.6` | [React Router has unexpected external redirect via untrusted paths](https://github.com/advisories/GHSA-9jcx-v3wj-wh4m) |
+| moderate | `react-router` | 7.9.4 | `>=7.14.1` | [React Router's same-origin redirect with path starting // causes open redirect via protocol-relative URL reinterpretation](https://github.com/advisories/GHSA-2j2x-hqr9-3h42) |
+| moderate | `react-router` | 7.9.4 | `>=7.18.0` | [React Router: Arbitrary Constructor Injection via deserializeErrors() in React Router SSR Hydration](https://github.com/advisories/GHSA-337j-9hxr-rhxg) |
+| moderate | `react-router` | 7.9.4 | `>=7.18.0` | [React Router: Open redirect via backslash in <Link> and useNavigate (CVE-2025-68470 bypass)](https://github.com/advisories/GHSA-wrjc-x8rr-h8h6) |
+| moderate | `react-server-dom-webpack` | 19.0.0 | `>=19.0.2` | [Source Code Exposure Vulnerability in React Server Components](https://github.com/advisories/GHSA-925w-6v3x-g4j4) |
+| moderate | `serialize-javascript` | 6.0.2 | `>=7.0.5` | [Serialize JavaScript has CPU Exhaustion Denial of Service via crafted array-like objects](https://github.com/advisories/GHSA-qj8w-gfj5-8c6v) |
+| moderate | `tar` | 7.5.1 | `>=7.5.16` | [node-tar applies PAX size override to intermediary GNU long-name/long-link headers, causing tar parser interpretation differential (file smuggling)](https://github.com/advisories/GHSA-vmf3-w455-68vh) |
+| moderate | `tar` | 7.5.1 | `>=7.5.2` | [node-tar has a race condition leading to uninitialized memory exposure](https://github.com/advisories/GHSA-29xp-372q-xqph) |
+| moderate | `tar` | 7.5.1 | `>=7.5.18` | [node-tar: Process crash via PAX numeric path type confusion](https://github.com/advisories/GHSA-w8wr-v893-vjvp) |
+| moderate | `tar` | 7.5.1 | `>=7.5.17` | [node-tar: Uncaught Exception DoS via NUL byte in PAX path/linkpath records](https://github.com/advisories/GHSA-gvwx-54wh-qm9j) |
+| moderate | `turbo` | 2.5.8 | `>=2.9.14` | [Turbo: Login callback CSRF/session fixation](https://github.com/advisories/GHSA-hcf7-66rw-9f5r) |
+| moderate | `undici` | 6.22.0 | `>=6.24.0` | [Undici has CRLF Injection in undici via `upgrade` option](https://github.com/advisories/GHSA-4992-7rv2-5pvq) |
+| moderate | `undici` | 6.22.0 | `>=6.24.0` | [Undici has an HTTP Request/Response Smuggling issue](https://github.com/advisories/GHSA-2mjp-6q6p-2qxm) |
+| moderate | `undici` | 6.22.0 | `>=6.23.0` | [Undici has an unbounded decompression chain in HTTP responses on Node.js Fetch API via Content-Encoding leads to resource exhaustion](https://github.com/advisories/GHSA-g9mf-h72j-4rw9) |
+| moderate | `undici` | 6.22.0 | `>=6.28.0` | [undici vulnerable to CRLF Injection via blob-like body 'type' property](https://github.com/advisories/GHSA-m8rv-5g2x-5cg5) |
+| moderate | `undici` | 6.22.0 | `>=6.27.0` | [undici vulnerable to HTTP header injection via Set-Cookie percent-decoding](https://github.com/advisories/GHSA-p88m-4jfj-68fv) |
+| moderate | `undici` | 6.22.0 | `>=6.28.0` | [undici vulnerable to cookie attribute injection via unsanitized domain and unparsed setCookie fields](https://github.com/advisories/GHSA-v3r7-h72x-cjcm) |
+| moderate | `undici` | 6.22.0 | `>=6.28.0` | [undici vulnerable to downstream response desynchronization via retry interceptor](https://github.com/advisories/GHSA-8xcm-r25x-g524) |
+| moderate | `uuid` | 10.0.0, 7.0.3 | `>=11.1.1` | [uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided](https://github.com/advisories/GHSA-w5hq-g745-h8pq) |
+| moderate | `vite` | 5.4.21, 6.4.1 | `>=6.4.2` | [Vite Vulnerable to Path Traversal in Optimized Deps `.map` Handling](https://github.com/advisories/GHSA-4w7w-66w2-5vf9) |
+| moderate | `vite` | 5.4.21, 6.4.1 | `>=6.4.3` | [launch-editor: NTLMv2 hash disclosure via UNC path handling on Windows](https://github.com/advisories/GHSA-v6wh-96g9-6wx3) |
+| moderate | `vitest` | 2.1.9 | `>=4.1.11` | [Vitest: Path Traversal / Arbitrary File Read via @vitest/mocker Redirect Mock](https://github.com/advisories/GHSA-82fw-gwwq-j7x9) |
+| moderate | `ws` | 8.18.3 | `>=8.20.1` | [ws: Uninitialized memory disclosure](https://github.com/advisories/GHSA-58qx-3vcg-4xpx) |
+| moderate | `yaml` | 1.10.2 | `>=1.10.3` | [yaml is vulnerable to Stack Overflow via deeply nested YAML collections](https://github.com/advisories/GHSA-48c2-rrv3-qjmp) |
+| moderate | `yaml` | 2.8.1 | `>=2.8.3` | [yaml is vulnerable to Stack Overflow via deeply nested YAML collections](https://github.com/advisories/GHSA-48c2-rrv3-qjmp) |
+| low | `@ai-sdk/provider-utils` | 3.0.12, 3.0.17 | `>=3.0.28` | [@ai-sdk/provider-utils has an Uncontrolled Resource Consumption issue](https://github.com/advisories/GHSA-866g-f22w-33x8) |
+| low | `@babel/core` | 7.28.5 | `>=7.29.6` | [@babel/core: Arbitrary File Read via sourceMappingURL Comment](https://github.com/advisories/GHSA-4x5r-pxfx-6jf8) |
+| low | `@tootallnate/once` | 2.0.0 | `>=2.0.1` | [@tootallnate/once vulnerable to Incorrect Control Flow Scoping](https://github.com/advisories/GHSA-vpq2-c234-7xj6) |
+| low | `postcss-selector-parser` | 6.1.2 | `>=6.1.3` | [postcss-selector-parser allows denial of service through uncontrolled AST recursion](https://github.com/advisories/GHSA-w9m9-85wc-3x92) |
+| low | `turbo` | 2.5.8 | `>=2.9.14` | [Turbo: Unexpected local code execution during Yarn Berry detection](https://github.com/advisories/GHSA-3qcw-2rhx-2726) |
+| low | `undici` | 6.22.0 | `>=6.27.0` | [undici vulnerable to HTTP response queue poisoning via keep-alive socket reuse](https://github.com/advisories/GHSA-35p6-xmwp-9g52) |
+| low | `undici` | 6.22.0 | `>=6.27.0` | [undici vulnerable to Set-Cookie SameSite attribute downgrade via permissive substring matching](https://github.com/advisories/GHSA-g8m3-5g58-fq7m) |
+| low | `webpack` | 5.103.0 | `>=5.104.0` | [webpack buildHttp HttpUriPlugin allowedUris bypass via HTTP redirects → SSRF + cache persistence](https://github.com/advisories/GHSA-38r7-794h-5758) |
+| low | `webpack` | 5.103.0 | `>=5.104.1` | [webpack buildHttp: allowedUris allow-list bypass via URL userinfo (@) leading to build-time SSRF behavior](https://github.com/advisories/GHSA-8fgc-7cc6-rx7x) |
+
+`<0.0.0` in a patched range means this registry response does not offer a patched release for that advisory; investigate a replacement or a newer parent package.
