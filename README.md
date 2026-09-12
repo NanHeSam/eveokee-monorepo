@@ -10,7 +10,7 @@ This monorepo contains the Eveokee mobile app, web app, and shared Convex backen
 
 ## Prerequisites
 
-- Node.js 22+
+- Node.js 22.13+
 - pnpm 8+
 - Expo CLI (for mobile development)
 - EAS CLI (for mobile builds)
@@ -75,8 +75,7 @@ install them locally before running the tests.
 - Set root directory to `apps/web` in Vercel settings
 
 ### Mobile (EAS)
-- Preview builds on PRs
-- Production builds on main branch pushes
+- Manual only: GitHub Actions -> CI -> "Run workflow" -> pick the `preview` or `production` profile (runs after lint/type-check/tests pass)
 - Requires `EXPO_TOKEN` GitHub secret
 
 ### Convex Backend

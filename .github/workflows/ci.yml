@@ -101,6 +101,7 @@ jobs:
           path: apps/web/dist
 
   build-mobile:
+    needs: verify
     # Manual only: run from the Actions tab with an EAS profile.
     if: github.event_name == 'workflow_dispatch' && inputs.mobile_profile != ''
     runs-on: ubuntu-latest
@@ -111,7 +112,7 @@ jobs:
         with:
           node-version: 22
           cache: 'pnpm'
-      - uses: expo/expo-github-action@v9
+      - uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385 # v9.0.0
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}

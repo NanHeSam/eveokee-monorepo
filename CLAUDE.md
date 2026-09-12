@@ -8,7 +8,7 @@ Eveokee is a monorepo containing a mobile app (React Native/Expo), web app (Vite
 
 ## Prerequisites
 
-- Node.js 22+ (ai SDK 7 and Vitest 5 require >= 22.12)
+- Node.js 22.13+ (required by the Vitest 5 / RN Testing Library toolchain)
 - pnpm 8+ (package manager)
 - Expo CLI (for mobile development)
 - EAS CLI (for mobile builds)
