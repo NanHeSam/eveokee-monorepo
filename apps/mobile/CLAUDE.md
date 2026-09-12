@@ -15,7 +15,7 @@ This is the **mobile app** in the Eveokee monorepo. It's a React Native applicat
 
 ## Tech Stack
 
-- **Framework**: Expo SDK ~54.0 with React Native 0.81.4
+- **Framework**: Expo SDK ~57.0 with React Native 0.86.3
 - **Language**: TypeScript (strict mode enabled)
 - **Backend**: Convex
 - **Authentication**: Clerk Expo SDK
@@ -99,7 +99,7 @@ The Convex backend is shared between mobile and web apps. See root [CLAUDE.md](.
 #### React Native New Architecture
 **New Architecture is ENABLED** (`newArchEnabled: true` in app.json). Key configuration decisions:
 
-1. **React 19**: Using React 19.1.0 which is required for New Architecture compatibility.
+1. **React 19**: Using React 19.2.3 (pinned by Expo SDK 57) which is required for New Architecture compatibility.
 
 2. **Reanimated v4**: Upgraded to v4.1.2 for full New Architecture support. Keep its Babel plugin last in config.
 

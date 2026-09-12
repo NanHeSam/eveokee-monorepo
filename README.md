@@ -10,7 +10,7 @@ This monorepo contains the Eveokee mobile app, web app, and shared Convex backen
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js 22+
 - pnpm 8+
 - Expo CLI (for mobile development)
 - EAS CLI (for mobile builds)
