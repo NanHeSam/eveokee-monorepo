@@ -6,6 +6,7 @@
 // Suno API
 export const SUNO_API_GENERATE_ENDPOINT = "https://api.sunoapi.org/api/v1/generate";
 export const SUNO_API_TIMESTAMPED_LYRICS_ENDPOINT = "https://api.sunoapi.org/api/v1/generate/get-timestamped-lyrics";
+export const SUNO_API_RECORD_INFO_ENDPOINT = "https://api.sunoapi.org/api/v1/generate/record-info";
 export const MUSIC_GENERATION_CALLBACK_PATH = "/callback/suno-music-generation";
 export const SUNO_SONGS_PER_REQUEST = 2;
 export const SUNO_DEFAULT_MODEL = "V5" as const;
