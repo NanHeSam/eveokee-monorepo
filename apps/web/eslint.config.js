@@ -19,6 +19,12 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      // eslint-plugin-react-hooks 7 enables React Compiler rules. Existing code
+      // trips them in ~20 places; keep them visible as warnings until refactored.
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/preserve-manual-memoization': 'warn',
+      'react-hooks/immutability': 'warn',
+      'react-hooks/purity': 'warn',
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },

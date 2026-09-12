@@ -64,7 +64,8 @@ const createMutationMock = (impl: unknown = vi.fn()) => {
     withOptimisticUpdate: ReturnType<typeof vi.fn>;
   } & ReturnType<typeof vi.fn>;
   mockFn.withOptimisticUpdate = vi.fn().mockReturnValue(mockFn);
-  return mockFn;
+  // Vitest 5's Mock type is not structurally assignable to ReactMutation; cast through unknown.
+  return mockFn as unknown as ReturnType<typeof useMutation>;
 };
 
 describe('Profile', () => {
