@@ -1,7 +1,9 @@
 {
   "compilerOptions": {
     "target": "ES2021",
-    "lib": ["ES2021"],
+    "lib": [
+      "ES2021"
+    ],
     "module": "esnext",
     "moduleResolution": "bundler",
     "strict": false,
@@ -11,8 +13,19 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "noEmit": true,
-    "types": ["node", "vitest/globals", "vite/client"]
+    "types": [
+      "node",
+      "vitest/globals",
+      "vite/client"
+    ]
   },
-  "include": ["./**/*"],
-  "exclude": ["node_modules", "_generated"]
+  "include": [
+    "./**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "_generated",
+    "__tests__",
+    "convex/**/*.test.ts"
+  ]
 }

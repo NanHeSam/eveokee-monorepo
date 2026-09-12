@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@backend/convex": "workspace:*",
-    "@clerk/clerk-react": "^5.50.0",
+    "@clerk/react": "^6.15.2",
     "@sentry/react": "^10.74.0",
     "clsx": "^2.1.1",
     "convex": "^1.45.0",

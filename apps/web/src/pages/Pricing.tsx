@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Check, Lock, Sparkles, Zap } from "lucide-react";
-import { useAuth, SignedIn, SignedOut } from "@clerk/clerk-react";
+import { useAuth, Show } from "@clerk/react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useQuery } from "convex/react";
@@ -186,22 +186,22 @@ export default function Pricing() {
               </button>
             ) : (
               <>
-                <SignedIn>
+                <Show when="signed-in">
                   <button
                     onClick={() => navigate("/dashboard")}
                     className="mt-10 w-full rounded-xl border border-gray-200 dark:border-gray-700 py-3 text-base font-semibold hover:border-accent-mint/60 transition-colors"
                   >
                     Get started
                   </button>
-                </SignedIn>
-                <SignedOut>
+                </Show>
+                <Show when="signed-out">
                   <button
                     onClick={() => navigate("/sign-up")}
                     className="mt-10 w-full rounded-xl border border-gray-200 dark:border-gray-700 py-3 text-base font-semibold hover:border-accent-mint/60 transition-colors"
                   >
                     Get started
                   </button>
-                </SignedOut>
+                </Show>
               </>
             )}
           </div>
@@ -309,22 +309,22 @@ export default function Pricing() {
             >
               Watch demo
             </a>
-            <SignedOut>
+            <Show when="signed-out">
               <button
                 onClick={() => navigate("/sign-in")}
                 className="px-5 py-3 rounded-xl bg-accent-mint text-white text-sm font-semibold hover:bg-accent-mint/90 transition-colors"
               >
                 Log in
               </button>
-            </SignedOut>
-            <SignedIn>
+            </Show>
+            <Show when="signed-in">
               <button
                 onClick={() => navigate("/dashboard")}
                 className="px-5 py-3 rounded-xl bg-accent-mint text-white text-sm font-semibold hover:bg-accent-mint/90 transition-colors"
               >
                 Go to Dashboard
               </button>
-            </SignedIn>
+            </Show>
           </div>
         </div>
       </div>

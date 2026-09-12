@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "npx convex dev",
     "deploy": "npx convex deploy",
-    "type-check": "echo 'Skipping type-check for backend (requires Convex runtime types)'",
+    "type-check": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "seed:blog": "npx tsx scripts/seed-blog.ts",
@@ -15,22 +15,25 @@
     "migrate:userSongs": "npx tsx scripts/migrate-userSongs.ts"
   },
   "dependencies": {
-    "@ai-sdk/gateway": "^1.0.41",
-    "@clerk/backend": "^2.17.2",
+    "@ai-sdk/gateway": "^4.0.80",
+    "@clerk/backend": "^3.17.2",
     "@sindresorhus/slugify": "^3.0.1",
-    "@vapi-ai/server-sdk": "^0.10.2",
-    "ai": "^5.0.98",
+    "@vapi-ai/server-sdk": "^2.0.1",
+    "ai": "^7.0.99",
     "convex": "^1.45.0",
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",
-    "openai": "^6.9.1",
+    "openai": "^7.15.0",
     "turndown": "^7.2.4",
     "zod": "^4.6.2"
   },
   "devDependencies": {
     "@edge-runtime/vm": "^5.0.0",
+    "@types/node": "^22.20.2",
     "@vitest/spy": "^5.0.0",
     "convex-test": "^0.0.58",
+    "typescript": "~5.9.3",
+    "vite": "^8.3.0",
     "vitest": "^5.0.0"
   }
 }

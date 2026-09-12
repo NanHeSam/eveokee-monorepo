@@ -7,7 +7,7 @@ import {
   useLocation,
   useNavigationType,
 } from 'react-router-dom'
-import { ClerkProvider, useAuth } from '@clerk/clerk-react'
+import { ClerkProvider, useAuth } from '@clerk/react'
 import { ConvexProviderWithClerk } from 'convex/react-clerk'
 import { ConvexReactClient } from 'convex/react'
 import { PostHogProvider } from 'posthog-js/react'

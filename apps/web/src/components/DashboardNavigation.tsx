@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Menu, X, Sun, Moon, LayoutDashboard, User } from 'lucide-react';
-import { UserButton } from '@clerk/clerk-react';
+import { UserButton } from '@clerk/react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '@/hooks/useTheme';
 

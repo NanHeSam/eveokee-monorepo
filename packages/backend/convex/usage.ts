@@ -213,7 +213,7 @@ async function getUserUsageInfo(ctx: MutationCtx | QueryCtx, userId: Id<"users">
 
 // Internal action to record a music generation with RevenueCat reconciliation
 // This ensures we always have the latest product ID from RevenueCat before checking usage
-export const recordMusicGenerationWithReconciliation = action({
+export const recordMusicGenerationWithReconciliation = internalAction({
   args: { userId: v.id("users") },
   returns: v.object({
     success: v.boolean(),

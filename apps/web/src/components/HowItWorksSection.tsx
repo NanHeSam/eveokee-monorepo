@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { PenTool, Music, Headphones, Loader2, Sparkles } from 'lucide-react';
-import { SignedIn, SignedOut, useAuth } from '@clerk/clerk-react';
+import { Show, useAuth } from '@clerk/react';
 import { useAction, useQuery } from 'convex/react';
 import { api } from '@backend/convex';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
@@ -359,17 +359,17 @@ export default function HowItWorksSection() {
         {/* Section Header */}
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6">
-            <SignedOut>How this new kind of journaling works</SignedOut>
-            <SignedIn>Try it yourself!</SignedIn>
+            <Show when="signed-out">How this new kind of journaling works</Show>
+            <Show when="signed-in">Try it yourself!</Show>
           </h2>
-          <SignedIn>
+          <Show when="signed-in">
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
               Write a few sentences about your day and watch as we transform your words into a personalized song.
             </p>
-          </SignedIn>
+          </Show>
         </div>
 
-        <SignedOut>
+        <Show when="signed-out">
           {/* Original Static Content for Non-Authenticated Users */}
           <motion.div
             initial="hidden"
@@ -438,9 +438,9 @@ export default function HowItWorksSection() {
               </Link>
             </div>
           </div>
-        </SignedOut>
+        </Show>
 
-        <SignedIn>
+        <Show when="signed-in">
           {/* Interactive Demo for Authenticated Users */}
           <div className="max-w-4xl mx-auto">
             {toast && (
@@ -619,7 +619,7 @@ export default function HowItWorksSection() {
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Tap a song to load it above.</p>
             </div>
           )}
-        </SignedIn>
+        </Show>
 
         {/* Testimonials Carousel (shown for both authenticated and non-authenticated users) */}
         <div className="relative mt-24">

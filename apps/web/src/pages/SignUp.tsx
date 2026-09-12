@@ -1,4 +1,4 @@
-import { SignUp } from '@clerk/clerk-react'
+import { SignUp } from '@clerk/react'
 import { useSearchParams } from 'react-router-dom'
 import { normalizeRedirectPath } from '@/utils/redirectUtils'
 

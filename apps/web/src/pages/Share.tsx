@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@backend/convex";
-import { useAuth, SignedIn, SignedOut } from "@clerk/clerk-react";
+import { useAuth, Show } from "@clerk/react";
 import MusicPlayer from "@/components/MusicPlayer";
 import { formatDistanceToNow } from "date-fns";
 import toast from "react-hot-toast";
@@ -265,7 +265,7 @@ export default function Share() {
               {/* Add to My Music button */}
               {sharedMusic.found && sharedMusic.ownerClerkId !== currentClerkUserId && (
                 <div className="mb-8">
-                  <SignedIn>
+                  <Show when="signed-in">
                     <button
                       onClick={handleAddToMyMusic}
                       disabled={isAdding || isAdded}
@@ -301,15 +301,15 @@ export default function Share() {
                         </span>
                       )}
                     </button>
-                  </SignedIn>
-                  <SignedOut>
+                  </Show>
+                  <Show when="signed-out">
                     <button
                       onClick={handleSignInClick}
                       className="w-full px-6 py-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-xl font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
                     >
                       Sign in to Add to Your Library
                     </button>
-                  </SignedOut>
+                  </Show>
                 </div>
               )}
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Menu, X, Sun, Moon } from 'lucide-react';
-import { SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
+import { Show, UserButton } from '@clerk/react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -70,11 +70,11 @@ export default function Navigation() {
               <Link to="/pricing" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
                 Pricing
               </Link>
-              <SignedIn>
+              <Show when="signed-in">
                 <Link to="/dashboard" className="bg-accent-mint/10 text-accent-mint dark:bg-accent-mint/20 px-3 py-2 rounded-md text-sm font-medium hover:bg-accent-mint/20 dark:hover:bg-accent-mint/30 transition-colors">
                   Dashboard
                 </Link>
-              </SignedIn>
+              </Show>
             </div>
           </div>
 
@@ -90,7 +90,7 @@ export default function Navigation() {
                 {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </button>
               
-              <SignedOut>
+              <Show when="signed-out">
                 <Link
                   to="/sign-in"
                   className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
@@ -103,8 +103,8 @@ export default function Navigation() {
                 >
                   Sign up
                 </Link>
-              </SignedOut>
-              <SignedIn>
+              </Show>
+              <Show when="signed-in">
                 <UserButton 
                   appearance={{
                     elements: {
@@ -112,7 +112,7 @@ export default function Navigation() {
                     }
                   }}
                 />
-              </SignedIn>
+              </Show>
             </div>
           </div>
 
@@ -186,7 +186,7 @@ export default function Navigation() {
             >
               Pricing
             </Link>
-            <SignedIn>
+            <Show when="signed-in">
               <Link 
                 to="/dashboard" 
                 className="bg-accent-mint/10 text-accent-mint dark:bg-accent-mint/20 px-3 py-2 rounded-md text-base font-medium hover:bg-accent-mint/20 dark:hover:bg-accent-mint/30 transition-colors"
@@ -194,9 +194,9 @@ export default function Navigation() {
               >
                 Dashboard
               </Link>
-            </SignedIn>
+            </Show>
             <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-600">
-              <SignedOut>
+              <Show when="signed-out">
                 <div className="flex items-center px-3 space-x-3">
                   <Link
                     to="/sign-in"
@@ -211,8 +211,8 @@ export default function Navigation() {
                     Sign up
                   </Link>
                 </div>
-              </SignedOut>
-              <SignedIn>
+              </Show>
+              <Show when="signed-in">
                 <div className="flex items-center px-3 space-x-3">
                   <div className="flex items-center">
                     <UserButton 
@@ -224,7 +224,7 @@ export default function Navigation() {
                     />
                   </div>
                 </div>
-              </SignedIn>
+              </Show>
             </div>
           </div>
         </div>
