@@ -1,4 +1,5 @@
-import { Heart, Twitter, Mail, Smartphone } from 'lucide-react';
+import { Heart, Mail, Smartphone } from 'lucide-react';
+import { FaXTwitter } from 'react-icons/fa6';
 import { SiDiscord } from 'react-icons/si';
 import { FaInstagram } from 'react-icons/fa';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -57,11 +58,11 @@ export default function Footer() {
               <a 
                 href="https://x.com/eveoky_vibes" 
                 className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-accent-mint transition-colors"
-                aria-label="Twitter"
+                aria-label="X (Twitter)"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <Twitter className="w-5 h-5" />
+                <FaXTwitter className="w-5 h-5" />
               </a>
               <a 
                 href="https://www.instagram.com/myeveokee/" 
