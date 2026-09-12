@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View, ScrollView, Alert, Pressable } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, type EventArg, type NavigationAction } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useAction, useMutation, useQuery } from 'convex/react';
@@ -459,7 +459,10 @@ export const DiaryEditScreen = () => {
 
   // Intercept back navigation
   useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', async (e) => {
+    // Explicit param type: with strictNullChecks off, React Navigation 7's
+    // EventListenerCallback conditional type resolves canPreventDefault to false.
+    type BeforeRemoveEvent = EventArg<'beforeRemove', true, { action: NavigationAction }>;
+    const unsubscribe = navigation.addListener('beforeRemove', async (e: BeforeRemoveEvent) => {
       // If we're already handling navigation programmatically (via back button), skip
       if (isNavigatingBackRef.current) {
         // Reset the flag for next time

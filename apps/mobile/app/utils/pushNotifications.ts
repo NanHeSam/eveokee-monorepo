@@ -9,7 +9,7 @@ import Constants from 'expo-constants';
 import { useMutation } from 'convex/react';
 import { api } from '@backend/convex';
 import { useEffect, useRef } from 'react';
-import { useAuth } from '@clerk/clerk-expo';
+import { useAuth } from '@clerk/expo';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({

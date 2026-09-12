@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import PostHog from 'posthog-react-native';
-import { useAuth } from '@clerk/clerk-expo';
+import { useAuth } from '@clerk/expo';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 

@@ -1,6 +1,6 @@
 import { useRef, useCallback } from 'react';
 import { Alert, Share } from 'react-native';
-import ViewShot from 'react-native-view-shot';
+import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 import { useMutation } from 'convex/react';
 import { api } from '@backend/convex';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
@@ -12,7 +12,7 @@ interface ArtworkCardData {
 }
 
 export const useArtworkCard = () => {
-  const viewShotRef = useRef<ViewShot>(null);
+  const viewShotRef = useRef<ViewShotRef>(null);
   const createShareLink = useMutation(api.sharing.createShareLink);
 
   const generateAndShareCard = useCallback(async (

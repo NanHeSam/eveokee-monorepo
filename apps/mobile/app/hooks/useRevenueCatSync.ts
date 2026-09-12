@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useAuth } from '@clerk/clerk-expo';
+import { useAuth } from '@clerk/expo';
 import { useMutation } from 'convex/react';
 import { api } from '@backend/convex';
 import { identifyUser, logoutUser } from '../utils/revenueCat';

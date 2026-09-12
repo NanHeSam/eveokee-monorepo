@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useSSO, useClerk, useSignIn } from '@clerk/clerk-expo';
+import { useSSO, useClerk } from '@clerk/expo';
+import { useSignIn } from '@clerk/expo/legacy';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { useNavigation } from '@react-navigation/native';

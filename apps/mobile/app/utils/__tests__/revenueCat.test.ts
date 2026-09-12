@@ -23,7 +23,33 @@ import {
 } from '../revenueCat';
 
 jest.mock('react-native', () => ({
-  Platform: { OS: 'ios' },
+  Platform: { OS: 'ios', constants: {}, select: (o: any) => o.ios ?? o.default },
+  // NativeWind's css-interop native runtime reads these at import time
+  // (pulled in transitively via expo-modules-core when `fetch` is touched).
+  Appearance: {
+    getColorScheme: () => 'light',
+    addChangeListener: () => ({ remove: () => {} }),
+  },
+  AppState: {
+    currentState: 'active',
+    addEventListener: () => ({ remove: () => {} }),
+  },
+  AccessibilityInfo: {
+    addEventListener: () => ({ remove: () => {} }),
+    isReduceMotionEnabled: () => Promise.resolve(false),
+  },
+  Dimensions: {
+    get: () => ({ width: 390, height: 844, scale: 3, fontScale: 1 }),
+    addEventListener: () => ({ remove: () => {} }),
+  },
+  I18nManager: { isRTL: false },
+  PixelRatio: {
+    get: () => 3,
+    getFontScale: () => 1,
+    getPixelSizeForLayoutSize: (n: number) => n * 3,
+    roundToNearestPixel: (n: number) => n,
+  },
+  StyleSheet: { hairlineWidth: 1 },
 }));
 
 jest.mock('react-native-purchases', () => {

@@ -381,7 +381,7 @@ export const FullPlayer = () => {
       exiting={SlideOutDown.duration(240).easing(Easing.in(Easing.cubic))}
       style={[styles.container, { backgroundColor: colors.background }, animatedStyle]}
     >
-      <StatusBar style={colors.scheme === 'dark' ? 'light' : 'dark'} translucent />
+      <StatusBar style={colors.scheme === 'dark' ? 'light' : 'dark'} />
       {activeView === 'video' && primaryVideo?.videoUrl ? (
         <VideoPlayerView
           videoUrl={primaryVideo.videoUrl}

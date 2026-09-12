@@ -1,4 +1,4 @@
-const { withPodfile } = require("@expo/config-plugins");
+const { withPodfile } = require("expo/config-plugins");
 
 function ensurePostInstall(contents) {
   if (!/post_install do \|installer\|/.test(contents)) {

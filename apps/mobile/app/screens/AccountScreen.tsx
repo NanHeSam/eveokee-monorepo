@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { Alert, Text, TouchableOpacity, View, ActivityIndicator, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuth } from '@clerk/clerk-expo';
+import { useAuth } from '@clerk/expo';
 import { useMutation } from 'convex/react';
 import { api } from '@backend/convex';
 import { useThemeColors } from '../theme/useThemeColors';

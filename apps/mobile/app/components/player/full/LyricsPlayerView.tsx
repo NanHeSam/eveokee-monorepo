@@ -130,7 +130,7 @@ export const LyricsPlayerView = ({
               resizeMode="cover"
             />
           ) : (
-            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.surface }]} />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surface }]} />
           )}
         </Pressable>
       </View>
@@ -138,7 +138,7 @@ export const LyricsPlayerView = ({
         {isOverlayVisible ? (
           <View style={styles.overlayContainer} pointerEvents="box-none">
             <View
-              style={[StyleSheet.absoluteFillObject, { backgroundColor: overlayColor }]}
+              style={[StyleSheet.absoluteFill, { backgroundColor: overlayColor }]}
               pointerEvents="none"
             />
             <View

@@ -35,7 +35,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: "portrait",
   icon: "./assets/icon.png",
   userInterfaceStyle: "automatic",
-  newArchEnabled: true,
   plugins: [
     "expo-apple-authentication",
     "./plugins/with-folly-no-coroutines",
@@ -44,6 +43,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "expo-system-ui",
     "expo-web-browser",
     "expo-image-picker",
+    "expo-build-properties",
+    "expo-secure-store",
+    "@clerk/expo",
     "./plugins/with-react-bridging-header",
     "./plugins/with-expo-image-picker-autolinking",
     [
@@ -55,6 +57,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       }
     ],
     [
+      "expo-splash-screen",
+      {
+        image: "./assets/splash-icon.png",
+        resizeMode: "cover",
+        backgroundColor: "#F5F0E8"
+      }
+    ],
+    [
       "@sentry/react-native/expo",
       {
         url: "https://sentry.io/",
@@ -63,11 +73,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       }
     ]
   ],
-  splash: {
-    image: "./assets/splash-icon.png",
-    resizeMode: "cover",
-    backgroundColor: "#F5F0E8"
-  },
   ios: {
     ...config.ios,
     supportsTablet: false,
@@ -88,7 +93,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: "#A8E6CF"
     },
-    edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: getUniqueIdentifier(),
     permissions: [

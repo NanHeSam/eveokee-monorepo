@@ -14,6 +14,7 @@ const esModules = [
   'native-base',
   '@clerk',
   'nativewind',
+  'react-native-css-interop',
 ];
 
 module.exports = {

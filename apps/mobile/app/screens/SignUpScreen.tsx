@@ -14,7 +14,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useSignUp, useSSO, useClerk } from '@clerk/clerk-expo';
+import { useSSO, useClerk } from '@clerk/expo';
+import { useSignUp } from '@clerk/expo/legacy';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 
