@@ -18,6 +18,37 @@ export interface MusicRowLike {
   musicIndex?: number;
 }
 
+/**
+ * Hosts we are willing to download generated assets from. The music callback
+ * is not authenticated, so URLs in it (and anything derived from provider
+ * records) must never be allowed to point the server at arbitrary hosts.
+ * Matching is by exact host or any subdomain of these.
+ */
+export const ALLOWED_ASSET_HOST_SUFFIXES = [
+  "suno.ai",
+  "sunoapi.org",
+  "api.box",
+  "aiquickdraw.com",
+  "removeai.ai",
+  "erweima.ai",
+] as const;
+
+/** True when the URL is https and on a known provider host. */
+export function isAllowedAssetUrl(url: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== "https:") return false;
+  if (parsed.username || parsed.password) return false;
+  const host = parsed.hostname.toLowerCase();
+  return ALLOWED_ASSET_HOST_SUFFIXES.some(
+    (suffix) => host === suffix || host.endsWith(`.${suffix}`),
+  );
+}
+
 /** True for URLs served by Convex file storage (already durable). */
 export function isConvexStorageUrl(url: string): boolean {
   return /\.convex\.(cloud|site)\/api\/storage\//.test(url);
