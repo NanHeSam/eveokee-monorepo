@@ -143,6 +143,10 @@ export default defineSchema({
     duration: v.optional(v.number()), // Duration in seconds
     audioUrl: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
+    // Copies of the generated assets in Convex storage. Provider CDN URLs expire
+    // or get locked behind signed URLs; audioUrl/imageUrl point at these once set.
+    audioStorageId: v.optional(v.id("_storage")),
+    imageStorageId: v.optional(v.id("_storage")),
     primaryVideoId: v.optional(v.id("musicVideos")), // Primary/favorite music video
     status: v.union(
       v.literal("pending"),

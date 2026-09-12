@@ -7,6 +7,7 @@
 import {
   SUNO_API_GENERATE_ENDPOINT,
   SUNO_API_TIMESTAMPED_LYRICS_ENDPOINT,
+  SUNO_API_RECORD_INFO_ENDPOINT,
   SUNO_DEFAULT_MODEL,
   HTTP_STATUS_OK,
 } from "../../utils/constants";
@@ -67,6 +68,35 @@ export interface TimestampedLyricsData {
   }>;
   waveformData: number[];
   hootCer: number;
+}
+
+export interface SunoRecordInfoTrack {
+  id: string;
+  audioUrl?: string;
+  sourceAudioUrl?: string;
+  streamAudioUrl?: string;
+  sourceStreamAudioUrl?: string;
+  imageUrl?: string;
+  sourceImageUrl?: string;
+  title?: string;
+  duration?: number;
+}
+
+export interface SunoRecordInfoResponse {
+  code: number;
+  msg: string;
+  data?: {
+    taskId?: string;
+    status?: string;
+    response?: {
+      sunoData?: SunoRecordInfoTrack[];
+    };
+  } | null;
+}
+
+export interface SunoRecordInfo {
+  status: string | undefined;
+  tracks: SunoRecordInfoTrack[];
 }
 
 const DEFAULT_TIMEOUT_MS = 30000; // 30 seconds
@@ -222,6 +252,59 @@ export class SunoClient {
       }
 
       // Wrap unknown errors
+      throw new Error(`Suno API request failed: ${String(error)}`);
+    }
+  }
+
+  /**
+   * Fetch the current record for a generation task. The provider rotates the
+   * hosts its audio lives on, so this is the way to get a fresh, downloadable
+   * URL for a track that was generated earlier.
+   * @param taskId - Task ID returned by generateMusic
+   * @returns Task status and the tracks with their current URLs (empty when the
+   *   provider has no record for the task)
+   * @throws Error if the API call fails or times out
+   */
+  async getRecordInfo(taskId: string): Promise<SunoRecordInfo> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
+
+    try {
+      const url = `${SUNO_API_RECORD_INFO_ENDPOINT}?taskId=${encodeURIComponent(taskId)}`;
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${this.config.apiKey}`,
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Suno API request failed: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const data = (await response.json()) as SunoRecordInfoResponse;
+
+      if (data.code !== HTTP_STATUS_OK) {
+        throw new Error(`Suno API returned error code ${data.code}: ${data.msg}`);
+      }
+
+      return {
+        status: data.data?.status,
+        tracks: data.data?.response?.sunoData ?? [],
+      };
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error(`Suno API request timed out after ${this.config.timeout}ms`);
+      }
+      if (error instanceof Error) {
+        throw error;
+      }
       throw new Error(`Suno API request failed: ${String(error)}`);
     }
   }

@@ -349,6 +349,21 @@ export const completeSunoTask = internalMutation({
         }
 
         await ctx.db.patch(doc._id, patch);
+
+        // Copy the audio and cover image into Convex storage. The provider's
+        // CDN URLs are not durable (they expire or move behind signed URLs).
+        await ctx.scheduler.runAfter(0, internal.musicAssets.persistMusicAssets, {
+          musicId: doc._id,
+          audioCandidates: [
+            track.audio_url,
+            track.source_audio_url,
+            track.stream_audio_url,
+            track.source_stream_audio_url,
+          ].filter((url): url is string => typeof url === "string" && url.length > 0),
+          imageCandidates: [track.image_url, track.source_image_url].filter(
+            (url): url is string => typeof url === "string" && url.length > 0,
+          ),
+        });
       }),
     );
 
