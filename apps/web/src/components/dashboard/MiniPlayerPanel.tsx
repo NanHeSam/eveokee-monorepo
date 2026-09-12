@@ -67,7 +67,7 @@ export default function MiniPlayerPanel({ music }: MiniPlayerPanelProps) {
   return (
     <div className="h-full flex flex-col">
       {/* Mini Player */}
-      <div className="bg-gradient-to-br from-accent-mint to-accent-apricot p-6 text-white">
+      <div className="bg-linear-to-br from-accent-mint to-accent-apricot p-6 text-white">
         {currentTrack ? (
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -198,7 +198,7 @@ export default function MiniPlayerPanel({ music }: MiniPlayerPanelProps) {
                 >
                   <div className="flex items-center gap-3">
                     {track.imageUrl && (
-                      <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden flex-shrink-0">
+                      <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden shrink-0">
                         <img
                           src={track.imageUrl}
                           alt={track.title || 'Album art'}
@@ -236,7 +236,7 @@ export default function MiniPlayerPanel({ music }: MiniPlayerPanelProps) {
                 >
                   <div className="flex items-center gap-3">
                     {track.imageUrl && (
-                      <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden flex-shrink-0">
+                      <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden shrink-0">
                         <img
                           src={track.imageUrl}
                           alt={track.title || 'Album art'}

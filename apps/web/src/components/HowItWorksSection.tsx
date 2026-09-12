@@ -427,7 +427,7 @@ export default function HowItWorksSection() {
 
           {/* Call to Action for Non-Authenticated Users */}
           <div className="text-center mb-16">
-            <div className="bg-gradient-to-r from-accent-mint to-accent-apricot dark:from-gray-700 dark:to-gray-600 rounded-2xl p-8 text-white">
+            <div className="bg-linear-to-r from-accent-mint to-accent-apricot dark:from-gray-700 dark:to-gray-600 rounded-2xl p-8 text-white">
               <h3 className="text-3xl sm:text-4xl font-bold mb-4">Try it yourself!</h3>
               <p className="text-lg mb-6 opacity-90">Sign up now to try the interactive demo and create your first musical diary entry!</p>
               <Link
@@ -464,7 +464,7 @@ export default function HowItWorksSection() {
             )}
             {!generatedMusic ? (
               /* Diary Entry Form */
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-3xl p-8 mb-8">
+              <div className="bg-linear-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-3xl p-8 mb-8">
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
                     <label htmlFor="diary-content" className="block text-lg font-semibold text-gray-900 dark:text-white mb-3">
@@ -484,7 +484,7 @@ export default function HowItWorksSection() {
                     <button
                       type="submit"
                       disabled={!diaryContent.trim() || isGenerating}
-                      className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-accent-mint to-accent-apricot text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="inline-flex items-center px-8 py-4 bg-linear-to-r from-accent-mint to-accent-apricot text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isGenerating ? (
                         <>
@@ -506,7 +506,7 @@ export default function HowItWorksSection() {
               <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 mb-8 border border-gray-100 dark:border-gray-700">
                 {isGenerating ? (
                   <div className="text-center">
-                    <div className="w-20 h-20 bg-gradient-to-r from-accent-mint to-accent-apricot rounded-full flex items-center justify-center mx-auto mb-6">
+                    <div className="w-20 h-20 bg-linear-to-r from-accent-mint to-accent-apricot rounded-full flex items-center justify-center mx-auto mb-6">
                       <Loader2 className="w-10 h-10 text-white animate-spin" />
                     </div>
 
@@ -520,7 +520,7 @@ export default function HowItWorksSection() {
 
                     <div className="bg-gray-100 dark:bg-gray-700 rounded-full h-2 mb-4 max-w-md mx-auto">
                       <div
-                        className="bg-gradient-to-r from-accent-mint to-accent-apricot h-2 rounded-full transition-all duration-1000"
+                        className="bg-linear-to-r from-accent-mint to-accent-apricot h-2 rounded-full transition-all duration-1000"
                         style={{ width: `${Math.min((elapsedTime / 120) * 100, 95)}%` }}
                       ></div>
                     </div>

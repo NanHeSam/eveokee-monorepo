@@ -8,11 +8,11 @@ import { Home, ArrowLeft } from 'lucide-react';
  */
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl w-full text-center">
         {/* 404 Large Text */}
         <div className="mb-8">
-          <h1 className="text-9xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-accent-mint to-blue-600 dark:from-accent-mint dark:to-blue-400">
+          <h1 className="text-9xl font-bold text-transparent bg-clip-text bg-linear-to-r from-accent-mint to-blue-600 dark:from-accent-mint dark:to-blue-400">
             404
           </h1>
           <div className="mt-4 text-6xl font-bold text-gray-900 dark:text-white">

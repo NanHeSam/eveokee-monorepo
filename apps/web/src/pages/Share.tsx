@@ -92,7 +92,7 @@ export default function Share() {
 
   if (!shareId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
             Invalid Share Link
@@ -107,7 +107,7 @@ export default function Share() {
 
   if (sharedMusic === undefined) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-gray-300 border-t-gray-900 dark:border-gray-700 dark:border-t-gray-100 rounded-full animate-spin mx-auto" />
           <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
@@ -118,7 +118,7 @@ export default function Share() {
 
   if (!sharedMusic.found) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
         <div className="text-center max-w-md px-6">
           <div className="text-6xl mb-4">🎵</div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
@@ -201,11 +201,11 @@ export default function Share() {
         description={sharedMusic.lyric ? sharedMusic.lyric.slice(0, 160) : 'Listen to this music shared on eveokee'}
         ogImage={sharedMusic.imageUrl}
       />
-      <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 px-4 py-8 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
         <div className="lg:grid lg:grid-cols-2 lg:gap-8 bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden">
           {sharedMusic.imageUrl && (
-            <div className="relative w-full aspect-square lg:aspect-[3/4] overflow-hidden">
+            <div className="relative w-full aspect-square lg:aspect-3/4 overflow-hidden">
               <img
                 src={sharedMusic.imageUrl}
                 alt={sharedMusic.title}

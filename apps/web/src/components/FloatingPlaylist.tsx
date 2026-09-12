@@ -100,7 +100,7 @@ export default function FloatingPlaylist({ isOpen, onClose }: FloatingPlaylistPr
                   >
                     <div className="flex items-center gap-3">
                       {/* Track Number / Play Icon */}
-                      <div className={`w-8 h-8 rounded flex items-center justify-center text-xs font-medium flex-shrink-0 ${
+                      <div className={`w-8 h-8 rounded flex items-center justify-center text-xs font-medium shrink-0 ${
                         isCurrentTrack
                           ? 'bg-purple-600 text-white'
                           : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 group-hover:bg-purple-600 group-hover:text-white'
@@ -116,7 +116,7 @@ export default function FloatingPlaylist({ isOpen, onClose }: FloatingPlaylistPr
 
                       {/* Track Image */}
                       {track.imageUrl && (
-                        <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden flex-shrink-0">
+                        <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden shrink-0">
                           <img
                             src={track.imageUrl}
                             alt={track.title || 'Album art'}
@@ -140,7 +140,7 @@ export default function FloatingPlaylist({ isOpen, onClose }: FloatingPlaylistPr
                       </div>
 
                       {/* Duration */}
-                      <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">
                         {formatDuration(track.duration)}
                       </span>
                     </div>

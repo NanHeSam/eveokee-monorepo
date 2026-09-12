@@ -267,7 +267,7 @@ export default function DetailDrawer({ diaryId, diaries, onClose, returnTab }: D
               )}
 
               {diary.primaryMusic.status === 'ready' && diary.primaryMusic.audioUrl && (
-                <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg p-6">
+                <div className="bg-linear-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg p-6">
                   {/* Album Art */}
                   {diary.primaryMusic.imageUrl && (
                     <div className="aspect-square max-w-sm mx-auto mb-6 rounded-lg overflow-hidden shadow-lg">

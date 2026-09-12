@@ -24,7 +24,7 @@ export default function DashboardNavigation() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <Link to="/dashboard" className="flex items-center hover:opacity-80 transition-opacity cursor-pointer">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center relative overflow-hidden shadow-lg">
                 <img src="/icon.png" alt="eveokee" className="w-full h-full object-cover" />

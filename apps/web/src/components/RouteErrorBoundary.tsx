@@ -56,7 +56,7 @@ export default function RouteErrorBoundary() {
           <h3 className="text-sm font-semibold text-red-800 dark:text-red-400 mb-2">
             Error Details:
           </h3>
-          <p className="text-sm text-red-700 dark:text-red-300 break-words">
+          <p className="text-sm text-red-700 dark:text-red-300 wrap-break-word">
             {errorMessage}
           </p>
         </div>

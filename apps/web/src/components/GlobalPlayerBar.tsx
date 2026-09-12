@@ -31,10 +31,10 @@ export default function GlobalPlayerBar({ onTogglePlaylist }: GlobalPlayerBarPro
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-lg z-50">
-      <div className="max-w-screen-2xl mx-auto px-4 py-3">
+      <div className="max-w-(--breakpoint-2xl) mx-auto px-4 py-3">
         <div className="flex items-center gap-4">
           {/* Album Art / Thumbnail */}
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             {currentTrack.imageUrl ? (
               <img
                 src={currentTrack.imageUrl}
@@ -42,7 +42,7 @@ export default function GlobalPlayerBar({ onTogglePlaylist }: GlobalPlayerBarPro
                 className="w-12 h-12 rounded-lg object-cover"
               />
             ) : (
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-accent-mint to-accent-apricot flex items-center justify-center">
+              <div className="w-12 h-12 rounded-lg bg-linear-to-br from-accent-mint to-accent-apricot flex items-center justify-center">
                 <Music className="w-6 h-6 text-white" />
               </div>
             )}
