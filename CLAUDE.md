@@ -177,6 +177,65 @@ Turbo is used for build orchestration. Key pipeline tasks:
 - Main branch: `main`
 - Current branch: `project-setup/all-3p-run`
 - Prefer rebase over merge for clean history (per user preferences)
+- Name branches after the Linear issue, using the `gitBranchName` Linear suggests
+  (for example `sam/eve-44-authenticate-the-suno-music-generation-webhook`). That is what
+  links the PR back to the issue and moves it across the board on merge.
+
+## Planning and Issue Tracking
+
+**Work is tracked in Linear, not GitHub Issues.** This repository is public, so GitHub issues
+would expose security findings and half-formed ideas. Linear is private.
+
+- Team: **Eveoky**
+- Main backlog project: [Post-modernization hardening](https://linear.app/eveoky/project/post-modernization-hardening-bb5449d21fe0)
+- Reachable from any session through the connected Linear MCP tools
+
+### When you notice something outside the task you were given
+
+**File it and keep going. Do not fix it.** Drive-by fixes turn a reviewable change into an
+unreviewable one, and the thing you noticed is usually worth more than a rushed patch.
+
+Create a Linear issue with the `needs-spec` label, one or two sentences of what you saw and
+where, then return to what you were doing. Mention what you filed in your closing summary so
+the reader knows it was captured rather than ignored.
+
+The exception is when the thing you noticed makes your current task wrong. Then stop and say so.
+
+### Labels
+
+| Label | Meaning |
+|---|---|
+| `agent-ready` | Spec is complete. A fresh session can pick this up cold and finish it. |
+| `needs-spec` | Raw capture. Shape it before working it. |
+| `human-only` | Blocked on a device, a provider, credentials, or a judgement call. Never assign to an agent. |
+| `security` | Security or privacy impact. Keep the detail in Linear. |
+| `area:mobile` `area:web` `area:backend` `area:ci` | Which part of the monorepo. |
+| `Bug` `Feature` `Improvement` | Kind of work. |
+
+### What `agent-ready` requires
+
+An issue only earns this label when its description carries all five:
+
+1. **Context** — what is wrong and how we know, with file and line references
+2. **Acceptance criteria** — a checklist someone else can verify against
+3. **Where to start** — the specific files and functions, not "the backend"
+4. **Verify** — the exact commands that prove it works
+5. **Out of scope** — what not to touch, so the change stays reviewable
+
+If you cannot write all five, the issue is `needs-spec`, not `agent-ready`.
+
+### Picking up work
+
+Take the highest-priority `agent-ready` issue that is not `human-only`. Read its linked
+issues first; several of these depend on each other. Move it to In Progress when you start.
+
+### Definition of done
+
+- CI green: `pnpm lint && pnpm type-check && pnpm test`
+- Every acceptance criterion checked, or explicitly renegotiated on the issue
+- Verified in the real app, not only in tests, when the change is user-facing
+- The PR references the Linear issue
+- Anything discovered along the way is filed, not silently dropped
 
 ## Mobile App Audio Playback
 
