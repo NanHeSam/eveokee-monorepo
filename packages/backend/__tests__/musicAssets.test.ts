@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createTestEnvironment, createTestUser } from "./convexTestUtils";
 import { internal } from "../convex/_generated/api";
 import {
+  isAllowedAssetUrl,
   isConvexStorageUrl,
   pickFreshTrackForMusic,
   uniqueNonEmpty,
@@ -11,6 +12,18 @@ describe("musicAssets helpers", () => {
   it("recognises Convex storage URLs", () => {
     expect(isConvexStorageUrl("https://artful-tiger-110.convex.cloud/api/storage/abc")).toBe(true);
     expect(isConvexStorageUrl("https://cdn1.suno.ai/abc.mp3")).toBe(false);
+  });
+
+  it("only allows https URLs on known provider hosts", () => {
+    expect(isAllowedAssetUrl("https://cdn1.suno.ai/a.mp3")).toBe(true);
+    expect(isAllowedAssetUrl("https://tempfile.aiquickdraw.com/r/a.mp3")).toBe(true);
+    expect(isAllowedAssetUrl("https://audiostream.api.box/stream/a.mp3")).toBe(true);
+    expect(isAllowedAssetUrl("http://cdn1.suno.ai/a.mp3")).toBe(false);
+    expect(isAllowedAssetUrl("https://evil.example/suno.ai/a.mp3")).toBe(false);
+    expect(isAllowedAssetUrl("https://notsuno.ai/a.mp3")).toBe(false);
+    expect(isAllowedAssetUrl("https://169.254.169.254/latest/meta-data")).toBe(false);
+    expect(isAllowedAssetUrl("https://user:pw@cdn1.suno.ai/a.mp3")).toBe(false);
+    expect(isAllowedAssetUrl("not a url")).toBe(false);
   });
 
   it("dedupes candidates and drops empties", () => {
@@ -82,13 +95,13 @@ describe("musicAssets.persistMusicAssets", () => {
     const musicId = await insertReadyMusic(t, "https://cdn1.suno.ai/clip-0.mp3");
     mockFetch({
       "https://cdn1.suno.ai/clip-0.mp3": { status: 403, type: "text/xml", body: "<Error>MissingKey</Error>" },
-      "https://tempfile.example/fresh.mp3": { status: 200, type: "audio/mpeg", body: new Uint8Array([1, 2, 3, 4]) },
+      "https://tempfile.aiquickdraw.com/r/fresh.mp3": { status: 200, type: "audio/mpeg", body: new Uint8Array([1, 2, 3, 4]) },
       "https://cdn2.suno.ai/image_clip-0.jpeg": { status: 200, type: "image/jpeg", body: new Uint8Array([9, 9]) },
     });
 
     const result = await t.action(internal.musicAssets.persistMusicAssets, {
       musicId,
-      audioCandidates: ["https://cdn1.suno.ai/clip-0.mp3", "https://tempfile.example/fresh.mp3"],
+      audioCandidates: ["https://cdn1.suno.ai/clip-0.mp3", "https://tempfile.aiquickdraw.com/r/fresh.mp3"],
     });
 
     expect(result.audioStored).toBe(true);
@@ -150,6 +163,45 @@ describe("musicAssets.persistMusicAssets", () => {
     const ids = rows.map((r: { _id: string }) => r._id);
     expect(ids).toContain(pending);
     expect(rows.every((r: { taskId: string }) => r.taskId.length > 0)).toBe(true);
-    expect(rows).toHaveLength(2); // `pending` plus the storage-URL row that has no storageId yet
+    // `pending`, the storage-URL row that has no storageId yet, and the audio-only row (cover still missing)
+    expect(rows).toHaveLength(3);
+  });
+
+  it("refuses to download from hosts outside the allowlist", async () => {
+    const t = createTestEnvironment();
+    const musicId = await insertReadyMusic(t, "https://cdn1.suno.ai/clip-0.mp3");
+    mockFetch({
+      "https://attacker.example/x.mp3": { status: 200, type: "audio/mpeg", body: new Uint8Array([1]) },
+    });
+    const result = await t.action(internal.musicAssets.persistMusicAssets, {
+      musicId,
+      audioCandidates: ["https://attacker.example/x.mp3"],
+    });
+    expect(result.audioStored).toBe(false);
+    expect(globalThis.fetch).not.toHaveBeenCalledWith("https://attacker.example/x.mp3", expect.anything());
+  });
+
+  it("does not overwrite assets attached by a concurrent writer", async () => {
+    const t = createTestEnvironment();
+    const musicId = await insertReadyMusic(t, "https://cdn1.suno.ai/clip-0.mp3");
+    const existing = await t.run(async (ctx) => {
+      const id = await ctx.storage.store(new Blob([new Uint8Array([7])]));
+      await ctx.db.patch(musicId, { audioStorageId: id, imageStorageId: id });
+      return id;
+    });
+    const result = await t.action(internal.musicAssets.persistMusicAssets, { musicId });
+    expect(result.skipped).toBe("already-stored");
+    const music = await t.run((ctx) => ctx.db.get(musicId));
+    expect(music?.audioStorageId).toBe(existing);
+  });
+
+  it("migration stamps attempts so dead rows stop blocking the batch", async () => {
+    const t = createTestEnvironment();
+    const musicId = await insertReadyMusic(t, "https://cdn1.suno.ai/clip-0.mp3");
+    await t.run((ctx) => ctx.db.patch(musicId, { assetRehostAttemptedAt: Date.now() }));
+    const rows = await t.query(internal.musicAssets.listMusicNeedingRehost, { limit: 10 });
+    expect(rows.map((r: { _id: string }) => r._id)).not.toContain(musicId);
+    const retry = await t.query(internal.musicAssets.listMusicNeedingRehost, { limit: 10, includeAttempted: true });
+    expect(retry.map((r: { _id: string }) => r._id)).toContain(musicId);
   });
 });

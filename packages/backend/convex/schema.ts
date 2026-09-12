@@ -147,6 +147,7 @@ export default defineSchema({
     // or get locked behind signed URLs; audioUrl/imageUrl point at these once set.
     audioStorageId: v.optional(v.id("_storage")),
     imageStorageId: v.optional(v.id("_storage")),
+    assetRehostAttemptedAt: v.optional(v.number()), // set by the rehost migration
     primaryVideoId: v.optional(v.id("musicVideos")), // Primary/favorite music video
     status: v.union(
       v.literal("pending"),
