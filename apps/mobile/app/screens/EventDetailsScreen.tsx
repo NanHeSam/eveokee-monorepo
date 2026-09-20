@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert, PanResponder, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@backend/convex';
-import { EventDetailsNavigationProp, EventDetailsRouteProp } from '../navigation/types';
+import { EventDetailsNavigationProp, EventDetailsRouteProp, MainTabsParamList } from '../navigation/types';
 import { Id } from '@backend/convex/convex/_generated/dataModel';
 import { useThemeColors } from '../theme/useThemeColors';
 import { format } from 'date-fns';
@@ -295,6 +296,23 @@ export const EventDetailsScreen = () => {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const handleViewFullEntry = () => {
+        if (!event) return;
+
+        if (navigation.getState().routeNames.includes('DiaryView')) {
+            // Preserve returning to an existing entry when opened from the Diary stack.
+            navigation.navigate('DiaryView', { diaryId: event.diaryId }, { pop: true });
+            return;
+        }
+
+        // Events also appear under Settings; Navigation 7 requires an explicit sibling route.
+        navigation.getParent<BottomTabNavigationProp<MainTabsParamList>>()?.navigate('Diary', {
+            screen: 'DiaryView',
+            params: { diaryId: event.diaryId },
+            pop: true,
+        });
     };
 
     const addPersonFromText = (text: string) => {
@@ -668,7 +686,7 @@ export const EventDetailsScreen = () => {
                 </View>
 
                     <Pressable
-                        onPress={() => navigation.navigate('DiaryView', { diaryId: event.diaryId })}
+                        onPress={handleViewFullEntry}
                         className="w-full py-3 rounded-xl items-center"
                         style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
                     >

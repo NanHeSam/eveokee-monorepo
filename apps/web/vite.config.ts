@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import babel from '@rolldown/plugin-babel'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   resolve: {
     tsconfigPaths: true,
   },
@@ -16,13 +17,10 @@ export default defineConfig({
   },
   plugins: [
     tailwindcss(),
-    react({
-      babel: {
-        plugins: [
-          'react-dev-locator',
-        ],
-      },
+    react(),
+    command === 'serve' && babel({
+      plugins: ['react-dev-locator'],
     }),
   ],
   assetsInclude: ['**/*.md']
-})
+}))

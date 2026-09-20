@@ -61,7 +61,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         image: "./assets/splash-icon.png",
         resizeMode: "cover",
-        backgroundColor: "#F5F0E8"
+        backgroundColor: "#F5F0E8",
+        ios: {
+          // Preserve the full-screen artwork from the legacy splash config.
+          enableFullScreenImage_legacy: true
+        },
+        android: {
+          imageWidth: 200
+        }
       }
     ],
     [

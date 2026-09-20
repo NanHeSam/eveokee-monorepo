@@ -86,7 +86,7 @@ export const SignUpScreen = ({ route }: SignUpScreenProps) => {
   }, []);
 
   const handleSignIn = useCallback(() => {
-    navigation.navigate('SignIn');
+    navigation.popTo('SignIn');
   }, [navigation]);
 
   const finalizeSession = useCallback(

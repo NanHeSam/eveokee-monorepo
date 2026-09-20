@@ -67,6 +67,7 @@ createRoot(document.getElementById('root')!).render(
     >
       <ClerkProvider
         publishableKey={PUBLISHABLE_KEY}
+        appearance={{ cssLayerName: 'clerk' }}
         allowedRedirectOrigins={[
           'http://localhost:5173',
           'https://eveokee.com',
