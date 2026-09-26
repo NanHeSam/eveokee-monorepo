@@ -1,9 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import tsconfigPaths from "vite-tsconfig-paths";
+import tailwindcss from '@tailwindcss/vite'
+import babel from '@rolldown/plugin-babel'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  resolve: {
+    tsconfigPaths: true,
+  },
   build: {
     sourcemap: 'hidden',
   },
@@ -12,14 +16,11 @@ export default defineConfig({
     external: ['posthog-js', 'posthog-js/react'],
   },
   plugins: [
-    react({
-      babel: {
-        plugins: [
-          'react-dev-locator',
-        ],
-      },
+    tailwindcss(),
+    react(),
+    command === 'serve' && babel({
+      plugins: ['react-dev-locator'],
     }),
-    tsconfigPaths(),
   ],
   assetsInclude: ['**/*.md']
-})
+}))

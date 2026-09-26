@@ -8,7 +8,7 @@ Eveokee is a monorepo containing a mobile app (React Native/Expo), web app (Vite
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js 22.13+ (required by the Vitest 5 / RN Testing Library toolchain)
 - pnpm 8+ (package manager)
 - Expo CLI (for mobile development)
 - EAS CLI (for mobile builds)
@@ -68,16 +68,16 @@ pnpm add --filter @backend/convex <package>
 
 ### Monorepo Structure
 
-- **apps/mobile/** - React Native mobile app (Expo SDK 54, React Native 0.81.4)
+- **apps/mobile/** - React Native mobile app (Expo SDK 57, React Native 0.86.3, React 19.2)
   - Uses NativeWind for styling (Tailwind for React Native)
   - React Navigation for routing
-  - Clerk for authentication (@clerk/clerk-expo)
+  - Clerk for authentication (@clerk/expo 4; classic useSignIn/useSignUp come from @clerk/expo/legacy)
   - react-native-track-player for audio playback
 
-- **apps/web/** - Vite web app (React 19, Vite 6)
+- **apps/web/** - Vite web app (React 19, Vite 8, Vitest 5)
   - React Router v7 for routing
-  - Tailwind CSS for styling
-  - Clerk for authentication (@clerk/clerk-react)
+  - Tailwind CSS 4 for styling (config lives in src/index.css, no tailwind.config.js)
+  - Clerk for authentication (@clerk/react 6; use <Show when="signed-in"> instead of SignedIn/SignedOut)
   - Sentry for error tracking
   - PostHog for analytics
 
@@ -175,7 +175,6 @@ Turbo is used for build orchestration. Key pipeline tasks:
 ## Git Workflow
 
 - Main branch: `main`
-- Current branch: `project-setup/all-3p-run`
 - Prefer rebase over merge for clean history (per user preferences)
 
 ## Mobile App Audio Playback
@@ -193,18 +192,14 @@ The mobile app uses `react-native-track-player` v5.0.0-alpha0 for audio playback
 ## CI/CD
 
 GitHub Actions with smart change detection:
-- Only affected apps are built/deployed
-- Web changes don't trigger mobile builds
-- Backend changes trigger validation for both apps
-- Mobile builds via EAS
-- Convex automatic deployment on backend changes
+- `verify` job runs `pnpm lint`, `pnpm type-check` and `pnpm test` on every PR/push (Node 22, frozen lockfile)
+- Path filters (root manifests, lockfile, `packages/backend/**`, `apps/web/**`, `apps/mobile/**`) gate the web build and Convex deploy
+- Convex deploys automatically on push to `main` when backend/root files change (runs from `packages/backend`)
+- Mobile EAS builds are manual: Actions tab -> CI -> "Run workflow" -> choose `preview` or `production`
 
 ### Current Mobile Build Configuration
 
-**iOS only** - Android builds are currently disabled in CI/CD.
-
-**Preview builds** (PRs): iOS simulator builds
-**Production builds** (main branch): iOS production builds
+**iOS only** - Android builds are not configured (no Android credentials in EAS).
 
 ### Re-enabling Android Builds
 
@@ -234,9 +229,8 @@ To add Android builds back to CI/CD:
    }
    ```
 
-3. **Uncomment Android build in CI** ([.github/workflows/ci.yml](.github/workflows/ci.yml)):
-   - Preview builds (line ~105): Add Android build step
-   - Production builds (line ~126-128): Uncomment the Android build step
+3. **Add an Android step to the `build-mobile` job** in [.github/workflows/ci.yml](.github/workflows/ci.yml)
+   (mirror the iOS `eas build` step with `--platform android`).
 
 4. **Test locally** before pushing:
    ```bash

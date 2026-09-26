@@ -298,7 +298,7 @@ export default function Profile() {
                   {!isEditing && (
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="px-4 py-2 !bg-accent-mint text-white rounded-lg hover:!bg-accent-mint/90 transition-colors text-sm font-semibold"
+                      className="px-4 py-2 bg-accent-mint! text-white rounded-lg hover:bg-accent-mint/90! transition-colors text-sm font-semibold"
                     >
                       Edit Settings
                     </button>

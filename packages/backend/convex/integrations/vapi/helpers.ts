@@ -122,15 +122,15 @@ export function buildVapiAssistant(
     dayOfWeek
   );
   
-  // Build transcriber with proper SDK type (DeepgramTranscriber)
-  const transcriber: Vapi.DeepgramTranscriber = {
+  // Build transcriber with proper SDK type (discriminated Deepgram variant)
+  const transcriber: Vapi.CreateAssistantDtoTranscriber.Deepgram = {
     provider: VAPI_TRANSCRIBER_PROVIDER,
     model: Vapi.DeepgramTranscriberModel.Nova2,
     language: Vapi.DeepgramTranscriberLanguage.En,
   };
   
-  // Build model with proper SDK type (OpenAiModel)
-  const model: Vapi.OpenAiModel = {
+  // Build model with proper SDK type (discriminated OpenAI variant)
+  const model: Vapi.CreateAssistantDtoModel.Openai = {
     provider: "openai",
     model: VAPI_MODEL_NAME,
     messages: [
@@ -146,11 +146,11 @@ export function buildVapiAssistant(
     ]
   };
   
-  // Build voice with proper SDK type (CartesiaVoice)
-  const voice: Vapi.CartesiaVoice = {
+  // Build voice with proper SDK type (discriminated Cartesia variant)
+  const voice: Vapi.CreateAssistantDtoVoice.Cartesia = {
     provider: "cartesia",
     voiceId: DEFAULT_VOICE_ID,
-    model: Vapi.CartesiaVoice.Model.SonicMultilingual,
+    model: Vapi.CartesiaVoiceModel.SonicMultilingual,
   };
   
   const assistant: Vapi.CreateAssistantDto = {
@@ -158,12 +158,12 @@ export function buildVapiAssistant(
     model,
     voice,
     firstMessage: "",
-    firstMessageMode: Vapi.CreateAssistantDto.FirstMessageMode.AssistantSpeaksFirstWithModelGeneratedMessage,
+    firstMessageMode: Vapi.CreateAssistantDtoFirstMessageMode.AssistantSpeaksFirstWithModelGeneratedMessage,
     name: VAPI_ASSISTANT_NAME,
     server: {
       url: webhookUrl,
     },
-    serverMessages: [Vapi.CreateAssistantDto.ServerMessages.Item.EndOfCallReport],
+    serverMessages: [Vapi.CreateAssistantDtoServerMessagesItem.EndOfCallReport],
     analysisPlan: {
       successEvaluationPlan: {
         rubric: "PassFail",

@@ -95,7 +95,7 @@ export const VideoPlayerView = ({
       {isOverlayVisible ? (
         <>
           <View
-            style={[StyleSheet.absoluteFillObject, { backgroundColor: overlayColor }]}
+            style={[StyleSheet.absoluteFill, { backgroundColor: overlayColor }]}
             pointerEvents="none"
           />
           <View

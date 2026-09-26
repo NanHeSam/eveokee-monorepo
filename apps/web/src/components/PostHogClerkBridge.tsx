@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useAuth } from '@clerk/clerk-react'
+import { useAuth } from '@clerk/react'
 import { usePostHog } from 'posthog-js/react'
 
 export default function PostHogClerkBridge() {

@@ -82,7 +82,7 @@ export default function App() {
             </Route>
             
             {/* Routes with custom background layout */}
-            <Route path="/share" element={<LayoutRoute className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800" />} errorElement={<RouteErrorBoundary />}>
+            <Route path="/share" element={<LayoutRoute className="bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800" />} errorElement={<RouteErrorBoundary />}>
               <Route path=":shareId" element={<Share />} />
             </Route>
             

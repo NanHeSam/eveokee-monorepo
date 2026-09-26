@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Check, Lock, Sparkles, Zap } from "lucide-react";
-import { useAuth, SignedIn, SignedOut } from "@clerk/clerk-react";
+import { useAuth, Show } from "@clerk/react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useQuery } from "convex/react";
@@ -118,7 +118,7 @@ export default function Pricing() {
   const isCurrentPlan = hasActiveSubscription && currentTierMatches;
 
   return (
-    <div className="bg-gradient-to-b from-white via-gray-50 to-white dark:from-gray-900 dark:via-gray-900/95 dark:to-gray-900 text-gray-900 dark:text-gray-100">
+    <div className="bg-linear-to-b from-white via-gray-50 to-white dark:from-gray-900 dark:via-gray-900/95 dark:to-gray-900 text-gray-900 dark:text-gray-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
         <div className="text-center max-w-3xl mx-auto">
           <p className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent-mint/10 text-accent-mint text-sm font-semibold mb-6">
@@ -186,29 +186,29 @@ export default function Pricing() {
               </button>
             ) : (
               <>
-                <SignedIn>
+                <Show when="signed-in">
                   <button
                     onClick={() => navigate("/dashboard")}
                     className="mt-10 w-full rounded-xl border border-gray-200 dark:border-gray-700 py-3 text-base font-semibold hover:border-accent-mint/60 transition-colors"
                   >
                     Get started
                   </button>
-                </SignedIn>
-                <SignedOut>
+                </Show>
+                <Show when="signed-out">
                   <button
                     onClick={() => navigate("/sign-up")}
                     className="mt-10 w-full rounded-xl border border-gray-200 dark:border-gray-700 py-3 text-base font-semibold hover:border-accent-mint/60 transition-colors"
                   >
                     Get started
                   </button>
-                </SignedOut>
+                </Show>
               </>
             )}
           </div>
 
           {/* Premium Tier */}
           <div className="relative overflow-hidden rounded-3xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl shadow-accent-mint/10">
-            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-accent-mint via-accent-mint/60 to-accent-mint"></div>
+            <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-accent-mint via-accent-mint/60 to-accent-mint"></div>
             <div className="p-8 sm:p-10">
               <div className="flex items-center gap-3 mb-6">
                 <span className="px-3 py-1 rounded-full bg-accent-mint/10 text-accent-mint text-xs font-semibold uppercase tracking-wide">
@@ -261,7 +261,7 @@ export default function Pricing() {
 
           {/* Memory Collector Tier */}
           <div className="rounded-3xl border border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-8 sm:p-10 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(82,199,160,0.08),_transparent_55%)] pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(82,199,160,0.08),transparent_55%)] pointer-events-none" />
             <div className="relative">
               <span className="px-3 py-1 rounded-full bg-gray-200/70 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-xs font-semibold uppercase tracking-wide">
                 Memory Collector
@@ -309,22 +309,22 @@ export default function Pricing() {
             >
               Watch demo
             </a>
-            <SignedOut>
+            <Show when="signed-out">
               <button
                 onClick={() => navigate("/sign-in")}
                 className="px-5 py-3 rounded-xl bg-accent-mint text-white text-sm font-semibold hover:bg-accent-mint/90 transition-colors"
               >
                 Log in
               </button>
-            </SignedOut>
-            <SignedIn>
+            </Show>
+            <Show when="signed-in">
               <button
                 onClick={() => navigate("/dashboard")}
                 className="px-5 py-3 rounded-xl bg-accent-mint text-white text-sm font-semibold hover:bg-accent-mint/90 transition-colors"
               >
                 Go to Dashboard
               </button>
-            </SignedIn>
+            </Show>
           </div>
         </div>
       </div>

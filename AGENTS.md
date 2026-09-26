@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Workspace Basics
-- Node 20+ and pnpm 8+ are required; install dependencies with `pnpm install`.
+- Node 22+ and pnpm 8+ are required; install dependencies with `pnpm install`.
 - Prefer `pnpm` (with `--filter` when targeting a package) over `npm` or `yarn`.
 - Respect existing linting, formatting, and file organization; match local conventions instead of reformatting entire files.
 - Add new automated tests beside the code under a `__tests__` folder and reuse the package’s configured runner (Vitest for backend/web, Jest for mobile).

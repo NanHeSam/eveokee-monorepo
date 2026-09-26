@@ -1,4 +1,4 @@
-import type { TokenCache } from '@clerk/clerk-expo';
+import type { TokenCache } from '@clerk/expo';
 import * as SecureStore from 'expo-secure-store';
 
 export const tokenCache: TokenCache = {

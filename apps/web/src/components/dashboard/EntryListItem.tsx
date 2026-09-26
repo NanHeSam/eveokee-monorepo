@@ -188,7 +188,7 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
       >
         <div className="flex gap-4">
           {/* Thumbnail */}
-          <div className="flex-shrink-0 relative group/thumbnail">
+          <div className="shrink-0 relative group/thumbnail">
             {music.imageUrl ? (
               <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700">
                 <img
@@ -214,7 +214,7 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
                 )}
               </div>
             ) : (
-              <div className="relative w-20 h-20 rounded-lg bg-gradient-to-br from-accent-mint to-accent-apricot flex items-center justify-center">
+              <div className="relative w-20 h-20 rounded-lg bg-linear-to-br from-accent-mint to-accent-apricot flex items-center justify-center">
                 <Music className="w-8 h-8 text-white" />
                 {isReady && (
                   <button
@@ -508,7 +508,7 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
       >
         <div className="flex gap-4">
           {/* Thumbnail */}
-          <div className="flex-shrink-0 relative group/thumbnail">
+          <div className="shrink-0 relative group/thumbnail">
             {music.imageUrl ? (
               <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700">
                 <img
@@ -534,7 +534,7 @@ export default function EntryListItem({ entry, onOpenDiary }: EntryListItemProps
                 )}
               </div>
             ) : (
-              <div className="relative w-20 h-20 rounded-lg bg-gradient-to-br from-accent-mint to-accent-apricot flex items-center justify-center">
+              <div className="relative w-20 h-20 rounded-lg bg-linear-to-br from-accent-mint to-accent-apricot flex items-center justify-center">
                 <Music className="w-8 h-8 text-white" />
                 {isReady && (
                   <button

@@ -165,12 +165,12 @@ describe('DiaryEditScreen - Back Button Logic', () => {
     Alert.alert = jest.fn();
   });
 
-  const renderComponent = (routeParams = {}) => {
+  const renderComponent = async (routeParams = {}) => {
     mockRoute.params = routeParams;
     return render(<DiaryEditScreen />);
   };
 
-  const renderNewDiaryAfterMediaUpload = (mediaItems: any[] = [{ _id: 'media1' }]) => {
+  const renderNewDiaryAfterMediaUpload = async (mediaItems: any[] = [{ _id: 'media1' }]) => {
     let mediaResponse: any[] = mediaItems;
     (useQuery as jest.Mock).mockImplementation((apiPath) => {
       if (apiPath === api.diaryMedia.getDiaryMedia) {
@@ -185,21 +185,21 @@ describe('DiaryEditScreen - Back Button Logic', () => {
       return [];
     });
 
-    const utils = renderComponent({});
+    const utils = await renderComponent({});
     mockRoute.params = { diaryId: 'new-diary1' };
-    utils.rerender(<DiaryEditScreen />);
+    await utils.rerender(<DiaryEditScreen />);
 
     return {
       ...utils,
-      setMedia: (nextMedia: any[]) => {
+      setMedia: async (nextMedia: any[]) => {
         mediaResponse = nextMedia;
-        utils.rerender(<DiaryEditScreen />);
+        await utils.rerender(<DiaryEditScreen />);
       },
     };
   };
 
   describe('Media + No Text scenarios', () => {
-    const renderExistingDiaryWithMedia = () => {
+    const renderExistingDiaryWithMedia = async () => {
       (useQuery as jest.Mock).mockImplementation((apiPath) => {
         if (apiPath === api.diaryMedia.getDiaryMedia) {
           return [{ _id: 'media1' }];
@@ -212,11 +212,11 @@ describe('DiaryEditScreen - Back Button Logic', () => {
         }
         return [];
       });
-      renderComponent({ diaryId: 'diary1', content: '' });
+      await renderComponent({ diaryId: 'diary1', content: '' });
     };
 
-    it('does not warn when editing an existing entry that already has media', () => {
-      renderExistingDiaryWithMedia();
+    it('does not warn when editing an existing entry that already has media', async () => {
+      await renderExistingDiaryWithMedia();
 
       const callback = (mockNavigation as any).beforeRemoveCallback;
       const mockEvent = {
@@ -236,7 +236,7 @@ describe('DiaryEditScreen - Back Button Logic', () => {
         alertButtons = buttons;
       });
 
-      renderNewDiaryAfterMediaUpload();
+      await renderNewDiaryAfterMediaUpload();
 
       const callback = (mockNavigation as any).beforeRemoveCallback;
       const mockEvent = {
@@ -265,8 +265,8 @@ describe('DiaryEditScreen - Back Button Logic', () => {
     it('silently deletes new empty entries even if media was previously added', async () => {
       mockDeleteDiary.mockResolvedValue(null);
 
-      const utils = renderNewDiaryAfterMediaUpload();
-      utils.setMedia([]);
+      const utils = await renderNewDiaryAfterMediaUpload();
+      await utils.setMedia([]);
 
       const callback = (mockNavigation as any).beforeRemoveCallback;
       const mockEvent = {
@@ -284,7 +284,7 @@ describe('DiaryEditScreen - Back Button Logic', () => {
   });
 
   describe('Media + Text scenarios', () => {
-    const renderExistingDiaryWithText = () => {
+    const renderExistingDiaryWithText = async () => {
       (useQuery as jest.Mock).mockImplementation((apiPath) => {
         if (apiPath === api.diaryMedia.getDiaryMedia) {
           return [{ _id: 'media1' }];
@@ -302,7 +302,7 @@ describe('DiaryEditScreen - Back Button Logic', () => {
     };
 
     it('shows discard changes warning when existing text is edited', async () => {
-      const { getByPlaceholderText } = renderExistingDiaryWithText();
+      const { getByPlaceholderText } = await renderExistingDiaryWithText();
       
       await act(async () => {
         fireEvent.changeText(getByPlaceholderText('Write your story...'), 'Updated text');
@@ -335,7 +335,7 @@ describe('DiaryEditScreen - Back Button Logic', () => {
         alertButtons = buttons;
       });
 
-      const { getByPlaceholderText } = renderExistingDiaryWithText();
+      const { getByPlaceholderText } = await renderExistingDiaryWithText();
       
       await act(async () => {
         fireEvent.changeText(getByPlaceholderText('Write your story...'), 'Updated text');
@@ -382,9 +382,9 @@ describe('DiaryEditScreen - Back Button Logic', () => {
         return [];
       });
 
-      const utils = renderComponent({});
+      const utils = await renderComponent({});
       mockRoute.params = { diaryId: 'new-diary1' };
-      utils.rerender(<DiaryEditScreen />);
+      await utils.rerender(<DiaryEditScreen />);
 
       const callback = (mockNavigation as any).beforeRemoveCallback;
       const mockEvent = {
@@ -410,7 +410,7 @@ describe('DiaryEditScreen - Back Button Logic', () => {
         return undefined;
       });
 
-      renderComponent({ diaryId: 'existing-diary1' });
+      await renderComponent({ diaryId: 'existing-diary1' });
 
       // Trigger beforeRemove
       const beforeRemoveCall = mockNavigation.addListener.mock.calls.find(
@@ -443,7 +443,7 @@ describe('DiaryEditScreen - Back Button Logic', () => {
         return undefined;
       });
 
-      renderComponent({ diaryId: 'diary1', content: 'Some text' });
+      await renderComponent({ diaryId: 'diary1', content: 'Some text' });
 
       // Trigger beforeRemove
       const beforeRemoveCall = mockNavigation.addListener.mock.calls.find(
@@ -482,9 +482,9 @@ describe('DiaryEditScreen - Back Button Logic', () => {
       });
 
       // New entry (no diaryId in initial params) that later gets an id
-      const renderResult = renderComponent({ content: 'Some text' });
+      const renderResult = await renderComponent({ content: 'Some text' });
       mockRoute.params = { diaryId: 'new-diary1', content: 'Some text' };
-      renderResult.rerender(<DiaryEditScreen />);
+      await renderResult.rerender(<DiaryEditScreen />);
 
       const callback = (mockNavigation as any).beforeRemoveCallback;
       const mockEvent = {
@@ -530,7 +530,7 @@ describe('DiaryEditScreen - Back Button Logic', () => {
       });
 
       // New entry (no diaryId in initial params)
-      renderComponent({ content: 'Some text' });
+      await renderComponent({ content: 'Some text' });
 
       // Trigger beforeRemove
       const beforeRemoveCall = mockNavigation.addListener.mock.calls.find(
@@ -571,7 +571,7 @@ describe('DiaryEditScreen - Back Button Logic', () => {
         return undefined;
       });
 
-      renderComponent({ diaryId: 'diary1' });
+      await renderComponent({ diaryId: 'diary1' });
 
       // Trigger beforeRemove
       const beforeRemoveCall = mockNavigation.addListener.mock.calls.find(
@@ -603,7 +603,7 @@ describe('DiaryEditScreen - Back Button Logic', () => {
         return undefined;
       });
 
-      const { rerender } = renderComponent({ diaryId: 'diary1' });
+      const { rerender } = await renderComponent({ diaryId: 'diary1' });
 
       // Simulate saving state - we'd need to trigger handleDone first
       // For now, just verify the listener checks isSaving
@@ -633,7 +633,7 @@ describe('DiaryEditScreen - Back Button Logic', () => {
         alertButtons = buttons;
       });
 
-      const { getByTestId } = renderNewDiaryAfterMediaUpload();
+      const { getByTestId } = await renderNewDiaryAfterMediaUpload();
 
       // First, trigger back button press which calls handleBackPress
       // This should show an alert for new diary with media
@@ -683,7 +683,7 @@ describe('DiaryEditScreen - Back Button Logic', () => {
         alertButtons = buttons;
       });
 
-      renderNewDiaryAfterMediaUpload();
+      await renderNewDiaryAfterMediaUpload();
 
       const callback = (mockNavigation as any).beforeRemoveCallback;
       const mockEvent = {
@@ -716,7 +716,7 @@ describe('DiaryEditScreen - Back Button Logic', () => {
         alertButtons = buttons;
       });
 
-      renderNewDiaryAfterMediaUpload();
+      await renderNewDiaryAfterMediaUpload();
 
       const callback = (mockNavigation as any).beforeRemoveCallback;
       const mockEvent = {

@@ -80,7 +80,7 @@ export default function FAQSection() {
                     {faq.question}
                   </h3>
 
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     <motion.div
                       animate={{ rotate: isOpen ? 180 : 0 }}
                       transition={shouldReduceMotion ? {} : { duration: 0.3 }}

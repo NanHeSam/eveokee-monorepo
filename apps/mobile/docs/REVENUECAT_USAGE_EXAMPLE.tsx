@@ -9,7 +9,7 @@ import { useEffect, useCallback } from 'react';
 import { Image, Text, TouchableOpacity, View, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { useAuth, useUser } from '@clerk/clerk-expo';
+import { useAuth, useUser } from '@clerk/expo';
 import Purchases, { PurchasesPackage } from 'react-native-purchases';
 
 import { useRevenueCatSubscription } from '../app/hooks/useRevenueCatSubscription';

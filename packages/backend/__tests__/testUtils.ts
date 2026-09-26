@@ -1,7 +1,7 @@
-import { vi } from "vitest";
+import { vi, type Mock } from "vitest";
 
-export type MockFunction<Args extends unknown[] = unknown[], Return = unknown> = ReturnType<
-  typeof vi.fn<Args, Return>
+export type MockFunction<Args extends unknown[] = unknown[], Return = unknown> = Mock<
+  (...args: Args) => Return
 >;
 
 export interface MockMutationCtx {

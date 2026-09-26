@@ -77,13 +77,13 @@ export default function EmotionalHookSection({ onPlayTrack }: EmotionalHookSecti
           
           {/* Right Column - Track Player */}
           <div className="order-1 lg:order-2">
-            <div className="bg-gradient-to-br from-accent-mint/10 to-accent-apricot/10 rounded-2xl p-8">
+            <div className="bg-linear-to-br from-accent-mint/10 to-accent-apricot/10 rounded-2xl p-8">
               <div className="text-center">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Generated Track</h3>
                 <p className="text-gray-600 dark:text-gray-300 mb-8">Your words, transformed into music</p>
                 
                 {/* Album Art Placeholder */}
-                <div className="w-48 h-48 mx-auto mb-6 bg-gradient-to-br from-accent-mint to-accent-apricot rounded-2xl shadow-lg flex items-center justify-center">
+                <div className="w-48 h-48 mx-auto mb-6 bg-linear-to-br from-accent-mint to-accent-apricot rounded-2xl shadow-lg flex items-center justify-center">
                   <img 
                     src="" 
                     alt="Album artwork showing abstract musical visualization with warm gradient colors representing the emotional tone of the diary entry"
@@ -102,7 +102,7 @@ export default function EmotionalHookSection({ onPlayTrack }: EmotionalHookSecti
                   <img 
                     src="" 
                     alt="Audio waveform visualization with mint green accent showing the rhythm and melody pattern of the generated song"
-                    className="w-full h-12 bg-gradient-to-r from-accent-mint/30 to-accent-mint/60 rounded-lg"
+                    className="w-full h-12 bg-linear-to-r from-accent-mint/30 to-accent-mint/60 rounded-lg"
                   />
                 </div>
                 

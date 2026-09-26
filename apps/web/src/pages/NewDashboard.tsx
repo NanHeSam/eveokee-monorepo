@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useUser } from '@clerk/clerk-react';
+import { useUser } from '@clerk/react';
 import { useQuery } from 'convex/react';
 import { api } from '@backend/convex';
 import ConvexQueryBoundary from '@/components/ConvexQueryBoundary';

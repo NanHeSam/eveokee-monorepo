@@ -159,7 +159,7 @@ const PLAN_CONFIG = {
 ## Dependencies
 
 - `react-native-iap` - In-app purchase handling
-- `@clerk/clerk-expo` - User authentication
+- `@clerk/expo` - User authentication
 - `convex` - Backend database and functions
 - Apple Developer Account (for production)
 - App Store Connect (for product configuration)

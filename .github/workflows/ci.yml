@@ -4,6 +4,14 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      mobile_profile:
+        description: "EAS build profile to run (leave empty to skip mobile build)"
+        required: false
+        default: ""
+        type: choice
+        options: ["", "preview", "production"]
 
 jobs:
   detect-changes:
@@ -16,117 +24,100 @@ jobs:
       mobile: ${{ steps.filter.outputs.mobile }}
       convex: ${{ steps.filter.outputs.convex }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
             web:
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'turbo.json'
+              - 'packages/backend/**'
               - 'apps/web/**'
-              - 'packages/backend/convex/**'
             mobile:
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'turbo.json'
+              - 'packages/backend/**'
               - 'apps/mobile/**'
-              - 'packages/backend/convex/**'
             convex:
-              - 'packages/backend/convex/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'packages/backend/**'
 
-  lint-and-type-check:
+  verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
-          version: 8
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
+          node-version: 22
           cache: 'pnpm'
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm type-check
+      - run: pnpm test
 
   deploy-convex:
-    needs: [detect-changes, lint-and-type-check]
-    if: needs.detect-changes.outputs.convex == 'true' && github.ref == 'refs/heads/main'
+    needs: [detect-changes, verify]
+    if: needs.detect-changes.outputs.convex == 'true' && github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
-          version: 8
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
+          node-version: 22
           cache: 'pnpm'
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
       - name: Deploy to Convex
+        working-directory: packages/backend
         run: npx convex deploy
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
 
   build-web:
-    needs: [detect-changes, lint-and-type-check]
+    needs: [detect-changes, verify]
     if: needs.detect-changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
-          version: 8
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
+          node-version: 22
           cache: 'pnpm'
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
       - run: pnpm build:web
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: web-build
           path: apps/web/dist
 
-  build-mobile-preview:
-    if: false  # Disabled - trigger manually via workflow_dispatch
+  build-mobile:
+    needs: verify
+    # Manual only: run from the Actions tab with an EAS profile.
+    if: github.event_name == 'workflow_dispatch' && inputs.mobile_profile != ''
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
-          version: 8
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
+          node-version: 22
           cache: 'pnpm'
-      - uses: expo/expo-github-action@v8
+      - uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385 # v9.0.0
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
-      - run: pnpm install
-      - name: Build iOS preview
+      - run: pnpm install --frozen-lockfile
+      # Android build not configured yet (no Android credentials in EAS); see CLAUDE.md.
+      - name: Build iOS (${{ inputs.mobile_profile }})
         working-directory: apps/mobile
-        run: eas build --platform ios --profile preview --non-interactive --no-wait
-
-  build-mobile-production:
-    if: false  # Disabled - trigger manually via workflow_dispatch
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
-        with:
-          version: 8
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
-      - uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-      - run: pnpm install
-      # Android build commented out - add back later when Android credentials are configured
-      # - name: Build Android
-      #   working-directory: apps/mobile
-      #   run: eas build --platform android --profile production --non-interactive --no-wait
-      - name: Build iOS
-        working-directory: apps/mobile
-        run: eas build --platform ios --profile production --non-interactive --no-wait
+        run: eas build --platform ios --profile ${{ inputs.mobile_profile }} --non-interactive --no-wait

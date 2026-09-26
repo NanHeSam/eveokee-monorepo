@@ -80,7 +80,7 @@ export default function DemoCard(props: {
             {lyric}
           </p>
           {isOverflowing && !(scrolledEnough || atBottom) && (
-            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white dark:from-gray-800 to-transparent flex items-end justify-center">
+            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 bg-linear-to-t from-white dark:from-gray-800 to-transparent flex items-end justify-center">
               <span className="mb-2 px-2 py-1 text-xs text-gray-600 dark:text-gray-300 bg-white/80 dark:bg-gray-800/80 rounded-full border border-gray-200 dark:border-gray-600">
                 Scroll for more
               </span>
@@ -90,14 +90,14 @@ export default function DemoCard(props: {
       </div>
 
       {/* Track Info */}
-      <div className="mb-6 flex-shrink-0">
+      <div className="mb-6 shrink-0">
         <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{title}</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400">{date}</p>
       </div>
 
       {/* Album Artwork */}
-      <div className="mb-6 flex-shrink-0">
-        <div className="w-full aspect-[16/9] bg-gradient-to-r from-gray-100 to-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
+      <div className="mb-6 shrink-0">
+        <div className="w-full aspect-video bg-linear-to-r from-gray-100 to-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
           {imageUrl ? (
             <img
               src={imageUrl}

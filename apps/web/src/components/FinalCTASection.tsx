@@ -50,7 +50,7 @@ export default function FinalCTASection() {
 
   if (isSubmitted) {
     return (
-      <section className="py-20 bg-gradient-to-br from-accent-mint to-accent-apricot dark:from-gray-800 dark:to-gray-700">
+      <section className="py-20 bg-linear-to-br from-accent-mint to-accent-apricot dark:from-gray-800 dark:to-gray-700">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ scale: shouldReduceMotion ? 1 : 0.9, opacity: shouldReduceMotion ? 1 : 0 }}
@@ -75,7 +75,7 @@ export default function FinalCTASection() {
   }
 
   return (
-    <section className="py-20 bg-gradient-to-br from-accent-mint to-accent-apricot dark:from-gray-800 dark:to-gray-700">
+    <section className="py-20 bg-linear-to-br from-accent-mint to-accent-apricot dark:from-gray-800 dark:to-gray-700">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <motion.div
           initial={{ opacity: shouldReduceMotion ? 1 : 0, y: shouldReduceMotion ? 0 : 30 }}
@@ -131,15 +131,15 @@ export default function FinalCTASection() {
           {/* Benefits */}
           <div className="grid sm:grid-cols-3 gap-6 text-sm text-gray-600 dark:text-gray-300">
             <div className="flex items-center justify-center gap-2">
-              <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+              <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
               <span>Launch notifications</span>
             </div>
             <div className="flex items-center justify-center gap-2">
-              <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+              <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
               <span>Updates & news</span>
             </div>
             <div className="flex items-center justify-center gap-2">
-              <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+              <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
               <span>No spam, ever</span>
             </div>
           </div>

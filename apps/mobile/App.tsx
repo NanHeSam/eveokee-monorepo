@@ -1,7 +1,7 @@
 import './global.css';
 
 import { useRef, useEffect, useCallback } from 'react';
-import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
+import { ClerkProvider, useAuth } from '@clerk/expo';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { ConvexReactClient } from 'convex/react';
 import { Ionicons } from '@expo/vector-icons';
@@ -77,7 +77,7 @@ const SettingsStack = createNativeStackNavigator<SettingsStackParamList>();
 const Tab = createBottomTabNavigator();
 
 const DiaryStackNavigator = () => (
-  <DiaryStack.Navigator screenOptions={{ headerShown: false }}>
+  <DiaryStack.Navigator id="DiaryStack" screenOptions={{ headerShown: false }}>
     <DiaryStack.Screen name="DiaryHome" component={DiaryScreen} />
     <DiaryStack.Screen name="DiaryView" component={DiaryViewScreen} />
     <DiaryStack.Screen name="DiaryEdit" component={DiaryEditScreen} />
@@ -88,7 +88,7 @@ const DiaryStackNavigator = () => (
 );
 
 const SettingsStackNavigator = () => (
-  <SettingsStack.Navigator screenOptions={{ headerShown: false }}>
+  <SettingsStack.Navigator id="SettingsStack" screenOptions={{ headerShown: false }}>
     <SettingsStack.Screen name="SettingsHome" component={SettingsScreen} />
     <SettingsStack.Screen name="Account" component={AccountScreen} />
     <SettingsStack.Screen name="People" component={PeopleScreen} />
@@ -103,6 +103,7 @@ const MainTabs = () => {
 
   return (
     <Tab.Navigator
+      id="MainTabs"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarShowLabel: true,
@@ -180,7 +181,7 @@ const RootNavigator = ({ navigationRef, onNotificationNavigation }: {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator id="RootStack" screenOptions={{ headerShown: false }}>
       {isSignedIn ? (
         <Stack.Screen name="MainTabs" component={MainTabs} />
       ) : (

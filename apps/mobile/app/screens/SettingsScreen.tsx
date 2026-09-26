@@ -5,7 +5,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import Purchases from 'react-native-purchases';
 
-import { useAuth, useUser } from '@clerk/clerk-expo';
+import { useAuth, useUser } from '@clerk/expo';
 
 import { useThemeColors } from '../theme/useThemeColors';
 import { useRevenueCatSubscription } from '../hooks/useRevenueCatSubscription';

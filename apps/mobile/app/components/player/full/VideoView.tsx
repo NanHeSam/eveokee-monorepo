@@ -96,14 +96,14 @@ export const VideoView = ({
   const renderBackground = () => {
     if (!artwork) {
       return (
-        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.surface }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.surface }]} />
       );
     }
 
     return (
       <ImageBackground
         source={{ uri: artwork }}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
         imageStyle={{ opacity: 0.25 }}
         resizeMode="cover"
       />
@@ -135,7 +135,7 @@ export const VideoView = ({
         {...iosVideoProps}
       />
       {isBuffering ? (
-        <View style={[StyleSheet.absoluteFillObject, styles.centerContent]}>
+        <View style={[StyleSheet.absoluteFill, styles.centerContent]}>
           <ActivityIndicator size="large" color={colors.accentMint} />
         </View>
       ) : null}

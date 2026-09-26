@@ -15,7 +15,7 @@ export const MusicEmbed: React.FC<MusicEmbedProps> = ({
   id
 }) => {
   return (
-    <div className="my-8 p-6 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm">
+    <div className="my-8 p-6 bg-linear-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm">
       <div className="flex items-center space-x-3 mb-4">
         <div className="w-3 h-3 bg-accent-mint rounded-full"></div>
         <h4 className="text-lg font-semibold text-gray-800 dark:text-white">🎧 {title}</h4>

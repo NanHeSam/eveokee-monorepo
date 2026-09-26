@@ -1,4 +1,4 @@
-import { useUser } from '@clerk/clerk-react';
+import { useUser } from '@clerk/react';
 import { useQuery } from 'convex/react';
 import { api } from '@backend/convex';
 import {
@@ -226,7 +226,7 @@ function DiaryCarousel({ diaries }: DiaryCarouselProps) {
         {diaries.map((diary) => (
           <div
             key={diary._id}
-            className="flex-shrink-0 w-[350px] snap-start"
+            className="shrink-0 w-[350px] snap-start"
           >
             <DiaryCard diary={diary} />
           </div>
@@ -295,7 +295,7 @@ function DiaryCard({ diary }: DiaryCardProps) {
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
       {/* Music Image if available */}
       {diary.primaryMusic?.imageUrl ? (
-        <div className="aspect-video bg-gradient-to-br from-purple-400 to-pink-400 overflow-hidden">
+        <div className="aspect-video bg-linear-to-br from-purple-400 to-pink-400 overflow-hidden">
           <img
             src={diary.primaryMusic.imageUrl}
             alt={diary.primaryMusic.title || 'Diary music'}
@@ -303,7 +303,7 @@ function DiaryCard({ diary }: DiaryCardProps) {
           />
         </div>
       ) : diary.primaryMusic?.status === 'pending' ? (
-        <div className="aspect-video bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center">
+        <div className="aspect-video bg-linear-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center">
           <Loader2 className="w-12 h-12 text-gray-400 animate-spin" />
         </div>
       ) : null}
