@@ -7,6 +7,12 @@
 - Add new automated tests beside the code under a `__tests__` folder and reuse the package’s configured runner (Vitest for backend/web, Jest for mobile).
 - Document any new top-level scripts or tooling you add, and note every test command you execute (and whether it passed) in your final response.
 
+## Planning and Issue Tracking
+- Work is tracked in **Linear** (team `Eveoky`), not GitHub Issues — this repo is public.
+- Noticed something outside your current task? File it in Linear with the `needs-spec` label and keep going. Do not fix it inline.
+- Only pick up issues labelled `agent-ready`. Never pick up `human-only`.
+- Full conventions, including what `agent-ready` requires and the definition of done, are in [CLAUDE.md](CLAUDE.md#planning-and-issue-tracking).
+
 ## Core Scripts (root `package.json`)
 - `pnpm dev` launches Convex, web, and mobile dev servers together via Turbo/concurrently.
 - `pnpm dev:convex`, `pnpm dev:web`, `pnpm dev:mobile` start each target individually (mobile uses Expo dev client).
