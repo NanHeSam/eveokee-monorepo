@@ -103,13 +103,15 @@ export class Logger {
     error?: Error | unknown,
     metadata?: Record<string, unknown>
   ): void {
+    // Redact user content at the boundary so a careless call site cannot
+    // write diary text, lyrics, prompts or highlights to the logs.
     const logEntry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
       message,
-      context: Object.keys(this.context).length > 0 ? this.context : undefined,
+      context: Object.keys(this.context).length > 0 ? redactUserContent(this.context) : undefined,
       duration: this.getElapsedTime(),
-      metadata,
+      metadata: metadata ? redactUserContent(metadata) : undefined,
     };
 
     // Serialize error if present
@@ -174,6 +176,34 @@ export function getErrorMessage(error: unknown): string {
 }
 
 /**
+ * AI SDK errors whose message embeds the model input or output (e.g.
+ * "JSON parsing failed: Text: ..." or "Type validation failed: Value: ...").
+ */
+const CONTENT_BEARING_ERROR_NAMES = new Set([
+  'AI_JSONParseError',
+  'AI_TypeValidationError',
+  'AI_InvalidResponseDataError',
+]);
+
+/**
+ * Error description that is safe to log or rethrow from code handling user
+ * content: keeps the error name and provider status, drops messages known to
+ * echo the prompt or the generated text, and caps the length of the rest.
+ */
+export function describeErrorForLog(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return typeof error === 'string' ? '[non-Error thrown]' : 'Unknown error';
+  }
+  const status = (error as { statusCode?: unknown }).statusCode;
+  const statusPart = typeof status === 'number' ? ` (status ${status})` : '';
+  if (CONTENT_BEARING_ERROR_NAMES.has(error.name)) {
+    return `${error.name}${statusPart}`;
+  }
+  const message = error.message.length > 300 ? `${error.message.slice(0, 300)}…` : error.message;
+  return `${error.name}${statusPart}: ${message}`;
+}
+
+/**
  * Sanitize sensitive data from logs (for PII protection)
  */
 export function sanitizeForLogging(data: Record<string, unknown>): Record<string, unknown> {
@@ -194,6 +224,81 @@ export function sanitizeForLogging(data: Record<string, unknown>): Record<string
   }
 
   return sanitized;
+}
+
+/**
+ * Keys whose values are (or are derived from) private user content: diary
+ * text, call transcripts, generated lyrics, AI prompts built from them,
+ * extracted events and people, relationship highlights, and raw provider
+ * payloads that echo any of these back. Matched case-insensitively against
+ * the exact key name.
+ */
+export const USER_CONTENT_KEYS: ReadonlySet<string> = new Set([
+  "content",
+  "text",
+  "diary",
+  "diarycontent",
+  "diaryentry",
+  "diarytext",
+  "transcript",
+  "transcripttext",
+  "summary",
+  "lyric",
+  "lyrics",
+  "prompt",
+  "systemprompt",
+  "promptpreview",
+  "scriptprompt",
+  "script",
+  "videoscript",
+  "highlight",
+  "highlightpreview",
+  "title",
+  "songdata",
+  "events",
+  "people",
+  "personname",
+  "messages",
+  "payload",
+  "body",
+  "request",
+  "param",
+]);
+
+function describeRedacted(value: unknown): string {
+  if (typeof value === "string") return `[redacted ${value.length} chars]`;
+  if (Array.isArray(value)) return `[redacted array(${value.length})]`;
+  if (value && typeof value === "object") return "[redacted object]";
+  return "[redacted]";
+}
+
+/**
+ * Return a copy of `data` with user content replaced by a size marker, so
+ * logs keep IDs and counts but never the content itself. Recurses into
+ * nested objects and arrays.
+ */
+export function redactUserContent<T>(data: T): T {
+  const visit = (value: unknown, depth: number): unknown => {
+    if (depth > 8 || value === null || typeof value !== "object") {
+      return value;
+    }
+    if (Array.isArray(value)) {
+      return value.map((item) => visit(item, depth + 1));
+    }
+    if (value instanceof Error) {
+      return value;
+    }
+    const out: Record<string, unknown> = {};
+    for (const [key, inner] of Object.entries(value as Record<string, unknown>)) {
+      if (inner !== undefined && inner !== null && USER_CONTENT_KEYS.has(key.toLowerCase())) {
+        out[key] = describeRedacted(inner);
+      } else {
+        out[key] = visit(inner, depth + 1);
+      }
+    }
+    return out;
+  };
+  return visit(data, 0) as T;
 }
 
 /**

@@ -9,6 +9,7 @@ import {
   SUNO_DEFAULT_MODEL,
 } from "./utils/constants";
 import { getOpenAIClient } from "./integrations/openai/client";
+import { describeErrorForLog } from "./utils/logger";
 import { createSunoClientFromEnv } from "./integrations/suno/client";
 
 /**
@@ -87,9 +88,13 @@ export const requestSunoGeneration = internalAction({
         diaryContent: args.diary.content,
         style: args.diary.style,
       });
-      console.log("Generated song data:", songData);
+      console.log("Generated song data", {
+        diaryId: args.diary.diaryId,
+        lyricLength: songData.lyric.length,
+      });
     } catch (error) {
-      console.error("OpenAI API error:", error);
+      // Message only: AI SDK errors carry the request body (the diary text).
+      console.error("AI error during song generation:", describeErrorForLog(error));
       
       // Decrement usage counter if we have usage tracking info
       if (args.usageResult) {
@@ -102,13 +107,11 @@ export const requestSunoGeneration = internalAction({
         }
       }
       
-      throw new Error(`Failed to generate song data from OpenAI: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Failed to generate song data: ${describeErrorForLog(error)}`);
     }
     
     // Determine final style: always combine mood + style tags (style is user-provided or LLM-generated)
     const finalStyle = combineMoodAndStyles(songData.mood, splitStyleTags(songData.style));
-    
-    console.log("Final style:", finalStyle);
     
     // Generate music using Suno API
     let taskId: string;

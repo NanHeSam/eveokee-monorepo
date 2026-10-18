@@ -7,6 +7,7 @@ import {
   MAX_TRANSCRIPT_LENGTH,
 } from "./utils/constants";
 import { getOpenAIClient } from "./integrations/openai/client";
+import { describeErrorForLog } from "./utils/logger";
 
 /**
  * Quality check helper to determine if diary/music should be generated from a call
@@ -192,8 +193,9 @@ export const generateDiaryFromCall = internalAction({
         });
         console.log("Generated diary content from call transcript using OpenAI");
       } catch (error) {
-        console.error("OpenAI API error during diary generation:", error);
-        const errorMsg = `Failed to generate diary: ${error instanceof Error ? error.message : String(error)}`;
+        // Message only: AI SDK errors carry the request body (the transcript).
+        console.error("AI error during diary generation:", describeErrorForLog(error));
+        const errorMsg = `Failed to generate diary: ${describeErrorForLog(error)}`;
         await ctx.runMutation(internal.callJobs.updateCallSessionMetadata, {
           callSessionId: args.callSessionId,
           metadata: { diaryError: errorMsg },

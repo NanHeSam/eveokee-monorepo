@@ -1,6 +1,7 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { AIClient } from "../integrations/ai/client";
+import { describeErrorForLog } from "../utils/logger";
 
 // Define words once - change here to update everywhere
 export const MOOD_WORDS = [
@@ -143,20 +144,23 @@ export async function extractEventsFromDiary(
         arousal: arousalWordToNumber(event.arousal),
         anniversaryCandidate: event.anniversaryCandidate,
       }));
-      console.log("Extracted events from AI:", mappedEvents);
+      console.log("Extracted events from AI", {
+        eventCount: mappedEvents.length,
+        peopleCount: mappedEvents.reduce((n, e) => n + e.people.length, 0),
+      });
       return mappedEvents;
     } catch (error) {
+      // Fed back to the model on retry; only a content-free summary is logged.
       previousError = getErrorMessage(error);
       console.warn(
         `AI extraction attempt ${attempt} failed`,
-        previousError
+        describeErrorForLog(error)
       );
     }
   }
 
   console.error(
-    "AI Extraction failed after retries:",
-    previousError ?? "Unknown error"
+    `AI Extraction failed after ${MAX_EXTRACTION_ATTEMPTS} attempts; using stub`
   );
   return stubExtract(text, date);
 }
@@ -347,10 +351,8 @@ Highlight:`;
         .string()
         .describe("A 2-3 sentence highlight summarizing the relationship"),
     });
-    console.log("[HighlightAI] Generating highlight prompt", {
-      personName,
+    console.log("[HighlightAI] Generating highlight", {
       eventsCount: events.length,
-      promptPreview: prompt,
     });
     const result = await generateObject({
       model,
@@ -359,13 +361,14 @@ Highlight:`;
     });
 
     const highlight = result.object.highlight.trim();
-    console.log("[HighlightAI] Generated highlight result", {
-      personName,
-      highlightPreview: highlight.slice(0, 500),
+    console.log("[HighlightAI] Generated highlight", {
+      eventsCount: events.length,
+      highlightLength: highlight.length,
     });
     return highlight;
   } catch (error) {
-    console.error("Failed to generate relationship highlight via AI:", error);
+    // Log the message only: AI SDK errors carry the request body (the prompt).
+    console.error("Failed to generate relationship highlight via AI:", describeErrorForLog(error));
     return fallback();
   }
 }
@@ -376,10 +379,7 @@ function buildFallbackHighlight(
 ): string {
   if (events.length === 0) {
     const summary = `I'm looking forward to creating more moments with ${personName}.`;
-    console.log("[HighlightAI] Using fallback highlight (no events)", {
-      personName,
-      highlightPreview: summary,
-    });
+    console.log("[HighlightAI] Using fallback highlight (no events)");
     return summary;
   }
 
@@ -387,9 +387,6 @@ function buildFallbackHighlight(
   const eventDate = new Date(recent.happenedAt).toLocaleDateString();
 
   const summary = `Recently (${eventDate}), I shared "${recent.title}" with ${personName}. Moments like these remind me why this relationship matters.`;
-  console.log("[HighlightAI] Using fallback highlight", {
-    personName,
-    highlightPreview: summary,
-  });
+  console.log("[HighlightAI] Using fallback highlight", { eventsCount: events.length });
   return summary;
 }

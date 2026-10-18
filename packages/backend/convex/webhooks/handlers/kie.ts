@@ -84,11 +84,14 @@ export const kieVideoGenerationCallback = httpAction(async (ctx, req) => {
   }
 
   const body = parseResult.data;
-  logger.info("Received Kie.ai callback payload", { payload: JSON.stringify(body) });
+  // The payload echoes the submitted params (including the prompt); log its shape only.
+  logger.info("Received Kie.ai callback payload", {
+    keys: body && typeof body === "object" ? Object.keys(body) : [],
+  });
 
   // Step 4: Validate payload structure using type guard
   if (!isValidKieCallback(body)) {
-    logger.warn("Invalid payload structure", { payload: JSON.stringify(body) });
+    logger.warn("Invalid payload structure", { payloadType: Array.isArray(body) ? "array" : typeof body });
     return errorResponse("Invalid payload", HTTP_STATUS_BAD_REQUEST);
   }
 
