@@ -243,6 +243,12 @@ export const completeSunoTask = internalMutation({
       return null;
     }
 
+    // Replayed or duplicate callbacks must not overwrite finished tracks.
+    if (!pending.some((doc) => doc.status === "pending")) {
+      console.warn(`Music records for taskId ${args.taskId} are no longer pending; ignoring callback`);
+      return null;
+    }
+
     const sortedPending = [...pending].sort((a, b) => {
       const indexA = a.musicIndex ?? MAX_SAFE_MUSIC_INDEX;
       const indexB = b.musicIndex ?? MAX_SAFE_MUSIC_INDEX;
@@ -259,6 +265,10 @@ export const completeSunoTask = internalMutation({
 
     await Promise.all(
       sortedPending.map(async (doc, index) => {
+        // Index alignment is kept, but only rows still awaiting a result are touched.
+        if (doc.status !== "pending") {
+          return;
+        }
         const track = args.tracks[index];
         if (!track) {
           await ctx.db.patch(doc._id, {
@@ -597,6 +607,25 @@ export const getMusicInternal = internalQuery({
       imageUrl: music.imageUrl,
       status: music.status,
     };
+  },
+});
+
+/**
+ * Internal query: true when at least one music record for the task is still
+ * pending. The Suno callback uses it to drop replayed or forged callbacks
+ * before doing any work.
+ */
+export const hasPendingMusicForTask = internalQuery({
+  args: {
+    taskId: v.string(),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const musicRecords = await ctx.db
+      .query("music")
+      .withIndex("by_taskId", (q) => q.eq("taskId", args.taskId))
+      .collect();
+    return musicRecords.some((m) => m.status === "pending");
   },
 });
 

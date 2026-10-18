@@ -16,6 +16,7 @@ import {
   validateHttpMethod,
   parseJsonBody,
   createWebhookLogger,
+  verifyWebhookToken,
 } from "../shared";
 import {
   HTTP_STATUS_OK,
@@ -31,10 +32,12 @@ import { createSunoClientFromEnv } from "../../integrations/suno/client";
  * 
  * Steps:
  * 1. Validate HTTP method (POST only)
- * 2. Parse and validate JSON payload
- * 3. Extract taskId and tracks from callback data
- * 4. Verify callback type is "complete"
- * 5. Process completed music generation via internal mutation
+ * 2. Authenticate the secret token we put in the callback URL
+ *    (sunoapi.org does not sign callbacks)
+ * 3. Parse and validate JSON payload
+ * 4. Extract taskId and tracks from callback data
+ * 5. Verify callback type is "complete" and the task is still pending
+ * 6. Process completed music generation via internal mutation
  */
 export const sunoMusicGenerationCallback = httpAction(async (ctx, req) => {
   // Initialize structured logger
@@ -49,7 +52,14 @@ export const sunoMusicGenerationCallback = httpAction(async (ctx, req) => {
     return methodError;
   }
 
-  // Step 2: Parse JSON payload
+  // Step 2: Authenticate before touching the body or the database
+  const authError = verifyWebhookToken(req, process.env.SUNO_WEBHOOK_SECRET);
+  if (authError) {
+    logger.warn("Webhook authentication failed", { status: authError.status });
+    return authError;
+  }
+
+  // Step 3: Parse JSON payload
   const parseResult = await parseJsonBody<SunoWebhookPayload>(req);
   if (parseResult.error) {
     logger.error("Failed to parse JSON payload");
@@ -83,6 +93,13 @@ export const sunoMusicGenerationCallback = httpAction(async (ctx, req) => {
 
   if (code !== HTTP_STATUS_OK) {
     eventLogger.warn("Received non-success callback");
+  }
+
+  // A replayed callback, or one for a task that already finished, is a no-op.
+  const isPending = await ctx.runQuery(internal.music.hasPendingMusicForTask, { taskId });
+  if (!isPending) {
+    eventLogger.info("Ignoring callback for task that is not pending");
+    return successResponse({ status: "ignored" });
   }
 
   // Step 7: Process completed music generation

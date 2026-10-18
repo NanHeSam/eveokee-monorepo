@@ -99,6 +99,25 @@ SUNO_API_KEY=xxxxxxxxxxxxxxxxxxxxx
 
 ---
 
+### SUNO_WEBHOOK_SECRET
+**Purpose:** Authenticates Suno music-generation callbacks. sunoapi.org does not sign callbacks, so the backend appends this value to the callback URL it sends (`?token=...`) and the callback handler rejects any request without it (401) before touching the database.
+
+**Used in:** `convex/musicActions.ts`, `convex/webhooks/handlers/suno.ts`
+
+**Required for:** music generation. Without it generation requests fail fast (and are refunded) and callbacks are rejected.
+
+**Generate:** `openssl rand -hex 32` (use a different value per deployment)
+
+**Example:**
+```bash
+npx convex env set SUNO_WEBHOOK_SECRET "$(openssl rand -hex 32)"          # dev
+npx convex env set SUNO_WEBHOOK_SECRET "$(openssl rand -hex 32)" --prod   # prod
+```
+
+**Note:** Rotating the secret invalidates callbacks for generations already in flight.
+
+---
+
 ### CONVEX_SITE_URL (Automatic)
 **Purpose:** Site URL of the Convex deployment, used to construct callback URLs for webhooks
 
