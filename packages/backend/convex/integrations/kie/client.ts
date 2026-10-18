@@ -16,6 +16,7 @@ import {
   DEFAULT_REMOVE_WATERMARK,
 } from "../../utils/constants/video";
 import { HTTP_STATUS_OK } from "../../utils/constants";
+import { appendWebhookToken } from "../../utils/webhookAuth";
 
 export interface KieClientConfig {
   apiKey: string;
@@ -190,6 +191,8 @@ export class KieClient {
  *   - `CONVEX_SITE_URL`: site URL of the Convex deployment (provided automatically by Convex)
  *   - `CALLBACK_PATH`: callback path to append to site URL (required)
  *   - `KIE_AI_TIMEOUT`: optional request timeout in milliseconds
+ *   - `WEBHOOK_SECRET`: secret appended to the callback URL so the callback
+ *     handler can authenticate it (required by the handler)
  * @returns A configured KieClient instance
  * @throws Error if `KIE_AI_API_KEY`, `CONVEX_SITE_URL`, or `CALLBACK_PATH` is missing
  */
@@ -198,6 +201,7 @@ export function createKieClientFromEnv(env: {
   CONVEX_SITE_URL?: string;
   CALLBACK_PATH?: string;
   KIE_AI_TIMEOUT?: string;
+  WEBHOOK_SECRET?: string;
 }): KieClient {
   const apiKey = env.KIE_AI_API_KEY;
   if (!apiKey) {
@@ -218,7 +222,10 @@ export function createKieClientFromEnv(env: {
   // Ensure site URL doesn't end with / and path starts with /
   const baseUrlNormalized = convexSiteUrl.replace(/\/$/, "");
   const pathNormalized = callbackPath.startsWith("/") ? callbackPath : `/${callbackPath}`;
-  const callbackUrl = `${baseUrlNormalized}${pathNormalized}`;
+  const baseCallbackUrl = `${baseUrlNormalized}${pathNormalized}`;
+  const callbackUrl = env.WEBHOOK_SECRET
+    ? appendWebhookToken(baseCallbackUrl, env.WEBHOOK_SECRET)
+    : baseCallbackUrl;
 
   let timeout: number | undefined;
   if (env.KIE_AI_TIMEOUT) {

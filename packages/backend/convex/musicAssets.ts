@@ -21,54 +21,26 @@ import {
   pickFreshTrackForMusic,
   uniqueNonEmpty,
 } from "./utils/musicAssets";
+import { downloadAssetBounded } from "./utils/assetDownload";
 
 const MAX_ASSET_BYTES = 60 * 1024 * 1024; // generous cap; songs are ~3-6 MB
 const DOWNLOAD_TIMEOUT_MS = 60_000;
 
 /**
- * Download a URL into a Blob, validating host, status, content type and size.
- * Returns null (rather than throwing) when the URL is not usable so callers
- * can move on to the next candidate.
+ * Download a URL into a Blob via the shared bounded downloader (host
+ * allowlist, timeout, content type and size caps). Returns null when the URL
+ * is not usable so callers can move on to the next candidate.
  */
 async function downloadAsset(
   url: string,
   kind: "audio" | "image",
 ): Promise<Blob | null> {
-  if (!isAllowedAssetUrl(url)) {
-    return null;
-  }
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
-  try {
-    const response = await fetch(url, { signal: controller.signal, redirect: "manual" });
-    if (!response.ok) {
-      return null;
-    }
-    const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
-    const expectedPrefix = kind === "audio" ? "audio/" : "image/";
-    // Some hosts serve mp3 as application/octet-stream; only reject clearly wrong types.
-    if (contentType.startsWith("text/") || contentType.includes("json") || contentType.includes("xml")) {
-      return null;
-    }
-    const declaredLength = Number(response.headers.get("content-length") ?? "0");
-    if (declaredLength > MAX_ASSET_BYTES) {
-      return null;
-    }
-    const buffer = await response.arrayBuffer();
-    if (buffer.byteLength === 0 || buffer.byteLength > MAX_ASSET_BYTES) {
-      return null;
-    }
-    const type = contentType.startsWith(expectedPrefix)
-      ? contentType.split(";")[0]
-      : kind === "audio"
-        ? "audio/mpeg"
-        : "image/jpeg";
-    return new Blob([buffer], { type });
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timeoutId);
-  }
+  const result = await downloadAssetBounded(url, kind, {
+    isAllowedUrl: isAllowedAssetUrl,
+    maxBytes: MAX_ASSET_BYTES,
+    timeoutMs: DOWNLOAD_TIMEOUT_MS,
+  });
+  return result.ok ? result.blob : null;
 }
 
 export const getMusicForAssetPersist = internalQuery({

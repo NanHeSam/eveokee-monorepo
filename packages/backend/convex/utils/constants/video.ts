@@ -23,4 +23,8 @@ export const OPENAI_VIDEO_SCRIPT_MAX_OUTPUT_TOKENS = 10000;
 // Video limits
 export const MAX_VIDEO_DURATION_SECONDS = 10;
 
+// Bounds for downloading the finished video from the provider callback URL
+export const VIDEO_DOWNLOAD_MAX_BYTES = 150 * 1024 * 1024; // a 10s 720p clip is well under this
+export const VIDEO_DOWNLOAD_TIMEOUT_MS = 60_000;
+
 

@@ -19,9 +19,9 @@ export interface MusicRowLike {
 }
 
 /**
- * Hosts we are willing to download generated assets from. The music callback
- * is not authenticated, so URLs in it (and anything derived from provider
- * records) must never be allowed to point the server at arbitrary hosts.
+ * Hosts we are willing to download generated assets from. URLs in provider
+ * callbacks (and anything derived from provider records) are untrusted input,
+ * so they must never be allowed to point the server at arbitrary hosts.
  * Matching is by exact host or any subdomain of these.
  */
 export const ALLOWED_ASSET_HOST_SUFFIXES = [
@@ -33,8 +33,7 @@ export const ALLOWED_ASSET_HOST_SUFFIXES = [
   "erweima.ai",
 ] as const;
 
-/** True when the URL is https and on a known provider host. */
-export function isAllowedAssetUrl(url: string): boolean {
+function isAllowedHttpsUrl(url: string, hostSuffixes: readonly string[]): boolean {
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -43,10 +42,30 @@ export function isAllowedAssetUrl(url: string): boolean {
   }
   if (parsed.protocol !== "https:") return false;
   if (parsed.username || parsed.password) return false;
+  if (parsed.port && parsed.port !== "443") return false;
   const host = parsed.hostname.toLowerCase();
-  return ALLOWED_ASSET_HOST_SUFFIXES.some(
+  return hostSuffixes.some(
     (suffix) => host === suffix || host.endsWith(`.${suffix}`),
   );
+}
+
+/** True when the URL is https and on a known provider host. */
+export function isAllowedAssetUrl(url: string): boolean {
+  return isAllowedHttpsUrl(url, ALLOWED_ASSET_HOST_SUFFIXES);
+}
+
+/**
+ * Hosts Kie.ai serves generated videos from. Video callbacks reach us with a
+ * provider-supplied URL, so the same exact-host-or-subdomain rule applies.
+ */
+export const ALLOWED_VIDEO_HOST_SUFFIXES = [
+  "aiquickdraw.com",
+  "kie.ai",
+] as const;
+
+/** True when the URL is https and on a known video provider host. */
+export function isAllowedVideoUrl(url: string): boolean {
+  return isAllowedHttpsUrl(url, ALLOWED_VIDEO_HOST_SUFFIXES);
 }
 
 /** True for URLs served by Convex file storage (already durable). */

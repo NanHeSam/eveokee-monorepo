@@ -161,11 +161,18 @@ export const requestKieVideoGeneration = internalAction({
       if (!convexSiteUrl) {
         throw new Error("CONVEX_SITE_URL is not available (this should be provided automatically by Convex)");
       }
+      // The callback handler rejects unauthenticated callbacks, so starting a
+      // generation without the secret would only burn provider credits.
+      const webhookSecret = process.env.KIE_WEBHOOK_SECRET;
+      if (!webhookSecret) {
+        throw new Error("KIE_WEBHOOK_SECRET environment variable is not set");
+      }
       kieClient = createKieClientFromEnv({
         KIE_AI_API_KEY: process.env.KIE_AI_API_KEY,
         CONVEX_SITE_URL: convexSiteUrl,
         CALLBACK_PATH: VIDEO_GENERATION_CALLBACK_PATH,
         KIE_AI_TIMEOUT: process.env.KIE_AI_TIMEOUT,
+        WEBHOOK_SECRET: webhookSecret,
       });
     } catch (error) {
       // Refund credits if client construction fails

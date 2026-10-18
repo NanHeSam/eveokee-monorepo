@@ -66,14 +66,14 @@ export const sunoMusicGenerationCallback = httpAction(async (ctx, req) => {
     return parseResult.error;
   }
 
-  // Step 3: Validate payload structure using type guard
+  // Step 4: Validate payload structure using type guard
   if (!isValidSunoCallback(parseResult.data)) {
     logger.warn("Invalid payload structure", { payload: parseResult.data });
     return errorResponse("Invalid payload", HTTP_STATUS_BAD_REQUEST);
   }
   const body = parseResult.data;
 
-  // Step 4: Parse and validate payload
+  // Step 5: Parse and validate payload
   const parsedPayload = parseSunoPayload(body);
   if (parsedPayload.success === false) {
     logger.warn("Payload validation failed", { error: parsedPayload.error });

@@ -18,25 +18,39 @@ import {
   validateHttpMethod,
   parseJsonBody,
   createWebhookLogger,
+  verifyWebhookToken,
 } from "../shared";
 import {
   HTTP_STATUS_OK,
   HTTP_STATUS_BAD_REQUEST,
+  HTTP_STATUS_UNAUTHORIZED,
   HTTP_STATUS_INTERNAL_SERVER_ERROR,
+  VIDEO_DOWNLOAD_MAX_BYTES,
+  VIDEO_DOWNLOAD_TIMEOUT_MS,
 } from "../../utils/constants";
 import { logWebhookEvent } from "../../utils/logger";
+import {
+  KIE_WEBHOOK_SIGNATURE_HEADER,
+  KIE_WEBHOOK_TIMESTAMP_HEADER,
+  verifyKieWebhookSignature,
+} from "../../utils/webhookAuth";
+import { downloadAssetBounded } from "../../utils/assetDownload";
+import { isAllowedVideoUrl } from "../../utils/musicAssets";
 
 /**
  * Handle Kie.ai video generation callback webhook
  *
  * Steps:
  * 1. Validate HTTP method (POST only)
- * 2. Parse and validate JSON payload
- * 3. Extract taskId and video URL from callback data
- * 4. Download video from Kie.ai URL
- * 5. Upload video to Convex storage
- * 6. Process completed video generation via internal mutation
- * 7. On failure: Mark video as failed (failVideoGeneration handles credit refund atomically)
+ * 2. Authenticate the secret token we put in the callback URL
+ * 3. Parse and validate JSON payload, extract taskId
+ * 4. Verify Kie's HMAC signature headers when KIE_WEBHOOK_HMAC_KEY is set
+ * 5. Ignore callbacks for tasks that are not pending (replays, duplicates)
+ * 6. Download the video with a bounded fetch (https host allowlist, redirect
+ *    re-validation, timeout, content type and size caps)
+ * 7. Upload video to Convex storage
+ * 8. Process completed video generation via internal mutation
+ * 9. On failure: Mark video as failed (failVideoGeneration handles credit refund atomically)
  *
  * IMPORTANT: Credit refunds are now idempotent - failVideoGeneration atomically checks
  * the video status and only refunds if status is "pending", preventing duplicate refunds
@@ -55,9 +69,14 @@ export const kieVideoGenerationCallback = httpAction(async (ctx, req) => {
     return methodError;
   }
 
+  // Step 2: Authenticate before touching the body, the network or the database
+  const authError = verifyWebhookToken(req, process.env.KIE_WEBHOOK_SECRET);
+  if (authError) {
+    logger.warn("Webhook authentication failed", { status: authError.status });
+    return authError;
+  }
 
-
-  // Step 2: Parse JSON payload
+  // Step 3: Parse JSON payload
   const parseResult = await parseJsonBody<KieWebhookPayload>(req);
   if (parseResult.error) {
     logger.error("Failed to parse JSON payload");
@@ -67,13 +86,13 @@ export const kieVideoGenerationCallback = httpAction(async (ctx, req) => {
   const body = parseResult.data;
   logger.info("Received Kie.ai callback payload", { payload: JSON.stringify(body) });
 
-  // Step 3: Validate payload structure using type guard
+  // Step 4: Validate payload structure using type guard
   if (!isValidKieCallback(body)) {
     logger.warn("Invalid payload structure", { payload: JSON.stringify(body) });
     return errorResponse("Invalid payload", HTTP_STATUS_BAD_REQUEST);
   }
 
-  // Step 4: Extract callback type and taskId first (before requiring videoUrl)
+  // Step 5: Extract callback type and taskId first (before requiring videoUrl)
   const callbackType = extractKieCallbackType(body);
   const taskId = extractKieTaskId(body);
 
@@ -84,7 +103,32 @@ export const kieVideoGenerationCallback = httpAction(async (ctx, req) => {
 
   const eventLogger = logger.child({ taskId, callbackType });
 
-  // Step 5: Detect failure callbacks (which may not have videoUrl)
+  // Step 6: Kie signs `taskId.timestamp` when a Webhook HMAC Key is set in its dashboard
+  const hmacKey = process.env.KIE_WEBHOOK_HMAC_KEY;
+  if (hmacKey) {
+    const signatureCheck = await verifyKieWebhookSignature({
+      taskId,
+      timestamp: req.headers.get(KIE_WEBHOOK_TIMESTAMP_HEADER),
+      signature: req.headers.get(KIE_WEBHOOK_SIGNATURE_HEADER),
+      hmacKey,
+    });
+    if (signatureCheck.valid === false) {
+      eventLogger.warn("Webhook signature verification failed", { reason: signatureCheck.reason });
+      return errorResponse("Unauthorized", HTTP_STATUS_UNAUTHORIZED);
+    }
+  }
+
+  // Step 7: Only a pending task can be completed or failed; anything else is a
+  // replay or duplicate and must not trigger a download or a refund.
+  const existingVideo = await ctx.runQuery(internal.videos.getVideoByTaskId, { taskId });
+  if (!existingVideo || existingVideo.status !== "pending") {
+    eventLogger.info("Ignoring callback for task that is not pending", {
+      status: existingVideo?.status ?? "missing",
+    });
+    return successResponse({ status: "ignored" });
+  }
+
+  // Step 8: Detect failure callbacks (which may not have videoUrl)
   // Check for failure indicators: state="fail", non-200 codes, or failMsg/failCode
   const isFailure = 
     callbackType === "failed" || 
@@ -138,13 +182,13 @@ export const kieVideoGenerationCallback = httpAction(async (ctx, req) => {
     }
   }
 
-  // Step 6: Handle non-completion callbacks
+  // Step 9: Handle non-completion callbacks
   if (callbackType !== "complete" && callbackType !== "completed" && callbackType !== "success") {
     eventLogger.info("Ignoring non-complete callback");
     return successResponse({ status: "ignored" });
   }
 
-  // Step 7: Parse and validate success payload (requires videoUrl)
+  // Step 10: Parse and validate success payload (requires videoUrl)
   const parsedPayload = parseKiePayload(body);
   if (parsedPayload.success === false) {
     logger.warn("Payload validation failed", { error: parsedPayload.error });
@@ -157,35 +201,37 @@ export const kieVideoGenerationCallback = httpAction(async (ctx, req) => {
     eventLogger.warn("Received non-success callback");
   }
 
-  // Step 6: Download video from Kie.ai URL
+  // Step 11: Download video from Kie.ai URL (bounded; the URL is provider input)
   let videoBlob: Blob;
-  try {
+  {
     eventLogger.info("Downloading video from Kie.ai", { videoUrl });
-    const videoResponse = await fetch(videoUrl);
-
-    if (!videoResponse.ok) {
-      throw new Error(`Failed to download video: ${videoResponse.status} ${videoResponse.statusText}`);
-    }
-
-    videoBlob = await videoResponse.blob();
-    eventLogger.info("Video downloaded successfully", { size: videoBlob.size });
-  } catch (error) {
-    eventLogger.error("Failed to download video", error);
-
-    // Mark video as failed (failVideoGeneration handles refund atomically)
-    const result = await ctx.runMutation(internal.videos.failVideoGeneration, {
-      kieTaskId: taskId,
-      errorMessage: error instanceof Error ? error.message : "Failed to download video",
+    const download = await downloadAssetBounded(videoUrl, "video", {
+      isAllowedUrl: isAllowedVideoUrl,
+      maxBytes: VIDEO_DOWNLOAD_MAX_BYTES,
+      timeoutMs: VIDEO_DOWNLOAD_TIMEOUT_MS,
     });
 
-    if (result.refunded) {
-      eventLogger.info("Refunded 3 credits for download failure");
+    if (download.ok === false) {
+      eventLogger.error("Failed to download video", undefined, { reason: download.reason });
+
+      // Mark video as failed (failVideoGeneration handles refund atomically)
+      const result = await ctx.runMutation(internal.videos.failVideoGeneration, {
+        kieTaskId: taskId,
+        errorMessage: `Failed to download video: ${download.reason}`,
+      });
+
+      if (result.refunded) {
+        eventLogger.info("Refunded 3 credits for download failure");
+      }
+
+      return errorResponse("Failed to download video", HTTP_STATUS_INTERNAL_SERVER_ERROR);
     }
 
-    return errorResponse("Failed to download video", HTTP_STATUS_INTERNAL_SERVER_ERROR);
+    videoBlob = download.blob;
+    eventLogger.info("Video downloaded successfully", { size: videoBlob.size });
   }
 
-  // Step 7: Upload video to Convex storage
+  // Step 12: Upload video to Convex storage
   let storageId: string;
   try {
     eventLogger.info("Uploading video to Convex storage");
@@ -207,7 +253,7 @@ export const kieVideoGenerationCallback = httpAction(async (ctx, req) => {
     return errorResponse("Failed to upload video to storage", HTTP_STATUS_INTERNAL_SERVER_ERROR);
   }
 
-  // Step 8: Process completed video generation
+  // Step 13: Process completed video generation
   try {
     await ctx.runMutation(internal.videos.completeKieVideoTask, {
       kieTaskId: taskId,
