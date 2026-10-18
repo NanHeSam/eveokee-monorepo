@@ -11,6 +11,7 @@ import {
   SUNO_DEFAULT_MODEL,
   HTTP_STATUS_OK,
 } from "../../utils/constants";
+import { appendWebhookToken } from "../../utils/webhookAuth";
 
 export interface SunoClientConfig {
   apiKey: string;
@@ -325,6 +326,9 @@ export class SunoClient {
  *   - `CONVEX_SITE_URL`: site URL of the Convex deployment (provided automatically by Convex)
  *   - `CALLBACK_PATH`: callback path to append to site URL (required)
  *   - `SUNO_TIMEOUT`: optional request timeout in milliseconds
+ *   - `WEBHOOK_SECRET`: secret appended to the callback URL so the callback
+ *     handler can authenticate it. Required for anything that starts a
+ *     generation; optional for clients that only read (lyrics, record info).
  * @returns A configured SunoClient instance
  * @throws Error if `SUNO_API_KEY`, `CONVEX_SITE_URL`, or `CALLBACK_PATH` is missing
  */
@@ -333,6 +337,7 @@ export function createSunoClientFromEnv(env: {
   CONVEX_SITE_URL?: string;
   CALLBACK_PATH?: string;
   SUNO_TIMEOUT?: string;
+  WEBHOOK_SECRET?: string;
 }): SunoClient {
   const apiKey = env.SUNO_API_KEY;
   if (!apiKey) {
@@ -353,7 +358,10 @@ export function createSunoClientFromEnv(env: {
   // Ensure site URL doesn't end with / and path starts with /
   const baseUrlNormalized = convexSiteUrl.replace(/\/$/, "");
   const pathNormalized = callbackPath.startsWith("/") ? callbackPath : `/${callbackPath}`;
-  const callbackUrl = `${baseUrlNormalized}${pathNormalized}`;
+  const baseCallbackUrl = `${baseUrlNormalized}${pathNormalized}`;
+  const callbackUrl = env.WEBHOOK_SECRET
+    ? appendWebhookToken(baseCallbackUrl, env.WEBHOOK_SECRET)
+    : baseCallbackUrl;
 
   const timeout = env.SUNO_TIMEOUT ? parseInt(env.SUNO_TIMEOUT, 10) : undefined;
 

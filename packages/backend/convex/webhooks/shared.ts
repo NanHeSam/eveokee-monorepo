@@ -16,6 +16,7 @@ import {
   generateCorrelationId,
   type Logger,
 } from "../utils/logger";
+import { hasValidWebhookToken, timingSafeEqualString } from "../utils/webhookAuth";
 
 /**
  * Standard JSON response headers
@@ -138,7 +139,29 @@ export function verifyBearerToken(
   }
 
   const receivedToken = extractBearerToken(req);
-  if (!receivedToken || receivedToken !== expectedToken) {
+  if (!receivedToken || !timingSafeEqualString(receivedToken, expectedToken)) {
+    return errorResponse("Unauthorized", HTTP_STATUS_UNAUTHORIZED);
+  }
+
+  return undefined;
+}
+
+/**
+ * Verify the secret token we appended to a provider callback URL.
+ * Used for providers that cannot sign their callbacks.
+ * @param req - The incoming request
+ * @param expectedSecret - The secret from environment variables
+ * @returns Response if authentication fails, undefined if successful
+ */
+export function verifyWebhookToken(
+  req: Request,
+  expectedSecret: string | undefined
+): Response | undefined {
+  if (!expectedSecret) {
+    return errorResponse("Server configuration error", HTTP_STATUS_INTERNAL_SERVER_ERROR);
+  }
+
+  if (!hasValidWebhookToken(req.url, expectedSecret)) {
     return errorResponse("Unauthorized", HTTP_STATUS_UNAUTHORIZED);
   }
 

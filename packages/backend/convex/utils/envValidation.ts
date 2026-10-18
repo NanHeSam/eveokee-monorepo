@@ -23,6 +23,9 @@ const ENV_CONFIG = {
   // Suno Integration
   SUNO_API_KEY: { required: true, description: "Suno API key for music generation" },
   SUNO_TIMEOUT: { required: false, description: "Suno API timeout in milliseconds" },
+  // Not marked required so a deploy without it does not fail at module load;
+  // music generation and the Suno callback fail closed when it is missing.
+  SUNO_WEBHOOK_SECRET: { required: false, description: "Secret token appended to the Suno callback URL to authenticate callbacks" },
 
   // Kie.ai Integration (Video Generation)
   KIE_AI_API_KEY: { required: true, description: "Kie.ai API key for video generation using Sora 2" },

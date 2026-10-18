@@ -41,21 +41,44 @@ export const requestSunoGeneration = internalAction({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    // Get OpenAI client for generating song data
-    const openaiClient = getOpenAIClient();
+    let openaiClient: ReturnType<typeof getOpenAIClient>;
+    let sunoClient: ReturnType<typeof createSunoClientFromEnv>;
+    try {
+      // Get OpenAI client for generating song data
+      openaiClient = getOpenAIClient();
 
-    // Create Suno client for music generation
-    // CONVEX_SITE_URL is provided automatically by Convex
-    const convexSiteUrl = process.env.CONVEX_SITE_URL;
-    if (!convexSiteUrl) {
-      throw new Error("CONVEX_SITE_URL is not available (this should be provided automatically by Convex)");
+      // Create Suno client for music generation
+      // CONVEX_SITE_URL is provided automatically by Convex
+      const convexSiteUrl = process.env.CONVEX_SITE_URL;
+      if (!convexSiteUrl) {
+        throw new Error("CONVEX_SITE_URL is not available (this should be provided automatically by Convex)");
+      }
+      // The callback handler rejects unauthenticated callbacks, so starting a
+      // generation without the secret would only burn provider credits.
+      const webhookSecret = process.env.SUNO_WEBHOOK_SECRET;
+      if (!webhookSecret) {
+        throw new Error("SUNO_WEBHOOK_SECRET environment variable is not set");
+      }
+      sunoClient = createSunoClientFromEnv({
+        SUNO_API_KEY: process.env.SUNO_API_KEY,
+        CONVEX_SITE_URL: convexSiteUrl,
+        CALLBACK_PATH: MUSIC_GENERATION_CALLBACK_PATH,
+        SUNO_TIMEOUT: process.env.SUNO_TIMEOUT,
+        WEBHOOK_SECRET: webhookSecret,
+      });
+    } catch (error) {
+      // Refund the generation if client setup fails
+      if (args.usageResult) {
+        try {
+          await ctx.runMutation(internal.usage.decrementMusicGeneration, {
+            userId: args.diary.userId,
+          });
+        } catch (decrementError) {
+          console.error("Failed to decrement usage counter after client setup error:", decrementError);
+        }
+      }
+      throw error;
     }
-    const sunoClient = createSunoClientFromEnv({
-      SUNO_API_KEY: process.env.SUNO_API_KEY,
-      CONVEX_SITE_URL: convexSiteUrl,
-      CALLBACK_PATH: MUSIC_GENERATION_CALLBACK_PATH,
-      SUNO_TIMEOUT: process.env.SUNO_TIMEOUT,
-    });
 
     // Generate song data from diary content using OpenAI (mood + lyrics + title)
     let songData: { lyric: string; mood: string; title: string; style: string };
