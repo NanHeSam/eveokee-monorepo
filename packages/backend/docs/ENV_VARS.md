@@ -146,6 +146,30 @@ KIE_AI_API_KEY=xxxxxxxxxxxxxxxxxxxxx
 
 ---
 
+### KIE_WEBHOOK_SECRET
+**Purpose:** Authenticates Kie.ai video-generation callbacks. The backend appends this value to the callback URL it sends (`?token=...`); the callback handler rejects any request without it (401) before parsing the body, downloading anything, or touching the database.
+
+**Used in:** `convex/videoActions.ts`, `convex/webhooks/handlers/kie.ts`
+
+**Required for:** video generation. Without it generation requests fail fast (and are refunded) and callbacks are rejected.
+
+**Example:**
+```bash
+npx convex env set KIE_WEBHOOK_SECRET "$(openssl rand -hex 32)"          # dev
+npx convex env set KIE_WEBHOOK_SECRET "$(openssl rand -hex 32)" --prod   # prod
+```
+
+---
+
+### KIE_WEBHOOK_HMAC_KEY (Optional, recommended)
+**Purpose:** Kie.ai's account-wide "Webhook HMAC Key". When set, the callback handler additionally verifies `X-Webhook-Signature` = base64(HMAC-SHA256(`taskId.timestamp`, key)) and rejects timestamps older than 15 minutes. See https://docs.kie.ai/common-api/webhook-verification.
+
+**Where to find:** https://kie.ai/settings → Webhook HMAC Key (generate it there first; once generated, Kie signs every callback)
+
+**Note:** Set the Convex env var only after the key exists in the Kie dashboard; if the key is set here but Kie is not signing, every callback is rejected.
+
+---
+
 ### VAPI_API_KEY
 **Purpose:** VAPI API key for scheduling and managing voice calls
 

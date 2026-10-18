@@ -49,3 +49,73 @@ export function hasValidWebhookToken(requestUrl: string, expectedSecret: string)
   if (!received) return false;
   return timingSafeEqualString(received, expectedSecret);
 }
+
+/** Kie.ai signature headers (see https://docs.kie.ai/common-api/webhook-verification). */
+export const KIE_WEBHOOK_TIMESTAMP_HEADER = "X-Webhook-Timestamp";
+export const KIE_WEBHOOK_SIGNATURE_HEADER = "X-Webhook-Signature";
+
+/**
+ * How old a signed Kie callback may be. Kie's signature covers only
+ * `taskId.timestamp`, not the body, so freshness plus the pending-task check
+ * is what bounds replays.
+ */
+export const KIE_WEBHOOK_MAX_AGE_SECONDS = 15 * 60;
+/** Tolerated clock skew for timestamps slightly in the future. */
+export const KIE_WEBHOOK_MAX_FUTURE_SKEW_SECONDS = 5 * 60;
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary);
+}
+
+/** base64(HMAC-SHA256(`${taskId}.${timestamp}`, key)), as Kie computes it. */
+export async function computeKieWebhookSignature(
+  taskId: string,
+  timestampSeconds: string,
+  hmacKey: string,
+): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(hmacKey),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(`${taskId}.${timestampSeconds}`));
+  return bytesToBase64(new Uint8Array(signature));
+}
+
+export type KieSignatureCheck =
+  | { valid: true }
+  | { valid: false; reason: "missing_headers" | "bad_timestamp" | "stale_timestamp" | "bad_signature" };
+
+/** Verify Kie's X-Webhook-Timestamp / X-Webhook-Signature headers for a task. */
+export async function verifyKieWebhookSignature(params: {
+  taskId: string;
+  timestamp: string | null | undefined;
+  signature: string | null | undefined;
+  hmacKey: string;
+  nowMs?: number;
+}): Promise<KieSignatureCheck> {
+  const { taskId, timestamp, signature, hmacKey } = params;
+  if (!timestamp || !signature) {
+    return { valid: false, reason: "missing_headers" };
+  }
+  if (!/^\d{1,12}$/.test(timestamp)) {
+    return { valid: false, reason: "bad_timestamp" };
+  }
+  const nowSeconds = Math.floor((params.nowMs ?? Date.now()) / 1000);
+  const age = nowSeconds - Number(timestamp);
+  if (age > KIE_WEBHOOK_MAX_AGE_SECONDS || age < -KIE_WEBHOOK_MAX_FUTURE_SKEW_SECONDS) {
+    return { valid: false, reason: "stale_timestamp" };
+  }
+  const expected = await computeKieWebhookSignature(taskId, timestamp, hmacKey);
+  if (!timingSafeEqualString(signature, expected)) {
+    return { valid: false, reason: "bad_signature" };
+  }
+  return { valid: true };
+}

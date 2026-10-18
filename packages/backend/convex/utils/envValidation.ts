@@ -30,6 +30,10 @@ const ENV_CONFIG = {
   // Kie.ai Integration (Video Generation)
   KIE_AI_API_KEY: { required: true, description: "Kie.ai API key for video generation using Sora 2" },
   KIE_AI_TIMEOUT: { required: false, description: "Kie.ai API timeout in milliseconds" },
+  // Not marked required so a deploy without it does not fail at module load;
+  // video generation and the Kie callback fail closed when it is missing.
+  KIE_WEBHOOK_SECRET: { required: false, description: "Secret token appended to the Kie.ai callback URL to authenticate callbacks" },
+  KIE_WEBHOOK_HMAC_KEY: { required: false, description: "Kie.ai Webhook HMAC Key (Kie settings page); when set, callback signatures are verified" },
 
   // VAPI Integration
   VAPI_API_KEY: { required: true, description: "VAPI API key for voice calls" },

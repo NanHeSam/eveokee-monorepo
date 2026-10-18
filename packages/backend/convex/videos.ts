@@ -317,6 +317,15 @@ export const completeKieVideoTask = internalMutation({
 
     if (!video) {
       console.warn(`No video record found for kieTaskId ${args.kieTaskId}`);
+      await ctx.storage.delete(args.videoStorageId as Id<"_storage">);
+      return null;
+    }
+
+    // Only a pending task can be completed; a duplicate or replayed callback
+    // must not replace a finished video. Drop the blob it uploaded.
+    if (video.status !== "pending") {
+      console.warn(`Video for kieTaskId ${args.kieTaskId} is ${video.status}, not pending; ignoring completion`);
+      await ctx.storage.delete(args.videoStorageId as Id<"_storage">);
       return null;
     }
 
@@ -418,8 +427,12 @@ export const failVideoGeneration = internalMutation({
       return { refunded: false, alreadyFailed: true };
     }
 
-    // Only refund if status was pending (not already failed or completed)
-    const shouldRefund = video.status === "pending";
+    // A finished video is never flipped back to failed by a late or forged
+    // failure callback.
+    if (video.status !== "pending") {
+      console.log(`Video ${args.kieTaskId} is ${video.status}, not pending; ignoring failure`);
+      return { refunded: false, alreadyFailed: false };
+    }
 
     const metadataBase = video.metadata ?? { data: null };
 
@@ -433,28 +446,26 @@ export const failVideoGeneration = internalMutation({
       updatedAt: Date.now(),
     });
 
-    // Refund 3 credits if this was a pending video
-    if (shouldRefund) {
-      const VIDEO_CREDIT_COST = 3;
-      const user = await ctx.db.get(video.userId);
+    // Refund 3 credits (the video was pending)
+    const VIDEO_CREDIT_COST = 3;
+    const user = await ctx.db.get(video.userId);
 
-      if (user?.activeSubscriptionId) {
-        const subscription = await ctx.db.get(user.activeSubscriptionId);
+    if (user?.activeSubscriptionId) {
+      const subscription = await ctx.db.get(user.activeSubscriptionId);
 
-        if (subscription) {
-          const currentUsage = Math.max(0, subscription.musicGenerationsUsed - VIDEO_CREDIT_COST);
+      if (subscription) {
+        const currentUsage = Math.max(0, subscription.musicGenerationsUsed - VIDEO_CREDIT_COST);
 
-          await ctx.db.patch(user.activeSubscriptionId, {
-            musicGenerationsUsed: currentUsage,
-            lastVerifiedAt: Date.now(),
-          });
+        await ctx.db.patch(user.activeSubscriptionId, {
+          musicGenerationsUsed: currentUsage,
+          lastVerifiedAt: Date.now(),
+        });
 
-          console.log(`Refunded ${VIDEO_CREDIT_COST} credits for failed video ${args.kieTaskId}`);
-        }
+        console.log(`Refunded ${VIDEO_CREDIT_COST} credits for failed video ${args.kieTaskId}`);
       }
     }
 
-    return { refunded: shouldRefund, alreadyFailed: false };
+    return { refunded: true, alreadyFailed: false };
   },
 });
 
