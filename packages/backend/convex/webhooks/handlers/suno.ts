@@ -68,7 +68,10 @@ export const sunoMusicGenerationCallback = httpAction(async (ctx, req) => {
 
   // Step 4: Validate payload structure using type guard
   if (!isValidSunoCallback(parseResult.data)) {
-    logger.warn("Invalid payload structure", { payload: parseResult.data });
+    // Suno payloads carry lyrics; log the shape only.
+    logger.warn("Invalid payload structure", {
+      payloadType: Array.isArray(parseResult.data) ? "array" : typeof parseResult.data,
+    });
     return errorResponse("Invalid payload", HTTP_STATUS_BAD_REQUEST);
   }
   const body = parseResult.data;

@@ -109,11 +109,12 @@ export class KieClient {
         };
       }
 
+      // The prompt is derived from the diary and lyrics; never log it.
       console.log("Kie.ai API request", {
         url: this.baseUrl,
         method: "POST",
-        payload: JSON.stringify(payload, null, 2),
         model,
+        promptLength: request.prompt.length,
         hasImageUrl: Boolean(request.image_url),
       });
 

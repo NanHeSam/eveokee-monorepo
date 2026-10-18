@@ -214,9 +214,10 @@ Use the same language as the diary entry for lyrics and title.`,
       try {
         songData = JSON.parse(content);
       } catch (parseError) {
+        // Do not include the raw content: it is lyrics derived from the diary.
         throw new Error(
-          `Failed to parse OpenAI response as JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}. ` +
-          `Raw content: ${content.substring(0, 500)}${content.length > 500 ? "..." : ""}`
+          `Failed to parse OpenAI response as JSON: ${parseError instanceof Error ? parseError.message : String(parseError)} ` +
+          `(${content.length} chars)`
         );
       }
 

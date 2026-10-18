@@ -5,6 +5,7 @@ import { v } from "convex/values";
 import { internal, api } from "./_generated/api";
 import { VIDEO_GENERATION_CALLBACK_PATH, KIE_MODEL_IMAGE_TO_VIDEO, DEFAULT_VIDEO_DURATION, DEFAULT_VIDEO_RESOLUTION } from "./utils/constants";
 import { getOpenAIClient, type OpenAIClient } from "./integrations/openai/client";
+import { describeErrorForLog } from "./utils/logger";
 import { createKieClientFromEnv, type KieGenerateRequest } from "./integrations/kie/client";
 
 /**
@@ -232,7 +233,8 @@ export const requestKieVideoGeneration = internalAction({
         scriptLength: videoScript.length,
       });
     } catch (error) {
-      console.error("OpenAI API error:", error);
+      // Message only: AI SDK errors carry the request body (diary and lyrics).
+      console.error("AI error during video script generation:", describeErrorForLog(error));
       
       // Step 4: On error, refund 3 credits (decrement usage counter)
       if (args.usageResult) {
@@ -245,7 +247,7 @@ export const requestKieVideoGeneration = internalAction({
         }
       }
       
-      throw new Error(`Failed to generate video script from OpenAI: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Failed to generate video script: ${describeErrorForLog(error)}`);
     }
     
     // Step 2: Call Kie.ai API to start video generation with callback URL
@@ -271,9 +273,10 @@ export const requestKieVideoGeneration = internalAction({
       }
 
       console.log("Sending video generation request to Kie.ai", {
-        request: JSON.stringify(generationRequest, null, 2),
         musicId: args.musicId,
         userId: args.userId,
+        model: generationRequest.model,
+        promptLength: generationRequest.prompt.length,
       });
 
       const result = await kieClient.generateVideo(generationRequest);

@@ -26,6 +26,24 @@ This document describes the structured logging system implemented in the Convex 
 
 ---
 
+## User Content Must Not Be Logged
+
+Eveokee is a private diary. Never log diary text, call transcripts, generated
+lyrics, AI prompts built from them, extracted events or people, relationship
+highlights, or raw provider payloads (Suno and Kie echo prompts and lyrics
+back). Log identifiers and counts instead, e.g. `{ diaryId, eventCount: 4 }`.
+
+- `Logger` runs every `context` and `metadata` object through
+  `redactUserContent()` (in `convex/utils/logger.ts`), which replaces values
+  under content keys (`content`, `lyric`, `prompt`, `summary`, `highlight`,
+  `events`, `people`, `payload`, ...) with a size marker. This is a safety net,
+  not permission to pass content in.
+- Raw `console.*` calls are not redacted. Call `redactUserContent()` yourself
+  or log only IDs and counts.
+- For errors from AI calls use `describeErrorForLog(error)`: AI SDK parse and
+  validation errors embed the model output in `error.message`, and API call
+  errors carry the request body.
+
 ## Quick Start
 
 ### Basic Usage
