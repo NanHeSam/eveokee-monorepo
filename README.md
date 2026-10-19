@@ -172,6 +172,10 @@ To deploy Convex functions:
 npx convex deploy
 ```
 
+## Native Apple app
+
+The independent SwiftUI Constellation app lives in `apps/ios` (iOS/iPadOS 26+, Swift 6). See [native setup and XcodeGen regeneration](apps/ios/README.md), [design](docs/native-apple/DESIGN.md), and [architecture](docs/native-apple/ARCHITECTURE.md). It has no package.json and is outside pnpm/Turbo tasks.
+
 ## License
 
 Private - All rights reserved
