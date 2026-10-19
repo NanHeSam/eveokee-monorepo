@@ -1,5 +1,5 @@
 /**
- * Suno API webhook payload types and validators
+ * Kie Suno and legacy sunoapi webhook payload types and validators
  * Used for music generation callback processing
  */
 
@@ -29,7 +29,13 @@ export interface SunoTrack {
  * Suno callback data structure
  */
 export interface SunoCallbackData {
-  callbackType: string;
+  callbackType?: string;
+  state?: string;
+  status?: string;
+  resultJson?: string;
+  response?: { data?: unknown[] };
+  failCode?: string | number;
+  failMsg?: string;
   task_id?: string;
   taskId?: string;
   data?: SunoTrack[];
@@ -91,6 +97,10 @@ export function isValidSunoCallback(body: unknown): body is SunoWebhookPayload {
       return false;
     }
     
+    for (const field of ["state", "status", "resultJson"]) {
+      if (data[field] !== undefined && typeof data[field] !== "string") return false;
+    }
+
     // Validate tracks array if present
     if (data.data !== undefined) {
       if (!Array.isArray(data.data)) {
@@ -122,7 +132,17 @@ export function extractSunoTaskId(body: SunoWebhookPayload): string | undefined 
  * @returns Array of validated track objects, or empty array if invalid
  */
 export function extractSunoTracks(body: SunoWebhookPayload): SunoTrack[] {
-  const tracksRaw = body.data?.data;
+  let tracksRaw: unknown = body.data?.data ?? body.data?.response?.data;
+  // Unified jobs may embed the music result in a JSON string instead of the
+  // staged callback's data.data array. Never forward provider-only metadata.
+  if (!Array.isArray(tracksRaw) && body.data?.resultJson) {
+    try {
+      const result = JSON.parse(body.data.resultJson);
+      tracksRaw = Array.isArray(result) ? result : result?.data?.data ?? result?.data ?? result?.response?.data;
+    } catch {
+      return [];
+    }
+  }
   if (!Array.isArray(tracksRaw)) {
     return [];
   }
@@ -169,7 +189,13 @@ export function extractSunoTracks(body: SunoWebhookPayload): SunoTrack[] {
  * @returns The callback type string, or undefined if not present
  */
 export function extractSunoCallbackType(body: SunoWebhookPayload): string | undefined {
-  const callbackType = body.data?.callbackType;
+  const callbackType = body.data?.callbackType ?? body.data?.state ?? body.data?.status;
+  if (callbackType === "success" || callbackType === "completed" ||
+      callbackType === "fail" || callbackType === "failed" || callbackType === "error") {
+    return "complete";
+  }
+  // Some unified jobs failure callbacks contain just taskId and an error code.
+  if (!callbackType && typeof body.code === "number" && body.code !== HTTP_STATUS_OK) return "complete";
   return typeof callbackType === "string" ? callbackType : undefined;
 }
 
@@ -194,8 +220,10 @@ export function parseSunoPayload(
     return { success: false, error: "Missing callbackType" };
   }
 
-  const code = typeof body.code === "number" ? body.code : HTTP_STATUS_OK;
-  const tracks = extractSunoTracks(body);
+  const failed = ["fail", "failed", "error"].includes(body.data?.state ?? body.data?.status ?? "") ||
+    Boolean(body.data?.failCode) || Boolean(body.data?.failMsg);
+  const code = failed ? 500 : typeof body.code === "number" ? body.code : HTTP_STATUS_OK;
+  const tracks = code === HTTP_STATUS_OK ? extractSunoTracks(body) : [];
 
   return {
     success: true,

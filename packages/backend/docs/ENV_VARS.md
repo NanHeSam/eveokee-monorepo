@@ -84,22 +84,8 @@ Model IDs are centralized in `convex/utils/constants/ai.ts`: `anthropic/claude-s
 
 ---
 
-### SUNO_API_KEY
-**Model:** `V6`, custom mode, explicit `duration: 120` seconds. [Suno docs](https://docs.sunoapi.org/suno-api/generate-music) specify 10–360 seconds (20s default); lyrics still use the documented custom-mode `prompt` fallback. Verified 2026-10-18.
-
-**Purpose:** Suno API access for music generation
-
-**Used in:** `convex/musicActions.ts`
-
-**Example:**
-```bash
-SUNO_API_KEY=xxxxxxxxxxxxxxxxxxxxx
-```
-
----
-
 ### SUNO_WEBHOOK_SECRET
-**Purpose:** Authenticates Suno music-generation callbacks. sunoapi.org does not sign callbacks, so the backend appends this value to the callback URL it sends (`?token=...`) and the callback handler rejects any request without it (401) before touching the database.
+**Purpose:** Authenticates Kie Suno music-generation callbacks on the existing `/callback/suno-music-generation` route. The legacy name is retained for in-flight sunoapi callbacks. The backend appends this value to the callback URL it sends (`?token=...`) and the callback handler rejects any request without it (401) before touching the database.
 
 **Used in:** `convex/musicActions.ts`, `convex/webhooks/handlers/suno.ts`
 
@@ -134,9 +120,13 @@ npx convex env set SUNO_WEBHOOK_SECRET "$(openssl rand -hex 32)" --prod   # prod
 ### KIE_AI_API_KEY
 **Model:** `bytedance/seedance-2-fast` for text and photos. Requests use numeric duration, `9:16`/`16:9`, 720p, `generate_audio: false`, and `first_frame_url` for photos. Legacy 1080p options are capped at 720p. Verified against [Kie docs](https://docs.kie.ai/market/bytedance/seedance-2-fast) and the [Seedance playground](https://kie.ai/seedance-2-0) on 2026-10-18.
 
-**Purpose:** Kie.ai API access for video generation using Seedance 2 Fast
+**Music model:** `ai-music-api/generate` via `POST /api/v1/jobs/createTask`; `input` uses snake_case (`custom_mode: true`, `instrumental: false`, `model: "V6"`, `lyrics`, `style`, `title`, `duration: 120`). Duration is valid in custom mode for V6 (10–360 seconds). HTTP 200 may contain a failure code, which is checked before accepting the task. [Generation docs](https://docs.kie.ai/suno-api/generate-music), [task details](https://docs.kie.ai/market/common/get-task-detail), and [callbacks](https://docs.kie.ai/suno-api/generate-music-callbacks) verified 2026-10-18.
 
-**Used in:** `convex/videoActions.ts`
+**Purpose:** One Kie.ai key for music, timed lyrics, task refreshes, and Seedance 2 Fast video. `SUNO_API_KEY` is no longer read and can be removed after deploying this version. Legacy callbacks still work; old sunoapi task IDs cannot be re-fetched through Kie, so rehosting falls back to their saved URLs.
+
+**Dev verification (2026-10-18):** One V6 generation using this client produced two ~120s tracks. The real callback used the staged `callbackType: "complete"` shape; both rows became ready and both audio/images were copied to Convex storage. Observed hosts: `tempfile.aiquickdraw.com`, `musicfile.kie.ai`, `audiostream.kie.ai`, and `cdn2.suno.ai`. Task details returned tracks at `data.response.data[]`, also present in `resultJson.data[]`. The full diary flow was blocked before music submission by Gateway's free-tier 403 for Sonnet; fixed lyrics were used for the single music request from this machine. Timed-lyrics lookups worked locally but returned provider code 401 from Convex dev. Convex-origin creation and timed-lyrics persistence therefore still need verification with working account access.
+
+**Used in:** `convex/videoActions.ts`, `convex/musicActions.ts`, `convex/musicAssets.ts`, `convex/integrations/kie/musicClient.ts`
 
 **Where to find:** https://kie.ai (API Keys section)
 
@@ -163,7 +153,7 @@ npx convex env set KIE_WEBHOOK_SECRET "$(openssl rand -hex 32)" --prod   # prod
 ---
 
 ### KIE_WEBHOOK_HMAC_KEY (Optional, recommended)
-**Purpose:** Kie.ai's account-wide "Webhook HMAC Key". When set, the callback handler additionally verifies `X-Webhook-Signature` = base64(HMAC-SHA256(`taskId.timestamp`, key)) and rejects timestamps older than 15 minutes. See https://docs.kie.ai/common-api/webhook-verification.
+**Purpose:** Kie.ai's account-wide "Webhook HMAC Key". When set, the video callback handler additionally verifies `X-Webhook-Signature` = base64(HMAC-SHA256(`taskId.timestamp`, key)) and rejects timestamps older than 15 minutes. See https://docs.kie.ai/common-api/webhook-verification.
 
 **Where to find:** https://kie.ai/settings → Webhook HMAC Key (generate it there first; once generated, Kie signs every callback)
 
@@ -269,25 +259,13 @@ These variables have defaults or are only used for fine-tuning:
 ---
 
 ### KIE_AI_TIMEOUT
-**Purpose:** Timeout in milliseconds for Kie.ai API requests (optional)
+**Purpose:** Timeout in milliseconds for Kie.ai music, lyrics, task detail, and video API requests (optional)
 
 **Default:** 30000 (30 seconds)
 
 **Example:**
 ```bash
 KIE_AI_TIMEOUT=60000
-```
-
----
-
-### SUNO_TIMEOUT
-**Purpose:** Timeout in milliseconds for Suno API requests (optional)
-
-**Default:** No timeout
-
-**Example:**
-```bash
-SUNO_TIMEOUT=60000
 ```
 
 ---

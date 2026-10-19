@@ -13,7 +13,7 @@ import { internalAction, internalMutation, internalQuery } from "./_generated/se
 import type { ActionCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { createSunoClientFromEnv } from "./integrations/suno/client";
+import { createKieMusicClientFromEnv } from "./integrations/kie/musicClient";
 import { MUSIC_GENERATION_CALLBACK_PATH } from "./utils/constants";
 import {
   isAllowedAssetUrl,
@@ -345,11 +345,11 @@ export const rehostMusicFromProvider = internalAction({
       includeAttempted: args.includeAttempted,
     });
 
-    const sunoClient = createSunoClientFromEnv({
-      SUNO_API_KEY: process.env.SUNO_API_KEY,
+    const sunoClient = createKieMusicClientFromEnv({
+      KIE_AI_API_KEY: process.env.KIE_AI_API_KEY,
       CONVEX_SITE_URL: process.env.CONVEX_SITE_URL,
       CALLBACK_PATH: MUSIC_GENERATION_CALLBACK_PATH,
-      SUNO_TIMEOUT: process.env.SUNO_TIMEOUT,
+      KIE_AI_TIMEOUT: process.env.KIE_AI_TIMEOUT,
     });
 
     const byTask = new Map<string, typeof rows>();

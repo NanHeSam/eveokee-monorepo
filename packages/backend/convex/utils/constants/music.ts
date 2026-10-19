@@ -1,12 +1,12 @@
 /**
  * Music generation constants
- * Configuration for Suno API and OpenAI music generation
+ * Configuration for Kie Suno and AI Gateway music generation
  */
 
-// Suno API
-export const SUNO_API_GENERATE_ENDPOINT = "https://api.sunoapi.org/api/v1/generate";
-export const SUNO_API_TIMESTAMPED_LYRICS_ENDPOINT = "https://api.sunoapi.org/api/v1/generate/get-timestamped-lyrics";
-export const SUNO_API_RECORD_INFO_ENDPOINT = "https://api.sunoapi.org/api/v1/generate/record-info";
+// Suno music through Kie's unified jobs API.
+export const KIE_MUSIC_MODEL = "ai-music-api/generate";
+export const KIE_TIMESTAMPED_LYRICS_MODEL = "ai-music-api/timeStamped-lyrics";
+export const KIE_API_RECORD_INFO_ENDPOINT = "https://api.kie.ai/api/v1/jobs/recordInfo";
 export const MUSIC_GENERATION_CALLBACK_PATH = "/callback/suno-music-generation";
 export const SUNO_SONGS_PER_REQUEST = 2;
 export const SUNO_DEFAULT_MODEL = "V6" as const;

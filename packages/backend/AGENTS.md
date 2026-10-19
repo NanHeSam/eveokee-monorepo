@@ -51,7 +51,7 @@ Public queries/mutations/actions are organized by domain:
 ### Integrations
 Third-party client wrappers live in `convex/integrations/`:
 - `convex/integrations/openai/client.ts` — OpenAI API client
-- `convex/integrations/suno/client.ts` — Suno API client
+- `convex/integrations/kie/musicClient.ts` — Kie Suno music, timed lyrics, and task-details client
 - `convex/integrations/revenuecat/client.ts` — RevenueCat API client
 - `convex/integrations/vapi/client.ts` — VAPI API client
 - `convex/integrations/vapi/integration.ts` — VAPI integration helpers
@@ -103,7 +103,9 @@ Shared utilities in `convex/utils/`:
 - `CLERK_WEBHOOK_SIGNING_SECRET` — Clerk webhook signature validation
 - `CLERK_FRONTEND_API_URL` — Clerk authentication domain
 - `AI_GATEWAY_API_KEY` — Vercel AI Gateway access for all text/vision generation
-- `SUNO_API_KEY` — Suno API access for music generation
+- `KIE_AI_API_KEY` — Kie.ai access for music and video generation
+- `SUNO_WEBHOOK_SECRET` — Music callback token (legacy route/name retained)
+- `KIE_WEBHOOK_SECRET` — Video callback token
 
 See [`ENV_VARS.md`](docs/ENV_VARS.md) for complete details.
 

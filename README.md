@@ -85,7 +85,8 @@ install them locally before running the tests.
   - `SHARE_BASE_URL` - Your production domain (e.g., `https://yourdomain.com`) for generating share links
   - `CLERK_WEBHOOK_SIGNING_SECRET` - From Clerk dashboard
   - `CLERK_FRONTEND_API_URL` - Your Clerk domain
-  - `OPENAI_API_KEY`, `SUNO_API_KEY` - For AI music generation
+  - `AI_GATEWAY_API_KEY`, `KIE_AI_API_KEY` - For lyrics and music/video generation
+  - `SUNO_WEBHOOK_SECRET`, `KIE_WEBHOOK_SECRET` - Separate tokens for music/video callbacks
 - See [`packages/backend/ENV_VARS.md`](packages/backend/docs/ENV_VARS.md) for detailed documentation
 
 ## Environment Variables
@@ -105,9 +106,10 @@ CLERK_WEBHOOK_SIGNING_SECRET=
 CLERK_FRONTEND_API_URL=
 
 # AI & Music Generation
-OPENAI_API_KEY=
-SUNO_API_KEY=
-SUNO_CALLBACK_URL=
+AI_GATEWAY_API_KEY=
+KIE_AI_API_KEY=
+SUNO_WEBHOOK_SECRET=
+KIE_WEBHOOK_SECRET=
 ```
 
 **For local development:** Create `.env.local` in the repo root with the above variables. The Convex CLI will automatically load it.

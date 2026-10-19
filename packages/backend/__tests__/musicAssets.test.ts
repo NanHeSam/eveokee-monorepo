@@ -18,6 +18,10 @@ describe("musicAssets helpers", () => {
     expect(isAllowedAssetUrl("https://cdn1.suno.ai/a.mp3")).toBe(true);
     expect(isAllowedAssetUrl("https://tempfile.aiquickdraw.com/r/a.mp3")).toBe(true);
     expect(isAllowedAssetUrl("https://audiostream.api.box/stream/a.mp3")).toBe(true);
+    expect(isAllowedAssetUrl("https://musicfile.kie.ai/song.mp3")).toBe(true);
+    expect(isAllowedAssetUrl("https://audiostream.kie.ai/stream")).toBe(true);
+    expect(isAllowedAssetUrl("https://musicfile.kie.ai.evil.example/song.mp3")).toBe(false);
+    expect(isAllowedAssetUrl("https://evil-musicfile.kie.ai/song.mp3")).toBe(false);
     expect(isAllowedAssetUrl("http://cdn1.suno.ai/a.mp3")).toBe(false);
     expect(isAllowedAssetUrl("https://evil.example/suno.ai/a.mp3")).toBe(false);
     expect(isAllowedAssetUrl("https://notsuno.ai/a.mp3")).toBe(false);
@@ -51,6 +55,7 @@ describe("musicAssets.persistMusicAssets", () => {
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
+    vi.unstubAllEnvs();
   });
 
   function mockFetch(routes: Record<string, { status: number; type: string; body: Uint8Array | string }>) {
@@ -89,6 +94,29 @@ describe("musicAssets.persistMusicAssets", () => {
       });
     });
   }
+
+  it("rehosts structured Kie recordInfo tracks into Convex storage", async () => {
+    vi.stubEnv("KIE_AI_API_KEY", "kie-key");
+    vi.stubEnv("CONVEX_SITE_URL", "https://test.convex.site");
+    const t = createTestEnvironment();
+    const musicId = await insertReadyMusic(t, "https://cdn1.suno.ai/expired.mp3");
+    mockFetch({
+      "https://api.kie.ai/api/v1/jobs/recordInfo?taskId=task-1": {
+        status: 200, type: "application/json", body: JSON.stringify({ code: 200, data: { state: "success", response: { data: [
+          { id: "clip-0", audio_url: "https://musicfile.kie.ai/fresh.mp3", image_url: "https://tempfile.aiquickdraw.com/cover.jpg" },
+        ] } } }),
+      },
+      "https://musicfile.kie.ai/fresh.mp3": { status: 200, type: "audio/mpeg", body: new Uint8Array([1, 2, 3]) },
+      "https://tempfile.aiquickdraw.com/cover.jpg": { status: 200, type: "image/jpeg", body: new Uint8Array([4, 5]) },
+    });
+    const result = await t.action(internal.musicAssets.rehostMusicFromProvider, { limit: 1 });
+    expect(result).toMatchObject({ candidates: 1, tasksQueried: 1, results: [{ musicId, outcome: "persisted" }] });
+    const music = await t.run((ctx) => ctx.db.get(musicId));
+    expect(music?.audioStorageId).toBeDefined();
+    expect(music?.imageStorageId).toBeDefined();
+    expect(isConvexStorageUrl(music!.audioUrl!)).toBe(true);
+    expect(vi.mocked(fetch).mock.calls[0][1]?.headers).toMatchObject({ Authorization: "Bearer kie-key" });
+  });
 
   it("falls through dead provider URLs, stores the first working one and rewrites audioUrl", async () => {
     const t = createTestEnvironment();

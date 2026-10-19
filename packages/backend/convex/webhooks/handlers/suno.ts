@@ -1,6 +1,6 @@
 /**
  * Suno webhook handler
- * Processes music generation completion callbacks from Suno API
+ * Processes Kie Suno callbacks and in-flight legacy sunoapi callbacks
  */
 
 import { httpAction } from "../../_generated/server";
@@ -25,7 +25,7 @@ import {
   MUSIC_GENERATION_CALLBACK_PATH,
 } from "../../utils/constants";
 import { logWebhookEvent } from "../../utils/logger";
-import { createSunoClientFromEnv } from "../../integrations/suno/client";
+import { createKieMusicClientFromEnv } from "../../integrations/kie/musicClient";
 
 /**
  * Handle Suno music generation callback webhook
@@ -33,7 +33,7 @@ import { createSunoClientFromEnv } from "../../integrations/suno/client";
  * Steps:
  * 1. Validate HTTP method (POST only)
  * 2. Authenticate the secret token we put in the callback URL
- *    (sunoapi.org does not sign callbacks)
+ *    (the existing music route/token also accepts legacy callbacks)
  * 3. Parse and validate JSON payload
  * 4. Extract taskId and tracks from callback data
  * 5. Verify callback type is "complete" and the task is still pending
@@ -83,10 +83,16 @@ export const sunoMusicGenerationCallback = httpAction(async (ctx, req) => {
     return errorResponse(parsedPayload.error, HTTP_STATUS_BAD_REQUEST);
   }
 
-  const { taskId, tracks: tracksRaw, callbackType, code } = parsedPayload.data;
+  const { taskId, callbackType, code } = parsedPayload.data;
+  let tracksRaw = parsedPayload.data.tracks;
 
   // Add taskId to logger context
   const eventLogger = logger.child({ taskId, callbackType, code });
+  eventLogger.info("Music callback shape", {
+    format: body.data?.callbackType ? "staged" : "jobs",
+    hasResultJson: typeof body.data?.resultJson === "string",
+    trackCount: tracksRaw.length,
+  });
 
   // Step 6: Verify callback type
   if (callbackType !== "complete") {
@@ -107,84 +113,40 @@ export const sunoMusicGenerationCallback = httpAction(async (ctx, req) => {
 
   // Step 7: Process completed music generation
   try {
+    // Generic jobs callbacks may only contain resultUrls (without track IDs).
+    // Re-fetch the task's structured music result before completing rows.
+    if (code === HTTP_STATUS_OK && tracksRaw.length === 0 && !body.data?.callbackType) {
+      const client = createKieMusicClientFromEnv({
+        KIE_AI_API_KEY: process.env.KIE_AI_API_KEY,
+        CONVEX_SITE_URL: process.env.CONVEX_SITE_URL,
+        CALLBACK_PATH: MUSIC_GENERATION_CALLBACK_PATH,
+        KIE_AI_TIMEOUT: "10000",
+      });
+      const info = await client.getRecordInfo(taskId);
+      tracksRaw = info.tracks.map((track) => ({
+        id: track.id, audio_url: track.audioUrl, image_url: track.imageUrl,
+        stream_audio_url: track.streamAudioUrl, title: track.title, duration: track.duration,
+      }));
+    }
+    if (code === HTTP_STATUS_OK && tracksRaw.length === 0) {
+      throw new Error("Completed music callback has no tracks");
+    }
+    eventLogger.info("Music asset hosts", {
+      hosts: [...new Set(tracksRaw.flatMap((track) => [track.audio_url, track.image_url, track.stream_audio_url])
+        .filter((url): url is string => Boolean(url)).flatMap((url) => {
+          try { return [new URL(url).hostname]; } catch { return []; }
+        }))],
+    });
     await ctx.runMutation(internal.music.completeSunoTask, {
       taskId,
       tracks: tracksRaw,
     });
     
-    // Step 8: Fetch timed lyrics for each track
-    try {
-      const musicRecords = await ctx.runQuery(internal.music.getAllMusicByTaskId, {
-        taskId,
-      });
-
-      // Create Suno client for fetching timed lyrics
-      const convexSiteUrl = process.env.CONVEX_SITE_URL;
-      if (!convexSiteUrl) {
-        eventLogger.warn("CONVEX_SITE_URL not available, skipping timed lyrics fetch");
-      } else {
-        const sunoClient = createSunoClientFromEnv({
-          SUNO_API_KEY: process.env.SUNO_API_KEY,
-          CONVEX_SITE_URL: convexSiteUrl,
-          CALLBACK_PATH: MUSIC_GENERATION_CALLBACK_PATH,
-          SUNO_TIMEOUT: process.env.SUNO_TIMEOUT,
-        });
-
-        // Fetch timed lyrics for each track
-        await Promise.all(
-          tracksRaw.map(async (track, index) => {
-            const audioId = track.id;
-            if (!audioId) {
-              eventLogger.warn("Track missing audioId, skipping timed lyrics fetch", {
-                trackIndex: index,
-              });
-              return;
-            }
-
-            // Find matching music record by audioId
-            const musicRecord = musicRecords.find((m) => m.audioId === audioId);
-            if (!musicRecord) {
-              eventLogger.warn("No music record found for audioId", {
-                audioId,
-                trackIndex: index,
-              });
-              return;
-            }
-
-            try {
-              const timedLyrics = await sunoClient.getTimestampedLyrics({
-                taskId,
-                audioId,
-              });
-
-              // Update music record with timed lyrics
-              await ctx.runMutation(internal.music.updateLyricWithTime, {
-                musicId: musicRecord._id,
-                lyricWithTime: timedLyrics,
-              });
-
-              eventLogger.debug("Successfully fetched and stored timed lyrics", {
-                audioId,
-                musicId: musicRecord._id,
-              });
-            } catch (lyricsError) {
-              // Log but don't fail the webhook if timed lyrics fetch fails
-              eventLogger.warn("Failed to fetch timed lyrics", {
-                audioId,
-                musicId: musicRecord._id,
-                error: lyricsError instanceof Error ? lyricsError.message : "Unknown error",
-              });
-            }
-          }),
-        );
-      }
-    } catch (lyricsError) {
-      // Log but don't fail the webhook if timed lyrics processing fails
-      eventLogger.warn("Failed to process timed lyrics", {
-        error: lyricsError instanceof Error ? lyricsError.message : "Unknown error",
-      });
+    // Timed lyrics are best effort and must not delay the callback response.
+    if (code === HTTP_STATUS_OK) {
+      await ctx.scheduler.runAfter(0, internal.musicActions.fetchTimedLyrics, { taskId });
     }
-    
+
     // Get the music record to send push notification
     const musicRecord = await ctx.runQuery(internal.music.getMusicByTaskId, {
       taskId,

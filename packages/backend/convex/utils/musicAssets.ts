@@ -27,6 +27,9 @@ export interface MusicRowLike {
 export const ALLOWED_ASSET_HOST_SUFFIXES = [
   "suno.ai",
   "sunoapi.org",
+  // Observed in a Kie V6 dev callback and recordInfo (2026-10-18).
+  "musicfile.kie.ai",
+  "audiostream.kie.ai",
   "api.box",
   "aiquickdraw.com",
   "removeai.ai",

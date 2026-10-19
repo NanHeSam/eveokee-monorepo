@@ -22,14 +22,12 @@ const ENV_CONFIG = {
   // Note: CONVEX_SITE_URL is provided automatically by Convex, no need to set it manually
 
   // Suno Integration
-  SUNO_API_KEY: { required: true, description: "Suno API key for music generation" },
-  SUNO_TIMEOUT: { required: false, description: "Suno API timeout in milliseconds" },
   // Not marked required so a deploy without it does not fail at module load;
   // music generation and the Suno callback fail closed when it is missing.
   SUNO_WEBHOOK_SECRET: { required: false, description: "Secret token appended to the Suno callback URL to authenticate callbacks" },
 
-  // Kie.ai Integration (Video Generation)
-  KIE_AI_API_KEY: { required: true, description: "Kie.ai API key for video generation using Seedance 2 Fast" },
+  // Kie.ai Integration (music and video generation)
+  KIE_AI_API_KEY: { required: true, description: "Kie.ai API key for Suno music and Seedance 2 Fast video" },
   KIE_AI_TIMEOUT: { required: false, description: "Kie.ai API timeout in milliseconds" },
   // Not marked required so a deploy without it does not fail at module load;
   // video generation and the Kie callback fail closed when it is missing.
