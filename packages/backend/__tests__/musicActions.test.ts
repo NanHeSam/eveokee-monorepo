@@ -59,7 +59,55 @@ describe("music generation action", () => {
     await t.action(internal.musicActions.fetchTimedLyrics, { taskId: "kie-lyrics" });
     const row = await t.run((ctx) => ctx.db.get(musicId));
     expect(row?.lyricWithTime?.alignedWords).toEqual([{ word: "Sky", startS: 0, endS: 1, palign: 0 }]);
+    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe("Bearer kie-test-key");
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).model).toBe("ai-music-api/timeStamped-lyrics");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).input).toEqual({ task_id: "kie-lyrics", audio_id: "clip-1" });
+  });
+
+  it("logs an IP-whitelist rejection, keeps music ready, and still stores the other track's lyrics", async () => {
+    const { t, args } = await setup();
+    const ids = await t.run(async (ctx) => Promise.all(["rejected", "accepted"].map((audioId) => ctx.db.insert("music", {
+      userId: args.diary.userId, status: "ready", taskId: "kie-lyrics", audioId, createdAt: 1, updatedAt: 1,
+    }))));
+    fetchMock.mockImplementation(async (_url, request) => {
+      const { audio_id } = JSON.parse(request.body).input;
+      return new Response(JSON.stringify(audio_id === "rejected"
+        ? { code: 401, msg: "Request rejected: the server IP does not match the IP whitelist for this API key. Please check." }
+        : { code: 200, data: { code: 200, data: {
+          alignedWords: [{ word: "Sky", startS: 0, endS: 1, palign: 0 }], waveformData: [], hootCer: 0,
+        } } }));
+    });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      await expect(t.action(internal.musicActions.fetchTimedLyrics, { taskId: "kie-lyrics" })).resolves.toBeNull();
+      expect(warn).toHaveBeenCalledWith("Timed lyrics unavailable", expect.objectContaining({
+        musicId: ids[0], phase: "fetch", providerCode: "401", providerReason: "ip_whitelist",
+      }));
+      const rows = await t.run(async (ctx) => Promise.all(ids.map((id) => ctx.db.get(id))));
+      expect(rows.map((row) => row?.status)).toEqual(["ready", "ready"]);
+      expect(rows[0]?.lyricWithTime).toBeUndefined();
+      expect(rows[1]?.lyricWithTime?.alignedWords).toHaveLength(1);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("logs missing timed-lyrics configuration without failing or changing ready music", async () => {
+    const { t, args } = await setup();
+    const musicId = await t.run((ctx) => ctx.db.insert("music", {
+      userId: args.diary.userId, status: "ready", taskId: "kie-lyrics", audioId: "clip-1", createdAt: 1, updatedAt: 1,
+    }));
+    vi.stubEnv("KIE_AI_API_KEY", "");
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      await expect(t.action(internal.musicActions.fetchTimedLyrics, { taskId: "kie-lyrics" })).resolves.toBeNull();
+      expect(warn).toHaveBeenCalledWith("Timed lyrics unavailable", expect.objectContaining({ phase: "setup" }));
+      expect((await t.run((ctx) => ctx.db.get(musicId)))?.status).toBe("ready");
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it.each(["SUNO_WEBHOOK_SECRET", "KIE_AI_API_KEY"])("fails before inference and refunds usage without %s", async (name) => {
