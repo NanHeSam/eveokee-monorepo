@@ -155,13 +155,23 @@ export const fetchTimedLyrics = internalAction({
   args: { taskId: v.string() },
   returns: v.null(),
   handler: async (ctx, { taskId }) => {
-    const records = await ctx.runQuery(internal.music.getAllMusicByTaskId, { taskId });
-    const client = createKieMusicClientFromEnv({
-      KIE_AI_API_KEY: process.env.KIE_AI_API_KEY,
-      CONVEX_SITE_URL: process.env.CONVEX_SITE_URL,
-      CALLBACK_PATH: MUSIC_GENERATION_CALLBACK_PATH,
-      KIE_AI_TIMEOUT: process.env.KIE_AI_TIMEOUT,
-    });
+    let records;
+    let client;
+    try {
+      records = await ctx.runQuery(internal.music.getAllMusicByTaskId, { taskId });
+      client = createKieMusicClientFromEnv({
+        KIE_AI_API_KEY: process.env.KIE_AI_API_KEY,
+        CONVEX_SITE_URL: process.env.CONVEX_SITE_URL,
+        CALLBACK_PATH: MUSIC_GENERATION_CALLBACK_PATH,
+        KIE_AI_TIMEOUT: process.env.KIE_AI_TIMEOUT,
+      });
+    } catch (error) {
+      console.warn("Timed lyrics unavailable", {
+        taskId, phase: "setup",
+        errorType: error instanceof Error ? error.name : typeof error,
+      });
+      return null;
+    }
     await Promise.all(records.filter((record) => record.audioId).map(async (record) => {
       let phase = "fetch";
       try {
@@ -174,6 +184,9 @@ export const fetchTimedLyrics = internalAction({
           taskId, musicId: record._id, phase,
           errorType: error instanceof Error ? error.name : typeof error,
           providerCode: error instanceof Error ? error.message.match(/(?:error code |failed: )(\d{3})/)?.[1] : undefined,
+          // Kie can accept the same key locally yet reject Convex's egress IP.
+          // Classify the cause without logging raw provider bodies or secrets.
+          providerReason: error instanceof Error && /IP whitelist/i.test(error.message) ? "ip_whitelist" : undefined,
         });
       }
     }));
