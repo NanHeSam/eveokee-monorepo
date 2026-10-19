@@ -16,9 +16,11 @@ export const DEFAULT_VIDEO_RESOLUTION = "720p" as const; // 720p resolution
 export const DEFAULT_ASPECT_RATIO = "portrait" as const; // Portrait for mobile-first
 export const DEFAULT_REMOVE_WATERMARK = true;
 
-// OpenAI Configuration for Video Script Generation
-export const OPENAI_VIDEO_SCRIPT_MODEL = "gpt-5-mini";
-export const OPENAI_VIDEO_SCRIPT_MAX_OUTPUT_TOKENS = 10000;
+// Legacy names retained for callers; all LLM selections live in ai.ts.
+export {
+  AI_MODEL_VIDEO_SCRIPT as OPENAI_VIDEO_SCRIPT_MODEL,
+  AI_VIDEO_SCRIPT_MAX_OUTPUT_TOKENS as OPENAI_VIDEO_SCRIPT_MAX_OUTPUT_TOKENS,
+} from "./ai";
 
 // Video limits
 export const MAX_VIDEO_DURATION_SECONDS = 10;

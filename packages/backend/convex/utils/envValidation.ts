@@ -14,9 +14,10 @@ const ENV_CONFIG = {
   CLERK_FRONTEND_API_URL: { required: true, description: "Clerk domain for authentication" },
   CLERK_WEBHOOK_SIGNING_SECRET: { required: true, description: "Clerk webhook signing secret" },
 
-  // OpenAI Integration
-  OPENAI_API_KEY: { required: true, description: "OpenAI API key for music prompt generation" },
-  OPENAI_TIMEOUT: { required: false, description: "OpenAI API timeout in milliseconds" },
+  // AI Gateway Integration
+  AI_GATEWAY_API_KEY: { required: true, description: "Vercel AI Gateway API key for all text/vision generation" },
+  AI_GATEWAY_TIMEOUT: { required: false, description: "AI Gateway API timeout in milliseconds" },
+  OPENAI_TIMEOUT: { required: false, description: "Legacy fallback for AI_GATEWAY_TIMEOUT" },
 
   // Note: CONVEX_SITE_URL is provided automatically by Convex, no need to set it manually
 

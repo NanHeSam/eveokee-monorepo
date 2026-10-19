@@ -1,6 +1,5 @@
 import { createGateway } from "@ai-sdk/gateway";
-// Default model in the format "provider/model-name"
-const DEFAULT_MODEL = "openai/gpt-5.1-instant";
+import { AI_GATEWAY_DEFAULT_MODEL } from "../../utils/constants/ai";
 
 type AIClientConfig = {
   apiKey: string;
@@ -11,7 +10,7 @@ type AIClientConfig = {
  * Client wrapper for Vercel AI SDK routed through the AI Gateway.
  * 
  * Uses the Vercel AI Gateway to access multiple model providers through a single endpoint.
- * Models are specified in the format "provider/model-name" (e.g., "openai/gpt-5.1-instant", "zai/glm-4.6").
+ * Models are specified in the format "provider/model-name" (e.g., "anthropic/claude-haiku-5.5").
  * 
  * @see https://vercel.com/docs/ai-gateway/models-and-providers
  */
@@ -29,7 +28,7 @@ export class AIClient {
     });
   }
 
-  getModel(modelName: string = DEFAULT_MODEL) {
+  getModel(modelName: string = AI_GATEWAY_DEFAULT_MODEL) {
     return this.gateway(modelName);
   }
 }

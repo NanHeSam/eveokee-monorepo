@@ -289,7 +289,7 @@ describe("describeErrorForLog", () => {
 
   it("keeps name, status and a capped message for other errors", () => {
     const apiErr = Object.assign(new Error("rate limited"), { name: "AI_APICallError", statusCode: 429 });
-    expect(describeErrorForLog(apiErr)).toBe("AI_APICallError (status 429): rate limited");
+    expect(describeErrorForLog(apiErr)).toBe("AI_APICallError (status 429)");
     expect(describeErrorForLog(new Error("x".repeat(400))).length).toBeLessThan(320);
     expect(describeErrorForLog("raw string with diary text")).toBe("[non-Error thrown]");
   });

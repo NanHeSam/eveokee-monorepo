@@ -117,11 +117,11 @@ export const generateDiaryFromCall = internalAction({
       console.error("Failed to get OpenAI client:", error);
       await ctx.runMutation(internal.callJobs.updateCallSessionMetadata, {
         callSessionId: args.callSessionId,
-        metadata: { diaryError: "OPENAI_API_KEY not configured" },
+        metadata: { diaryError: "AI_GATEWAY_API_KEY not configured" },
       });
       return {
         success: false,
-        error: "OPENAI_API_KEY not configured",
+        error: "AI_GATEWAY_API_KEY not configured",
       };
     }
 

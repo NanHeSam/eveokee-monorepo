@@ -73,17 +73,14 @@ CLERK_FRONTEND_API_URL=https://your-app.clerk.accounts.dev
 
 ---
 
-### OPENAI_API_KEY
-**Purpose:** OpenAI API access for music prompt generation
+### AI_GATEWAY_API_KEY
+**Purpose:** Vercel AI Gateway access for lyrics, diary-from-transcript, video prompts (including photos), blog tags, memory extraction, and relationship highlights.
 
-**Used in:** `convex/musicActions.ts`
+**Used in:** `convex/integrations/openai/client.ts` (legacy name), `convex/memory/util.ts`
 
-**Where to find:** https://platform.openai.com/api-keys
+**Where to find:** Vercel dashboard → AI Gateway → API keys. Set a valid Gateway key with credits in **both dev and production Convex before deploying**. An `OPENAI_API_KEY` cannot authenticate to the Gateway and is no longer used by this backend.
 
-**Example:**
-```bash
-OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxx
-```
+Model IDs are centralized in `convex/utils/constants/ai.ts`: `anthropic/claude-sonnet-5.5` for lyrics and vision/video scripts, `anthropic/claude-haiku-5.5` for diary, tags, and memory. Verified against the [Gateway model catalog](https://ai-gateway.vercel.sh/v1/models) on 2026-10-18; Gateway IDs differ from native Anthropic IDs. Vapi uses the native OpenAI ID `gpt-5.4-mini`, listed in [Vapi's supported models](https://docs.vapi.ai/providers/model/openai).
 
 ---
 
@@ -260,15 +257,10 @@ BLOG_WEBHOOK_HMAC_SECRET=your-hmac-secret-key-here
 
 These variables have defaults or are only used for fine-tuning:
 
-### OPENAI_TIMEOUT
-**Purpose:** Timeout in milliseconds for OpenAI API requests (optional)
+### AI_GATEWAY_TIMEOUT
+**Purpose:** Timeout in milliseconds for legacy-named OpenAI client calls routed through Gateway (optional).
 
-**Default:** No timeout
-
-**Example:**
-```bash
-OPENAI_TIMEOUT=30000
-```
+**Default:** 60000 ms. Must be a positive finite number. `OPENAI_TIMEOUT` remains a deprecated fallback when `AI_GATEWAY_TIMEOUT` is unset. Memory calls have a fixed 60000 ms timeout.
 
 ---
 

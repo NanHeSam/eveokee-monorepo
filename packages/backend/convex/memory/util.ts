@@ -1,6 +1,11 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { AIClient } from "../integrations/ai/client";
+import {
+  AI_MODEL_MEMORY_EXTRACTION,
+  AI_MODEL_RELATIONSHIP_HIGHLIGHT,
+  AI_DEFAULT_TIMEOUT_MS,
+} from "../utils/constants/ai";
 import { describeErrorForLog } from "../utils/logger";
 
 // Define words once - change here to update everywhere
@@ -83,7 +88,6 @@ const EventSchema = z.object({
 });
 
 type EventExtraction = z.infer<typeof EventSchema>;
-const EXTRACTION_MODEL = "openai/gpt-5.4-nano";
 const MAX_EXTRACTION_ATTEMPTS = 3;
 
 let cachedAIClient: AIClient | null = null;
@@ -114,7 +118,7 @@ export async function extractEventsFromDiary(
   }
 
   const client = getOrCreateAIClient(apiKey);
-  const model = client.getModel(EXTRACTION_MODEL);
+  const model = client.getModel(AI_MODEL_MEMORY_EXTRACTION);
   const contextPrompt = constructContextPrompt(existingPeople, existingTags);
   const systemPrompt = SYSTEM_PROMPT + contextPrompt;
 
@@ -125,6 +129,8 @@ export async function extractEventsFromDiary(
       const prompt = buildDiaryPrompt(text, date, previousError);
 
       const result = await generateObject({
+        reasoning: "none",
+        abortSignal: AbortSignal.timeout(AI_DEFAULT_TIMEOUT_MS),
         model,
         schema: EventSchema,
         output: "array",
@@ -297,8 +303,6 @@ ${instruction}
 `;
 }
 
-const HIGHLIGHT_MODEL = "openai/gpt-4o-mini";
-
 type HighlightEventSummary = {
   title: string;
   summary: string;
@@ -319,7 +323,7 @@ export async function generateRelationshipHighlight(
 
   try {
     const client = getOrCreateAIClient(apiKey);
-    const model = client.getModel(HIGHLIGHT_MODEL);
+    const model = client.getModel(AI_MODEL_RELATIONSHIP_HIGHLIGHT);
 
     const eventsText =
       events
@@ -355,6 +359,8 @@ Highlight:`;
       eventsCount: events.length,
     });
     const result = await generateObject({
+      reasoning: "none",
+      abortSignal: AbortSignal.timeout(AI_DEFAULT_TIMEOUT_MS),
       model,
       schema: HighlightSchema,
       prompt,
