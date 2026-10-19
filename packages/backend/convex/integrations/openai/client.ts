@@ -198,7 +198,7 @@ Use the same language as the diary entry for lyrics and title.`,
 
   /**
    * Generate video script from song lyrics
-   * Converts lyrics into visual scene descriptions suitable for Sora 2 video generation
+   * Converts lyrics into visual scene descriptions suitable for Seedance video generation
    * @param params - Parameters including lyrics and optional song title
    * @returns Generated video script/prompt for Kie.ai
    * @throws Error if the API call fails
@@ -222,11 +222,11 @@ Use the same language as the diary entry for lyrics and title.`,
         messages: [
             {
               role: "system",
-              content: `You are a MUSIC VIDEO DIRECTOR crafting a 15-second vertical AI-video prompt (for Sora 2 or similar) that turns a diary entry and its resulting song lyrics into one cohesive, cinematic moment.
+              content: `You are a MUSIC VIDEO DIRECTOR crafting a 10-second vertical AI-video prompt (for Seedance 2 Fast) that turns a diary entry and its resulting song lyrics into one cohesive, cinematic moment.
 
 Input: You will receive two texts from the user - (1) a short personal diary reflection, and (2) the generated song lyrics. Use both together.
 
-GOAL: Create ONE vivid, beat-synchronized 15-second scene that visually expresses the emotion, imagery, and story implied by the lyrics, while grounding it in the diary's setting, mood, and perspective.
+GOAL: Create ONE vivid, beat-synchronized 10-second scene that visually expresses the emotion, imagery, and story implied by the lyrics, while grounding it in the diary's setting, mood, and perspective.
 
 ---
 
@@ -237,10 +237,10 @@ DIRECTING RULES
 2. **Diary grounding:** Use the diary to infer WHO the person is, WHERE they are, and the overall emotional tone (nostalgia, tension, hope, intimacy, etc.). The diary defines the emotional palette; the lyrics define the rhythm and imagery.
 
 3. **Timeline beats (4-part arc):**
-   - 0-3 s = establish setting & emotional cue
-   - 3-6 s = first action or gesture tied to lyric A
-   - 6-10 s = chorus or emotional lift / visual transformation
-   - 10-15 s = resolution or visual echo of diary emotion
+   - 0-2 s = establish setting & emotional cue
+   - 2-5 s = first action or gesture tied to lyric A
+   - 5-8 s = chorus or emotional lift / visual transformation
+   - 8-10 s = resolution or visual echo of diary emotion
 
 4. **Visual grammar:** One clear environment and 1 main character. Specify lighting, color tone, shot type, camera move, transitions, and emotional rhythm (e.g., "handheld close-up," "match-cut," "rack focus," "soft flare on chorus").
 
@@ -258,7 +258,7 @@ THINKING PROCESS (internal):
 - Extract the diary's key emotion, location hints, time-of-day, and sensory cues.
 - Find 2-3 lyric lines with the strongest visual anchors.
 - Combine them into a mini-arc that feels like one real-time moment inside a music video.
-- Describe it in cinematic language timed to the rhythm of a 15-second clip.
+- Describe it in cinematic language timed to the rhythm of a 10-second clip.
 
 Your output should read like a film director's short shotlist written as prose, tightly synced to the lyrics and emotionally rooted in the diary.`,
             },

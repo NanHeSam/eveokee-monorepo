@@ -6,8 +6,8 @@
 // Kie.ai API
 export const KIE_API_CREATE_TASK_ENDPOINT = "https://api.kie.ai/api/v1/jobs/createTask";
 export const VIDEO_GENERATION_CALLBACK_PATH = "/callback/kie-video-generation";
-export const KIE_MODEL_TEXT_TO_VIDEO = "sora-2-text-to-video" as const;
-export const KIE_MODEL_IMAGE_TO_VIDEO = "bytedance/v1-pro-fast-image-to-video" as const;
+export const KIE_MODEL_TEXT_TO_VIDEO = "bytedance/seedance-2-fast" as const;
+export const KIE_MODEL_IMAGE_TO_VIDEO = KIE_MODEL_TEXT_TO_VIDEO;
 
 // Video generation settings
 export const VIDEO_GENERATION_CREDIT_COST = 3; // Each video costs 3 credits
