@@ -1,19 +1,17 @@
 /**
  * Kie.ai Client Service
- * Provides a clean interface for interacting with the Kie.ai API (Sora 2 model)
+ * Provides a clean interface for interacting with the Kie.ai API (Seedance 2 Fast model)
  * with proper error handling, timeout management, and type safety
  * 
- * API Documentation: https://kie.ai/sora-2
+ * API Documentation: https://docs.kie.ai/market/bytedance/seedance-2-fast
  */
 
 import {
   KIE_API_CREATE_TASK_ENDPOINT,
   KIE_MODEL_TEXT_TO_VIDEO,
-  KIE_MODEL_IMAGE_TO_VIDEO,
   DEFAULT_VIDEO_DURATION,
   DEFAULT_VIDEO_RESOLUTION,
   DEFAULT_ASPECT_RATIO,
-  DEFAULT_REMOVE_WATERMARK,
 } from "../../utils/constants/video";
 import { HTTP_STATUS_OK } from "../../utils/constants";
 import { appendWebhookToken } from "../../utils/webhookAuth";
@@ -28,9 +26,9 @@ export interface KieGenerateRequest {
   prompt: string;
   aspect_ratio?: "portrait" | "landscape";
   duration?: "5" | "10"; // 5s or 10s
-  resolution?: "720p" | "1080p";
-  remove_watermark?: boolean;
-  model?: typeof KIE_MODEL_TEXT_TO_VIDEO | typeof KIE_MODEL_IMAGE_TO_VIDEO;
+  resolution?: "720p" | "1080p"; // Legacy 1080p requests are capped at Fast's 720p limit.
+  remove_watermark?: boolean; // Accepted for compatibility; Seedance has no such input.
+  model?: typeof KIE_MODEL_TEXT_TO_VIDEO | "sora-2-text-to-video" | "bytedance/v1-pro-fast-image-to-video";
   image_url?: string; // Single image URL for image-to-video models
 }
 
@@ -49,7 +47,7 @@ export interface KieClientResponse {
 const DEFAULT_TIMEOUT_MS = 30000; // 30 seconds
 
 /**
- * Kie.ai client for video generation using Sora 2 model
+ * Kie.ai client for video generation using Seedance 2 Fast model
  */
 export class KieClient {
   private config: Required<Omit<KieClientConfig, "callbackUrl">> & Pick<KieClientConfig, "callbackUrl">;
@@ -74,40 +72,25 @@ export class KieClient {
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
 
     try {
-      const model = request.model ?? KIE_MODEL_TEXT_TO_VIDEO;
-
-      if (model === KIE_MODEL_IMAGE_TO_VIDEO && !request.image_url) {
+      // Both modes share one model. The presence of a photo selects first-frame
+      // conditioning; comparing the two model constants can no longer do that.
+      const model = KIE_MODEL_TEXT_TO_VIDEO;
+      if (request.model === "bytedance/v1-pro-fast-image-to-video" && !request.image_url) {
         throw new Error("Kie.ai image-to-video requests require an image_url");
       }
 
-      let payload: Record<string, unknown>;
-
-      if (model === KIE_MODEL_IMAGE_TO_VIDEO) {
-        // Image-to-video: minimal payload matching working request format
-        // Only includes: model, input.duration, input.image_url, input.prompt, input.resolution
-        payload = {
-          model,
-          callBackUrl: this.config.callbackUrl,
-          input: {
-            prompt: request.prompt,
-            duration: request.duration ?? DEFAULT_VIDEO_DURATION,
-            image_url: request.image_url,
-            resolution: request.resolution ?? DEFAULT_VIDEO_RESOLUTION,
-          },
-        };
-      } else {
-        // Text-to-video: full payload with all options
-        payload = {
-          model,
-          callBackUrl: this.config.callbackUrl,
-          input: {
-            prompt: request.prompt,
-            aspect_ratio: request.aspect_ratio ?? DEFAULT_ASPECT_RATIO,
-            duration: request.duration ?? DEFAULT_VIDEO_DURATION,
-            remove_watermark: request.remove_watermark ?? DEFAULT_REMOVE_WATERMARK,
-          },
-        };
-      }
+      const payload = {
+        model,
+        callBackUrl: this.config.callbackUrl,
+        input: {
+          prompt: request.prompt,
+          duration: Number(request.duration ?? DEFAULT_VIDEO_DURATION),
+          aspect_ratio: (request.aspect_ratio ?? DEFAULT_ASPECT_RATIO) === "landscape" ? "16:9" : "9:16",
+          resolution: DEFAULT_VIDEO_RESOLUTION, // Seedance 2 Fast supports 480p/720p only.
+          generate_audio: false, // The app plays the generated song over the video.
+          ...(request.image_url ? { first_frame_url: request.image_url } : {}),
+        },
+      };
 
       // The prompt is derived from the diary and lyrics; never log it.
       console.log("Kie.ai API request", {

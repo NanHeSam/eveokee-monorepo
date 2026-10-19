@@ -9,7 +9,10 @@ export const SUNO_API_TIMESTAMPED_LYRICS_ENDPOINT = "https://api.sunoapi.org/api
 export const SUNO_API_RECORD_INFO_ENDPOINT = "https://api.sunoapi.org/api/v1/generate/record-info";
 export const MUSIC_GENERATION_CALLBACK_PATH = "/callback/suno-music-generation";
 export const SUNO_SONGS_PER_REQUEST = 2;
-export const SUNO_DEFAULT_MODEL = "V5" as const;
+export const SUNO_DEFAULT_MODEL = "V6" as const;
+
+// V6 defaults to 20s; explicitly request a full diary song (valid range 10–360s).
+export const SUNO_DEFAULT_DURATION_SECONDS = 120;
 
 // Legacy names retained for callers; all LLM selections live in ai.ts.
 export {

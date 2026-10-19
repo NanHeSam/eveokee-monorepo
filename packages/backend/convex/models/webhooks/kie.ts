@@ -226,11 +226,11 @@ export const sampleKieCallback: KieWebhookPayload = {
     data: {
       taskId: "test-task-id",
       videoUrl: "https://example.com/video.mp4",
-      duration: 15,
+      duration: 10,
       status: "completed",
-      model: "sora-2-text-to-video",
-      aspectRatio: "portrait",
-      nFrames: "15",
+      model: "bytedance/seedance-2-fast",
+      aspectRatio: "9:16",
+      nFrames: "10",
     },
   },
 };

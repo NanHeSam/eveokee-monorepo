@@ -9,6 +9,7 @@ import {
   SUNO_API_TIMESTAMPED_LYRICS_ENDPOINT,
   SUNO_API_RECORD_INFO_ENDPOINT,
   SUNO_DEFAULT_MODEL,
+  SUNO_DEFAULT_DURATION_SECONDS,
   HTTP_STATUS_OK,
 } from "../../utils/constants";
 import { appendWebhookToken } from "../../utils/webhookAuth";
@@ -135,6 +136,7 @@ export class SunoClient {
         customMode: true,
         instrumental: false,
         model: SUNO_DEFAULT_MODEL,
+        duration: SUNO_DEFAULT_DURATION_SECONDS,
         callBackUrl: this.config.callbackUrl,
       };
 

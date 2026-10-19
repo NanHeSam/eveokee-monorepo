@@ -29,7 +29,7 @@ const ENV_CONFIG = {
   SUNO_WEBHOOK_SECRET: { required: false, description: "Secret token appended to the Suno callback URL to authenticate callbacks" },
 
   // Kie.ai Integration (Video Generation)
-  KIE_AI_API_KEY: { required: true, description: "Kie.ai API key for video generation using Sora 2" },
+  KIE_AI_API_KEY: { required: true, description: "Kie.ai API key for video generation using Seedance 2 Fast" },
   KIE_AI_TIMEOUT: { required: false, description: "Kie.ai API timeout in milliseconds" },
   // Not marked required so a deploy without it does not fail at module load;
   // video generation and the Kie callback fail closed when it is missing.

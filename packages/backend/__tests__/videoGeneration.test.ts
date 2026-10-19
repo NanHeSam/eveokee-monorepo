@@ -170,7 +170,7 @@ describe('Video Generation Workflow', () => {
       duration: 15,
       metadata: {
         data: {},
-        model: 'sora-2-text-to-video',
+        model: 'bytedance/seedance-2-fast',
         aspectRatio: 'portrait',
         nFrames: '15',
       },

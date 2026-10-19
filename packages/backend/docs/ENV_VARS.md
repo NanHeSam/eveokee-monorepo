@@ -85,6 +85,8 @@ Model IDs are centralized in `convex/utils/constants/ai.ts`: `anthropic/claude-s
 ---
 
 ### SUNO_API_KEY
+**Model:** `V6`, custom mode, explicit `duration: 120` seconds. [Suno docs](https://docs.sunoapi.org/suno-api/generate-music) specify 10–360 seconds (20s default); lyrics still use the documented custom-mode `prompt` fallback. Verified 2026-10-18.
+
 **Purpose:** Suno API access for music generation
 
 **Used in:** `convex/musicActions.ts`
@@ -130,7 +132,9 @@ npx convex env set SUNO_WEBHOOK_SECRET "$(openssl rand -hex 32)" --prod   # prod
 ---
 
 ### KIE_AI_API_KEY
-**Purpose:** Kie.ai API access for video generation using Sora 2 model
+**Model:** `bytedance/seedance-2-fast` for text and photos. Requests use numeric duration, `9:16`/`16:9`, 720p, `generate_audio: false`, and `first_frame_url` for photos. Legacy 1080p options are capped at 720p. Verified against [Kie docs](https://docs.kie.ai/market/bytedance/seedance-2-fast) and the [Seedance playground](https://kie.ai/seedance-2-0) on 2026-10-18.
+
+**Purpose:** Kie.ai API access for video generation using Seedance 2 Fast
 
 **Used in:** `convex/videoActions.ts`
 
