@@ -1,21 +1,27 @@
 /**
- * OpenAI Client Service
- * Provides a clean interface for interacting with the OpenAI API
+ * Legacy OpenAI-named client, backed by the AI SDK and Vercel AI Gateway.
+ * Preserves the existing interface for callers
  * with proper error handling, timeout management, and type safety
  */
 
-import OpenAI from "openai";
-import type { ChatCompletion } from "openai/resources/chat/completions";
+import { generateText, generateObject } from "ai";
+import { z } from "zod";
+import { describeErrorForLog } from "../../utils/logger";
+import { AIClient } from "../ai/client";
 import {
-  OPENAI_DIARY_MODEL,
-  OPENAI_DIARY_MAX_COMPLETION_TOKENS,
-  OPENAI_MUSIC_MAX_COMPLETION_TOKENS,
-  OPENAI_LYRIC_GENERATION_MODEL,
-  OPENAI_VIDEO_SCRIPT_MODEL,
-  OPENAI_VIDEO_SCRIPT_MAX_OUTPUT_TOKENS,
-} from "../../utils/constants";
+  AI_MODEL_DIARY_FROM_TRANSCRIPT,
+  AI_MODEL_LYRICS,
+  AI_MODEL_VIDEO_SCRIPT,
+  AI_MODEL_BLOG_TAGS,
+  AI_DIARY_MAX_OUTPUT_TOKENS,
+  AI_LYRICS_MAX_OUTPUT_TOKENS,
+  AI_VIDEO_SCRIPT_MAX_OUTPUT_TOKENS,
+  AI_BLOG_TAGS_MAX_OUTPUT_TOKENS,
+  AI_DEFAULT_TIMEOUT_MS,
+} from "../../utils/constants/ai";
 
 export interface OpenAIClientConfig {
+  /** Vercel AI Gateway key (the legacy client name is kept for callers). */
   apiKey: string;
   timeout?: number;
 }
@@ -50,18 +56,15 @@ export interface ExtractTagsParams {
 }
 
 /**
- * OpenAI client for chat completions
+ * Gateway-backed generation with the legacy OpenAIClient interface
  */
 export class OpenAIClient {
-  private client: OpenAI;
+  private client: AIClient;
   private readonly timeout: number;
 
   constructor(config: OpenAIClientConfig) {
-    this.client = new OpenAI({
-      apiKey: config.apiKey,
-      timeout: config.timeout ?? 60000, // Default 60 seconds
-    });
-    this.timeout = config.timeout ?? 60000;
+    this.client = new AIClient({ apiKey: config.apiKey });
+    this.timeout = config.timeout ?? AI_DEFAULT_TIMEOUT_MS;
   }
 
   /**
@@ -72,8 +75,10 @@ export class OpenAIClient {
    */
   async generateDiary(params: GenerateDiaryParams): Promise<string> {
     try {
-      const completion = await this.client.chat.completions.create({
-        model: OPENAI_DIARY_MODEL,
+      const completion = await generateText({
+        model: this.client.getModel(AI_MODEL_DIARY_FROM_TRANSCRIPT),
+        reasoning: "none",
+        abortSignal: AbortSignal.timeout(this.timeout),
         messages: [
           {
             role: "system",
@@ -92,20 +97,17 @@ Do not mention that this is from a call or conversation. Write as if the user is
             content: `Conversation transcript:\n\n${params.transcript}`,
           },
         ],
-        max_tokens: OPENAI_DIARY_MAX_COMPLETION_TOKENS,
+        maxOutputTokens: AI_DIARY_MAX_OUTPUT_TOKENS,
       });
 
-      const content = completion.choices[0]?.message?.content;
+      const content = completion.text;
       if (!content) {
         throw new Error("Failed to generate diary content: Empty response");
       }
 
       return content.trim();
     } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`OpenAI diary generation failed: ${error.message}`);
-      }
-      throw new Error(`OpenAI diary generation failed: ${String(error)}`);
+      throw new Error(`OpenAI diary generation failed: ${describeErrorForLog(error)}`);
     }
   }
 
@@ -122,8 +124,10 @@ Do not mention that this is from a call or conversation. Write as if the user is
     style: string;
   }> {
     try {
-      const completion = await this.client.chat.completions.create({
-        model: OPENAI_LYRIC_GENERATION_MODEL,
+      const completion = await generateObject({
+        model: this.client.getModel(AI_MODEL_LYRICS),
+        reasoning: "low",
+        abortSignal: AbortSignal.timeout(this.timeout),
         messages: [
           {
             role: "system",
@@ -170,56 +174,17 @@ Use the same language as the diary entry for lyrics and title.`,
                 : `Diary entry:\n${params.diaryContent}`),
           },
         ],
-        max_tokens: OPENAI_MUSIC_MAX_COMPLETION_TOKENS,
-        response_format: {
-          type: "json_schema",
-          json_schema: {
-            name: "song_generation",
-            strict: true,
-            schema: {
-              type: "object",
-              properties: {
-                lyric: {
-                  type: "string",
-                  description: "Song lyrics with structure tags like [Verse], [Chorus], [Bridge], etc.",
-                },
-                mood: {
-                  type: "string",
-                  description: "Primary emotion or mood from the diary entry (e.g., 'melancholic', 'joyful', 'angry', 'nostalgic', 'anxious', 'peaceful', 'lonely', 'conflicted', 'contemplative', 'reflective', 'introspective', 'yearning', etc.). Single word or short phrase.",
-                },
-                style: {
-                  type: "string",
-                  description:
-                    "Style hint/tags used for lyric vibe and downstream music style. If user provided a Style hint, copy it verbatim (trim only). Otherwise generate 2–4 short comma-separated tags.",
-                },
-                title: {
-                  type: "string",
-                  description: "Creative song title",
-                },
-              },
-              required: ["lyric", "mood", "title", "style"],
-              additionalProperties: false,
-            },
-          },
-        },
+        maxOutputTokens: AI_LYRICS_MAX_OUTPUT_TOKENS,
+        schema: z.object({
+          lyric: z.string().min(1).describe("Song lyrics with [Verse], [Chorus], [Bridge] structure tags"),
+          mood: z.string().min(1).describe("Primary emotion, a single word or short phrase"),
+          title: z.string().min(1).describe("Creative song title in the diary's language"),
+          style: z.string().min(1).describe("Copy the user's style hint verbatim (trim only), or generate 2-4 short comma-separated tags"),
+        }),
       });
 
-      const content = completion.choices[0]?.message?.content;
-      if (!content) {
-        throw new Error("Failed to generate song data: Empty response");
-      }
-
-      // Parse JSON response
-      let songData: { lyric: string; mood: string; title: string; style: string };
-      try {
-        songData = JSON.parse(content);
-      } catch (parseError) {
-        // Do not include the raw content: it is lyrics derived from the diary.
-        throw new Error(
-          `Failed to parse OpenAI response as JSON: ${parseError instanceof Error ? parseError.message : String(parseError)} ` +
-          `(${content.length} chars)`
-        );
-      }
+      const songData = completion.object;
+      if (params.style?.trim()) songData.style = params.style.trim();
 
       if (!songData.lyric || !songData.mood || !songData.title || !songData.style) {
         throw new Error("OpenAI response missing required fields (lyric, mood, title, or style)");
@@ -227,10 +192,7 @@ Use the same language as the diary entry for lyrics and title.`,
 
       return songData;
     } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`OpenAI music generation failed: ${error.message}`);
-      }
-      throw new Error(`OpenAI music generation failed: ${String(error)}`);
+      throw new Error(`OpenAI music generation failed: ${describeErrorForLog(error)}`);
     }
   }
 
@@ -253,8 +215,10 @@ Use the same language as the diary entry for lyrics and title.`,
       userMessageSections.push(`Song Lyrics:\n${params.lyrics}`);
       const userContent = userMessageSections.join("\n\n");
       
-      const completion = await this.client.chat.completions.create({
-        model: OPENAI_VIDEO_SCRIPT_MODEL,
+      const completion = await generateText({
+        model: this.client.getModel(AI_MODEL_VIDEO_SCRIPT),
+        reasoning: "low",
+        abortSignal: AbortSignal.timeout(this.timeout),
         messages: [
             {
               role: "system",
@@ -304,39 +268,17 @@ Your output should read like a film director's short shotlist written as prose, 
             },
           ],
 
-          reasoning_effort: "low",
-          max_completion_tokens: OPENAI_VIDEO_SCRIPT_MAX_OUTPUT_TOKENS,
-        } as any);
-
-      // Log token usage statistics
-      if (completion.usage) {
-        console.log("[OpenAI Video Script] Token Usage:", {
-          prompt_tokens: completion.usage.prompt_tokens,
-          completion_tokens: completion.usage.completion_tokens,
-          total_tokens: completion.usage.total_tokens,
+          maxOutputTokens: AI_VIDEO_SCRIPT_MAX_OUTPUT_TOKENS,
         });
-      }
 
-      // Log full response structure for debugging
-      console.log("[OpenAI Video Script] Full response:", JSON.stringify({
-        model: completion.model,
-        id: completion.id,
-        choices_count: completion.choices?.length ?? 0,
-        usage: completion.usage,
-        has_content: !!completion.choices?.[0]?.message?.content,
-      }, null, 2));
-
-      const content = completion.choices[0]?.message?.content;
+      const content = completion.text;
       if (!content) {
         throw new Error("Failed to generate video script: Empty response");
       }
 
       return content.trim();
     } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`OpenAI video script generation failed: ${error.message}`);
-      }
-      throw new Error(`OpenAI video script generation failed: ${String(error)}`);
+      throw new Error(`OpenAI video script generation failed: ${describeErrorForLog(error)}`);
     }
   }
 
@@ -356,8 +298,10 @@ Your output should read like a film director's short shotlist written as prose, 
       userMessageSections.push(`Song Lyrics:\n${params.lyrics}`);
       const textContent = userMessageSections.join("\n\n");
 
-      const completion = await this.client.chat.completions.create({
-        model: OPENAI_VIDEO_SCRIPT_MODEL,
+      const completion = await generateText({
+        model: this.client.getModel(AI_MODEL_VIDEO_SCRIPT),
+        reasoning: "low",
+        abortSignal: AbortSignal.timeout(this.timeout),
         messages: [
           {
             role: "system",
@@ -390,29 +334,23 @@ MANDATORY RULES:
                 text: `Reference Photo Context:\nAnalyze this image carefully. Note the people (if any), environment, mood, lighting, colors, and setting.\n\n${textContent}`,
               },
               {
-                type: "image_url",
-                image_url: {
-                  url: params.imageUrl,
-                },
+                type: "image",
+                image: new URL(params.imageUrl),
               },
             ],
           },
         ],
-        reasoning_effort: "low",
-        max_completion_tokens: OPENAI_VIDEO_SCRIPT_MAX_OUTPUT_TOKENS,
-      } as any);
+        maxOutputTokens: AI_VIDEO_SCRIPT_MAX_OUTPUT_TOKENS,
+      });
 
-      const content = completion.choices[0]?.message?.content;
+      const content = completion.text;
       if (!content) {
         throw new Error("Failed to generate image-to-video prompt: Empty response");
       }
 
       return content.trim();
     } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`OpenAI image-to-video prompt generation failed: ${error.message}`);
-      }
-      throw new Error(`OpenAI image-to-video prompt generation failed: ${String(error)}`);
+      throw new Error(`OpenAI image-to-video prompt generation failed: ${describeErrorForLog(error)}`);
     }
   }
 
@@ -425,8 +363,10 @@ MANDATORY RULES:
    */
   async extractTags(params: ExtractTagsParams): Promise<string[]> {
     try {
-      const completion = await this.client.chat.completions.create({
-        model: "gpt-4o-mini", // Using mini for fast, cost-effective tag extraction
+      const completion = await generateObject({
+        model: this.client.getModel(AI_MODEL_BLOG_TAGS),
+        reasoning: "none",
+        abortSignal: AbortSignal.timeout(this.timeout),
         messages: [
           {
             role: "system",
@@ -439,34 +379,18 @@ Tags should be:
 - Capitalized appropriately (e.g., "AI", "Machine Learning", "JavaScript")
 - Common industry terms or topics
 
-Return ONLY the tags as a JSON array of strings. No explanations, no extra text.`,
+Return an object with a tags array of strings. No explanations, no extra text.`,
           },
           {
             role: "user",
             content: `Title: ${params.title}\n\nContent:\n${params.content}`,
           },
         ],
-        max_tokens: 100,
-        response_format: { type: "json_object" },
+        maxOutputTokens: AI_BLOG_TAGS_MAX_OUTPUT_TOKENS,
+        schema: z.object({ tags: z.array(z.string().trim().min(1)).min(1) }),
       });
 
-      const content = completion.choices[0]?.message?.content;
-      if (!content) {
-        throw new Error("Failed to extract tags: Empty response");
-      }
-
-      // Parse JSON response
-      let result: { tags?: string[] };
-      try {
-        result = JSON.parse(content);
-      } catch (parseError) {
-        throw new Error(
-          `Failed to parse OpenAI response as JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}`
-        );
-      }
-
-      // Extract tags array from various possible response formats
-      const tags = result.tags || [];
+      const tags = completion.object.tags;
 
       if (!Array.isArray(tags) || tags.length === 0) {
         throw new Error("OpenAI response did not contain valid tags array");
@@ -475,10 +399,7 @@ Return ONLY the tags as a JSON array of strings. No explanations, no extra text.
       // Return 3-5 tags, filter out empty strings
       return tags.filter((tag: string) => tag && tag.trim().length > 0).slice(0, 5);
     } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`OpenAI tag extraction failed: ${error.message}`);
-      }
-      throw new Error(`OpenAI tag extraction failed: ${String(error)}`);
+      throw new Error(`OpenAI tag extraction failed: ${describeErrorForLog(error)}`);
     }
   }
 }
@@ -489,58 +410,37 @@ Return ONLY the tags as a JSON array of strings. No explanations, no extra text.
  */
 let openAIClientInstance: OpenAIClient | null = null;
 
-/**
- * Get or create the singleton OpenAIClient instance.
- * Uses environment variables for configuration.
- *
- * @returns A configured OpenAIClient instance
- * @throws Error if `OPENAI_API_KEY` is not set in environment variables
- */
+/** Get the legacy-named client configured with AI Gateway credentials. */
 export function getOpenAIClient(): OpenAIClient {
   if (!openAIClientInstance) {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error("OPENAI_API_KEY environment variable is not set");
-    }
-
-    const timeout = process.env.OPENAI_TIMEOUT
-      ? parseInt(process.env.OPENAI_TIMEOUT, 10)
-      : undefined;
-
-    openAIClientInstance = new OpenAIClient({
-      apiKey,
-      timeout,
+    openAIClientInstance = createOpenAIClientFromEnv({
+      AI_GATEWAY_API_KEY: process.env.AI_GATEWAY_API_KEY,
+      AI_GATEWAY_TIMEOUT: process.env.AI_GATEWAY_TIMEOUT,
+      OPENAI_TIMEOUT: process.env.OPENAI_TIMEOUT,
     });
   }
-
   return openAIClientInstance;
 }
 
 /**
- * @deprecated Use getOpenAIClient() instead. This function creates a new client instance each time.
- *
- * Instantiate an OpenAIClient using OPENAI_API_KEY environment variable.
- *
- * @param env - Object containing OpenAI configuration environment variables:
- *   - `OPENAI_API_KEY`: API key for authorization (required)
- *   - `OPENAI_TIMEOUT`: optional request timeout in milliseconds
- * @returns A configured OpenAIClient instance
- * @throws Error if `OPENAI_API_KEY` is missing
+ * @deprecated Prefer getOpenAIClient(). apiKey now means an AI Gateway key.
+ * Legacy OPENAI_* fields remain accepted for source compatibility; an OpenAI
+ * provider key cannot authenticate to Gateway, so AI_GATEWAY_API_KEY is required.
  */
 export function createOpenAIClientFromEnv(env: {
+  AI_GATEWAY_API_KEY?: string;
+  AI_GATEWAY_TIMEOUT?: string;
   OPENAI_API_KEY?: string;
   OPENAI_TIMEOUT?: string;
 }): OpenAIClient {
-  const apiKey = env.OPENAI_API_KEY;
+  const apiKey = env.AI_GATEWAY_API_KEY;
   if (!apiKey) {
-    throw new Error("OPENAI_API_KEY environment variable is not set");
+    throw new Error("AI_GATEWAY_API_KEY environment variable is not set");
   }
-
-  const timeout = env.OPENAI_TIMEOUT ? parseInt(env.OPENAI_TIMEOUT, 10) : undefined;
-
-  return new OpenAIClient({
-    apiKey,
-    timeout,
-  });
+  const timeoutValue = env.AI_GATEWAY_TIMEOUT ?? env.OPENAI_TIMEOUT;
+  const timeout = timeoutValue ? Number(timeoutValue) : undefined;
+  if (timeout !== undefined && (!Number.isFinite(timeout) || timeout <= 0)) {
+    throw new Error("AI_GATEWAY_TIMEOUT must be a positive number of milliseconds");
+  }
+  return new OpenAIClient({ apiKey, timeout });
 }
-

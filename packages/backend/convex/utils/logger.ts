@@ -183,6 +183,8 @@ const CONTENT_BEARING_ERROR_NAMES = new Set([
   'AI_JSONParseError',
   'AI_TypeValidationError',
   'AI_InvalidResponseDataError',
+  'AI_NoObjectGeneratedError',
+  'AI_APICallError',
 ]);
 
 /**

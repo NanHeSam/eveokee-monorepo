@@ -14,7 +14,7 @@ export const DEFAULT_VOICE_ID = "d46abd1d-2d02-43e8-819f-51fb652c1c61";
 export const VAPI_TRANSCRIBER_PROVIDER = "deepgram";
 
 // Model Configuration
-export const VAPI_MODEL_NAME = "gpt-4.1";
+export { VAPI_MODEL_NAME } from "./ai";
 export const VAPI_MODEL_PROVIDER = "openai";
 
 // Assistant Defaults

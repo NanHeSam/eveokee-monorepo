@@ -11,13 +11,13 @@ export const MUSIC_GENERATION_CALLBACK_PATH = "/callback/suno-music-generation";
 export const SUNO_SONGS_PER_REQUEST = 2;
 export const SUNO_DEFAULT_MODEL = "V5" as const;
 
-// OpenAI Configuration for Music Generation
-export const OPENAI_LYRIC_GENERATION_MODEL = "gpt-4.1-2025-04-14";
-export const OPENAI_MUSIC_MAX_COMPLETION_TOKENS = 1000;
-
-// OpenAI Configuration for Diary Generation
-export const OPENAI_DIARY_MODEL = "gpt-4o-mini";
-export const OPENAI_DIARY_MAX_COMPLETION_TOKENS = 600;
+// Legacy names retained for callers; all LLM selections live in ai.ts.
+export {
+  AI_MODEL_LYRICS as OPENAI_LYRIC_GENERATION_MODEL,
+  AI_LYRICS_MAX_OUTPUT_TOKENS as OPENAI_MUSIC_MAX_COMPLETION_TOKENS,
+  AI_MODEL_DIARY_FROM_TRANSCRIPT as OPENAI_DIARY_MODEL,
+  AI_DIARY_MAX_OUTPUT_TOKENS as OPENAI_DIARY_MAX_COMPLETION_TOKENS,
+} from "./ai";
 
 // Transcript Processing
 export const MAX_TRANSCRIPT_LENGTH = 12000;

@@ -22,7 +22,7 @@ Before deploying, verify all environment variables are set in your [Convex dashb
   - Format: `https://<your-clerk-domain>.clerk.accounts.dev`
   - Required for Clerk authentication integration
 
-- [ ] **OPENAI_API_KEY**
+- [ ] **AI_GATEWAY_API_KEY**
   - Source: https://platform.openai.com/api-keys
   - Required for music prompt generation
 
@@ -140,7 +140,7 @@ If deployment issues occur:
 
 ### Issue: Music generation not working
 **Cause:** Missing API keys for OpenAI or Suno  
-**Fix:** Set `OPENAI_API_KEY` and `SUNO_API_KEY` in Convex dashboard
+**Fix:** Set `AI_GATEWAY_API_KEY` and `SUNO_API_KEY` in Convex dashboard
 
 ### Issue: Deployment key invalid
 **Cause:** Expired or incorrect `CONVEX_DEPLOY_KEY`  
