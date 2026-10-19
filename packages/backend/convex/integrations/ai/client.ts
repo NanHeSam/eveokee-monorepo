@@ -24,7 +24,9 @@ export class AIClient {
 
     this.gateway = createGateway({
       apiKey,
-      baseURL: baseURL ?? "https://ai-gateway.vercel.sh/v1/ai",
+      // Let the installed provider select its matching wire-protocol endpoint.
+      // Gateway v4 sends tagged file data that the legacy /v1/ai route rejects.
+      baseURL,
     });
   }
 
