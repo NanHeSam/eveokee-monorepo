@@ -91,3 +91,40 @@ describe("Suno callback normalization", () => {
     }]);
   });
 });
+
+describe("Kie Suno callbacks", () => {
+  const track = { id: "kie-clip", audio_url: "https://musicfile.kie.ai/song.mp3", stream_audio_url: "https://musicfile.kie.ai/stream", image_url: "https://tempfile.aiquickdraw.com/cover.jpg" };
+
+  it("accepts staged Kie tracks without source_* fields", () => {
+    expect(parseSunoPayload({ code: 200, data: { callbackType: "complete", task_id: "kie-task", data: [track] } })).toEqual({
+      success: true, data: { code: 200, callbackType: "complete", taskId: "kie-task", tracks: [track] },
+    });
+  });
+
+  it.each(["text", "first"])("preserves intermediate stage %s", (callbackType) => {
+    const parsed = parseSunoPayload({ code: 200, data: { callbackType, task_id: "kie-task" } });
+    expect(parsed.success && parsed.data.callbackType).toBe(callbackType);
+  });
+
+  it("accepts unified jobs callbacks with resultJson", () => {
+    const parsed = parseSunoPayload({ code: 200, data: { state: "success", taskId: "kie-task", resultJson: JSON.stringify({ data: [track] }) } });
+    expect(parsed).toEqual({ success: true, data: { code: 200, callbackType: "complete", taskId: "kie-task", tracks: [track] } });
+  });
+
+  it.each([
+    { code: 501, data: { callbackType: "complete", task_id: "kie-task" } },
+    { code: 200, data: { state: "fail", taskId: "kie-task", failCode: "500", failMsg: "Failed" } },
+    { code: 501, data: { taskId: "kie-task" } },
+  ])("accepts failure callbacks without tracks", (payload) => {
+    const parsed = parseSunoPayload(payload);
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) throw new Error(parsed.error);
+    expect(parsed.data.code).not.toBe(200);
+    expect(parsed.data.tracks).toEqual([]);
+  });
+
+  it("handles malformed resultJson without forwarding it", () => {
+    const parsed = parseSunoPayload({ code: 200, data: { state: "success", taskId: "kie-task", resultJson: "invalid" } });
+    expect(parsed.success && parsed.data.tracks).toEqual([]);
+  });
+});

@@ -11,7 +11,14 @@ vi.mock("@ai-sdk/gateway", () => ({
 }));
 
 beforeEach(() => vi.clearAllMocks());
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => {
+  // AI SDK v7 rejects system-role messages in `messages` before calling a provider.
+  // Exercise every client path above against that request contract.
+  for (const [request] of [...vi.mocked(generateText).mock.calls, ...vi.mocked(generateObject).mock.calls]) {
+    expect(request.messages?.some((message) => message.role === "system")).not.toBe(true);
+  }
+  vi.unstubAllEnvs();
+});
 
 describe("AI Gateway migration", () => {
   it("uses a Gateway key and the verified default model", () => {
@@ -38,8 +45,9 @@ describe("AI Gateway migration", () => {
     const client = new OpenAIClient({ apiKey: "key" });
     expect(await client.generateImageVideoPrompt({ lyrics: "Skies", imageUrl: "https://example.com/photo.jpg" })).toBe("A cinematic moment");
     const request = vi.mocked(generateText).mock.calls[0][0];
+    expect(request.instructions).toEqual(expect.any(String));
     expect(request.model).toEqual({ modelId: "anthropic/claude-sonnet-5.5" });
-    expect(request.messages?.[1].content).toEqual([
+    expect(request.messages?.[0].content).toEqual([
       expect.objectContaining({ type: "text" }),
       { type: "image", image: new URL("https://example.com/photo.jpg") },
     ]);
@@ -51,6 +59,7 @@ describe("AI Gateway migration", () => {
     const client = new OpenAIClient({ apiKey: "key" });
     expect(await client.generateMusicData({ diaryContent: "A walk", style: "  lo-fi, jazz  " })).toEqual({ ...song, style: "lo-fi, jazz" });
     const request = vi.mocked(generateObject).mock.calls[0][0];
+    expect(request.instructions).toEqual(expect.any(String));
     expect(request.model).toEqual({ modelId: "anthropic/claude-sonnet-5.5" });
     // The real SDK validates with this schema; malformed outputs must be rejected.
     const schema = request.schema as { safeParse: (value: unknown) => { success: boolean } };

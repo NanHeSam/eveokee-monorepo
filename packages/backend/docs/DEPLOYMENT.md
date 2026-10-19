@@ -23,7 +23,7 @@ Before deploying, verify all environment variables are set in your [Convex dashb
   - Required for Clerk authentication integration
 
 - [ ] **AI_GATEWAY_API_KEY**
-  - Source: https://platform.openai.com/api-keys
+  - Source: Vercel dashboard → AI Gateway → API keys
   - Required for music prompt generation
 
 - [ ] **CONVEX_SITE_URL** ✅ **AUTOMATIC**
@@ -31,9 +31,13 @@ Before deploying, verify all environment variables are set in your [Convex dashb
   - Used for constructing webhook callback URLs
   - Used by Suno, Kie.ai, and VAPI integrations
 
-- [ ] **SUNO_API_KEY**
-  - Source: Your Suno API provider
-  - Required for music generation
+- [ ] **KIE_AI_API_KEY**
+  - Source: https://kie.ai → API Keys
+  - Required for music and video generation
+
+- [ ] **SUNO_WEBHOOK_SECRET** and **KIE_WEBHOOK_SECRET**
+  - Separate random tokens for music/video callbacks; generate independently per deployment
+  - `SUNO_API_KEY` can be removed after deploying the Kie music migration
 
 ### 2. GitHub Secrets
 
@@ -139,8 +143,8 @@ If deployment issues occur:
 **Fix:** Verify the signing secret in Clerk Dashboard → Webhooks matches your Convex environment variable
 
 ### Issue: Music generation not working
-**Cause:** Missing API keys for OpenAI or Suno  
-**Fix:** Set `AI_GATEWAY_API_KEY` and `SUNO_API_KEY` in Convex dashboard
+**Cause:** Missing API keys or model access for AI Gateway or Kie
+**Fix:** Set `AI_GATEWAY_API_KEY`, `KIE_AI_API_KEY`, `SUNO_WEBHOOK_SECRET`, and `KIE_WEBHOOK_SECRET` in Convex dashboard
 
 ### Issue: Deployment key invalid
 **Cause:** Expired or incorrect `CONVEX_DEPLOY_KEY`  

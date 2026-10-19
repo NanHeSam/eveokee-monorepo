@@ -79,10 +79,7 @@ export class OpenAIClient {
         model: this.client.getModel(AI_MODEL_DIARY_FROM_TRANSCRIPT),
         reasoning: "none",
         abortSignal: AbortSignal.timeout(this.timeout),
-        messages: [
-          {
-            role: "system",
-            content: `You are a thoughtful diary writer. Based on the conversation transcript from a wellness check-in call, create a personal diary entry that:
+        instructions: `You are a thoughtful diary writer. Based on the conversation transcript from a wellness check-in call, create a personal diary entry that:
 - Captures the main thoughts, feelings, and experiences shared
 - Writes in first person as if the user is writing their own diary
 - Maintains an authentic, personal tone
@@ -91,7 +88,7 @@ export class OpenAIClient {
 - Uses the same language as the conversation
 
 Do not mention that this is from a call or conversation. Write as if the user is naturally reflecting on their day.`,
-          },
+        messages: [
           {
             role: "user",
             content: `Conversation transcript:\n\n${params.transcript}`,
@@ -128,10 +125,7 @@ Do not mention that this is from a call or conversation. Write as if the user is
         model: this.client.getModel(AI_MODEL_LYRICS),
         reasoning: "low",
         abortSignal: AbortSignal.timeout(this.timeout),
-        messages: [
-          {
-            role: "system",
-            content: `You are a creative lyricist. Generate a song based on the diary entry provided. 
+        instructions: `You are a creative lyricist. Generate a song based on the diary entry provided.
 Create lyrics with structure tags like [Verse], [Chorus], [Bridge], etc. Keep concise and emotional for a 1-2 minute song.
 
 Rhythm / Singability (very important):
@@ -165,7 +159,7 @@ Return ONLY the mood/emotion as a single descriptive word or short phrase (e.g.,
 
 Create a creative song title.
 Use the same language as the diary entry for lyrics and title.`,
-          },
+        messages: [
           {
             role: "user",
             content:
@@ -219,10 +213,7 @@ Use the same language as the diary entry for lyrics and title.`,
         model: this.client.getModel(AI_MODEL_VIDEO_SCRIPT),
         reasoning: "low",
         abortSignal: AbortSignal.timeout(this.timeout),
-        messages: [
-            {
-              role: "system",
-              content: `You are a MUSIC VIDEO DIRECTOR crafting a 10-second vertical AI-video prompt (for Seedance 2 Fast) that turns a diary entry and its resulting song lyrics into one cohesive, cinematic moment.
+        instructions: `You are a MUSIC VIDEO DIRECTOR crafting a 10-second vertical AI-video prompt (for Seedance 2 Fast) that turns a diary entry and its resulting song lyrics into one cohesive, cinematic moment.
 
 Input: You will receive two texts from the user - (1) a short personal diary reflection, and (2) the generated song lyrics. Use both together.
 
@@ -261,15 +252,14 @@ THINKING PROCESS (internal):
 - Describe it in cinematic language timed to the rhythm of a 10-second clip.
 
 Your output should read like a film director's short shotlist written as prose, tightly synced to the lyrics and emotionally rooted in the diary.`,
-            },
-            {
-              role: "user",
-              content: userContent,
-            },
-          ],
-
-          maxOutputTokens: AI_VIDEO_SCRIPT_MAX_OUTPUT_TOKENS,
-        });
+        messages: [
+          {
+            role: "user",
+            content: userContent,
+          },
+        ],
+        maxOutputTokens: AI_VIDEO_SCRIPT_MAX_OUTPUT_TOKENS,
+      });
 
       const content = completion.text;
       if (!content) {
@@ -302,10 +292,7 @@ Your output should read like a film director's short shotlist written as prose, 
         model: this.client.getModel(AI_MODEL_VIDEO_SCRIPT),
         reasoning: "low",
         abortSignal: AbortSignal.timeout(this.timeout),
-        messages: [
-          {
-            role: "system",
-            content: `You are a MUSIC VIDEO DIRECTOR crafting a 10-second vertical AI-video prompt for image-to-video generation. You will analyze a reference photo along with diary context and song lyrics to create a cohesive video.
+        instructions: `You are a MUSIC VIDEO DIRECTOR crafting a 10-second vertical AI-video prompt for image-to-video generation. You will analyze a reference photo along with diary context and song lyrics to create a cohesive video.
 
 YOUR TASK:
 1. Analyze the reference photo carefully - identify if there are people, the environment, mood, lighting, colors, and setting
@@ -325,7 +312,7 @@ MANDATORY RULES:
 - Write as one cohesive paragraph with clear timing markers. Use cinematic language (camera moves, shot types, lighting, transitions).
 - Keep it natural, realistic, and emotionally resonant. Avoid surreal elements or disjointed montage.
 - Do NOT apologize or add meta text. Output only the final video prompt paragraph.`,
-          },
+        messages: [
           {
             role: "user",
             content: [
@@ -367,10 +354,7 @@ MANDATORY RULES:
         model: this.client.getModel(AI_MODEL_BLOG_TAGS),
         reasoning: "none",
         abortSignal: AbortSignal.timeout(this.timeout),
-        messages: [
-          {
-            role: "system",
-            content: `You are a content categorization expert. Analyze the blog post title and content to extract 3-5 relevant tags.
+        instructions: `You are a content categorization expert. Analyze the blog post title and content to extract 3-5 relevant tags.
 
 Tags should be:
 - Single words or short phrases (1-2 words max)
@@ -380,7 +364,7 @@ Tags should be:
 - Common industry terms or topics
 
 Return an object with a tags array of strings. No explanations, no extra text.`,
-          },
+        messages: [
           {
             role: "user",
             content: `Title: ${params.title}\n\nContent:\n${params.content}`,

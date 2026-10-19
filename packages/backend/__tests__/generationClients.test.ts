@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { KieClient, type KieGenerateRequest } from "../convex/integrations/kie/client";
-import { SunoClient } from "../convex/integrations/suno/client";
+import { KieMusicClient } from "../convex/integrations/kie/musicClient";
 import { KIE_MODEL_IMAGE_TO_VIDEO, KIE_MODEL_TEXT_TO_VIDEO } from "../convex/utils/constants/video";
 
 const fetchMock = vi.fn();
@@ -65,12 +65,50 @@ describe("Seedance 2 Fast requests", () => {
 
 describe("Suno V6 requests", () => {
   it("requests a full song rather than V6's 20-second default", async () => {
-    expect(await new SunoClient({ apiKey: "test", callbackUrl }).generateMusic({
+    expect(await new KieMusicClient({ apiKey: "test", callbackUrl }).generateMusic({
       prompt: "[Verse] Clear skies", style: "lo-fi", title: "Skies",
     })).toEqual({ taskId: "task-123" });
+    expect(fetchMock.mock.calls[0][0]).toBe("https://api.kie.ai/api/v1/jobs/createTask");
+    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe("Bearer test");
     expect(sentBody()).toEqual({
-      prompt: "[Verse] Clear skies", style: "lo-fi", title: "Skies", customMode: true,
-      instrumental: false, model: "V6", duration: 120, callBackUrl: callbackUrl,
+      model: "ai-music-api/generate", callBackUrl: callbackUrl,
+      input: { lyrics: "[Verse] Clear skies", style: "lo-fi", title: "Skies", custom_mode: true,
+        instrumental: false, model: "V6", duration: 120 },
     });
+  });
+});
+
+describe("Kie music responses", () => {
+  it.each([401, 402, 429])("rejects HTTP 200 with provider code %s without retrying", async (code) => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ code, msg: "Rejected" }), { status: 200 }));
+    await expect(new KieMusicClient({ apiKey: "test", callbackUrl }).generateMusic({
+      prompt: "lyrics", title: "Song", style: "folk",
+    })).rejects.toThrow(`error code ${code}`);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["response", "resultJson"])("reads structured tracks from %s in recordInfo", async (format) => {
+    const tracks = [{ id: "clip-1", audio_url: "https://musicfile.kie.ai/song.mp3", image_url: "https://tempfile.aiquickdraw.com/cover.jpg", title: "Song" }];
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ code: 200, data: {
+      state: "success", ...(format === "response" ? { response: { data: tracks } } : { resultJson: JSON.stringify({ data: tracks }) }),
+    } })));
+    const info = await new KieMusicClient({ apiKey: "test", callbackUrl }).getRecordInfo("task/123");
+    expect(info.status).toBe("success");
+    expect(info.tracks[0]).toMatchObject({ id: "clip-1", audioUrl: tracks[0].audio_url, imageUrl: tracks[0].image_url });
+    expect(fetchMock.mock.calls[0][0]).toBe("https://api.kie.ai/api/v1/jobs/recordInfo?taskId=task%2F123");
+  });
+
+  it("fetches timed lyrics synchronously through Kie with snake_case identifiers", async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ code: 200, data: { code: 200, data: {
+      alignedWords: [{ word: "Hello", success: true, startS: 0, endS: 1, palign: 0 }], waveformData: [0, 1], hootCer: 0,
+    } } })));
+    const lyrics = await new KieMusicClient({ apiKey: "test", callbackUrl }).getTimestampedLyrics({ taskId: "task", audioId: "clip" });
+    expect(sentBody()).toEqual({ model: "ai-music-api/timeStamped-lyrics", input: { task_id: "task", audio_id: "clip" } });
+    expect(lyrics.alignedWords).toEqual([{ word: "Hello", startS: 0, endS: 1, palign: 0 }]);
+  });
+
+  it("rejects a nested timed-lyrics error even with outer code 200", async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ code: 200, data: { code: 402, msg: "No credits" } })));
+    await expect(new KieMusicClient({ apiKey: "test", callbackUrl }).getTimestampedLyrics({ taskId: "task", audioId: "clip" })).rejects.toThrow("error code 402");
   });
 });

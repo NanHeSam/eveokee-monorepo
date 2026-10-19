@@ -7,7 +7,7 @@ import {
   hasValidWebhookToken,
   timingSafeEqualString,
 } from "../convex/utils/webhookAuth";
-import { createSunoClientFromEnv } from "../convex/integrations/suno/client";
+import { createKieMusicClientFromEnv } from "../convex/integrations/kie/musicClient";
 import { createTestDiary, createTestEnvironment, createTestUser } from "./convexTestUtils";
 
 const SUNO_SECRET = "suno-test-secret-0123456789abcdef";
@@ -29,17 +29,17 @@ describe("webhookAuth helpers", () => {
     expect(hasValidWebhookToken("https://x.convex.site/callback/suno", "s3cr3t/+=")).toBe(false);
   });
 
-  it("createSunoClientFromEnv embeds the secret in the callback URL only when given", () => {
+  it("createKieMusicClientFromEnv embeds the secret in the callback URL only when given", () => {
     const base = {
-      SUNO_API_KEY: "key",
+      KIE_AI_API_KEY: "key",
       CONVEX_SITE_URL: "https://x.convex.site/",
       CALLBACK_PATH: MUSIC_GENERATION_CALLBACK_PATH,
     };
-    const signed = createSunoClientFromEnv({ ...base, WEBHOOK_SECRET: SUNO_SECRET });
+    const signed = createKieMusicClientFromEnv({ ...base, WEBHOOK_SECRET: SUNO_SECRET });
     expect(signed.getCallbackUrl()).toBe(
       `https://x.convex.site${MUSIC_GENERATION_CALLBACK_PATH}?token=${SUNO_SECRET}`,
     );
-    expect(createSunoClientFromEnv(base).getCallbackUrl()).toBe(
+    expect(createKieMusicClientFromEnv(base).getCallbackUrl()).toBe(
       `https://x.convex.site${MUSIC_GENERATION_CALLBACK_PATH}`,
     );
   });
@@ -98,11 +98,10 @@ function postSuno(
 }
 
 describe("Suno callback authentication (HTTP)", () => {
-  const fetchSpy = vi.fn(async () => new Response("unexpected outbound fetch", { status: 599 }));
+  const fetchSpy = vi.fn(async (..._args: Parameters<typeof fetch>) => new Response("unexpected outbound fetch", { status: 599 }));
 
   beforeEach(() => {
     vi.stubEnv("SUNO_WEBHOOK_SECRET", SUNO_SECRET);
-    // CONVEX_SITE_URL unset keeps the handler from calling the provider for timed lyrics.
     vi.stubEnv("CONVEX_SITE_URL", "");
     vi.stubGlobal("fetch", fetchSpy);
     fetchSpy.mockClear();
@@ -152,6 +151,46 @@ describe("Suno callback authentication (HTTP)", () => {
     const rows = (await readRows()).sort((a, b) => (a.musicIndex ?? 0) - (b.musicIndex ?? 0));
     expect(rows.map((r) => r.status)).toEqual(["ready", "ready"]);
     expect(rows[0].audioId).toBe("clip-1");
+  });
+
+  it("accepts an authenticated unified Kie music callback without source URLs", async () => {
+    const { t, readRows } = await setupPendingSunoTask("kie-jobs");
+    const res = await postSuno(t, { code: 200, data: { taskId: "kie-jobs", state: "success", resultJson: JSON.stringify({ data: [
+      { id: "kie-1", audio_url: "https://musicfile.kie.ai/a.mp3" },
+      { id: "kie-2", audio_url: "https://musicfile.kie.ai/b.mp3" },
+    ] }) } }, SUNO_SECRET);
+    expect(res.status).toBe(200);
+    expect((await readRows()).map((row) => row.status)).toEqual(["ready", "ready"]);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it.each(["text", "first"])("ignores intermediate %s callback and keeps rows pending", async (callbackType) => {
+    const { t, readRows } = await setupPendingSunoTask("kie-intermediate");
+    const res = await postSuno(t, { code: 200, data: { task_id: "kie-intermediate", callbackType } }, SUNO_SECRET);
+    expect(await res.json()).toEqual({ status: "ignored" });
+    expect((await readRows()).every((row) => row.status === "pending")).toBe(true);
+  });
+
+  it("marks failed unified Kie tasks failed without fetching media", async () => {
+    const { t, readRows } = await setupPendingSunoTask("kie-failed");
+    const res = await postSuno(t, { code: 200, data: { taskId: "kie-failed", state: "fail", failMsg: "No audio" } }, SUNO_SECRET);
+    expect(res.status).toBe(200);
+    expect((await readRows()).every((row) => row.status === "failed")).toBe(true);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("re-fetches structured music details for generic resultUrls callbacks", async () => {
+    vi.stubEnv("KIE_AI_API_KEY", "test-key");
+    vi.stubEnv("CONVEX_SITE_URL", "https://test.convex.site");
+    fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({ code: 200, data: { state: "success", response: { data: [
+      { id: "a", audio_url: "https://musicfile.kie.ai/a.mp3" },
+      { id: "b", audio_url: "https://musicfile.kie.ai/b.mp3" },
+    ] } } })));
+    const { t, readRows } = await setupPendingSunoTask("kie-urls");
+    const res = await postSuno(t, { code: 200, data: { taskId: "kie-urls", state: "success", resultJson: JSON.stringify({ resultUrls: ["https://musicfile.kie.ai/a.mp3"] }) } }, SUNO_SECRET);
+    expect(res.status).toBe(200);
+    expect(fetchSpy.mock.calls[0][0]).toContain("https://api.kie.ai/api/v1/jobs/recordInfo?");
+    expect((await readRows()).every((row) => row.status === "ready")).toBe(true);
   });
 
   it("ignores a valid callback for a task that is no longer pending", async () => {

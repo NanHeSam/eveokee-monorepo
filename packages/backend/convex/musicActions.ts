@@ -10,7 +10,7 @@ import {
 } from "./utils/constants";
 import { getOpenAIClient } from "./integrations/openai/client";
 import { describeErrorForLog } from "./utils/logger";
-import { createSunoClientFromEnv } from "./integrations/suno/client";
+import { createKieMusicClientFromEnv } from "./integrations/kie/musicClient";
 
 /**
  * Combine mood with style descriptors to create final style string
@@ -43,12 +43,12 @@ export const requestSunoGeneration = internalAction({
   returns: v.null(),
   handler: async (ctx, args) => {
     let openaiClient: ReturnType<typeof getOpenAIClient>;
-    let sunoClient: ReturnType<typeof createSunoClientFromEnv>;
+    let sunoClient: ReturnType<typeof createKieMusicClientFromEnv>;
     try {
       // Get OpenAI client for generating song data
       openaiClient = getOpenAIClient();
 
-      // Create Suno client for music generation
+      // Create Kie Suno client for music generation
       // CONVEX_SITE_URL is provided automatically by Convex
       const convexSiteUrl = process.env.CONVEX_SITE_URL;
       if (!convexSiteUrl) {
@@ -60,11 +60,11 @@ export const requestSunoGeneration = internalAction({
       if (!webhookSecret) {
         throw new Error("SUNO_WEBHOOK_SECRET environment variable is not set");
       }
-      sunoClient = createSunoClientFromEnv({
-        SUNO_API_KEY: process.env.SUNO_API_KEY,
+      sunoClient = createKieMusicClientFromEnv({
+        KIE_AI_API_KEY: process.env.KIE_AI_API_KEY,
         CONVEX_SITE_URL: convexSiteUrl,
         CALLBACK_PATH: MUSIC_GENERATION_CALLBACK_PATH,
-        SUNO_TIMEOUT: process.env.SUNO_TIMEOUT,
+        KIE_AI_TIMEOUT: process.env.KIE_AI_TIMEOUT,
         WEBHOOK_SECRET: webhookSecret,
       });
     } catch (error) {
@@ -113,7 +113,7 @@ export const requestSunoGeneration = internalAction({
     // Determine final style: always combine mood + style tags (style is user-provided or LLM-generated)
     const finalStyle = combineMoodAndStyles(songData.mood, splitStyleTags(songData.style));
     
-    // Generate music using Suno API
+    // Generate music using Kie Suno
     let taskId: string;
     try {
       const result = await sunoClient.generateMusic({
@@ -123,7 +123,7 @@ export const requestSunoGeneration = internalAction({
       });
       taskId = result.taskId;
     } catch (error) {
-      // Decrement usage counter if Suno API fails
+      // Decrement usage counter if Kie music generation fails
       if (args.usageResult) {
         try {
           await ctx.runMutation(internal.usage.decrementMusicGeneration, {
@@ -150,3 +150,33 @@ export const requestSunoGeneration = internalAction({
   },
 });
 
+/** Fetch synchronized lyrics through Kie after acknowledging the music callback. */
+export const fetchTimedLyrics = internalAction({
+  args: { taskId: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { taskId }) => {
+    const records = await ctx.runQuery(internal.music.getAllMusicByTaskId, { taskId });
+    const client = createKieMusicClientFromEnv({
+      KIE_AI_API_KEY: process.env.KIE_AI_API_KEY,
+      CONVEX_SITE_URL: process.env.CONVEX_SITE_URL,
+      CALLBACK_PATH: MUSIC_GENERATION_CALLBACK_PATH,
+      KIE_AI_TIMEOUT: process.env.KIE_AI_TIMEOUT,
+    });
+    await Promise.all(records.filter((record) => record.audioId).map(async (record) => {
+      let phase = "fetch";
+      try {
+        const lyricWithTime = await client.getTimestampedLyrics({ taskId, audioId: record.audioId! });
+        phase = "persist";
+        await ctx.runMutation(internal.music.updateLyricWithTime, { musicId: record._id, lyricWithTime });
+      } catch (error) {
+        // Legacy tasks cannot be queried in Kie. Keep their audio and plain lyrics.
+        console.warn("Timed lyrics unavailable", {
+          taskId, musicId: record._id, phase,
+          errorType: error instanceof Error ? error.name : typeof error,
+          providerCode: error instanceof Error ? error.message.match(/(?:error code |failed: )(\d{3})/)?.[1] : undefined,
+        });
+      }
+    }));
+    return null;
+  },
+});
