@@ -2,6 +2,12 @@
 
 Source: `/Users/samhe/Documents/eveokee-design-2026-10/c-constellation/index.html`, its `NOTES.md`, and the parent `BRIEF.md`. Studied the source and the interactive Today, Song, and My sky views in a browser on October 18, 2026. This is a new native design, not a port of the Expo UI. Music is the emotional reward; video lives inside a source memory after the music.
 
+## Build 3 — Today hierarchy (before implementation)
+
+Small wordmark, date and an account/settings sheet sit above one focal point: today's constellation. An empty sky has one faint invitation star and the single line “A moment can start here.” With moments, the line becomes “A little of today, kept.” Stars open the full source; a quiet moments disclosure provides complete, wrapping labels without duplicate diary/event titles.
+
+One large hold-to-speak control anchors capture, with tap-to-toggle for accessibility, a language switch, live transcription and a quiet “Type instead” link. Release opens editable words before saving. The song card is absent for an empty day, offers “Make today's song” for a saved day, shows “Composing…” while pending, and opens playback when ready. Sign out lives inside Settings. Semantic type, wrapping CJK/English and scrolling preserve this order at accessibility sizes.
+
 ## Product rules
 
 Each trace is a star, each day a constellation, and the accumulated sky a ledger that never resets. Avoid scores, streaks, deadlines, empty-page pressure, and invented autobiographical claims. Capture can happen after the fact. Bring Sam back to a real source so he can remember for himself. A song lets him see the day in third person. Today opens the day's traces; The song moves through them; My sky changes scale without discarding history.
