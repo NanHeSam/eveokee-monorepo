@@ -15,6 +15,8 @@ final class MusicPlayer {
     @ObservationIgnored private var itemObserver: NSKeyValueObservation?
     @ObservationIgnored private var subscriptions: [AnyCancellable] = []
     @ObservationIgnored private var shouldResume = false
+    @ObservationIgnored private var capturingVoice = false
+    @ObservationIgnored private var resumeAfterVoice = false
 
     init() {
         observer = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.15, preferredTimescale: 600), queue: .main) { @Sendable [weak self] time in
@@ -84,7 +86,7 @@ final class MusicPlayer {
         if autoplay { play() }
     }
     func play() {
-        guard music?.playable == true, player.currentItem != nil else { return }
+        guard !capturingVoice, music?.playable == true, player.currentItem != nil else { return }
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
             try AVAudioSession.sharedInstance().setActive(true)
@@ -101,7 +103,22 @@ final class MusicPlayer {
         player.seek(to: CMTime(seconds: bounded, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
         updateNowPlaying()
     }
+    func beginVoiceCapture() {
+        guard !capturingVoice else { return }
+        resumeAfterVoice = playing
+        capturingVoice = true
+        pause()
+    }
+    func endVoiceCapture(resume: Bool = true) {
+        guard capturingVoice else { return }
+        capturingVoice = false
+        let restore = resumeAfterVoice && resume
+        resumeAfterVoice = false
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+        if restore { play() }
+    }
     func clear() {
+        capturingVoice = false; resumeAfterVoice = false
         pause(); itemObserver = nil; player.replaceCurrentItem(with: nil)
         music = nil; elapsed = 0; duration = 0; error = nil
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil

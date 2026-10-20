@@ -8,6 +8,7 @@ struct ConstellationView: View {
     let namespace: Namespace.ID
     let onSelect: (Moment) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduced
+    @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.colorSchemeContrast) private var contrast
 
     static func point(_ index: Int, count: Int, size: CGSize) -> CGPoint {
@@ -19,7 +20,7 @@ struct ConstellationView: View {
             let radius = sqrt(Double(index + 1) / Double(max(1, count))) * 0.37
             unit = .init(x: 0.5 + cos(angle) * radius, y: 0.5 + sin(angle) * radius)
         }
-        return .init(x: unit.x * size.width, y: unit.y * size.height)
+        return .init(x: min(max(70, unit.x * size.width), max(70, size.width - 70)), y: 30 + unit.y * max(0, size.height - 90))
     }
     var body: some View {
         GeometryReader { geometry in
@@ -42,10 +43,11 @@ struct ConstellationView: View {
                             VStack(spacing: 7) {
                                 star(moment, lit: lit)
                                     .matchedGeometryEffect(id: moment.id, in: namespace)
-                                if showsLabels && moments.count <= 7 {
-                                    Text(String(moment.title.prefix(22)))
+                                if showsLabels && moments.count <= 7 && !typeSize.isAccessibilitySize {
+                                    Text(moment.title)
                                         .font(.caption2).foregroundStyle(lit ? SkyTheme.paper : SkyTheme.dim)
-                                        .lineLimit(1).frame(width: 112)
+                                        .lineLimit(2).multilineTextAlignment(.center).frame(width: 132)
+                                        .fixedSize(horizontal: false, vertical: true)
                                 }
                             }.frame(width: 48, height: 48)
                                 .contentShape(Rectangle())

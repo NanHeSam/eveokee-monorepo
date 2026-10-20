@@ -10,6 +10,9 @@ struct ConstellationDay: Identifiable, Sendable {
         return music.first { primaryIDs.contains($0.id) && $0.playable } ?? music.first(where: \.playable)
             ?? music.first { $0.status == "ready" && $0.isUnavailable != true }
     }
+    var latestDiary: Diary? { diaries.max { ($0.date, $0.id) < ($1.date, $1.id) } }
+    var hasPendingSong: Bool { music.contains { $0.status == "pending" && $0.isUnavailable != true } }
+    var hasFailedSong: Bool { music.contains { $0.status == "failed" } }
     var title: String { song?.title ?? diaries.compactMap(\.title).first ?? "A little of this day" }
 
     static func group(diaries: [Diary], playlist: [Music], calendar: Calendar = .current) -> [Self] {
@@ -48,21 +51,23 @@ struct Moment: Identifiable, Sendable {
     let mediaURL: URL?
     let people: [PersonReference]
 
+    private static func normalizedTitle(_ title: String) -> String {
+        title.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            .components(separatedBy: .whitespacesAndNewlines).joined()
+    }
     static func make(day: ConstellationDay, details: [String: Diary], media: [String: [DiaryMedia]]) -> [Self] {
         var result: [Self] = []
         for base in day.diaries {
             let diary = details[base.id] ?? base
             let date = Date(timeIntervalSince1970: diary.date / 1000)
-            result.append(Self(id: diary.id, diaryID: diary.id, title: diary.title ?? String(diary.content.prefix(55)), body: diary.content, date: date, kind: .diary, mediaURL: nil, people: []))
-            for event in diary.events ?? [] {
+            result.append(Self(id: diary.id, diaryID: diary.id, title: diary.title ?? diary.content, body: diary.content, date: date, kind: .diary, mediaURL: nil, people: []))
+            var titles = Set([normalizedTitle(diary.title ?? diary.content)])
+            for event in diary.events ?? [] where titles.insert(normalizedTitle(event.title)).inserted {
                 result.append(Self(id: event.id, diaryID: diary.id, title: event.title, body: event.summary, date: Date(timeIntervalSince1970: event.happenedAt / 1000), kind: .event, mediaURL: nil, people: event.peopleDetails ?? []))
             }
             for item in media[diary.id] ?? [] {
                 result.append(Self(id: item.id, diaryID: diary.id, title: item.mediaType == "photo" ? "A photo from this day" : "A moving memory", body: diary.content, date: date, kind: item.mediaType == "photo" ? .photo : .video, mediaURL: item.url.flatMap(URL.init(string:)), people: []))
             }
-        }
-        if let song = day.song {
-            result.append(Self(id: song.id, diaryID: song.diaryId ?? day.diaries.first(where: { $0.primaryMusicId == song.id })?.id, title: song.title ?? "The day's song", body: song.lyric ?? "A day, in a different light.", date: day.date, kind: .music, mediaURL: nil, people: []))
         }
         return result
     }

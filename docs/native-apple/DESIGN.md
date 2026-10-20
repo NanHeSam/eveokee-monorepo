@@ -38,7 +38,7 @@ Use SF for dates, provenance, navigation, controls and body. Use the system seri
 
 Prototype reference: hero 37/42 px, song title 26 px, current lyric 27/34 px, adjacent lyric 15 px, card title 18–20 px, wordmark 22 px; metadata 9–12 px with 1.8–2.1 px tracking on eyebrows. Native maps these to semantic `.largeTitle`, `.title`, `.title3`, `.subheadline`, `.caption`, `.caption2` with `.system(..., design: .serif)`; use no fixed font sizes for lyrics. Dynamic Type may grow and wrap lines; the containing page scrolls instead of clipping them. The decorative memory glyph is the only large fixed symbol.
 
-Spacing rhythm: 4 / 8 / 12 / 16 / 24 / 28 / 32 points. Outer copy inset 28; cards 24; card padding 16–18; screen width follows the safe area. Reference sky 300 px Today, 248 Song/ledger; native 275/235/255 points with scroll overflow for compact devices and large text. Cards radius 18, memory artwork 18, system sheet radius supplied by iOS. All controls have at least a 44-point target; star targets 48. Screen content, city, and native status/home safe areas remain separate. Current iPad support is adaptive/scrollable; a dedicated multi-column composition comes later.
+Spacing rhythm: 4 / 8 / 12 / 16 / 24 / 28 / 32 points. Outer copy inset 28; cards 24; card padding 16–18; screen width follows the safe area. Reference sky 300 px Today, 248 Song/ledger; native 295/235/255 points (Today uses 240 at accessibility sizes) with scroll overflow for compact devices and large text. Cards radius 18, memory artwork 18, system sheet radius supplied by iOS. All controls have at least a 44-point target; star targets 48. Screen content, city, and native status/home safe areas remain separate. Current iPad support is adaptive/scrollable; a dedicated multi-column composition comes later.
 
 ## Motion specification
 
@@ -52,7 +52,7 @@ Spacing rhythm: 4 / 8 / 12 / 16 / 24 / 28 / 32 points. Outer copy inset 28; card
 | Dust | seeded 62 points; alternate 3–9 s, .12–.55 opacity | Canvas under TimelineView at 20 fps; deterministic points, subtle sinusoidal opacity |
 | Sky zoom | positions/size 1 s; opacity .8 s; selected scale 1.35 | 1 s curve, segmented Day/Week/All and MagnifyGesture; selection haptic |
 | Press | .5 s scale; tap .95 | Native `ButtonStyle`, .6 response spring and .86 damping |
-| Voice rehearsal | hold ≥550 ms; pulse 1.8 s; birth 1.5 s (0→1.9→1); bloom 1.4 s to 18× | **Stub** with explicit coming-soon alert. No recording, fake transcript, or fake saved star. Later capture should use a damped spring, bloom Canvas and `sensoryFeedback(.success)` only on committed save |
+| Voice rehearsal | hold ≥550 ms; pulse 1.8 s; birth 1.5 s (0→1.9→1); bloom 1.4 s to 18× | Real hold/release and accessible tap-to-toggle capture. Local progressive transcript, editable review, success feedback only after committed save; Reduce Motion suppresses pressed scaling. Preparation/download/denial stay honest; no fake transcript or star. |
 | New text moment | no native source in prototype | Mutation confirmation triggers success feedback; real subscription provides star, no optimistic fabricated diary |
 
 Reduce Motion pauses both TimelineViews, removes drift, displacement transitions, pressed scale, zoom movement and custom animation. State changes and actual progress remain. Haptics use `sensoryFeedback`, leaving intensity/system accessibility behavior to the OS. Continuous star animations should pause offscreen; only the active screen is mounted. Playback itself continues across tabs and in background.
@@ -71,7 +71,7 @@ My sky renders one cluster per derived day. Day zoom focuses selection; Week sho
 - Cluster labels include complete date, title, entry count and selected trait. Every day is also reachable in a linear list. Zoom uses a labelled Picker and supports pinch without requiring it.
 - Decorative dust, paths, skyline and sign-in stars are accessibility-hidden. Source text is selectable; media has labels. Native sheets keep focus contained and support escape/dismiss gestures.
 - Lyrics and metadata use semantic fonts. Long lyrics wrap within a ScrollView; there is no fixed-height text clipping. Automatic time updates do not announce every line via VoiceOver. Transport and source links remain independently focusable.
-- Time slider uses native adjustable accessibility; play/pause, previous/next lyric, account and sign-out have explicit labels. No capture behavior depends on holding alone; a tap explains the stub and a separate text fallback is available.
+- Time slider uses native adjustable accessibility; play/pause, previous/next lyric, account and sign-out have explicit labels. No capture behavior depends on holding alone; tap-to-toggle and a separate text fallback are available.
 - XCTest fixture captures exercise largest accessibility type and a Reduce Motion launch preference; also manually check the real Settings toggles and VoiceOver before shipping (launch preferences alone do not prove OS accessibility settings).
 
 ## Apple expansion

@@ -13,7 +13,9 @@
 		196B2A245F159BD4E5AC55C1 /* SubscriptionDeliveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A597B41075D279164F09104 /* SubscriptionDeliveryTests.swift */; };
 		30EFEBAB1DEBB9F3B805E7D0 /* Fixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4073139F6FE8A083E38813A5 /* Fixtures.swift */; };
 		41EAF10564915D2561E8752E /* FixtureSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D27100CC170230586AB29A03 /* FixtureSnapshotTests.swift */; };
+		47CD5345AA3E27B18EE5390E /* CaptureAndGenerationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BE1DFF2FD4F7747EF041236 /* CaptureAndGenerationTests.swift */; };
 		4B2DAAE589EF5FC1C7C165A1 /* EveokeeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25295878A43D6AB2EA2BB299 /* EveokeeApp.swift */; };
+		5B4AB9B050EB0631CD20EC58 /* NativeOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32753EF6F213725572FF4D9F /* NativeOperations.swift */; };
 		68C86C0583FA418ABE9D8B8E /* ConvexDocuments.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6074DE659161603A941F23D9 /* ConvexDocuments.swift */; };
 		6CACE9D1EBA74594707EAF2A /* ConstellationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 602406D0C61A9E77E7658038 /* ConstellationView.swift */; };
 		6D6457BB44AB3F40C03FA166 /* ClerkKitUI in Frameworks */ = {isa = PBXBuildFile; productRef = 7E5C4C9E0225EB44818514A6 /* ClerkKitUI */; };
@@ -28,6 +30,7 @@
 		E074AF487AEA2A078096947E /* ConvexMobile in Frameworks */ = {isa = PBXBuildFile; productRef = 5B0BAB56030A00DAB891C887 /* ConvexMobile */; };
 		E1E1BFBBA236A5740BF5979A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FC64A1E0AB4D1BD799AC15C1 /* Assets.xcassets */; };
 		EE8AB32E804D1EE0E0EC746A /* SongView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E87B6C751D57F5514B424A6F /* SongView.swift */; };
+		F5BCAB080C321127E951047A /* VoiceCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D7A4F268421A2211452842B /* VoiceCapture.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -56,12 +59,15 @@
 		216CE476B968C5F5F1DE287C /* MySkyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MySkyView.swift; sourceTree = "<group>"; };
 		25216DEA4D68F67759C855B3 /* ConstellationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConstellationTests.swift; sourceTree = "<group>"; };
 		25295878A43D6AB2EA2BB299 /* EveokeeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EveokeeApp.swift; sourceTree = "<group>"; };
+		32753EF6F213725572FF4D9F /* NativeOperations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeOperations.swift; sourceTree = "<group>"; };
 		4073139F6FE8A083E38813A5 /* Fixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fixtures.swift; sourceTree = "<group>"; };
 		54CE16CDDCF4070D82472E5D /* SkyTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyTheme.swift; sourceTree = "<group>"; };
 		602406D0C61A9E77E7658038 /* ConstellationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConstellationView.swift; sourceTree = "<group>"; };
 		6074DE659161603A941F23D9 /* ConvexDocuments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConvexDocuments.swift; sourceTree = "<group>"; };
+		6D7A4F268421A2211452842B /* VoiceCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceCapture.swift; sourceTree = "<group>"; };
 		7C236D3EB95EFDC9FAB65A7F /* MusicPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicPlayer.swift; sourceTree = "<group>"; };
 		8404F827EA341CDC105D98BF /* EveokeeTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = EveokeeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8BE1DFF2FD4F7747EF041236 /* CaptureAndGenerationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureAndGenerationTests.swift; sourceTree = "<group>"; };
 		A6A1591CE73B315832119FB9 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
 		B382576878CBCF451783EA29 /* AppShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppShell.swift; sourceTree = "<group>"; };
 		C697D7787CED769067FD7E7F /* LyricTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricTimeline.swift; sourceTree = "<group>"; };
@@ -91,6 +97,8 @@
 			children = (
 				143DEECE003FB77C00F04E22 /* BackendStore.swift */,
 				7C236D3EB95EFDC9FAB65A7F /* MusicPlayer.swift */,
+				32753EF6F213725572FF4D9F /* NativeOperations.swift */,
+				6D7A4F268421A2211452842B /* VoiceCapture.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -188,6 +196,7 @@
 		ECCDFE34B17C24855225173D /* __tests__ */ = {
 			isa = PBXGroup;
 			children = (
+				8BE1DFF2FD4F7747EF041236 /* CaptureAndGenerationTests.swift */,
 				25216DEA4D68F67759C855B3 /* ConstellationTests.swift */,
 				1A597B41075D279164F09104 /* SubscriptionDeliveryTests.swift */,
 			);
@@ -331,9 +340,11 @@
 				74C350AEE74E860C364CD99A /* MemoryView.swift in Sources */,
 				CC7D4FF827F8A5C709353BB9 /* MusicPlayer.swift in Sources */,
 				003C424E9F3277BF0EE37DA1 /* MySkyView.swift in Sources */,
+				5B4AB9B050EB0631CD20EC58 /* NativeOperations.swift in Sources */,
 				759F91D271C24186BE3CFF43 /* SkyTheme.swift in Sources */,
 				EE8AB32E804D1EE0E0EC746A /* SongView.swift in Sources */,
 				D50C44B42D18E267E9E11B73 /* TodayView.swift in Sources */,
+				F5BCAB080C321127E951047A /* VoiceCapture.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -349,6 +360,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				47CD5345AA3E27B18EE5390E /* CaptureAndGenerationTests.swift in Sources */,
 				8F2089130074D7485705A099 /* ConstellationTests.swift in Sources */,
 				196B2A245F159BD4E5AC55C1 /* SubscriptionDeliveryTests.swift in Sources */,
 			);
@@ -510,7 +522,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 5KQ8K9W7XS;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -575,7 +587,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 5KQ8K9W7XS;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

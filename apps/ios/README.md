@@ -44,6 +44,14 @@ In a Debug scheme only, add `--fixture-preview` to launch arguments. A persisten
 
 The signed-out native screen uses the real dev Clerk configuration. Continue with Apple invokes Clerk's native flow; Continue with email opens ClerkKitUI for sign-in/up and verification. Auth tokens request the existing `convex` template because the backend expects that audience. After successful sign-in the app uses real data only; a missing current day shows the empty Today state.
 
-Voice capture/transcription is explicitly coming soon. Existing songs play; creating/generating a new song is a later phase. Text entry uses the existing createDiary mutation. No backend deploy, Expo/web change, monetization, or production access is needed for this branch.
+Voice capture and explicit latest-moment song generation are implemented in build 3 (details below). Text and reviewed voice words use the existing createDiary mutation. No backend deploy or Expo/web changes are required.
 
 See [TestFlight build 2 verification](../../docs/native-apple/TESTFLIGHT-2.md) for the authenticated dev sign-in and crash fix. See [screens and verification](../../docs/native-apple/screens/README.md) for what was actually exercised versus what still requires Sam's interactive sign-in.
+
+## Build 3 capture and songs
+
+Today uses one constellation, a hold/release voice control (tap twice with VoiceOver or for tap-to-toggle), editable transcript review, and a quiet typing fallback. English and Simplified Chinese follow preferred languages and can be switched beside capture or in Settings. iOS 26 SpeechAnalyzer downloads required local assets; unsupported analyzer locales/devices use SFSpeechRecognizer only when on-device recognition is supported. Audio is transient and only reviewed text is saved. Permission denial offers Settings and typing. Capture pauses the app's song and restores its playback session afterwards.
+
+“Make today's song” explicitly calls the existing per-diary action with the latest diary's fresh, exact content. It never combines the day's words. Pending/ready/failed music arrives through the playlist subscription; generation is never automatic or retried automatically. This is a latest-moment song until a true day-level backend contract exists.
+
+For offline UI coverage, `EVEO_FIXTURE_STATE=empty|moments|composing|ready` changes only the Debug `--fixture-preview` route. Fixture saving/recording/generation stay disabled. Release builds cannot enter this route.

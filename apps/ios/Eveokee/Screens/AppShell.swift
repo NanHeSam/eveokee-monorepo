@@ -23,7 +23,7 @@ struct AppShell: View {
             }
             Group {
                 switch page {
-                case .today: TodayView(store: store, namespace: sky, onSong: openSong, onMoment: openMoment, onSignOut: onSignOut)
+                case .today: TodayView(store: store, player: player, namespace: sky, onSong: openSong, onMoment: openMoment, onSignOut: onSignOut)
                 case .song: SongView(day: selectedDay, store: store, player: player, namespace: sky, onMoment: openMoment)
                 case .sky: MySkyView(store: store, onPlay: openSong)
                 }

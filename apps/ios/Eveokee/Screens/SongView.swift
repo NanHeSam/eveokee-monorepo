@@ -24,8 +24,13 @@ struct SongView: View {
                 ConstellationView(moments: moments, active: index.map { $0 % max(1, moments.count) }, drifting: player.playing, namespace: namespace, onSelect: onMoment)
                     .frame(height: 235)
                 if song == nil {
-                    Text("Your day is still gathering.").font(SkyTheme.serif(.title2))
-                    Text("Keep a moment today. Your music will have a place here.").font(.subheadline).foregroundStyle(SkyTheme.dim).multilineTextAlignment(.center)
+                    if day.diaries.isEmpty {
+                        Text("Keep a moment to begin.").font(SkyTheme.serif(.title2))
+                    } else {
+                        DaySongCard(day: day, store: store) {
+                            if let song = day.song { player.load(song, autoplay: true) }
+                        }.padding(.horizontal, 24)
+                    }
                 } else if lines.isEmpty {
                     Text("Let the music take you back.").font(SkyTheme.serif(.title2))
                     Text("This track has no lyrics yet.").font(.caption).foregroundStyle(SkyTheme.dim)
@@ -68,6 +73,9 @@ struct SongView: View {
                 }
             }.padding(.top, 24).padding(.bottom, 25)
         }.task(id: day.diaries.map(\.id)) { store.watch(day: day) }
+            .onChange(of: day.song?.id) { _, _ in
+                if let song = day.song { player.load(song, autoplay: false) }
+            }
     }
     private func previous() { guard !lines.isEmpty else { return }; player.seek(lines[max(0, (index ?? 0) - 1)].start) }
     private func next() { guard !lines.isEmpty else { return }; player.seek(lines[min(lines.count - 1, (index ?? -1) + 1)].start) }

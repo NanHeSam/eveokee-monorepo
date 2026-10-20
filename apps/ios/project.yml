@@ -22,7 +22,7 @@ settings:
     GENERATE_INFOPLIST_FILE: YES
     MARKETING_VERSION: '2.0.0'
     DEVELOPMENT_TEAM: 5KQ8K9W7XS
-    CURRENT_PROJECT_VERSION: '2'
+    CURRENT_PROJECT_VERSION: '3'
 targets:
   Eveokee:
     type: application
@@ -60,6 +60,8 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CLERK_PUBLISHABLE_KEY: $(CLERK_PUBLISHABLE_KEY)
         CONVEX_URL: $(CONVEX_URL)
+        NSMicrophoneUsageDescription: Record a spoken moment to turn into editable words.
+        NSSpeechRecognitionUsageDescription: Transcribe your spoken moments on device so you can review and keep them.
         UIBackgroundModes: [audio]
         CFBundleURLTypes:
           - CFBundleURLSchemes: [eveokee-native, com.eveokee.app]
