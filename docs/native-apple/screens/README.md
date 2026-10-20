@@ -56,3 +56,7 @@ Other checks: `xcodegen generate --spec apps/ios/project.yml`, SPM resolve, `git
 **Stubbed/deferred:** hold-to-speak/transcription (no microphone is used), exact lyric-to-event/media provenance, song generation/progress UI, photo/place ingestion, dedicated iPad/Mac layouts and visionOS immersive rendering. Native text entry and playback are implemented, but require dev authentication for integration verification.
 
 Next verification: Sam signs in on the dev native app, adds a short text moment, opens an existing day/track, then locks/backgrounds the device to test audio. Next implementation phase is voice capture plus explicit source anchors with the backend lane. No Convex deployment, production mutation, native distribution archive, or merge was performed.
+
+## Build 3
+
+See [build 3 verification](../TESTFLIGHT-3.md) for command history, real DEV generation/playback and speech verification limits. `build3-before-today.png` is the installed build 2 fixture baseline. The `build3-today-{empty,moments,composing,ready}.png`, `build3-today-accessibility.png` and `build3-full-moment-title.png` images are from the final passing build 3 r6 UI tests on iPhone 17 Pro / iOS 26.0. All use synthetic data and a visible fixture banner; no live-account screenshots or personal content were committed.
