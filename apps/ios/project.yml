@@ -20,13 +20,14 @@ settings:
     CODE_SIGN_IDENTITY[sdk=iphonesimulator*]: '-'
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     GENERATE_INFOPLIST_FILE: YES
-    MARKETING_VERSION: '0.1.0'
+    MARKETING_VERSION: '2.0.0'
+    DEVELOPMENT_TEAM: 5KQ8K9W7XS
     CURRENT_PROJECT_VERSION: '1'
 targets:
   Eveokee:
     type: application
     platform: iOS
-    sources: [Eveokee]
+    sources: [Eveokee, Resources]
     configFiles:
       Debug: Config/App.xcconfig
       Release: Config/App.xcconfig
@@ -39,7 +40,8 @@ targets:
         product: ClerkKitUI
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.eveokee.constellation
+        PRODUCT_BUNDLE_IDENTIFIER: com.eveokee.app
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_ENTITLEMENTS: Config/Eveokee.entitlements
         INFOPLIST_KEY_CFBundleDisplayName: Eveokee
         INFOPLIST_KEY_CLERK_PUBLISHABLE_KEY: $(CLERK_PUBLISHABLE_KEY)
@@ -48,6 +50,8 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIUserInterfaceStyle: Dark
         INFOPLIST_KEY_UIBackgroundModes: audio
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
     info:
       path: Config/Info.plist

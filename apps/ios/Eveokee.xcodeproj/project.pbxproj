@@ -25,6 +25,7 @@
 		D50C44B42D18E267E9E11B73 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6A1591CE73B315832119FB9 /* TodayView.swift */; };
 		DD6A3B03A80DDFE4180E022E /* AppShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = B382576878CBCF451783EA29 /* AppShell.swift */; };
 		E074AF487AEA2A078096947E /* ConvexMobile in Frameworks */ = {isa = PBXBuildFile; productRef = 5B0BAB56030A00DAB891C887 /* ConvexMobile */; };
+		E1E1BFBBA236A5740BF5979A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FC64A1E0AB4D1BD799AC15C1 /* Assets.xcassets */; };
 		EE8AB32E804D1EE0E0EC746A /* SongView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E87B6C751D57F5514B424A6F /* SongView.swift */; };
 /* End PBXBuildFile section */
 
@@ -66,6 +67,7 @@
 		D27100CC170230586AB29A03 /* FixtureSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureSnapshotTests.swift; sourceTree = "<group>"; };
 		D85A3E43D89239EEF741C0FF /* App.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = App.xcconfig; sourceTree = "<group>"; };
 		E87B6C751D57F5514B424A6F /* SongView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongView.swift; sourceTree = "<group>"; };
+		FC64A1E0AB4D1BD799AC15C1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,6 +108,7 @@
 				E8C276B1666BE86657E876D7 /* Config */,
 				1748D7ECBE897F92CA2852B1 /* Eveokee */,
 				0A9CB3AF4D6EFA9AD7D9BD23 /* EveokeeUITests */,
+				A87E37AD40DC8336F2129C97 /* Resources */,
 				166FAC7E6244D9A4D0B0F81C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -151,6 +154,14 @@
 				54CE16CDDCF4070D82472E5D /* SkyTheme.swift */,
 			);
 			path = Design;
+			sourceTree = "<group>";
+		};
+		A87E37AD40DC8336F2129C97 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				FC64A1E0AB4D1BD799AC15C1 /* Assets.xcassets */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		B780AACC6305E3EDF030930C /* Models */ = {
@@ -224,6 +235,7 @@
 			buildConfigurationList = 543658F8103B823C218F483B /* Build configuration list for PBXNativeTarget "Eveokee" */;
 			buildPhases = (
 				34E4A288D74352F7824CD44C /* Sources */,
+				A8CDB52EA79D38256A87CD7A /* Resources */,
 				F6D74BC773FEB0FF01183BEE /* Frameworks */,
 			);
 			buildRules = (
@@ -250,13 +262,16 @@
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					4057EA6E45270578536AEEA6 = {
+						DevelopmentTeam = 5KQ8K9W7XS;
 						ProvisioningStyle = Automatic;
 					};
 					9C1061BDBE869CAE2645978F = {
+						DevelopmentTeam = 5KQ8K9W7XS;
 						ProvisioningStyle = Automatic;
 						TestTargetID = DDE06162A8F3BDD765385B84;
 					};
 					DDE06162A8F3BDD765385B84 = {
+						DevelopmentTeam = 5KQ8K9W7XS;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -285,6 +300,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A8CDB52EA79D38256A87CD7A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E1E1BFBBA236A5740BF5979A /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		34E4A288D74352F7824CD44C /* Sources */ = {
@@ -355,12 +381,14 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIBackgroundModes = audio;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.eveokee.constellation;
+				PRODUCT_BUNDLE_IDENTIFIER = com.eveokee.app;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -381,12 +409,14 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIBackgroundModes = audio;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.eveokee.constellation;
+				PRODUCT_BUNDLE_IDENTIFIER = com.eveokee.app;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -478,6 +508,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 5KQ8K9W7XS;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -491,7 +522,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 2.0.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -542,6 +573,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 5KQ8K9W7XS;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -561,7 +593,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 2.0.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

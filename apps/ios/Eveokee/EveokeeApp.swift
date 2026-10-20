@@ -19,7 +19,7 @@ struct EveokeeApp: App {
         testing = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
         let key = Bundle.main.object(forInfoDictionaryKey: "CLERK_PUBLISHABLE_KEY") as? String ?? ""
         let url = Bundle.main.object(forInfoDictionaryKey: "CONVEX_URL") as? String ?? ""
-        configured = key.hasPrefix("pk_test_") && URL(string: url)?.scheme == "https" && url.hasSuffix(".convex.cloud")
+        configured = (key.hasPrefix("pk_test_") || key.hasPrefix("pk_live_")) && URL(string: url)?.scheme == "https" && url.hasSuffix(".convex.cloud")
         clerk = !fixture && !testing && configured ? Clerk.configure(publishableKey: key) : nil
         _store = State(initialValue: BackendStore(fixture: fixture))
     }
@@ -31,7 +31,7 @@ struct EveokeeApp: App {
                 } else if let clerk {
                     AuthenticatedRoot(store: store, player: player).environment(clerk)
                 } else {
-                    ZStack { SkyBackground(); Text(testing ? "Running local tests" : "Add your development keys in Config/Secrets.xcconfig, then rebuild.").padding(32).foregroundStyle(SkyTheme.paper) }
+                    ZStack { SkyBackground(); Text(testing ? "Running local tests" : "Add your Clerk and Convex keys in Config/Secrets.xcconfig, then rebuild.").padding(32).foregroundStyle(SkyTheme.paper) }
                 }
             }.preferredColorScheme(.dark)
         }

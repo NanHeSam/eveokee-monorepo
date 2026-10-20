@@ -15,7 +15,7 @@ open apps/ios/Eveokee.xcodeproj
 
 `project.yml`, the generated project, Info.plist template and Package.resolved are committed. Regenerate after adding/removing source files or changing target/package settings. Secrets.xcconfig and DerivedData/xcuserdata are ignored. Xcode resolves the pinned official ConvexMobile and ClerkKit/ClerkKitUI packages via SPM. Do not put values into the project or commit a built app. No package.json: pnpm/Turbo exclude this native app automatically.
 
-Choose an iOS 26+ simulator. **Keep code signing enabled** for Clerk Keychain (ad hoc identity `-` works on Simulator). Pick your own signing team and configure the native bundle `com.eveokee.constellation` in Clerk/Apple before using a physical device/Apple credentials. No provisioning or production setup is performed by this project. The current app accepts development configuration only.
+Choose an iOS 26+ simulator. **Keep code signing enabled** for Clerk Keychain (ad hoc identity `-` works on Simulator). The app ships as `com.eveokee.app` (team `5KQ8K9W7XS`), replacing the React Native app in TestFlight. It accepts development (`pk_test_`) or production (`pk_live_`) Clerk keys; release builds pass the production Clerk key and Convex URL as `xcodebuild` build settings, so `Secrets.xcconfig` can stay on development values.
 
 ## Build and test
 
