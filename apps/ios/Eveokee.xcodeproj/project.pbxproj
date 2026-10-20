@@ -10,6 +10,7 @@
 		003C424E9F3277BF0EE37DA1 /* MySkyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 216CE476B968C5F5F1DE287C /* MySkyView.swift */; };
 		172094499FA5634986BD6E2C /* BackendStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 143DEECE003FB77C00F04E22 /* BackendStore.swift */; };
 		1724F0942FAC74A9116A5781 /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 4BFD86D7BA500F64CA0937F2 /* ClerkKit */; };
+		196B2A245F159BD4E5AC55C1 /* SubscriptionDeliveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A597B41075D279164F09104 /* SubscriptionDeliveryTests.swift */; };
 		30EFEBAB1DEBB9F3B805E7D0 /* Fixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4073139F6FE8A083E38813A5 /* Fixtures.swift */; };
 		41EAF10564915D2561E8752E /* FixtureSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D27100CC170230586AB29A03 /* FixtureSnapshotTests.swift */; };
 		4B2DAAE589EF5FC1C7C165A1 /* EveokeeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25295878A43D6AB2EA2BB299 /* EveokeeApp.swift */; };
@@ -51,6 +52,7 @@
 		1247946220306A21B0D75B5C /* ConstellationDay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConstellationDay.swift; sourceTree = "<group>"; };
 		1248745E5551104BA8FCBB2A /* EveokeeUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = EveokeeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		143DEECE003FB77C00F04E22 /* BackendStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackendStore.swift; sourceTree = "<group>"; };
+		1A597B41075D279164F09104 /* SubscriptionDeliveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionDeliveryTests.swift; sourceTree = "<group>"; };
 		216CE476B968C5F5F1DE287C /* MySkyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MySkyView.swift; sourceTree = "<group>"; };
 		25216DEA4D68F67759C855B3 /* ConstellationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConstellationTests.swift; sourceTree = "<group>"; };
 		25295878A43D6AB2EA2BB299 /* EveokeeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EveokeeApp.swift; sourceTree = "<group>"; };
@@ -187,6 +189,7 @@
 			isa = PBXGroup;
 			children = (
 				25216DEA4D68F67759C855B3 /* ConstellationTests.swift */,
+				1A597B41075D279164F09104 /* SubscriptionDeliveryTests.swift */,
 			);
 			path = __tests__;
 			sourceTree = "<group>";
@@ -347,6 +350,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8F2089130074D7485705A099 /* ConstellationTests.swift in Sources */,
+				196B2A245F159BD4E5AC55C1 /* SubscriptionDeliveryTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -506,7 +510,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 5KQ8K9W7XS;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -571,7 +575,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphonesimulator*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 5KQ8K9W7XS;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

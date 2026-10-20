@@ -108,21 +108,19 @@ final class BackendStore {
             observe(client.subscribe(to: "diaryMedia:getDiaryMedia", with: ["diaryId": id], yielding: [DiaryMedia].self), detail: true) { $0.media[id] = $1 }
         }
     }
-    private func observe<T: Decodable & Sendable>(_ publisher: AnyPublisher<T, ClientError>, detail: Bool = false, update: @escaping @MainActor (BackendStore, T) -> Void) {
+    func observe<T: Decodable & Sendable>(_ publisher: AnyPublisher<T, ClientError>, detail: Bool = false, update: @escaping @MainActor (BackendStore, T) -> Void) {
         let epoch = generation
-        let subscription = publisher.sink { [weak self] completion in
+        // Convex invokes Combine subscribers on its Rust worker thread. Schedule before
+        // entering these MainActor closures: a Task inside the sink is already too late
+        // to avoid Swift 6's isolation check at the callback's entry point.
+        let subscription = publisher.receive(on: DispatchQueue.main).sink { [weak self] completion in
+            guard let self, self.generation == epoch else { return }
             if case .failure(let failure) = completion {
-                let message = failure.localizedDescription
-                Task { @MainActor [weak self] in
-                    guard let self, self.generation == epoch else { return }
-                    self.error = message; self.loading = false
-                }
+                self.error = failure.localizedDescription; self.loading = false
             }
         } receiveValue: { [weak self] value in
-            Task { @MainActor [weak self] in
-                guard let self, self.generation == epoch else { return }
-                update(self, value)
-            }
+            guard let self, self.generation == epoch else { return }
+            update(self, value)
         }
         if detail { daySubscriptions.append(subscription) } else { subscriptions.append(subscription) }
     }

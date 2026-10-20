@@ -22,7 +22,7 @@ settings:
     GENERATE_INFOPLIST_FILE: YES
     MARKETING_VERSION: '2.0.0'
     DEVELOPMENT_TEAM: 5KQ8K9W7XS
-    CURRENT_PROJECT_VERSION: '1'
+    CURRENT_PROJECT_VERSION: '2'
 targets:
   Eveokee:
     type: application
@@ -62,7 +62,7 @@ targets:
         CONVEX_URL: $(CONVEX_URL)
         UIBackgroundModes: [audio]
         CFBundleURLTypes:
-          - CFBundleURLSchemes: [eveokee-native]
+          - CFBundleURLSchemes: [eveokee-native, com.eveokee.app]
   EveokeeTests:
     type: bundle.unit-test
     platform: iOS

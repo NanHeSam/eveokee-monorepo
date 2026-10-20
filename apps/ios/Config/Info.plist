@@ -22,6 +22,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>eveokee-native</string>
+				<string>com.eveokee.app</string>
 			</array>
 		</dict>
 	</array>

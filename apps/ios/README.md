@@ -46,4 +46,4 @@ The signed-out native screen uses the real dev Clerk configuration. Continue wit
 
 Voice capture/transcription is explicitly coming soon. Existing songs play; creating/generating a new song is a later phase. Text entry uses the existing createDiary mutation. No backend deploy, Expo/web change, monetization, or production access is needed for this branch.
 
-See [screens and verification](../../docs/native-apple/screens/README.md) for what was actually exercised versus what still requires Sam's interactive sign-in.
+See [TestFlight build 2 verification](../../docs/native-apple/TESTFLIGHT-2.md) for the authenticated dev sign-in and crash fix. See [screens and verification](../../docs/native-apple/screens/README.md) for what was actually exercised versus what still requires Sam's interactive sign-in.

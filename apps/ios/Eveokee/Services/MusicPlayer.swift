@@ -17,7 +17,7 @@ final class MusicPlayer {
     @ObservationIgnored private var shouldResume = false
 
     init() {
-        observer = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.15, preferredTimescale: 600), queue: .main) { [weak self] time in
+        observer = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.15, preferredTimescale: 600), queue: .main) { @Sendable [weak self] time in
             MainActor.assumeIsolated {
                 guard let self, self.player.currentItem != nil else { return }
                 self.elapsed = time.seconds.isFinite ? max(0, time.seconds) : 0
@@ -51,11 +51,14 @@ final class MusicPlayer {
                        reason == AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue { self?.pause() }
                 }
             }.store(in: &subscriptions)
+        // MediaPlayer and KVO may call back off the main queue. Explicit Sendable
+        // closures avoid inheriting this initializer/method's MainActor isolation;
+        // only their Task bodies enter the actor.
         let remote = MPRemoteCommandCenter.shared()
-        remote.playCommand.addTarget { [weak self] _ in Task { @MainActor in self?.play() }; return .success }
-        remote.pauseCommand.addTarget { [weak self] _ in Task { @MainActor in self?.pause() }; return .success }
-        remote.togglePlayPauseCommand.addTarget { [weak self] _ in Task { @MainActor in self?.toggle() }; return .success }
-        remote.changePlaybackPositionCommand.addTarget { [weak self] event in
+        remote.playCommand.addTarget { @Sendable [weak self] _ in Task { @MainActor in self?.play() }; return .success }
+        remote.pauseCommand.addTarget { @Sendable [weak self] _ in Task { @MainActor in self?.pause() }; return .success }
+        remote.togglePlayPauseCommand.addTarget { @Sendable [weak self] _ in Task { @MainActor in self?.toggle() }; return .success }
+        remote.changePlaybackPositionCommand.addTarget { @Sendable [weak self] event in
             guard let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
             let seconds = event.positionTime
             Task { @MainActor in self?.seek(seconds) }
@@ -72,7 +75,7 @@ final class MusicPlayer {
             return
         }
         let item = AVPlayerItem(url: url)
-        itemObserver = item.observe(\.status, options: [.new]) { [weak self] item, _ in
+        itemObserver = item.observe(\.status, options: [.new]) { @Sendable [weak self] item, _ in
             let message = item.status == .failed ? (item.error?.localizedDescription ?? "This track could not be played.") : nil
             if let message { Task { @MainActor in self?.error = message; self?.pause() } }
         }
