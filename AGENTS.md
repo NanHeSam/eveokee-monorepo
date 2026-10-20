@@ -47,3 +47,9 @@
 - Prefer Turbo filters (`pnpm --filter`) when targeting a specific package to avoid unnecessary work.
 - When introducing new scripts, update both this file and `README.md` so human teammates and agents stay in sync.
 - Before final handoff, mention any commands that still need to be run (e.g., deploys, native builds) and whether you verified them locally.
+
+## Native Apple App (`apps/ios`)
+- Independent SwiftUI app, iOS/iPadOS 26+, Swift 6 strict concurrency; no package.json or pnpm/Turbo tasks. Leave Expo/web untouched for native changes.
+- Regenerate with `xcodegen generate --spec apps/ios/project.yml` after target/source changes; setup and xcodebuild commands are in `apps/ios/README.md`.
+- Keep `Config/Secrets.xcconfig`, DerivedData and xcuserdata ignored. Use DEV only; never commit built configuration values.
+- Keep Simulator signing enabled (`CODE_SIGN_IDENTITY=-`) for Clerk Keychain. Unit tests are in `apps/ios/__tests__`; synthetic UI snapshot tests are in `apps/ios/EveokeeUITests`.
